@@ -1,11 +1,23 @@
-name: Docker MCP Gateway
+name: Local MCP servers
 version: 0.0.1
 schema: v1
+
 mcpServers:
-  - name: Docker MCP Gateway
-    command: docker
+  # 1) Maven Central dependency lookup (FREE, no API key)
+  - name: Maven Deps
+    type: stdio
+    command: npx
     args:
-      - mcp
-      - gateway
-      - run
+      - "-y"
+      - "mcp-maven-deps"
+    env: {}
+
+  # 2) Filesystem access for your project (FREE, no API key)
+  - name: Filesystem
+    type: stdio
+    command: npx
+    args:
+      - "-y"
+      - "@modelcontextprotocol/server-filesystem"
+      - "."
     env: {}
