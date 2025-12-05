@@ -1,3 +1,5 @@
+import org.gradle.kotlin.dsl.runtimeOnly
+
 plugins {
     java
     id("org.springframework.boot") version "4.0.0"
@@ -6,7 +8,7 @@ plugins {
 
 group = "com.algotrader"
 version = "0.0.1-SNAPSHOT"
-description = "bot"
+description = "Algotrading bot"
 
 java {
     toolchain {
@@ -23,6 +25,10 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-kafka")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     developmentOnly("org.springframework.boot:spring-boot-docker-compose")
+
+    // Database
+    runtimeOnly("org.postgresql:postgresql")
+
     testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
     testImplementation("org.springframework.boot:spring-boot-starter-kafka-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webflux-test")

@@ -1,9 +1,9 @@
-name: Local MCP servers
+name: Local MCP servers for Algotrading
 version: 0.0.1
 schema: v1
 
 mcpServers:
-  # 1) Maven Central dependency lookup (FREE, no API key)
+  # 1) Maven Central dependency lookup (Gradle-compatible)
   - name: Maven Deps
     type: stdio
     command: npx
@@ -12,7 +12,7 @@ mcpServers:
       - "mcp-maven-deps"
     env: {}
 
-  # 2) Filesystem access for your project (FREE, no API key)
+  # 2) Filesystem access for your project
   - name: Filesystem
     type: stdio
     command: npx
@@ -21,3 +21,13 @@ mcpServers:
       - "@modelcontextprotocol/server-filesystem"
       - "."
     env: {}
+
+  # 3) Git Repo - your local trading bot Git history
+  - name: Git Repo
+    type: stdio
+    command: npx
+    args:
+      - "-y"
+      - "@cyanheads/git-mcp-server@latest"
+    env:
+      GIT_SIGN_COMMITS: "false"
