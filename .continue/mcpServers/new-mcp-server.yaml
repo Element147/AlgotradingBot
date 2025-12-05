@@ -1,0 +1,11 @@
+name: Docker MCP Gateway
+version: 0.0.1
+schema: v1
+mcpServers:
+  - name: Docker MCP Gateway
+    command: docker
+    args:
+      - mcp
+      - gateway
+      - run
+    env: {}
