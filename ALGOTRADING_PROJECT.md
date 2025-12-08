@@ -140,7 +140,7 @@ Strategy MUST PASS all these criteria before going live:
 
 ```
 algotrading-bot/
-├── build.gradle                          # Gradle configuration
+├── build.gradle.kts                          # Gradle configuration
 ├── settings.gradle                       # Gradle settings
 ├── ALGOTRADING_PROJECT.md               # This file (project documentation)
 ├── src/main/java/com/algotrader.bot/
@@ -504,8 +504,8 @@ Generate: [specific class/file needed]
 ### PHASE 1: PROJECT SETUP & CONFIGURATION
 
 **Build Configuration:**
-- [ ] Step 1.1: Gradle initialized (`gradle init`)
-- [ ] Step 1.2: build.gradle created (`gradle clean build` ✅)
+- [✅ ] Step 1.1: Gradle initialized (`gradle init`)
+- [✅ ] Step 1.2: build.gradle.kts created (`gradle clean build` ✅)
 - [ ] Step 1.3: application.yml created
 - [ ] Step 1.4: logback-spring.xml created
 
