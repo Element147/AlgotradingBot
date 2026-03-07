@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "trades", indexes = {
+    @Index(name = "idx_trade_account", columnList = "account_id"),
     @Index(name = "idx_trade_symbol", columnList = "symbol"),
     @Index(name = "idx_trade_entry_time", columnList = "entry_time"),
     @Index(name = "idx_trade_exit_time", columnList = "exit_time")
@@ -23,6 +24,10 @@ public class Trade {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @NotNull
+    @Column(nullable = false)
+    private Long accountId;
 
     @NotNull
     @Size(min = 3, max = 20)
@@ -110,10 +115,11 @@ public class Trade {
     public Trade() {
     }
 
-    public Trade(String symbol, SignalType signalType, LocalDateTime entryTime,
+    public Trade(Long accountId, String symbol, SignalType signalType, LocalDateTime entryTime,
                  BigDecimal entryPrice, BigDecimal positionSize, BigDecimal riskAmount,
                  BigDecimal stopLoss, BigDecimal takeProfit, BigDecimal actualFees,
                  BigDecimal actualSlippage) {
+        this.accountId = accountId;
         this.symbol = symbol;
         this.signalType = signalType;
         this.entryTime = entryTime;
@@ -133,6 +139,14 @@ public class Trade {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getAccountId() {
+        return accountId;
+    }
+
+    public void setAccountId(Long accountId) {
+        this.accountId = accountId;
     }
 
     public String getSymbol() {
@@ -251,6 +265,7 @@ public class Trade {
     public String toString() {
         return "Trade{" +
                 "id=" + id +
+                ", accountId=" + accountId +
                 ", symbol='" + symbol + '\'' +
                 ", signalType=" + signalType +
                 ", entryTime=" + entryTime +

@@ -1,0 +1,60 @@
+package com.algotrader.bot.repository;
+
+import com.algotrader.bot.entity.Trade;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+/**
+ * Spring Data JPA repository for Trade entity.
+ * Provides CRUD operations and custom query methods for trade history retrieval.
+ */
+@Repository
+public interface TradeRepository extends JpaRepository<Trade, Long> {
+
+    /**
+     * Find all trades for a specific account.
+     *
+     * @param accountId the account ID
+     * @return list of trades for the account
+     */
+    List<Trade> findByAccountId(Long accountId);
+
+    /**
+     * Find all trades for a specific symbol.
+     *
+     * @param symbol the trading pair symbol (e.g., "BTC/USDT")
+     * @return list of trades for the symbol
+     */
+    List<Trade> findBySymbol(String symbol);
+
+    /**
+     * Find all trades for a specific account and symbol.
+     *
+     * @param accountId the account ID
+     * @param symbol the trading pair symbol
+     * @return list of trades matching both criteria
+     */
+    List<Trade> findByAccountIdAndSymbol(Long accountId, String symbol);
+
+    /**
+     * Find all trades within a specific time range.
+     *
+     * @param start the start date/time
+     * @param end the end date/time
+     * @return list of trades within the time range
+     */
+    List<Trade> findByEntryTimeBetween(LocalDateTime start, LocalDateTime end);
+
+    /**
+     * Find all trades for a specific symbol within a time range.
+     *
+     * @param symbol the trading pair symbol
+     * @param start the start date/time
+     * @param end the end date/time
+     * @return list of trades matching the criteria
+     */
+    List<Trade> findBySymbolAndEntryTimeBetween(String symbol, LocalDateTime start, LocalDateTime end);
+}

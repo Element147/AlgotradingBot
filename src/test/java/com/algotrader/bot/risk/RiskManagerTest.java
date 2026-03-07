@@ -384,6 +384,7 @@ class RiskManagerTest {
 
         for (int i = 0; i < 10; i++) {
             Trade trade = new Trade(
+                    1L, // accountId
                     "BTC/USDT",
                     Trade.SignalType.BUY,
                     now.minusDays(i + 1).plusHours(12), // Ensure trades are in past days
@@ -418,6 +419,7 @@ class RiskManagerTest {
             // Multiple trades per day with varied losses
             for (int j = 0; j < 3; j++) {
                 Trade trade = new Trade(
+                        1L, // accountId
                         "BTC/USDT",
                         Trade.SignalType.BUY,
                         now.minusDays(i + 1).plusHours(j * 2),
@@ -451,6 +453,7 @@ class RiskManagerTest {
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 3; j++) {
                 Trade trade = new Trade(
+                        1L, // accountId
                         "BTC/USDT",
                         Trade.SignalType.BUY,
                         now.minusDays(i + 1).plusHours(j * 2),
@@ -477,6 +480,7 @@ class RiskManagerTest {
         // Create trades without PnL (open positions)
         for (int i = 0; i < 5; i++) {
             Trade trade = new Trade(
+                    1L, // accountId
                     "BTC/USDT",
                     Trade.SignalType.BUY,
                     now.minusDays(i),
@@ -511,6 +515,7 @@ class RiskManagerTest {
 
         for (int i = 0; i < pnls.length; i++) {
             Trade trade = new Trade(
+                    1L, // accountId
                     "BTC/USDT",
                     Trade.SignalType.BUY,
                     now.minusDays(i),

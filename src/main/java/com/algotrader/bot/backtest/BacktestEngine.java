@@ -250,6 +250,7 @@ public class BacktestEngine {
 
         // Create trade record
         Trade trade = new Trade(
+                null, // accountId - will be set by service layer
                 config.getSymbol(),
                 Trade.SignalType.BUY,
                 candle.getTimestamp(),

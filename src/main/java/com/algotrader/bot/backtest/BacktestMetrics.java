@@ -1,6 +1,7 @@
 package com.algotrader.bot.backtest;
 
 import com.algotrader.bot.entity.Trade;
+import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -14,6 +15,7 @@ import java.util.List;
  * All calculations use BigDecimal for financial precision.
  * Handles edge cases: zero trades, all wins, all losses, division by zero.
  */
+@Component
 public class BacktestMetrics {
 
     private static final MathContext MC = new MathContext(10, RoundingMode.HALF_UP);
