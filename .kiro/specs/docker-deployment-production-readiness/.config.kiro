@@ -1,0 +1,7 @@
+{
+  "specType": "feature",
+  "workflowType": "requirements-first",
+  "featureName": "docker-deployment-production-readiness",
+  "createdAt": "2026-03-07T21:45:00Z",
+  "version": "1.0.0"
+}
