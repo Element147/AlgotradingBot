@@ -4,23 +4,10 @@
     <property name="LOG_FILE" value="${LOG_FILE:-logs/algotrading-bot.log}"/>
     <property name="LOG_PATH" value="${LOG_PATH:-logs}"/>
     
-    <!-- Console Appender with JSON format -->
+    <!-- Console Appender with readable pattern format -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-            <includeMdcKeyName>traceId</includeMdcKeyName>
-            <includeMdcKeyName>spanId</includeMdcKeyName>
-            <includeMdcKeyName>userId</includeMdcKeyName>
-            <includeMdcKeyName>symbol</includeMdcKeyName>
-            <includeMdcKeyName>tradeId</includeMdcKeyName>
-            <fieldNames>
-                <timestamp>timestamp</timestamp>
-                <version>version</version>
-                <message>message</message>
-                <logger>logger</logger>
-                <thread>thread</thread>
-                <level>level</level>
-                <levelValue>levelValue</levelValue>
-            </fieldNames>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
     

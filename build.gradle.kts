@@ -95,3 +95,11 @@ tasks.jacocoTestCoverageVerification {
         }
     }
 }
+
+// Production Validation Task
+tasks.register<JavaExec>("validateProduction") {
+    group = "verification"
+    description = "Run production readiness validation suite"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("com.algotrader.bot.validation.ValidationSuite")
+}
