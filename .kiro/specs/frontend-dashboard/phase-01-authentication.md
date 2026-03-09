@@ -125,7 +125,7 @@
   - Do not proceed to Phase 2 until all verification passes and code is committed
   - _Requirements: 26.8, 26.9, 26.10_
 
-- [ ] 1.14 Backend - Implement Authentication API Endpoints
+- [x] 1.14 Backend - Implement Authentication API Endpoints
   - **Location:** `AlgotradingBot/src/main/java/com/algotrader/bot/`
   - Create `controller/AuthController.java` with REST endpoints
   - Implement POST `/api/auth/login` endpoint accepting username/password, returning JWT token
