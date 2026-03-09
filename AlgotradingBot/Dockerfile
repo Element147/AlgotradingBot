@@ -1,5 +1,5 @@
 # Build stage
-FROM gradle:8.5-jdk25 AS build
+FROM gradle:8.5-jdk21 AS build
 WORKDIR /app
 
 # Copy Gradle wrapper and build files first for better caching
@@ -17,12 +17,15 @@ COPY src ./src
 RUN ./gradlew bootJar --no-daemon
 
 # Runtime stage
-FROM eclipse-temurin:25-jre-alpine
+FROM eclipse-temurin:21-jre-alpine
 
 # Create non-root user for security
 RUN addgroup -S spring && adduser -S spring -G spring
 
 WORKDIR /app
+
+# Create logs directory with proper permissions
+RUN mkdir -p logs && chown spring:spring logs
 
 # Copy JAR from build stage
 COPY --from=build /app/build/libs/algotrading-bot.jar app.jar

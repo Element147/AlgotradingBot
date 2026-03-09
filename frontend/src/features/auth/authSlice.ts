@@ -1,0 +1,148 @@
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+
+export interface User {
+  id: string;
+  username: string;
+  role: 'admin' | 'trader';
+}
+
+export interface AuthState {
+  token: string | null;
+  refreshToken: string | null;
+  user: User | null;
+  isAuthenticated: boolean;
+  sessionTimeout: number | null;
+  lastActivity: number;
+  loading: boolean;
+  error: string | null;
+}
+
+const initialState: AuthState = {
+  token: null,
+  refreshToken: null,
+  user: null,
+  isAuthenticated: false,
+  sessionTimeout: null,
+  lastActivity: Date.now(),
+  loading: false,
+  error: null,
+};
+
+// Session timeout: 30 minutes in milliseconds
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
+
+const authSlice = createSlice({
+  name: 'auth',
+  initialState,
+  reducers: {
+    setCredentials: (
+      state,
+      action: PayloadAction<{ token: string; user: User; refreshToken?: string }>
+    ) => {
+      state.token = action.payload.token;
+      state.user = action.payload.user;
+      state.refreshToken = action.payload.refreshToken || null;
+      state.isAuthenticated = true;
+      state.lastActivity = Date.now();
+      state.sessionTimeout = Date.now() + SESSION_TIMEOUT_MS;
+      state.loading = false;
+      state.error = null;
+
+      // Store token in sessionStorage (not localStorage for security)
+      sessionStorage.setItem('auth_token', action.payload.token);
+      sessionStorage.setItem('user', JSON.stringify(action.payload.user));
+
+      // Store refresh token in localStorage only if "remember me" is enabled
+      if (action.payload.refreshToken) {
+        localStorage.setItem('refresh_token', action.payload.refreshToken);
+      }
+    },
+
+    setToken: (state, action: PayloadAction<string>) => {
+      state.token = action.payload;
+      state.lastActivity = Date.now();
+      state.sessionTimeout = Date.now() + SESSION_TIMEOUT_MS;
+
+      // Update token in sessionStorage
+      sessionStorage.setItem('auth_token', action.payload);
+    },
+
+    logout: (state) => {
+      state.token = null;
+      state.refreshToken = null;
+      state.user = null;
+      state.isAuthenticated = false;
+      state.sessionTimeout = null;
+      state.lastActivity = Date.now();
+      state.loading = false;
+      state.error = null;
+
+      // Clear all storage
+      sessionStorage.removeItem('auth_token');
+      sessionStorage.removeItem('user');
+      localStorage.removeItem('refresh_token');
+    },
+
+    setLoading: (state, action: PayloadAction<boolean>) => {
+      state.loading = action.payload;
+    },
+
+    setError: (state, action: PayloadAction<string | null>) => {
+      state.error = action.payload;
+      state.loading = false;
+    },
+
+    updateActivity: (state) => {
+      state.lastActivity = Date.now();
+      if (state.isAuthenticated) {
+        state.sessionTimeout = Date.now() + SESSION_TIMEOUT_MS;
+      }
+    },
+
+    checkSessionTimeout: (state) => {
+      if (state.isAuthenticated && state.sessionTimeout) {
+        if (Date.now() > state.sessionTimeout) {
+          // Session expired
+          state.token = null;
+          state.refreshToken = null;
+          state.user = null;
+          state.isAuthenticated = false;
+          state.sessionTimeout = null;
+
+          // Clear session storage
+          sessionStorage.removeItem('auth_token');
+          sessionStorage.removeItem('user');
+          localStorage.removeItem('refresh_token');
+        }
+      }
+    },
+
+    restoreSession: (state) => {
+      const token = sessionStorage.getItem('auth_token');
+      const userStr = sessionStorage.getItem('user');
+      const refreshToken = localStorage.getItem('refresh_token');
+
+      if (token && userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          state.token = token;
+          state.user = user;
+          state.refreshToken = refreshToken;
+          state.isAuthenticated = true;
+          state.lastActivity = Date.now();
+          state.sessionTimeout = Date.now() + SESSION_TIMEOUT_MS;
+        } catch (error) {
+          // Invalid session data, clear it
+          sessionStorage.removeItem('auth_token');
+          sessionStorage.removeItem('user');
+          localStorage.removeItem('refresh_token');
+        }
+      }
+    },
+  },
+});
+
+export const { setCredentials, setToken, logout, setLoading, setError, updateActivity, checkSessionTimeout, restoreSession } =
+  authSlice.actions;
+
+export default authSlice.reducer;

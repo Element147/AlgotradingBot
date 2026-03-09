@@ -27,7 +27,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
 ## Tasks
 
 - [ ] 1. Phase 1: Project Setup and Authentication (Week 1)
-  - [ ] 1.1 Initialize Vite + React + TypeScript project with strict mode
+  - [x] 1.1 Initialize Vite + React + TypeScript project with strict mode
     - Create new directory `frontend/` at repository root (same level as AlgotradingBot/)
     - Initialize Vite project with React-TS template inside `frontend/` directory
     - Configure TypeScript with strict mode enabled
@@ -38,7 +38,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - _Requirements: 26.1, 26.2, 28.2_
     - **Note:** Frontend will be in `frontend/` folder, backend in `AlgotradingBot/` folder within same repository
   
-  - [ ] 1.2 Configure code quality tools (ESLint, Prettier, Vitest)
+  - [x] 1.2 Configure code quality tools (ESLint, Prettier, Vitest)
     - Install and configure ESLint with Airbnb React config
     - Install and configure Prettier with consistent formatting rules
     - Set up Vitest as test runner with React Testing Library
@@ -46,7 +46,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Add pre-commit hooks with Husky and lint-staged
     - _Requirements: 26.9, 28.1_
   
-  - [ ] 1.3 Set up Redux store with RTK Query base configuration
+  - [x] 1.3 Set up Redux store with RTK Query base configuration
     - Create Redux store with configureStore
     - Implement base query with environment injection middleware
     - Configure RTK Query with retry logic and error handling
@@ -93,7 +93,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Implement automatic token refresh interceptor
     - _Requirements: 26.3, 26.4, 24.2_
   
-  - [ ]* 1.9 Write unit tests for auth slice and components
+  - [ ] 1.9 Write unit tests for auth slice and components
     - Test authSlice reducers (login, logout, setToken)
     - Test LoginPage component rendering and form submission
     - Test ProtectedRoute redirect logic
@@ -101,14 +101,14 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Achieve 80%+ coverage for auth module
     - _Requirements: 25.1, 25.2, 25.4_
 
-  - [ ]* 1.10 Write property test for authentication token inclusion
+  - [ ] 1.10 Write property test for authentication token inclusion
     - **Property 1: Authentication Token Inclusion**
     - **Validates: Requirements 1.4, 24.2**
     - Test that all authenticated API requests include token in Authorization header
     - Use fast-check with 100+ iterations testing random tokens and endpoints
     - _Requirements: 30.1, 30.9_
   
-  - [ ]* 1.11 Write integration tests for authentication flow
+  - [ ] 1.11 Write integration tests for authentication flow
     - Test login with valid credentials stores token and redirects
     - Test login with invalid credentials shows error
     - Test token refresh on 401 error
@@ -121,6 +121,23 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Verify login/logout flow works end-to-end
     - Check code coverage meets 80% threshold
     - Ask user if questions arise
+  
+  - [ ] 1.13 Phase 1 Verification - Build, Run, and Test Application
+    - Stop all running services using `.\stop-all.ps1`
+    - Build both backend and frontend using `.\build-all.ps1`
+    - Verify builds complete successfully without errors
+    - Start all services using `.\run-all.ps1`
+    - Verify backend is accessible at http://localhost:8080
+    - Verify frontend is accessible at http://localhost:5173
+    - Verify Swagger UI works at http://localhost:8080/swagger-ui.html
+    - Test authentication endpoints via Swagger or curl
+    - If any issues found, diagnose and repair immediately
+    - Once all verification passes, commit to git:
+      - `git add .`
+      - `git commit -m "feat: Phase 1 - Authentication module complete"`
+      - `git push origin main` (or your branch)
+    - Do not proceed to Phase 2 until all verification passes and code is committed
+    - _Requirements: 26.8, 26.9, 26.10_
 
 - [ ] 2. Phase 2: Core Layout and Dashboard (Week 2)
   - [ ] 2.1 Create app layout with responsive sidebar and header
@@ -206,7 +223,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Show circuit breaker status
     - _Requirements: 2.14, 2.15, 2.16_
   
-  - [ ]* 2.11 Write unit tests for layout and dashboard components
+  - [ ] 2.11 Write unit tests for layout and dashboard components
     - Test AppLayout renders sidebar, header, and content
     - Test Sidebar navigation links
     - Test EnvironmentSwitch toggle and confirmation dialog
@@ -215,7 +232,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Achieve 80%+ coverage
     - _Requirements: 25.1, 25.4_
   
-  - [ ]* 2.12 Write property tests for environment persistence
+  - [ ] 2.12 Write property tests for environment persistence
     - **Property 3: Environment Mode Persistence**
     - **Validates: Requirements 2.6**
     - Test that any environment mode selection is persisted to localStorage
@@ -225,14 +242,14 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Use fast-check with 100+ iterations
     - _Requirements: 30.1_
   
-  - [ ]* 2.13 Write integration tests for environment switching
+  - [ ] 2.13 Write integration tests for environment switching
     - Test environment switch updates X-Environment header in API calls
     - Test switching from test to live fetches different balance data
     - Test WebSocket reconnects with new environment channels
     - Test environment mode persists across page reload
     - _Requirements: 30.19_
   
-  - [ ]* 2.14 Write integration tests for WebSocket communication
+  - [ ] 2.14 Write integration tests for WebSocket communication
     - Test WebSocket connection establishment with auth token
     - Test balance.updated event updates Redux state
     - Test trade.executed event updates trade history
@@ -245,6 +262,25 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Verify environment switching works correctly
     - Check WebSocket connection and real-time updates
     - Ask user if questions arise
+  
+  - [ ] 2.16 Phase 2 Verification - Build, Run, and Test Application
+    - Stop all running services using `.\stop-all.ps1`
+    - Build both backend and frontend using `.\build-all.ps1`
+    - Verify builds complete successfully without errors
+    - Start all services using `.\run-all.ps1`
+    - Verify backend is accessible at http://localhost:8080
+    - Verify frontend is accessible at http://localhost:5173
+    - Test dashboard page loads and displays balance/performance cards
+    - Test environment switching between test and live modes
+    - Test WebSocket connection status indicator
+    - Test sidebar navigation and responsive layout
+    - If any issues found, diagnose and repair immediately
+    - Once all verification passes, commit to git:
+      - `git add .`
+      - `git commit -m "feat: Phase 2 - Core layout and dashboard complete"`
+      - `git push origin main` (or your branch)
+    - Do not proceed to Phase 3 until all verification passes and code is committed
+    - _Requirements: 26.8, 26.9, 26.10_
 
 - [ ] 3. Phase 3: Strategy Management (Week 3)
   - [ ] 3.1 Create strategies API slice with CRUD operations
@@ -296,7 +332,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Handle strategy error events with error notification
     - _Requirements: 4.11, 15.6_
   
-  - [ ]* 3.7 Write unit tests for strategy components
+  - [ ] 3.7 Write unit tests for strategy components
     - Test StrategiesPage renders strategy list
     - Test StrategyCard displays correct status and metrics
     - Test start/stop buttons show confirmation dialogs
@@ -305,7 +341,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Achieve 80%+ coverage
     - _Requirements: 25.1, 25.4_
   
-  - [ ]* 3.8 Write property tests for risk percentage validation
+  - [ ] 3.8 Write property tests for risk percentage validation
     - **Property 5: Risk Percentage Validation**
     - **Validates: Requirements 5.4, 13.2**
     - Test that risk values outside [1%, 5%] are rejected
@@ -313,7 +349,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Use fast-check with 100+ iterations
     - _Requirements: 30.1_
   
-  - [ ]* 3.9 Write property tests for position size validation
+  - [ ] 3.9 Write property tests for position size validation
     - **Property 6: Position Size Validation**
     - **Validates: Requirements 5.5**
     - Test that non-positive position sizes are rejected
@@ -321,7 +357,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Use fast-check with 100+ iterations
     - _Requirements: 30.1_
   
-  - [ ]* 3.10 Write integration tests for strategy management
+  - [ ] 3.10 Write integration tests for strategy management
     - Test start strategy API call updates status to RUNNING
     - Test stop strategy API call updates status to STOPPED
     - Test update strategy configuration saves changes
@@ -334,6 +370,25 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Verify start/stop/configure functionality works
     - Check real-time status updates via WebSocket
     - Ask user if questions arise
+  
+  - [ ] 3.12 Phase 3 Verification - Build, Run, and Test Application
+    - Stop all running services using `.\stop-all.ps1`
+    - Build both backend and frontend using `.\build-all.ps1`
+    - Verify builds complete successfully without errors
+    - Start all services using `.\run-all.ps1`
+    - Verify backend is accessible at http://localhost:8080
+    - Verify frontend is accessible at http://localhost:5173
+    - Test strategies page displays strategy list
+    - Test start/stop strategy functionality
+    - Test strategy configuration modal and validation
+    - Test real-time strategy status updates
+    - If any issues found, diagnose and repair immediately
+    - Once all verification passes, commit to git:
+      - `git add .`
+      - `git commit -m "feat: Phase 3 - Strategy management complete"`
+      - `git push origin main` (or your branch)
+    - Do not proceed to Phase 4 until all verification passes and code is committed
+    - _Requirements: 26.8, 26.9, 26.10_
 
 - [ ] 4. Phase 4: Trade History and Details (Week 4)
   - [ ] 4.1 Create trades API slice with history and details endpoints
@@ -405,7 +460,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Trigger browser download with filename trades_YYYY-MM-DD_HHmmss.csv
     - _Requirements: 20.1, 20.2, 20.3, 20.4, 20.5, 20.6_
   
-  - [ ]* 4.10 Write unit tests for trade components
+  - [ ] 4.10 Write unit tests for trade components
     - Test TradesPage renders table with pagination
     - Test TradeTable sorting functionality
     - Test filter controls update query parameters
@@ -415,7 +470,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Achieve 80%+ coverage
     - _Requirements: 25.1, 25.4_
 
-  - [ ]* 4.11 Write property tests for table sorting and CSV export
+  - [ ] 4.11 Write property tests for table sorting and CSV export
     - **Property 7: Table Sorting Correctness**
     - **Validates: Requirements 6.4**
     - Test that sorting by any column produces correctly ordered data
@@ -434,7 +489,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Use fast-check with 100+ iterations for each property
     - _Requirements: 30.1_
   
-  - [ ]* 4.12 Write integration tests for trade history
+  - [ ] 4.12 Write integration tests for trade history
     - Test fetch trade history with pagination
     - Test filter trades by date range, symbol, status
     - Test sort trades by column (ascending/descending)
@@ -449,6 +504,27 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Verify pagination, sorting, filtering work correctly
     - Check CSV export generates valid files
     - Ask user if questions arise
+  
+  - [ ] 4.14 Phase 4 Verification - Build, Run, and Test Application
+    - Stop all running services using `.\stop-all.ps1`
+    - Build both backend and frontend using `.\build-all.ps1`
+    - Verify builds complete successfully without errors
+    - Start all services using `.\run-all.ps1`
+    - Verify backend is accessible at http://localhost:8080
+    - Verify frontend is accessible at http://localhost:5173
+    - Test trades page displays paginated trade history
+    - Test table sorting by different columns
+    - Test filtering by date range, symbol, status
+    - Test trade search functionality
+    - Test trade details modal
+    - Test CSV export functionality
+    - If any issues found, diagnose and repair immediately
+    - Once all verification passes, commit to git:
+      - `git add .`
+      - `git commit -m "feat: Phase 4 - Trade history and details complete"`
+      - `git push origin main` (or your branch)
+    - Do not proceed to Phase 5 until all verification passes and code is committed
+    - _Requirements: 26.8, 26.9, 26.10_
 
 - [ ] 5. Phase 5: Backtest Visualization (Week 5)
   - [ ] 5.1 Create backtest API slice with results and run endpoints
@@ -537,7 +613,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Trigger download with filename backtest_{id}_YYYY-MM-DD.pdf
     - _Requirements: 8.12, 20.7, 20.8, 20.9, 20.10_
   
-  - [ ]* 5.12 Write unit tests for backtest components
+  - [ ] 5.12 Write unit tests for backtest components
     - Test BacktestPage renders results list
     - Test BacktestResults displays metrics correctly
     - Test chart components render with data
@@ -547,7 +623,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Achieve 80%+ coverage
     - _Requirements: 25.1, 25.4_
   
-  - [ ]* 5.13 Write property tests for backtest validation
+  - [ ] 5.13 Write property tests for backtest validation
     - **Property 9: Date Range Validation**
     - **Validates: Requirements 9.4**
     - Test that start date >= end date is rejected
@@ -557,7 +633,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Use fast-check with 100+ iterations
     - _Requirements: 30.1_
   
-  - [ ]* 5.14 Write integration tests for backtest operations
+  - [ ] 5.14 Write integration tests for backtest operations
     - Test fetch backtest results list
     - Test fetch backtest details by ID
     - Test run new backtest with valid configuration
@@ -571,6 +647,27 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Verify all charts render correctly
     - Check backtest execution and polling work
     - Ask user if questions arise
+  
+  - [ ] 5.16 Phase 5 Verification - Build, Run, and Test Application
+    - Stop all running services using `.\stop-all.ps1`
+    - Build both backend and frontend using `.\build-all.ps1`
+    - Verify builds complete successfully without errors
+    - Start all services using `.\run-all.ps1`
+    - Verify backend is accessible at http://localhost:8080
+    - Verify frontend is accessible at http://localhost:5173
+    - Test backtest results page displays list of backtests
+    - Test backtest details view with performance metrics
+    - Test all chart components (equity curve, drawdown, heatmap, histogram)
+    - Test backtest configuration modal and validation
+    - Test backtest execution and polling
+    - Test PDF export functionality
+    - If any issues found, diagnose and repair immediately
+    - Once all verification passes, commit to git:
+      - `git add .`
+      - `git commit -m "feat: Phase 5 - Backtest visualization complete"`
+      - `git push origin main` (or your branch)
+    - Do not proceed to Phase 6 until all verification passes and code is committed
+    - _Requirements: 26.8, 26.9, 26.10_
 
 - [ ] 6. Phase 6: Risk Management (Week 6)
   - [ ] 6.1 Create risk API slice with status and config endpoints
@@ -647,7 +744,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Update circuit breaker status in real-time
     - _Requirements: 10.6, 10.8, 15.7_
   
-  - [ ]* 6.10 Write unit tests for risk components
+  - [ ] 6.10 Write unit tests for risk components
     - Test RiskMetrics displays correct values and colors
     - Test CircuitBreakerPanel shows active breakers
     - Test password confirmation dialog
@@ -656,7 +753,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Achieve 80%+ coverage
     - _Requirements: 25.1, 25.4_
   
-  - [ ]* 6.11 Write property tests for risk validation and calculations
+  - [ ] 6.11 Write property tests for risk validation and calculations
     - **Property 11: Position Sizing Calculator Risk Validation**
     - **Validates: Requirements 12.5**
     - Test risk values outside [0.1%, 5%] are rejected
@@ -675,7 +772,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Use fast-check with 100+ iterations for each property
     - _Requirements: 30.1_
 
-  - [ ]* 6.12 Write integration tests for risk management
+  - [ ] 6.12 Write integration tests for risk management
     - Test fetch risk status with metrics
     - Test update risk configuration
     - Test override circuit breaker with password
@@ -689,6 +786,26 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Check circuit breaker override works
     - Verify position calculator accuracy
     - Ask user if questions arise
+  
+  - [ ] 6.14 Phase 6 Verification - Build, Run, and Test Application
+    - Stop all running services using `.\stop-all.ps1`
+    - Build both backend and frontend using `.\build-all.ps1`
+    - Verify builds complete successfully without errors
+    - Start all services using `.\run-all.ps1`
+    - Verify backend is accessible at http://localhost:8080
+    - Verify frontend is accessible at http://localhost:5173
+    - Test risk management page displays risk metrics
+    - Test circuit breaker panel and override functionality
+    - Test position sizing calculator with various inputs
+    - Test risk configuration form and validation
+    - Test real-time risk updates via WebSocket
+    - If any issues found, diagnose and repair immediately
+    - Once all verification passes, commit to git:
+      - `git add .`
+      - `git commit -m "feat: Phase 6 - Risk management complete"`
+      - `git push origin main` (or your branch)
+    - Do not proceed to Phase 7 until all verification passes and code is committed
+    - _Requirements: 26.8, 26.9, 26.10_
 
 - [ ] 7. Phase 7: Settings and Exchange Integration (Week 7)
   - [ ] 7.1 Create exchange API slice with balance and connection endpoints
@@ -757,7 +874,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Display exchange-specific trading fees and limits
     - _Requirements: 31.12, 31.13, 31.14, 31.15_
   
-  - [ ]* 7.10 Write unit tests for settings components
+  - [ ] 7.10 Write unit tests for settings components
     - Test SettingsPage renders all sections
     - Test API configuration with masked keys
     - Test notification settings toggles
@@ -766,7 +883,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Achieve 80%+ coverage
     - _Requirements: 25.1, 25.4_
 
-  - [ ]* 7.11 Write property tests for user preferences persistence
+  - [ ] 7.11 Write property tests for user preferences persistence
     - **Property 21: User Preferences Persistence**
     - **Validates: Requirements 23.5**
     - Test that any preference change is persisted to localStorage
@@ -776,7 +893,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Use fast-check with 100+ iterations
     - _Requirements: 30.1_
   
-  - [ ]* 7.12 Write integration tests for settings and exchange
+  - [ ] 7.12 Write integration tests for settings and exchange
     - Test API connection test endpoint
     - Test fetch exchange balance in live mode
     - Test exchange connection status
@@ -789,6 +906,27 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Verify exchange balance displays correctly in live mode
     - Check settings persist and restore properly
     - Ask user if questions arise
+  
+  - [ ] 7.14 Phase 7 Verification - Build, Run, and Test Application
+    - Stop all running services using `.\stop-all.ps1`
+    - Build both backend and frontend using `.\build-all.ps1`
+    - Verify builds complete successfully without errors
+    - Start all services using `.\run-all.ps1`
+    - Verify backend is accessible at http://localhost:8080
+    - Verify frontend is accessible at http://localhost:5173
+    - Test settings page displays all sections
+    - Test API configuration and connection testing
+    - Test notification settings toggles
+    - Test display preferences (theme, currency, timezone)
+    - Test exchange balance display in live mode
+    - Test database management functions
+    - If any issues found, diagnose and repair immediately
+    - Once all verification passes, commit to git:
+      - `git add .`
+      - `git commit -m "feat: Phase 7 - Settings and exchange integration complete"`
+      - `git push origin main` (or your branch)
+    - Do not proceed to Phase 8 until all verification passes and code is committed
+    - _Requirements: 26.8, 26.9, 26.10_
 
 - [ ] 8. Phase 8: Charts and Visualization (Week 8)
   - [ ] 8.1 Implement equity curve chart component
@@ -837,7 +975,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Include chart in PDF exports
     - _Requirements: 20.7, 20.9_
   
-  - [ ]* 8.7 Write unit tests for chart components
+  - [ ] 8.7 Write unit tests for chart components
     - Test EquityCurve renders with data
     - Test DrawdownChart renders with data
     - Test timeframe selection updates chart
@@ -853,6 +991,27 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Check zoom/pan interactions work smoothly
     - Verify accessible alternatives work
     - Ask user if questions arise
+  
+  - [ ] 8.9 Phase 8 Verification - Build, Run, and Test Application
+    - Stop all running services using `.\stop-all.ps1`
+    - Build both backend and frontend using `.\build-all.ps1`
+    - Verify builds complete successfully without errors
+    - Start all services using `.\run-all.ps1`
+    - Verify backend is accessible at http://localhost:8080
+    - Verify frontend is accessible at http://localhost:5173
+    - Test equity curve chart renders and displays data
+    - Test drawdown chart renders correctly
+    - Test chart zoom and pan functionality
+    - Test timeframe selection updates charts
+    - Test accessible table alternatives
+    - Test chart export functionality (PNG, CSV)
+    - If any issues found, diagnose and repair immediately
+    - Once all verification passes, commit to git:
+      - `git add .`
+      - `git commit -m "feat: Phase 8 - Charts and visualization complete"`
+      - `git push origin main` (or your branch)
+    - Do not proceed to Phase 9 until all verification passes and code is committed
+    - _Requirements: 26.8, 26.9, 26.10_
 
 - [ ] 9. Phase 9: Performance Optimization (Week 9)
   - [ ] 9.1 Implement code splitting for all route components
@@ -912,6 +1071,28 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Check bundle sizes are optimized
     - Verify smooth scrolling and interactions
     - Ask user if questions arise
+  
+  - [ ] 9.9 Phase 9 Verification - Build, Run, and Test Application
+    - Stop all running services using `.\stop-all.ps1`
+    - Build both backend and frontend using `.\build-all.ps1`
+    - Verify builds complete successfully without errors
+    - Measure build time (should be < 2 minutes)
+    - Check bundle sizes with visualizer
+    - Start all services using `.\run-all.ps1`
+    - Verify backend is accessible at http://localhost:8080
+    - Verify frontend is accessible at http://localhost:5173
+    - Test initial page load time (should be < 3 seconds)
+    - Run Lighthouse audit (score should be ≥ 90)
+    - Test virtualized lists scroll smoothly
+    - Test code splitting with network tab
+    - Test WebSocket throttling with rapid updates
+    - If any issues found, diagnose and repair immediately
+    - Once all verification passes, commit to git:
+      - `git add .`
+      - `git commit -m "feat: Phase 9 - Performance optimization complete"`
+      - `git push origin main` (or your branch)
+    - Do not proceed to Phase 10 until all verification passes and code is committed
+    - _Requirements: 26.8, 26.9, 26.10, 19.2, 19.10_
 
 - [ ] 10. Phase 10: Security Hardening (Week 10)
   - [ ] 10.1 Enforce HTTPS in production environment
@@ -960,7 +1141,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Mask sensitive data (API keys, passwords) with reveal buttons
     - _Requirements: 14.2, 24.4_
   
-  - [ ]* 10.8 Write property test for XSS sanitization
+  - [ ] 10.8 Write property test for XSS sanitization
     - **Property 23: XSS Input Sanitization**
     - **Validates: Requirements 24.5**
     - Test that all user input is sanitized (HTML tags escaped/removed)
@@ -982,6 +1163,28 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Check XSS and CSRF protection
     - Review security audit report
     - Ask user if questions arise
+  
+  - [ ] 10.11 Phase 10 Verification - Build, Run, and Test Application
+    - Stop all running services using `.\stop-all.ps1`
+    - Build both backend and frontend using `.\build-all.ps1`
+    - Verify builds complete successfully without errors
+    - Start all services using `.\run-all.ps1`
+    - Verify backend is accessible at http://localhost:8080
+    - Verify frontend is accessible at http://localhost:5173
+    - Test HTTPS configuration (if in production mode)
+    - Test token management (login, logout, session timeout)
+    - Test XSS sanitization with malicious input
+    - Test CSRF protection on mutation requests
+    - Test role-based access control (admin vs trader)
+    - Test security headers in browser dev tools
+    - Verify sensitive data is masked (API keys, passwords)
+    - If any issues found, diagnose and repair immediately
+    - Once all verification passes, commit to git:
+      - `git add .`
+      - `git commit -m "feat: Phase 10 - Security hardening complete"`
+      - `git push origin main` (or your branch)
+    - Do not proceed to Phase 11 until all verification passes and code is committed
+    - _Requirements: 26.8, 26.9, 26.10, 24.1, 24.3, 24.5, 24.6_
 
 - [ ] 11. Phase 11: Accessibility Compliance (Week 11)
   - [ ] 11.1 Implement keyboard navigation for all interactive elements
@@ -1061,6 +1264,29 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Check screen reader compatibility
     - Review accessibility audit report
     - Ask user if questions arise
+  
+  - [ ] 11.12 Phase 11 Verification - Build, Run, and Test Application
+    - Stop all running services using `.\stop-all.ps1`
+    - Build both backend and frontend using `.\build-all.ps1`
+    - Verify builds complete successfully without errors
+    - Start all services using `.\run-all.ps1`
+    - Verify backend is accessible at http://localhost:8080
+    - Verify frontend is accessible at http://localhost:5173
+    - Test keyboard navigation through entire app (Tab, Enter, Escape)
+    - Test skip to main content link
+    - Run automated accessibility audit (axe DevTools or Lighthouse)
+    - Test with screen reader if available (NVDA, JAWS, VoiceOver)
+    - Test color contrast in both light and dark themes
+    - Test UI at 200% text size
+    - Verify all interactive elements have visible focus indicators
+    - Verify ARIA live regions announce updates
+    - If any issues found, diagnose and repair immediately
+    - Once all verification passes, commit to git:
+      - `git add .`
+      - `git commit -m "feat: Phase 11 - Accessibility compliance complete"`
+      - `git push origin main` (or your branch)
+    - Do not proceed to Phase 12 until all verification passes and code is committed
+    - _Requirements: 26.8, 26.9, 26.10, 17.1-17.10_
 
 - [ ] 12. Phase 12: Testing and Documentation (Week 12)
   - [ ] 12.1 Complete unit test coverage to 80%+
@@ -1180,6 +1406,29 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Check E2E tests pass
     - Review all documentation
     - Ask user if questions arise
+  
+  - [ ] 12.11 Phase 12 Verification - Build, Run, and Test Application
+    - Stop all running services using `.\stop-all.ps1`
+    - Build both backend and frontend using `.\build-all.ps1`
+    - Verify builds complete successfully without errors
+    - Run all unit tests and verify 80%+ coverage
+    - Run all integration tests and verify they pass
+    - Run all property-based tests (25 properties, 100+ iterations each)
+    - Run E2E tests for critical user flows
+    - Start all services using `.\run-all.ps1`
+    - Verify backend is accessible at http://localhost:8080
+    - Verify frontend is accessible at http://localhost:5173
+    - Test complete trading workflow end-to-end
+    - Test on multiple browsers (Chrome, Firefox, Edge)
+    - Test both light and dark themes
+    - Review all documentation for completeness
+    - If any issues found, diagnose and repair immediately
+    - Once all verification passes, commit to git:
+      - `git add .`
+      - `git commit -m "feat: Phase 12 - Testing and documentation complete"`
+      - `git push origin main` (or your branch)
+    - Do not proceed to Phase 13 until all verification passes and code is committed
+    - _Requirements: 26.8, 26.9, 26.10, 25.1-25.10, 30.1-30.16_
 
 - [ ] 13. Phase 13: Deployment and Monitoring (Week 13)
   - [ ] 13.1 Configure production environment variables
@@ -1280,6 +1529,36 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Verify performance meets requirements
     - Document any production issues
     - Ask user if questions arise
+  
+  - [ ] 13.13 Phase 13 Verification - Build, Run, and Test Application
+    - Stop all running services using `.\stop-all.ps1`
+    - Build both backend and frontend using `.\build-all.ps1`
+    - Verify production build completes in < 2 minutes
+    - Check bundle sizes are optimized
+    - Verify source maps are generated
+    - Build Docker images for both frontend and backend
+    - Start all services using `.\run-all.ps1` or docker-compose
+    - Verify backend is accessible at http://localhost:8080
+    - Verify frontend is accessible at http://localhost:5173
+    - Test HTTPS configuration (if applicable)
+    - Verify error tracking (Sentry) is capturing errors
+    - Verify analytics (GA4) is tracking page views
+    - Test all critical user flows in production-like environment
+    - Run smoke tests on all major features
+    - Verify monitoring dashboards show correct data
+    - Test CI/CD pipeline (if configured)
+    - Verify rollback capability works
+    - Run final Lighthouse audit (score should be ≥ 90)
+    - Test on multiple browsers and devices
+    - If any issues found, diagnose and repair immediately
+    - Once all verification passes, commit to git:
+      - `git add .`
+      - `git commit -m "feat: Phase 13 - Production deployment complete"`
+      - `git tag -a v1.0.0 -m "Frontend Dashboard v1.0.0 - Production Ready"`
+      - `git push origin main` (or your branch)
+      - `git push origin v1.0.0`
+    - Document deployment process and any issues encountered
+    - _Requirements: 26.8, 26.9, 26.10, 26.11, 27.1-27.9_
 
 ## Notes
 
