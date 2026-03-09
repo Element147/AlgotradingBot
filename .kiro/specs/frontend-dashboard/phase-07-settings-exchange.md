@@ -147,6 +147,42 @@ Before starting Phase 7, verify:
   - Do not proceed to Phase 8 until all verification passes and code is committed
   - _Requirements: 26.8, 26.9, 26.10_
 
+- [ ] 7.15 Backend - Implement Settings and Exchange Integration API Endpoints
+  - **Location:** `AlgotradingBot/src/main/java/com/algotrader/bot/`
+  - Create `controller/SystemController.java` with REST endpoints
+  - Implement GET `/api/system/info` endpoint returning system information
+  - Return: applicationVersion, lastDeploymentDate, databaseStatus, kafkaStatus
+  - Implement POST `/api/system/test-connection` endpoint to test exchange API connection
+  - Test connection to configured exchange (Binance, Coinbase, or Kraken)
+  - Return connection status, rate limit information, and any errors
+  - Implement POST `/api/system/backup` endpoint to trigger database backup
+  - Create backup file with timestamp: `backup_YYYY-MM-DD_HHmmss.sql`
+  - Return backup file path and size
+  - Create `controller/ExchangeController.java` for exchange operations
+  - Implement GET `/api/exchange/balance` endpoint with `?env=live` parameter
+  - Integrate with exchange API (Binance/Coinbase/Kraken) to fetch real balance
+  - Return balance data: exchange name, timestamp, balances by asset, totalValueUSD
+  - Implement GET `/api/exchange/connection-status` endpoint
+  - Return: connected, exchange, lastSync, rateLimitUsage, error (if any)
+  - Create `service/ExchangeService.java` to handle exchange API integration
+  - Implement connection pooling and rate limiting
+  - Add retry logic with exponential backoff for failed requests
+  - Store exchange API credentials securely (encrypted in database or environment variables)
+  - Create `entity/ExchangeConfig.java` JPA entity for exchange configurations
+  - Store: name, apiKey (encrypted), apiSecret (encrypted), testnet flag, rateLimits
+  - Implement GET `/api/settings/user` endpoint for user preferences
+  - Return: theme, currency, timezone, notifications settings
+  - Implement PUT `/api/settings/user` endpoint to update preferences
+  - Store preferences in `entity/UserPreferences.java`
+  - Add `@Secured` annotation to require authentication
+  - Write unit tests for exchange API integration (mock external calls)
+  - Write integration tests for settings endpoints
+  - Test connection to exchange APIs (use testnet for safety)
+  - _Requirements: 14.1, 14.2, 14.3, 14.4, 14.5, 14.9, 14.10, 14.11, 14.12, 2.18_
+  - **Dependencies:** Add to `build.gradle.kts`:
+    - `implementation("com.binance.connector:binance-connector-java:3.0.0")` (for Binance)
+    - Or equivalent for Coinbase/Kraken
+
 ## Phase Complete
 
 Once all tasks are complete and verification passes:

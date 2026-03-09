@@ -169,6 +169,35 @@ Before starting Phase 5, verify:
   - Do not proceed to Phase 6 until all verification passes and code is committed
   - _Requirements: 26.8, 26.9, 26.10_
 
+- [ ] 5.17 Backend - Implement Backtest API Endpoints
+  - **Location:** `AlgotradingBot/src/main/java/com/algotrader/bot/`
+  - **Note:** Backtest endpoints already exist in `controller/TradingStrategyController.java`
+  - Verify GET `/api/backtest/results` endpoint returns list of backtest results
+  - Add query parameters: strategyId, symbol, limit (default 10)
+  - Return: id, date, strategyName, symbol, timeframe, validationStatus (PASSED/FAILED/PENDING)
+  - Create GET `/api/backtest/{id}` endpoint for detailed backtest results
+  - Return comprehensive metrics: Sharpe ratio, profit factor, win rate, max drawdown, total trades
+  - Include equity curve data points for charting
+  - Include drawdown curve data points
+  - Include monthly returns data for heatmap
+  - Include trade distribution data for histogram
+  - Include Monte Carlo results if available (confidence intervals, worst-case scenarios)
+  - Include walk-forward analysis results if available (in-sample vs out-of-sample)
+  - Create POST `/api/backtest/run` endpoint to execute new backtest
+  - Accept parameters: strategyId, symbol, timeframe, startDate, endDate, initialBalance
+  - Validate startDate < endDate
+  - Validate initialBalance > 100
+  - Queue backtest for asynchronous execution
+  - Return backtest ID and status (PENDING)
+  - Implement asynchronous backtest execution using `@Async`
+  - Update backtest status to RUNNING, then COMPLETED or FAILED
+  - Store results in `entity/BacktestResult.java`
+  - Add `@Secured` annotation to require authentication
+  - Write unit tests for backtest validation logic
+  - Write integration tests for backtest execution flow
+  - Test polling mechanism for backtest status updates
+  - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9, 8.10, 8.11, 8.12, 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8, 9.9, 9.10_
+
 ## Phase Complete
 
 Once all tasks are complete and verification passes:

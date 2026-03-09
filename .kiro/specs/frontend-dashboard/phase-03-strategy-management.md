@@ -136,6 +136,29 @@ Before starting Phase 3, verify:
   - Do not proceed to Phase 4 until all verification passes and code is committed
   - _Requirements: 26.8, 26.9, 26.10_
 
+- [ ] 3.13 Backend - Implement Strategy Management API Endpoints
+  - **Location:** `AlgotradingBot/src/main/java/com/algotrader/bot/`
+  - **Note:** Strategy start/stop endpoints already exist in `controller/TradingStrategyController.java`
+  - Enhance existing GET `/api/strategies` endpoint to return list of all strategies with status
+  - Return strategy data: id, name, type, status (RUNNING/STOPPED/ERROR), configuration, metrics
+  - Verify POST `/api/strategies/start` endpoint accepts strategy configuration
+  - Verify POST `/api/strategies/stop` endpoint stops running strategy
+  - Create PUT `/api/strategies/{id}/config` endpoint to update strategy configuration
+  - Validate risk per trade is between 1% and 5%
+  - Validate position sizes are positive numbers
+  - If strategy is RUNNING, stop it before applying configuration changes
+  - Create `entity/StrategyConfig.java` JPA entity to persist strategy configurations
+  - Create `repository/StrategyConfigRepository.java` extending JpaRepository
+  - Enhance `service/TradingStrategyService.java` with configuration management
+  - Implement WebSocket event publishing for `strategy.status` events
+  - Publish events when strategy starts, stops, or encounters errors
+  - Include real-time metrics: profitLoss, tradeCount, currentDrawdown
+  - Add `@Secured` annotation to require authentication on all endpoints
+  - Write unit tests for strategy configuration validation
+  - Write integration tests for strategy CRUD operations
+  - Test WebSocket strategy.status event publishing
+  - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.6, 4.7, 4.8, 4.10, 4.11, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 5.10, 15.6_
+
 ## Phase Complete
 
 Once all tasks are complete and verification passes:

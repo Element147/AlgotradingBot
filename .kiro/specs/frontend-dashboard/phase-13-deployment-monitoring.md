@@ -160,6 +160,26 @@ Deploy to production with Docker, configure monitoring with Sentry and Google An
   - Document deployment process and any issues encountered
   - _Requirements: 26.8, 26.9, 26.10, 26.11, 27.1-27.9_
 
+- [ ] 13.14 Backend - Verify Production Deployment Configuration
+  - **Location:** `AlgotradingBot/`
+  - **Note:** Backend deployment should already be configured from Phase 6 of backend project
+  - Verify `Dockerfile` exists and builds successfully
+  - Verify `docker-compose.yml` includes backend, PostgreSQL, and Kafka services
+  - Test Docker build: `cd AlgotradingBot && docker build -t algotrading-backend .`
+  - Verify production application.yml has correct settings
+  - Ensure database migrations are configured (Flyway or Liquibase)
+  - Verify health check endpoint `/actuator/health` works
+  - Verify metrics endpoint `/actuator/metrics` works
+  - Verify Prometheus endpoint `/actuator/prometheus` works (if monitoring configured)
+  - Test backend Docker container: `docker run -p 8080:8080 algotrading-backend`
+  - Verify logging is configured for production (JSON format, appropriate levels)
+  - Ensure sensitive data is externalized (environment variables, secrets)
+  - Test full stack with docker-compose: `docker-compose up -d`
+  - Verify backend connects to PostgreSQL and Kafka successfully
+  - Run smoke tests on all API endpoints
+  - No new backend implementation required unless deployment issues are found
+  - _Requirements: 26.8, 26.9, 26.10, 26.11, 27.1, 27.2, 27.3, 27.4, 27.5, 27.6, 27.7, 27.8, 27.9_
+
 ## Phase Completion Checklist
 - [ ] All tasks completed
 - [ ] Production environment variables configured

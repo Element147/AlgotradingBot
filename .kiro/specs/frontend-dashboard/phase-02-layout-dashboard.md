@@ -169,6 +169,30 @@ Before starting Phase 2, verify:
   - Do not proceed to Phase 3 until all verification passes and code is committed
   - _Requirements: 26.8, 26.9, 26.10_
 
+- [ ] 2.17 Backend - Implement Account and Dashboard API Endpoints
+  - **Location:** `AlgotradingBot/src/main/java/com/algotrader/bot/`
+  - Create `controller/AccountController.java` with REST endpoints
+  - Implement GET `/api/account/balance` endpoint with `?env=test|live` query parameter
+  - Return balance data: total, available, locked, assets breakdown (USDT, BTC, ETH)
+  - Implement GET `/api/account/performance` endpoint with timeframe parameter
+  - Return performance metrics: totalProfitLoss, profitLossPercentage, winRate, tradeCount, cashRatio
+  - Support timeframes: today, week, month, all-time
+  - Create `service/AccountService.java` to fetch balance from test DB or live exchange API
+  - Implement environment routing logic (test = PostgreSQL, live = Exchange API)
+  - Add `@Secured` annotation to require authentication
+  - Create GET `/api/positions/open` endpoint returning open positions with unrealized P&L
+  - Create GET `/api/trades/recent?limit=10` endpoint for recent completed trades
+  - Implement WebSocket endpoint `/ws` for real-time updates
+  - Create `websocket/WebSocketHandler.java` to handle connections and subscriptions
+  - Implement event publishing for `balance.updated`, `trade.executed`, `position.updated`
+  - Add environment-aware WebSocket channels (test.balance, live.balance, etc.)
+  - Write unit tests for AccountService (balance calculation, performance metrics)
+  - Write integration tests for AccountController endpoints
+  - Test WebSocket connection and event publishing
+  - _Requirements: 2.2, 2.3, 2.4, 2.8, 2.9, 2.10, 2.12, 2.13, 15.1, 15.2, 15.3, 15.4, 15.5_
+  - **Dependencies:** Add to `build.gradle.kts`:
+    - `implementation("org.springframework.boot:spring-boot-starter-websocket")`
+
 ## Phase Complete
 
 Once all tasks are complete and verification passes:

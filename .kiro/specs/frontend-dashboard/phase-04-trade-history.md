@@ -162,6 +162,29 @@ Before starting Phase 4, verify:
   - Do not proceed to Phase 5 until all verification passes and code is committed
   - _Requirements: 26.8, 26.9, 26.10_
 
+- [ ] 4.15 Backend - Implement Trade History API Endpoints
+  - **Location:** `AlgotradingBot/src/main/java/com/algotrader/bot/`
+  - **Note:** Trade history endpoint already exists in `controller/TradingStrategyController.java`
+  - Enhance existing GET `/api/trades/history` endpoint with pagination, sorting, filtering
+  - Add query parameters: page, pageSize (default 50), sortBy, sortDirection (asc/desc)
+  - Add filter parameters: startDate, endDate, symbol, status, strategyId
+  - Return paginated response with total count, current page, total pages
+  - Create GET `/api/trades/{id}` endpoint for detailed trade information
+  - Return complete trade data: entry/exit reasons, slippage breakdown, fees breakdown, risk metrics
+  - Calculate and include R-multiple: (exit - entry) / (entry - stopLoss)
+  - Create GET `/api/trades/statistics` endpoint for aggregate stats
+  - Return: totalTrades, winRate, averageWin, averageLoss, profitFactor
+  - Support filtering by date range, symbol, strategy
+  - Enhance `repository/TradeRepository.java` with custom query methods
+  - Add methods: findByFilters, findByIdWithDetails, calculateStatistics
+  - Use JPA Specifications for dynamic filtering
+  - Implement sorting with Sort parameter
+  - Add `@Secured` annotation to require authentication
+  - Write unit tests for trade filtering and sorting logic
+  - Write integration tests for trade history endpoints with various filter combinations
+  - Test pagination edge cases (empty results, single page, multiple pages)
+  - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9, 6.10, 7.1, 7.2, 7.3, 7.4, 7.5_
+
 ## Phase Complete
 
 Once all tasks are complete and verification passes:

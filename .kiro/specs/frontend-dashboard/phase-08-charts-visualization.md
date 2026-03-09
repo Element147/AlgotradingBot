@@ -111,6 +111,20 @@ Before starting Phase 8, verify:
   - Do not proceed to Phase 9 until all verification passes and code is committed
   - _Requirements: 26.8, 26.9, 26.10_
 
+- [ ] 8.10 Backend - Verify Chart Data Endpoints (No New Implementation Required)
+  - **Location:** `AlgotradingBot/src/main/java/com/algotrader/bot/`
+  - **Note:** This phase is primarily frontend-focused (chart rendering)
+  - Verify existing endpoints provide data in correct format for charts:
+    - GET `/api/account/performance` returns time-series data for equity curve
+    - GET `/api/backtest/{id}` returns equity curve and drawdown data points
+    - GET `/api/trades/history` returns data for trade distribution charts
+  - Ensure all endpoints return timestamps in ISO 8601 format
+  - Ensure all numeric values use consistent precision (8 decimal places for crypto)
+  - Add CORS headers if needed for chart export functionality
+  - Test data format compatibility with frontend chart libraries
+  - No new backend implementation required unless data format issues are found
+  - _Requirements: 22.1, 22.2, 22.3, 22.4, 22.5, 22.6, 22.7, 22.8_
+
 ## Phase Complete
 
 Once all tasks are complete and verification passes:

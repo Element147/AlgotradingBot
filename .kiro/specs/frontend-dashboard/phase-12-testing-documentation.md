@@ -171,6 +171,19 @@ Achieve 80%+ test coverage with unit, integration, E2E, and property-based tests
   - Do not proceed to Phase 13 until all verification passes and code is committed
   - _Requirements: 26.8, 26.9, 26.10, 25.1-25.10, 30.1-30.16_
 
+- [ ] 12.12 Backend - Verify Backend Test Coverage
+  - **Location:** `AlgotradingBot/src/test/java/com/algotrader/bot/`
+  - **Note:** Backend testing should already be complete from previous phases
+  - Run backend tests: `cd AlgotradingBot && ./gradlew test`
+  - Verify 100% test coverage for financial calculations (risk, position sizing, P&L)
+  - Verify integration tests exist for all REST API endpoints
+  - Verify unit tests exist for all service classes
+  - Check test reports in `AlgotradingBot/build/reports/tests/test/index.html`
+  - Review backend documentation in `AlgotradingBot/README.md`
+  - Ensure API documentation is complete in Swagger/OpenAPI
+  - No new backend implementation required unless test gaps are found
+  - _Requirements: 25.1, 25.2, 25.3, 25.4, 25.5, 25.6, 25.7, 25.8, 25.9, 25.10_
+
 ## Phase Completion Checklist
 - [ ] All tasks completed
 - [ ] 80%+ unit test coverage achieved

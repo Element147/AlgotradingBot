@@ -108,7 +108,7 @@
   - Verify login/logout flow works end-to-end
   - Check code coverage meets 80% threshold
 
-- [-] 1.13 Phase 1 Verification - Build, Run, and Test Application
+- [x] 1.13 Phase 1 Verification - Build, Run, and Test Application
   - Stop all running services using `.\stop-all.ps1`
   - Build both backend and frontend using `.\build-all.ps1`
   - Verify builds complete successfully without errors
@@ -124,6 +124,31 @@
     - `git push origin main` (or your branch)
   - Do not proceed to Phase 2 until all verification passes and code is committed
   - _Requirements: 26.8, 26.9, 26.10_
+
+- [ ] 1.14 Backend - Implement Authentication API Endpoints
+  - **Location:** `AlgotradingBot/src/main/java/com/algotrader/bot/`
+  - Create `controller/AuthController.java` with REST endpoints
+  - Implement POST `/api/auth/login` endpoint accepting username/password, returning JWT token
+  - Implement POST `/api/auth/logout` endpoint to invalidate tokens
+  - Implement POST `/api/auth/refresh` endpoint to refresh expired tokens
+  - Implement GET `/api/auth/me` endpoint to get current user info
+  - Create `entity/User.java` JPA entity with id, username, passwordHash, email, role (ADMIN/TRADER)
+  - Create `repository/UserRepository.java` extending JpaRepository
+  - Create `service/AuthService.java` with authentication logic
+  - Implement JWT token generation and validation using `io.jsonwebtoken:jjwt`
+  - Add password hashing with BCrypt
+  - Create `security/JwtAuthenticationFilter.java` to validate tokens on requests
+  - Configure Spring Security in `config/SecurityConfig.java`
+  - Add authentication endpoints to OpenAPI documentation
+  - Write unit tests for AuthService (token generation, validation, user authentication)
+  - Write integration tests for AuthController endpoints
+  - Test with Postman or curl to verify login/logout/refresh flows
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 24.2_
+  - **Dependencies:** Add to `build.gradle.kts`:
+    - `implementation("org.springframework.boot:spring-boot-starter-security")`
+    - `implementation("io.jsonwebtoken:jjwt-api:0.12.3")`
+    - `runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.3")`
+    - `runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.3")`
 
 ## Phase Complete
 

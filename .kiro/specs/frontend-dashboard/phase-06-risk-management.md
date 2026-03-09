@@ -164,6 +164,35 @@ Before starting Phase 6, verify:
   - Do not proceed to Phase 7 until all verification passes and code is committed
   - _Requirements: 26.8, 26.9, 26.10_
 
+- [ ] 6.15 Backend - Implement Risk Management API Endpoints
+  - **Location:** `AlgotradingBot/src/main/java/com/algotrader/bot/`
+  - **Note:** Risk management logic already exists in `risk/RiskManager.java`
+  - Create `controller/RiskController.java` with REST endpoints
+  - Implement GET `/api/risk/status` endpoint returning current risk metrics
+  - Return: currentDrawdown, maxDrawdownLimit, dailyLoss, dailyLossLimit, openRiskExposure, positionCorrelation
+  - Color-code thresholds: safe (< 70%), warning (70-90%), danger (> 90%)
+  - Implement GET `/api/risk/config` endpoint returning risk configuration
+  - Return: maxRiskPerTrade, maxDailyLossLimit, maxDrawdownLimit, maxOpenPositions, correlationLimits
+  - Implement PUT `/api/risk/config` endpoint to update risk configuration
+  - Validate maxRiskPerTrade between 1% and 5%
+  - Validate maxDailyLossLimit between 1% and 10%
+  - Validate maxDrawdownLimit between 10% and 50%
+  - Validate maxOpenPositions between 1 and 10
+  - Implement GET `/api/risk/circuit-breakers` endpoint listing active circuit breakers
+  - Return: id, triggerCondition, activationTime, resetTime, status (ACTIVE/INACTIVE)
+  - Implement POST `/api/risk/circuit-breaker/override` endpoint with password authentication
+  - Require password confirmation before allowing override
+  - Log all override attempts for audit trail
+  - Implement GET `/api/risk/alerts` endpoint for risk alerts log
+  - Return recent risk events with timestamp, type, severity, action taken
+  - Implement WebSocket event publishing for `risk.alert` events
+  - Publish high-priority alerts when thresholds are breached
+  - Add `@Secured` annotation to require authentication
+  - Write unit tests for risk validation logic (using BigDecimal precision)
+  - Write integration tests for risk configuration and circuit breaker override
+  - Test WebSocket risk.alert event publishing
+  - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.8, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8, 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 13.8, 13.9, 15.7_
+
 ## Phase Complete
 
 Once all tasks are complete and verification passes:
