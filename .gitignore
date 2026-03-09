@@ -61,3 +61,7 @@ frontend/.turbo/
 # Logs
 *.log
 logs/
+
+# Kiro settings with sensitive data
+.kiro/settings/models.json
+.kiro/settings/mcp.json
