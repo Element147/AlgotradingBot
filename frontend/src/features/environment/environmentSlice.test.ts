@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
 import environmentReducer, {
   setEnvironmentMode,
   setConnectedExchange,
@@ -39,7 +40,7 @@ describe('environmentSlice', () => {
         lastSyncTime: null,
       };
       
-      const state = environmentReducer(initialState, setEnvironmentMode('live'));
+      environmentReducer(initialState, setEnvironmentMode('live'));
       expect(localStorage.getItem('environment_mode')).toBe('live');
     });
   });

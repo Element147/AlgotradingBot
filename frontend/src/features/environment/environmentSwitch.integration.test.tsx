@@ -1,16 +1,18 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { server } from '@/tests/mocks/server';
+import { Provider } from 'react-redux';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 
-import { EnvironmentSwitch } from './EnvironmentSwitch';
+
 import environmentReducer from './environmentSlice';
-import authReducer from '@/features/auth/authSlice';
+import { EnvironmentSwitch } from './EnvironmentSwitch';
+
 import { accountApi } from '@/features/account/accountApi';
+import authReducer from '@/features/auth/authSlice';
 import { WebSocketManager } from '@/services/websocket';
+import { server } from '@/tests/mocks/server';
 
 const API_BASE_URL = 'http://localhost:8080';
 
@@ -118,7 +120,7 @@ describe('Environment Switching Integration Tests', () => {
     expect(testButton).toHaveAttribute('aria-pressed', 'true');
 
     // Trigger balance fetch in test mode
-    store.dispatch(accountApi.endpoints.getBalance.initiate());
+    void store.dispatch(accountApi.endpoints.getBalance.initiate());
     await waitFor(() => {
       expect(capturedHeaders).not.toBeNull();
     });
@@ -153,7 +155,7 @@ describe('Environment Switching Integration Tests', () => {
     capturedHeaders = null;
 
     // Trigger balance fetch in live mode (force refetch)
-    store.dispatch(accountApi.endpoints.getBalance.initiate(undefined, { forceRefetch: true }));
+    void store.dispatch(accountApi.endpoints.getBalance.initiate(undefined, { forceRefetch: true }));
     await waitFor(() => {
       expect(capturedHeaders).not.toBeNull();
     });
@@ -211,21 +213,20 @@ describe('Environment Switching Integration Tests', () => {
     );
 
     // Fetch balance in test mode
-    const testBalancePromise = store.dispatch(
-      accountApi.endpoints.getBalance.initiate()
-    );
-    const testBalanceResult = await testBalancePromise;
+    const testBalanceResult = await store
+      .dispatch(accountApi.endpoints.getBalance.initiate())
+      .unwrap();
 
     // Verify test environment data
-    expect(testBalanceResult.data).toEqual(
+    expect(testBalanceResult).toEqual(
       expect.objectContaining({
         total: '1000.00',
         available: '800.00',
         locked: '200.00',
       })
     );
-    expect(testBalanceResult.data?.assets).toHaveLength(1);
-    expect(testBalanceResult.data?.assets[0].symbol).toBe('USDT');
+    expect(testBalanceResult.assets).toHaveLength(1);
+    expect(testBalanceResult.assets[0].symbol).toBe('USDT');
 
     // Switch to live environment
     await user.click(screen.getByRole('button', { name: /live trading/i }));
@@ -239,25 +240,24 @@ describe('Environment Switching Integration Tests', () => {
     });
 
     // Fetch balance in live mode (force refetch to bypass cache)
-    const liveBalancePromise = store.dispatch(
-      accountApi.endpoints.getBalance.initiate(undefined, { forceRefetch: true })
-    );
-    const liveBalanceResult = await liveBalancePromise;
+    const liveBalanceResult = await store
+      .dispatch(accountApi.endpoints.getBalance.initiate(undefined, { forceRefetch: true }))
+      .unwrap();
 
     // Verify live environment data (different from test)
-    expect(liveBalanceResult.data).toEqual(
+    expect(liveBalanceResult).toEqual(
       expect.objectContaining({
         total: '5000.00',
         available: '4500.00',
         locked: '500.00',
       })
     );
-    expect(liveBalanceResult.data?.assets).toHaveLength(2);
-    expect(liveBalanceResult.data?.assets[0].symbol).toBe('USDT');
-    expect(liveBalanceResult.data?.assets[1].symbol).toBe('BTC');
+    expect(liveBalanceResult.assets).toHaveLength(2);
+    expect(liveBalanceResult.assets[0].symbol).toBe('USDT');
+    expect(liveBalanceResult.assets[1].symbol).toBe('BTC');
 
     // Verify data is different
-    expect(testBalanceResult.data?.total).not.toBe(liveBalanceResult.data?.total);
+    expect(testBalanceResult.total).not.toBe(liveBalanceResult.total);
   });
 
   /**
@@ -282,7 +282,7 @@ describe('Environment Switching Integration Tests', () => {
           onSwitch={(mode) => {
             // Simulate WebSocket reconnection on environment switch
             mockWebSocketManager.disconnect();
-            mockWebSocketManager.connect('mock-token', mode);
+            void mockWebSocketManager.connect('mock-token', mode);
           }}
         />
       </Provider>
@@ -405,11 +405,11 @@ describe('Environment Switching Integration Tests', () => {
     );
 
     // Fetch balance in test mode (first request)
-    await store.dispatch(accountApi.endpoints.getBalance.initiate());
+    await store.dispatch(accountApi.endpoints.getBalance.initiate()).unwrap();
     expect(requestCount).toBe(1);
 
     // Fetch again - should use cache (no new request)
-    await store.dispatch(accountApi.endpoints.getBalance.initiate());
+    await store.dispatch(accountApi.endpoints.getBalance.initiate()).unwrap();
     expect(requestCount).toBe(1); // Still 1, used cache
 
     // Switch to live environment
@@ -423,7 +423,7 @@ describe('Environment Switching Integration Tests', () => {
     });
 
     // Fetch balance in live mode - should make new request (different environment = different cache key)
-    await store.dispatch(accountApi.endpoints.getBalance.initiate());
+    await store.dispatch(accountApi.endpoints.getBalance.initiate()).unwrap();
     
     // Wait for request to complete
     await waitFor(() => {

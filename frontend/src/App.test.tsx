@@ -1,7 +1,7 @@
+import { configureStore } from '@reduxjs/toolkit';
 import { render, screen, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { configureStore } from '@reduxjs/toolkit';
 
 import App from './App';
 import authReducer from './features/auth/authSlice';
@@ -37,8 +37,7 @@ vi.mock('./features/settings/SettingsPage', () => ({
 }));
 
 describe('App Routing', () => {
-  const createMockStore = (isAuthenticated = false) => {
-    return configureStore({
+  const createMockStore = (isAuthenticated = false) => configureStore({
       reducer: {
         auth: authReducer,
         settings: settingsReducer,
@@ -63,7 +62,6 @@ describe('App Routing', () => {
         },
       },
     });
-  };
 
   beforeEach(() => {
     // Clear localStorage before each test

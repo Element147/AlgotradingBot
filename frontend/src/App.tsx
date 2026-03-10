@@ -1,11 +1,11 @@
 import { ThemeProvider, CssBaseline } from '@mui/material';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { lazy, Suspense, useMemo } from 'react';
 import { useSelector } from 'react-redux';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 import ErrorBoundary from './components/ErrorBoundary';
-import ProtectedRoute from './components/ProtectedRoute';
 import LoadingFallback from './components/LoadingFallback';
+import ProtectedRoute from './components/ProtectedRoute';
 import { selectTheme } from './features/settings/settingsSlice';
 import { lightTheme, darkTheme } from './theme/theme';
 import './App.css';

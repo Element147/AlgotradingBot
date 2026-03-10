@@ -1,10 +1,12 @@
 import { Box, Container, Grid, Typography } from '@mui/material';
-import { AppLayout } from '@/components/layout/AppLayout';
+
 import { BalanceCard } from './BalanceCard';
 import { PerformanceCard } from './PerformanceCard';
 import { PositionsList } from './PositionsList';
 import { RecentTradesList } from './RecentTradesList';
 import { SystemHealthIndicator } from './SystemHealthIndicator';
+
+import { AppLayout } from '@/components/layout/AppLayout';
 
 /**
  * DashboardPage Component
@@ -22,8 +24,7 @@ import { SystemHealthIndicator } from './SystemHealthIndicator';
  * - Real-time updates via RTK Query polling and WebSocket
  * - Wrapped in AppLayout with sidebar and header
  */
-const DashboardPage: React.FC = () => {
-  return (
+const DashboardPage: React.FC = () => (
     <AppLayout>
       <Container maxWidth="xl">
         <Box py={3}>
@@ -61,6 +62,5 @@ const DashboardPage: React.FC = () => {
       </Container>
     </AppLayout>
   );
-};
 
 export default DashboardPage;

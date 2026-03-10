@@ -128,7 +128,7 @@ class AccountControllerTest {
         mockMvc.perform(get("/api/account/balance")
                         .param("env", "test")
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 
     @Test

@@ -11,17 +11,18 @@
  * Requirements: 30.8
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi, beforeAll, afterAll } from 'vitest';
 import { configureStore } from '@reduxjs/toolkit';
-import { Provider } from 'react-redux';
-import { renderHook, waitFor } from '@testing-library/react';
-import { WebSocketManager, WebSocketEvent, setWebSocketManager } from '../../services/websocket';
-import { websocketMiddleware } from './websocketMiddleware';
-import websocketReducer from './websocketSlice';
+import { waitFor } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach, vi, beforeAll, afterAll } from 'vitest';
+
+import { WebSocketManager, type WebSocketEvent, type WebSocketLikeConstructor, setWebSocketManager } from '../../services/websocket';
+import { server } from '../../tests/mocks/server';
 import { accountApi } from '../account/accountApi';
 import authReducer from '../auth/authSlice';
 import environmentReducer from '../environment/environmentSlice';
-import { server } from '../../tests/mocks/server';
+
+import { websocketMiddleware } from './websocketMiddleware';
+import websocketReducer from './websocketSlice';
 
 /**
  * Mock WebSocket implementation for testing
@@ -134,7 +135,7 @@ describe('WebSocket Integration Tests', () => {
     mockWebSocketInstance = null;
 
     // Create WebSocket manager
-    wsManager = new WebSocketManager('ws://localhost:8080/ws', MockWebSocketConstructor as any);
+    wsManager = new WebSocketManager('ws://localhost:8080/ws', MockWebSocketConstructor as unknown as WebSocketLikeConstructor);
     
     // Set as singleton for middleware to use
     setWebSocketManager(wsManager);
@@ -753,6 +754,7 @@ describe('WebSocket Integration Tests', () => {
     });
   });
 });
+
 
 
 

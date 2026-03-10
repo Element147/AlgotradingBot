@@ -1,12 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { configureStore } from '@reduxjs/toolkit';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
-import { configureStore } from '@reduxjs/toolkit';
-import LoginPage from './LoginPage';
-import authReducer from './authSlice';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { authApi } from './authApi';
+import authReducer from './authSlice';
+import LoginPage from './LoginPage';
 
 const mockNavigate = vi.fn();
 
@@ -33,15 +34,13 @@ describe('LoginPage', () => {
     mockNavigate.mockClear();
   });
 
-  const renderLoginPage = () => {
-    return render(
+  const renderLoginPage = () => render(
       <Provider store={store}>
         <BrowserRouter>
           <LoginPage />
         </BrowserRouter>
       </Provider>
     );
-  };
 
   it('should render login form', () => {
     renderLoginPage();
@@ -102,8 +101,8 @@ describe('LoginPage', () => {
     const user = userEvent.setup();
     renderLoginPage();
 
-    const usernameInput = screen.getByLabelText(/username/i) as HTMLInputElement;
-    const passwordInput = screen.getByLabelText(/password/i) as HTMLInputElement;
+    const usernameInput = screen.getByLabelText(/username/i);
+    const passwordInput = screen.getByLabelText(/password/i);
 
     await user.type(usernameInput, 'testuser');
     await user.type(passwordInput, 'password123');
@@ -116,7 +115,7 @@ describe('LoginPage', () => {
     const user = userEvent.setup();
     renderLoginPage();
 
-    const rememberMeCheckbox = screen.getByLabelText(/remember me/i) as HTMLInputElement;
+    const rememberMeCheckbox = screen.getByLabelText(/remember me/i);
 
     expect(rememberMeCheckbox.checked).toBe(false);
 

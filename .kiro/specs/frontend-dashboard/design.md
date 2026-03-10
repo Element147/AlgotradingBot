@@ -1,4 +1,4 @@
-# Design Document: Frontend Dashboard
+﻿# Design Document: Frontend Dashboard
 
 ## Overview
 
@@ -23,7 +23,7 @@ repository-root/
 │   ├── tsconfig.json
 │   ├── Dockerfile
 │   └── ...
-├── docker-compose.yml       # Orchestrates both frontend and backend
+├── AlgotradingBot/compose.yaml       # Orchestrates both frontend and backend
 ├── .gitignore               # Includes frontend/node_modules, frontend/dist
 └── README.md
 ```
@@ -51,8 +51,8 @@ This monorepo structure allows for:
 - **Framework**: React 18+ with TypeScript (strict mode)
 - **Build Tool**: Vite
 - **State Management**: Redux Toolkit with RTK Query
-- **Routing**: React Router v6
-- **UI Library**: Material-UI (MUI) v5
+- **Routing**: React Router v7
+- **UI Library**: Material UI (MUI) v7
 - **Charting**: Recharts or Lightweight Charts
 - **WebSocket**: Native WebSocket API with reconnection logic
 - **Testing**: Vitest, React Testing Library, Playwright
@@ -3702,7 +3702,7 @@ server {
 
 **Docker Compose**
 ```yaml
-# docker-compose.yml (at repository root)
+# AlgotradingBot/compose.yaml (at repository root)
 version: '3.8'
 
 services:
@@ -5569,4 +5569,6 @@ The dashboard is designed for maintainability and extensibility:
 - **Documentation** supports onboarding and knowledge transfer
 
 This design provides a solid foundation for a scalable, secure, and user-friendly trading dashboard that will grow with the algorithmic trading bot system.
+
+
 

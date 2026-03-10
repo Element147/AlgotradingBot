@@ -9,11 +9,14 @@
  * - Circuit breaker status display
  */
 
-import { describe, it, expect, vi } from 'vitest';
 import { screen } from '@testing-library/react';
-import { renderWithProviders } from '@/tests/test-utils';
+import { describe, it, expect, vi } from 'vitest';
+
+
 import { SystemHealthIndicator } from './SystemHealthIndicator';
+
 import type { RootState } from '@/app/store';
+import { renderWithProviders } from '@/tests/test-utils';
 
 // Mock the formatters module
 vi.mock('@/utils/formatters', () => ({
@@ -230,7 +233,7 @@ describe('SystemHealthIndicator', () => {
         },
       };
 
-      const { container } = renderWithProviders(<SystemHealthIndicator />, { preloadedState });
+      renderWithProviders(<SystemHealthIndicator />, { preloadedState });
 
       // Check for success color class on chip
       const connectedChip = screen.getByText('Connected').closest('.MuiChip-root');
@@ -245,7 +248,7 @@ describe('SystemHealthIndicator', () => {
         },
       };
 
-      const { container } = renderWithProviders(<SystemHealthIndicator />, { preloadedState });
+      renderWithProviders(<SystemHealthIndicator />, { preloadedState });
 
       // Check for error color class on chip
       const errorChip = screen.getByText('Error').closest('.MuiChip-root');
@@ -257,7 +260,7 @@ describe('SystemHealthIndicator', () => {
         websocket: mockWebSocketState,
       };
 
-      const { container } = renderWithProviders(<SystemHealthIndicator />, { preloadedState });
+      renderWithProviders(<SystemHealthIndicator />, { preloadedState });
 
       // Check for success color class on chip
       const inactiveChip = screen.getByText('Inactive').closest('.MuiChip-root');
@@ -265,3 +268,4 @@ describe('SystemHealthIndicator', () => {
     });
   });
 });
+

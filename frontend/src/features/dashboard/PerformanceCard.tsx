@@ -1,5 +1,6 @@
 import { Card, CardContent, Typography, Box, ToggleButtonGroup, ToggleButton, CircularProgress, Alert } from '@mui/material';
 import { useState } from 'react';
+
 import { useGetPerformanceQuery, type PerformanceTimeframe } from '../account/accountApi';
 
 /**

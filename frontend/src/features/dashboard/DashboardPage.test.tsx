@@ -1,12 +1,13 @@
-import { describe, it, expect, vi } from 'vitest';
+import { configureStore } from '@reduxjs/toolkit';
 import { render, screen } from '@testing-library/react';
 import { Provider } from 'react-redux';
-import { configureStore } from '@reduxjs/toolkit';
-import DashboardPage from './DashboardPage';
+import { describe, expect, it, vi } from 'vitest';
+
 import authReducer from '../auth/authSlice';
 import environmentReducer from '../environment/environmentSlice';
 
-// Mock the child components
+import DashboardPage from './DashboardPage';
+
 vi.mock('./BalanceCard', () => ({
   BalanceCard: () => <div data-testid="balance-card">Balance Card</div>,
 }));
@@ -28,14 +29,14 @@ vi.mock('./SystemHealthIndicator', () => ({
 }));
 
 vi.mock('@/components/layout/AppLayout', () => ({
-  default: ({ children }: { children: React.ReactNode }) => (
+  AppLayout: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="app-layout">{children}</div>
   ),
 }));
 
 describe('DashboardPage', () => {
-  const createMockStore = () => {
-    return configureStore({
+  const createMockStore = () =>
+    configureStore({
       reducer: {
         auth: authReducer,
         environment: environmentReducer,
@@ -48,8 +49,8 @@ describe('DashboardPage', () => {
           isAuthenticated: true,
           loading: false,
           error: null,
-          sessionExpiry: null,
-          lastActivity: null,
+          sessionTimeout: null,
+          lastActivity: Date.now(),
         },
         environment: {
           mode: 'test',
@@ -58,7 +59,6 @@ describe('DashboardPage', () => {
         },
       },
     });
-  };
 
   it('should render dashboard page with title', () => {
     const store = createMockStore();

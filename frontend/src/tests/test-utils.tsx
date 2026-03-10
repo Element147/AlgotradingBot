@@ -1,15 +1,16 @@
-import { ReactElement } from 'react';
-import { render, RenderOptions } from '@testing-library/react';
-import { Provider } from 'react-redux';
 import { configureStore, PreloadedState } from '@reduxjs/toolkit';
+import { render, RenderOptions } from '@testing-library/react';
+import { ReactElement } from 'react';
+import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
+
+import type { RootState } from '@/app/store';
+import { accountApi } from '@/features/account/accountApi';
+import { authApi } from '@/features/auth/authApi';
 import authReducer from '@/features/auth/authSlice';
 import environmentReducer from '@/features/environment/environmentSlice';
 import settingsReducer from '@/features/settings/settingsSlice';
 import websocketReducer from '@/features/websocket/websocketSlice';
-import { authApi } from '@/features/auth/authApi';
-import { accountApi } from '@/features/account/accountApi';
-import type { RootState } from '@/app/store';
 
 /**
  * Custom render function that wraps components with Redux Provider and Router

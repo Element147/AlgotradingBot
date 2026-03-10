@@ -1,4 +1,4 @@
-# Phase 1: Project Setup and Authentication (Week 1)
+﻿# Phase 1: Project Setup and Authentication (Week 1)
 
 [← Back to Overview](./00-overview.md) | [Next: Phase 2 →](./phase-02-layout-dashboard.md)
 
@@ -19,7 +19,7 @@
   - Initialize Vite project with React-TS template inside `frontend/` directory
   - Configure TypeScript with strict mode enabled
   - Set up project directory structure (features, components, hooks, services, utils, types)
-  - Install core dependencies: React 18+, React Router v6, Redux Toolkit, RTK Query
+  - Install core dependencies: React 18+, React Router v7, Redux Toolkit, RTK Query
   - Configure path aliases in tsconfig.json and vite.config.ts
   - Update root .gitignore to include frontend/node_modules and frontend/dist
   - _Requirements: 26.1, 26.2, 28.2_
@@ -160,3 +160,5 @@ Once all tasks are complete and verification passes:
 - ✅ Changes committed to git
 
 **Next:** [Phase 2: Core Layout and Dashboard](./phase-02-layout-dashboard.md)
+
+

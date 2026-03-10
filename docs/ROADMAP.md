@@ -36,7 +36,7 @@ Deliverables:
 
 ### Frontend/dashboard completion
 
-- Finish Phase 2 verification and fix current lint/test failures
+- Preserve the passing Phase 2 baseline while expanding feature depth
 - Replace placeholder pages for strategies, trades, backtest, risk, and settings with real feature shells backed by APIs
 - Resolve current dashboard DTO mismatches
 

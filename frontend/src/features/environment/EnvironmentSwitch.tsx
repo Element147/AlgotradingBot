@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { Science as TestIcon, TrendingUp as LiveIcon } from '@mui/icons-material';
 import {
   ToggleButtonGroup,
   ToggleButton,
@@ -11,11 +11,13 @@ import {
   Box,
   Chip,
 } from '@mui/material';
-import { Science as TestIcon, TrendingUp as LiveIcon } from '@mui/icons-material';
+import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+
 import type { RootState } from '../../app/store';
-import { setEnvironmentMode, type EnvironmentMode } from './environmentSlice';
 import { accountApi } from '../account/accountApi';
+
+import { setEnvironmentMode, type EnvironmentMode } from './environmentSlice';
 
 interface EnvironmentSwitchProps {
   onSwitch?: (mode: EnvironmentMode) => void;
@@ -117,7 +119,7 @@ export const EnvironmentSwitch: React.FC<EnvironmentSwitchProps> = ({ onSwitch }
           <Button onClick={handleCancel} color="inherit">
             Cancel
           </Button>
-          <Button onClick={handleConfirm} color="primary" variant="contained" autoFocus>
+          <Button onClick={handleConfirm} color="primary" variant="contained">
             Confirm Switch
           </Button>
         </DialogActions>

@@ -1,5 +1,7 @@
 import { useSelector, useDispatch } from 'react-redux';
+
 import type { RootState } from '../../app/store';
+
 import { setEnvironmentMode, setConnectedExchange, updateSyncTime, type EnvironmentMode } from './environmentSlice';
 
 /**

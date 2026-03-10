@@ -132,7 +132,7 @@ const authSlice = createSlice({
           state.isAuthenticated = true;
           state.lastActivity = Date.now();
           state.sessionTimeout = Date.now() + SESSION_TIMEOUT_MS;
-        } catch (error) {
+        } catch {
           // Invalid session data, clear it
           sessionStorage.removeItem('auth_token');
           sessionStorage.removeItem('user');

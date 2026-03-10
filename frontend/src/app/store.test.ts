@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+
 import { store } from './store';
 
 describe('Redux Store Configuration', () => {
@@ -9,17 +10,14 @@ describe('Redux Store Configuration', () => {
   });
 
   it('should have dispatch function', () => {
-    expect(store.dispatch).toBeDefined();
     expect(typeof store.dispatch).toBe('function');
   });
 
   it('should have subscribe function', () => {
-    expect(store.subscribe).toBeDefined();
     expect(typeof store.subscribe).toBe('function');
   });
 
   it('should have getState function', () => {
-    expect(store.getState).toBeDefined();
     expect(typeof store.getState).toBe('function');
   });
 

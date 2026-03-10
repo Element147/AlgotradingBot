@@ -1,22 +1,63 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { configureStore } from '@reduxjs/toolkit';
 import { renderHook, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
-import { configureStore } from '@reduxjs/toolkit';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const { mockBaseQueryWithEnvironment } = vi.hoisted(() => ({
+  mockBaseQueryWithEnvironment: vi.fn(
+    (args: string | { url: string; params?: Record<string, string> }) => {
+      const url = typeof args === 'string' ? args : args.url;
+      const timeframe = typeof args === 'string' ? undefined : args.params?.timeframe;
+
+      if (url === '/api/account/balance') {
+        return Promise.resolve({
+          data: {
+            total: '10000.00',
+            available: '8500.00',
+            locked: '1500.00',
+            assets: [],
+            lastSync: '2026-03-09T12:00:00Z',
+          },
+        });
+      }
+
+      if (url === '/api/account/performance') {
+        return Promise.resolve({
+          data: {
+            totalProfitLoss: timeframe === 'all' ? '1250.00' : '125.00',
+            profitLossPercentage: timeframe === 'all' ? '12.50' : '1.25',
+            winRate: '58.3',
+            tradeCount: timeframe === 'all' ? 48 : 6,
+            cashRatio: '85.0',
+          },
+        });
+      }
+
+      return Promise.resolve({
+        error: {
+          status: 404,
+          data: { message: `Unhandled test query for ${url}` },
+        },
+      });
+    }
+  ),
+}));
+
+vi.mock('@/services/api', () => ({
+  baseQueryWithEnvironment: mockBaseQueryWithEnvironment,
+}));
 
 import { accountApi, useGetBalanceQuery, useGetPerformanceQuery } from './accountApi';
 
 import authReducer from '@/features/auth/authSlice';
 import environmentReducer from '@/features/environment/environmentSlice';
 
-// Mock the base query
-vi.mock('@/services/api', () => ({
-  baseQueryWithEnvironment: vi.fn(),
-}));
-
 describe('accountApi', () => {
   let store: ReturnType<typeof configureStore>;
 
   beforeEach(() => {
+    mockBaseQueryWithEnvironment.mockClear();
+
     store = configureStore({
       reducer: {
         auth: authReducer,
@@ -39,16 +80,18 @@ describe('accountApi', () => {
     });
 
     it('should provide Balance tag', () => {
-      // Tags are configured internally - verify endpoint exists
       expect(accountApi.endpoints.getBalance).toBeDefined();
     });
 
-    it('should query correct endpoint', () => {
+    it('should query correct endpoint', async () => {
       const { result } = renderHook(() => useGetBalanceQuery(), {
         wrapper: ({ children }) => <Provider store={store}>{children}</Provider>,
       });
 
-      expect(result.current).toBeDefined();
+      await waitFor(() => {
+        expect(result.current.isSuccess).toBe(true);
+      });
+      expect(mockBaseQueryWithEnvironment).toHaveBeenCalled();
     });
   });
 
@@ -63,19 +106,20 @@ describe('accountApi', () => {
     });
 
     it('should provide Performance tag', () => {
-      // Tags are configured internally - verify endpoint exists
       expect(accountApi.endpoints.getPerformance).toBeDefined();
     });
 
-    it('should accept timeframe parameter', () => {
+    it('should accept timeframe parameter', async () => {
       const { result } = renderHook(() => useGetPerformanceQuery('today'), {
         wrapper: ({ children }) => <Provider store={store}>{children}</Provider>,
       });
 
-      expect(result.current).toBeDefined();
+      await waitFor(() => {
+        expect(result.current.isSuccess).toBe(true);
+      });
     });
 
-    it('should accept all valid timeframe values', () => {
+    it('should accept all valid timeframe values', async () => {
       const timeframes: Array<'today' | 'week' | 'month' | 'all'> = [
         'today',
         'week',
@@ -83,13 +127,17 @@ describe('accountApi', () => {
         'all',
       ];
 
-      timeframes.forEach((timeframe) => {
-        const { result } = renderHook(() => useGetPerformanceQuery(timeframe), {
+      for (const timeframe of timeframes) {
+        const { result, unmount } = renderHook(() => useGetPerformanceQuery(timeframe), {
           wrapper: ({ children }) => <Provider store={store}>{children}</Provider>,
         });
 
-        expect(result.current).toBeDefined();
-      });
+        await waitFor(() => {
+          expect(result.current.isSuccess).toBe(true);
+        });
+
+        unmount();
+      }
     });
   });
 
@@ -99,7 +147,6 @@ describe('accountApi', () => {
     });
 
     it('should define Balance and Performance tag types', () => {
-      // Tag types are configured internally - verify API is configured
       expect(accountApi.reducerPath).toBe('accountApi');
       expect(accountApi.endpoints.getBalance).toBeDefined();
       expect(accountApi.endpoints.getPerformance).toBeDefined();
@@ -117,11 +164,14 @@ describe('accountApi', () => {
         wrapper: ({ children }) => <Provider store={store}>{children}</Provider>,
       });
 
-      // Trigger cache invalidation
+      await waitFor(() => {
+        expect(result.current.isSuccess).toBe(true);
+      });
+
       store.dispatch(accountApi.util.invalidateTags(['Balance']));
 
       await waitFor(() => {
-        expect(result.current).toBeDefined();
+        expect(mockBaseQueryWithEnvironment).toHaveBeenCalledTimes(2);
       });
     });
 
@@ -130,11 +180,14 @@ describe('accountApi', () => {
         wrapper: ({ children }) => <Provider store={store}>{children}</Provider>,
       });
 
-      // Trigger cache invalidation
+      await waitFor(() => {
+        expect(result.current.isSuccess).toBe(true);
+      });
+
       store.dispatch(accountApi.util.invalidateTags(['Performance']));
 
       await waitFor(() => {
-        expect(result.current).toBeDefined();
+        expect(mockBaseQueryWithEnvironment).toHaveBeenCalledTimes(2);
       });
     });
   });

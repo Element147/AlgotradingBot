@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
 import settingsReducer, {
   setTheme,
   setCurrency,
@@ -19,9 +20,10 @@ describe('settingsSlice', () => {
     localStorage.clear();
     
     // Mock Intl.DateTimeFormat
-    vi.spyOn(Intl, 'DateTimeFormat').mockReturnValue({
+    const dateTimeFormatMock = (() => ({
       resolvedOptions: () => ({ timeZone: 'America/New_York' }),
-    } as any);
+    })) as unknown as typeof Intl.DateTimeFormat;
+    vi.spyOn(Intl, 'DateTimeFormat').mockImplementation(dateTimeFormatMock);
 
     initialState = {
       theme: 'light',
@@ -153,29 +155,49 @@ describe('settingsSlice', () => {
   });
 
   describe('selectors', () => {
+    const createRootState = (settings: SettingsState): { settings: SettingsState } => ({
+      settings,
+    });
+
     it('should select theme from state', () => {
-      const state = { settings: { theme: 'dark' as const, currency: 'USD' as const, timezone: 'UTC' } };
+      const state = createRootState({
+        theme: 'dark',
+        currency: 'USD',
+        timezone: 'UTC',
+      });
       
-      expect(selectTheme(state as any)).toBe('dark');
+      expect(selectTheme(state)).toBe('dark');
     });
 
     it('should select currency from state', () => {
-      const state = { settings: { theme: 'light' as const, currency: 'BTC' as const, timezone: 'UTC' } };
+      const state = createRootState({
+        theme: 'light',
+        currency: 'BTC',
+        timezone: 'UTC',
+      });
       
-      expect(selectCurrency(state as any)).toBe('BTC');
+      expect(selectCurrency(state)).toBe('BTC');
     });
 
     it('should select timezone from state', () => {
-      const state = { settings: { theme: 'light' as const, currency: 'USD' as const, timezone: 'Asia/Tokyo' } };
+      const state = createRootState({
+        theme: 'light',
+        currency: 'USD',
+        timezone: 'Asia/Tokyo',
+      });
       
-      expect(selectTimezone(state as any)).toBe('Asia/Tokyo');
+      expect(selectTimezone(state)).toBe('Asia/Tokyo');
     });
 
     it('should select all settings from state', () => {
-      const settings = { theme: 'dark' as const, currency: 'BTC' as const, timezone: 'Europe/London' };
-      const state = { settings };
+      const settings: SettingsState = {
+        theme: 'dark',
+        currency: 'BTC',
+        timezone: 'Europe/London',
+      };
+      const state = createRootState(settings);
       
-      expect(selectSettings(state as any)).toEqual(settings);
+      expect(selectSettings(state)).toEqual(settings);
     });
   });
 });

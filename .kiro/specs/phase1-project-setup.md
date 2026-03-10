@@ -1,6 +1,6 @@
 ---
 title: "Phase 1: Project Setup & Configuration"
-status: not_started
+status: completed
 priority: critical
 dependencies: []
 ---
@@ -19,12 +19,12 @@ Establish the foundational infrastructure for the algorithmic trading bot includ
 ## Tasks
 
 ### Task 1.1: Gradle Build Configuration
-**Status:** not_started
+**Status:** completed
 **Estimated Time:** 30 minutes
 
 Create production-ready `build.gradle.kts` with:
-- Java 25 toolchain
-- Spring Boot 4.0.0+ (or latest 3.x stable)
+- Java 21 toolchain
+- Spring Boot 3.4.1
 - All required dependencies (Web, JPA, Actuator, PostgreSQL, Kafka, Resilience4j, Micrometer)
 - Test dependencies (JUnit 5, Mockito, Spring Boot Test)
 - Proper plugin configuration
@@ -40,7 +40,7 @@ Create production-ready `build.gradle.kts` with:
 ---
 
 ### Task 1.2: Spring Boot Configuration
-**Status:** not_started
+**Status:** completed
 **Estimated Time:** 20 minutes
 
 Create `application.yml` with:
@@ -62,7 +62,7 @@ Create `application.yml` with:
 ---
 
 ### Task 1.3: Structured Logging Configuration
-**Status:** not_started
+**Status:** completed
 **Estimated Time:** 15 minutes
 
 Create `logback-spring.xml` with:
@@ -83,7 +83,7 @@ Create `logback-spring.xml` with:
 ---
 
 ### Task 1.4: Database Entity - Trade
-**Status:** not_started
+**Status:** completed
 **Estimated Time:** 25 minutes
 
 Create `Trade.java` JPA entity with:
@@ -112,7 +112,7 @@ Create `Trade.java` JPA entity with:
 ---
 
 ### Task 1.5: Database Entity - BacktestResult
-**Status:** not_started
+**Status:** completed
 **Estimated Time:** 20 minutes
 
 Create `BacktestResult.java` JPA entity with:
@@ -136,7 +136,7 @@ Create `BacktestResult.java` JPA entity with:
 ---
 
 ### Task 1.6: Database Entity - Portfolio
-**Status:** not_started
+**Status:** completed
 **Estimated Time:** 15 minutes
 
 Create `Portfolio.java` JPA entity with:
@@ -159,7 +159,7 @@ Create `Portfolio.java` JPA entity with:
 ---
 
 ### Task 1.7: Database Entity - Account
-**Status:** not_started
+**Status:** completed
 **Estimated Time:** 20 minutes
 
 Create `Account.java` JPA entity with:
@@ -184,7 +184,7 @@ Create `Account.java` JPA entity with:
 ---
 
 ### Task 1.8: Spring Boot Application Entry Point
-**Status:** not_started
+**Status:** completed
 **Estimated Time:** 10 minutes
 
 Create `BotApplication.java` with:
@@ -204,12 +204,12 @@ Create `BotApplication.java` with:
 ---
 
 ### Task 1.9: Phase 1 Validation
-**Status:** not_started
+**Status:** completed
 **Estimated Time:** 15 minutes
 
 Validate Phase 1 completion:
-- Run `gradle clean build` - must succeed
-- Run `gradle bootRun` - application must start
+- Run `.\gradlew.bat clean build` - must succeed
+- Run `.\gradlew.bat bootRun` - application must start
 - Check `http://localhost:8080/actuator/health` - must return UP
 - Verify database tables are created
 - Check logs are in JSON format

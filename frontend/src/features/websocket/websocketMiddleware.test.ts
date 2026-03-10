@@ -8,11 +8,14 @@
  * - Tab visibility handling (pause when inactive)
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { configureStore } from '@reduxjs/toolkit';
-import { websocketMiddleware } from './websocketMiddleware';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+
 import { getWebSocketManager, WebSocketEvent } from '../../services/websocket';
 import { accountApi } from '../account/accountApi';
+
+import { websocketMiddleware } from './websocketMiddleware';
 import websocketReducer from './websocketSlice';
 
 // Mock the WebSocket manager
@@ -28,8 +31,7 @@ const subscribeMock = vi.fn((eventType: string, handler: (event: WebSocketEvent)
   };
 });
 
-vi.mock('../../services/websocket', () => {
-  return {
+vi.mock('../../services/websocket', () => ({
     getWebSocketManager: vi.fn(() => ({
       subscribe: subscribeMock,
       // Helper to trigger events in tests
@@ -40,8 +42,7 @@ vi.mock('../../services/websocket', () => {
         }
       },
     })),
-  };
-});
+  }));
 
 describe('websocketMiddleware', () => {
   let store: ReturnType<typeof configureStore>;

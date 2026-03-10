@@ -150,7 +150,7 @@ Before starting Phase 2, verify:
   - Check WebSocket connection and real-time updates
   - Ask user if questions arise
 
-- [ ] 2.16 Phase 2 Verification - Build, Run, and Test Application
+- [x] 2.16 Phase 2 Verification - Build, Run, and Test Application
   - Stop all running services using `.\stop-all.ps1`
   - Build both backend and frontend using `.\build-all.ps1`
   - Verify builds complete successfully without errors
@@ -205,3 +205,19 @@ Once all tasks are complete and verification passes:
 - ✅ Changes committed to git
 
 **Next:** [Phase 3: Strategy Management](./phase-03-strategy-management.md)
+
+### 2.16 Verification Progress (March 10, 2026)
+
+- Completed in this pass:
+  - Frontend lint is clean (`npm run lint`).
+  - Frontend full test suite is clean (`389/389` Vitest tests passing).
+  - Frontend production build is clean (`npm run build`).
+  - Backend verification is clean (`.\gradlew.bat check` passing).
+  - End-to-end local scripts pass successfully:
+    - `.\stop-all.ps1`
+    - `.\build-all.ps1`
+    - `.\run-all.ps1`
+  - Service health/access checks pass:
+    - Backend health: `http://localhost:8080/actuator/health` (200)
+    - Swagger UI: `http://localhost:8080/swagger-ui.html` (200)
+    - Frontend root/login: `http://localhost:5173` and `/login` (200)

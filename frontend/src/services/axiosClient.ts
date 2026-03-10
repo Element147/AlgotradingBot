@@ -24,6 +24,18 @@ const axiosClient: AxiosInstance = axios.create({
   withCredentials: true, // Include cookies for CORS
 });
 
+const toError = (error: unknown): Error =>
+  error instanceof Error ? error : new Error('Unknown error');
+
+const extractTokenFromRefreshResponse = (data: unknown): string | null => {
+  if (typeof data !== 'object' || data === null || !('token' in data)) {
+    return null;
+  }
+
+  const { token } = data as { token: unknown };
+  return typeof token === 'string' ? token : null;
+};
+
 /**
  * Request interceptor
  * 
@@ -44,7 +56,7 @@ axiosClient.interceptors.request.use(
     
     // Add environment mode header (test/live)
     // Note: environmentSlice will be implemented in task 2.3
-    const environment = (state as any).environment?.mode || 'test';
+    const environment = state.environment?.mode ?? 'test';
     if (config.headers) {
       config.headers['X-Environment'] = environment;
     }
@@ -77,7 +89,7 @@ axiosClient.interceptors.response.use(
   (response: AxiosResponse) => {
     // Log response in development
     if (import.meta.env.DEV) {
-      console.log('API Response:', {
+      console.warn('API Response:', {
         url: response.config.url,
         status: response.status,
         data: response.data,
@@ -108,8 +120,8 @@ axiosClient.interceptors.response.use(
             }
           );
           
-          if (response.data && response.data.token) {
-            const { token } = response.data;
+          const token = extractTokenFromRefreshResponse(response.data);
+          if (token) {
             
             // Update token in Redux store
             store.dispatch(setToken(token));
@@ -140,7 +152,7 @@ axiosClient.interceptors.response.use(
           window.location.href = '/login';
         }
         
-        return Promise.reject(refreshError);
+        return Promise.reject(toError(refreshError));
       }
     }
     
@@ -167,8 +179,19 @@ export const getErrorMessage = (error: unknown): string => {
   if (axios.isAxiosError(error)) {
     // Server responded with error
     if (error.response?.data) {
-      const {data} = error.response;
-      return data.message || data.error || 'An error occurred';
+      const { data } = error.response;
+      if (typeof data === 'object' && data !== null) {
+        const message = 'message' in data ? data.message : undefined;
+        const fallback = 'error' in data ? data.error : undefined;
+
+        if (typeof message === 'string') {
+          return message;
+        }
+        if (typeof fallback === 'string') {
+          return fallback;
+        }
+      }
+      return 'An error occurred';
     }
     
     // Network error or no response
@@ -207,7 +230,7 @@ export const retryWithBackoff = async <T>(
     try {
       return await fn();
     } catch (error) {
-      lastError = error as Error;
+      lastError = toError(error);
       
       // Don't retry on client errors (4xx)
       if (axios.isAxiosError(error) && error.response?.status && error.response.status >= 400 && error.response.status < 500) {
@@ -221,11 +244,11 @@ export const retryWithBackoff = async <T>(
       
       // Wait with exponential backoff
       const delay = baseDelay * Math.pow(2, attempt);
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
   
-  throw lastError;
+  throw lastError ?? new Error('Retry failed');
 };
 
 export default axiosClient;

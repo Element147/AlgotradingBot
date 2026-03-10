@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fc from 'fast-check';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+
 import { EnvironmentMode } from './environmentSlice';
 
 /**

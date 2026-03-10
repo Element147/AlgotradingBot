@@ -1,6 +1,7 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+
 import { AppLayout } from './AppLayout';
 
 // Mock child components
@@ -22,9 +23,7 @@ vi.mock('./Sidebar', () => ({
 
 const theme = createTheme();
 
-const renderWithTheme = (component: React.ReactElement) => {
-  return render(<ThemeProvider theme={theme}>{component}</ThemeProvider>);
-};
+const renderWithTheme = (component: React.ReactElement) => render(<ThemeProvider theme={theme}>{component}</ThemeProvider>);
 
 describe('AppLayout', () => {
   it('should render sidebar, header, and content area', () => {

@@ -1,10 +1,10 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { configureStore } from '@reduxjs/toolkit';
 import { renderHook } from '@testing-library/react';
 import { Provider } from 'react-redux';
-import { configureStore } from '@reduxjs/toolkit';
+import { describe, it, expect, beforeEach } from 'vitest';
 
-import { useAccountBalance } from './useAccountBalance';
 import { accountApi } from './accountApi';
+import { useAccountBalance } from './useAccountBalance';
 
 import authReducer from '@/features/auth/authSlice';
 import environmentReducer, { setEnvironmentMode } from '@/features/environment/environmentSlice';

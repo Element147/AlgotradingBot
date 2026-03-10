@@ -6,8 +6,8 @@ import { authApi } from '@/features/auth/authApi';
 import authReducer from '@/features/auth/authSlice';
 import environmentReducer from '@/features/environment/environmentSlice';
 import settingsReducer from '@/features/settings/settingsSlice';
-import websocketReducer from '@/features/websocket/websocketSlice';
 import { websocketMiddleware } from '@/features/websocket/websocketMiddleware';
+import websocketReducer from '@/features/websocket/websocketSlice';
 
 /**
  * Redux store configuration with RTK Query integration

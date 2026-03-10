@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   Box,
   Card,
@@ -14,6 +13,8 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
+import React from 'react';
+
 import { useGetOpenPositionsQuery } from '@/features/account/accountApi';
 import { formatCurrency, formatPercentage } from '@/utils/formatters';
 

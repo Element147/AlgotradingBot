@@ -2,19 +2,22 @@
  * useWebSocket Hook Tests
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { configureStore } from '@reduxjs/toolkit';
 import { renderHook, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
-import { configureStore } from '@reduxjs/toolkit';
-import { useWebSocketConnection, useWebSocketSubscription } from './useWebSocket';
-import websocketReducer from './websocketSlice';
-import authReducer from '../auth/authSlice';
-import environmentReducer from '../environment/environmentSlice';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import {
-  WebSocketEvent,
+  type WebSocketEvent,
   WebSocketManager,
+  type WebSocketLikeConstructor,
   setWebSocketManager,
 } from '../../services/websocket';
+import authReducer from '../auth/authSlice';
+import environmentReducer from '../environment/environmentSlice';
+
+import { useWebSocketConnection, useWebSocketSubscription } from './useWebSocket';
+import websocketReducer from './websocketSlice';
 
 // Mock WebSocket
 class MockWebSocket {
@@ -47,8 +50,8 @@ class MockWebSocket {
   }
 }
 
-const createTestStore = (initialState = {}) => {
-  return configureStore({
+const createTestStore = (initialState = {}) =>
+  configureStore({
     reducer: {
       auth: authReducer,
       environment: environmentReducer,
@@ -62,8 +65,8 @@ const createTestStore = (initialState = {}) => {
         isAuthenticated: true,
         loading: false,
         error: null,
-        sessionExpiry: null,
-        lastActivity: null,
+        sessionTimeout: Date.now() + 30 * 60 * 1000,
+        lastActivity: Date.now(),
       },
       environment: {
         mode: 'test',
@@ -74,12 +77,16 @@ const createTestStore = (initialState = {}) => {
       ...initialState,
     },
   });
-};
 
 describe('useWebSocketConnection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    setWebSocketManager(new WebSocketManager('ws://localhost:8080/ws', MockWebSocket as any));
+    setWebSocketManager(
+      new WebSocketManager(
+        'ws://localhost:8080/ws',
+        MockWebSocket as unknown as WebSocketLikeConstructor
+      )
+    );
   });
 
   afterEach(() => {
@@ -111,7 +118,6 @@ describe('useWebSocketConnection', () => {
       expect(result.current.isConnected).toBe(true);
     });
 
-    // Remove token
     store.dispatch({ type: 'auth/logout' });
     rerender();
 
@@ -120,7 +126,7 @@ describe('useWebSocketConnection', () => {
     });
   });
 
-  it('should provide reconnect function', async () => {
+  it('should provide reconnect function', () => {
     const store = createTestStore();
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <Provider store={store}>{children}</Provider>
@@ -143,7 +149,6 @@ describe('useWebSocketConnection', () => {
       expect(result.current.isConnected).toBe(true);
     });
 
-    // Change environment
     store.dispatch({ type: 'environment/setEnvironmentMode', payload: 'live' });
     rerender();
 
@@ -156,14 +161,19 @@ describe('useWebSocketConnection', () => {
 describe('useWebSocketSubscription', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    setWebSocketManager(new WebSocketManager('ws://localhost:8080/ws', MockWebSocket as any));
+    setWebSocketManager(
+      new WebSocketManager(
+        'ws://localhost:8080/ws',
+        MockWebSocket as unknown as WebSocketLikeConstructor
+      )
+    );
   });
 
   afterEach(() => {
     setWebSocketManager(null);
   });
 
-  it('should subscribe to event type', async () => {
+  it('should subscribe to event type', () => {
     const store = createTestStore();
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <Provider store={store}>{children}</Provider>
@@ -175,11 +185,10 @@ describe('useWebSocketSubscription', () => {
       wrapper,
     });
 
-    // Handler should be registered
     expect(handler).not.toHaveBeenCalled();
   });
 
-  it('should call handler when event is received', async () => {
+  it('should call handler when event is received', () => {
     const store = createTestStore();
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <Provider store={store}>{children}</Provider>
@@ -197,12 +206,10 @@ describe('useWebSocketSubscription', () => {
       wrapper,
     });
 
-    // Simulate event (would need to trigger through WebSocket manager)
-    // This is a simplified test
     expect(event.type).toBe('balance.updated');
   });
 
-  it('should unsubscribe on unmount', async () => {
+  it('should unsubscribe on unmount', () => {
     const store = createTestStore();
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <Provider store={store}>{children}</Provider>
@@ -216,11 +223,9 @@ describe('useWebSocketSubscription', () => {
     );
 
     unmount();
-
-    // Handler should be unregistered
   });
 
-  it('should support wildcard subscriptions', async () => {
+  it('should support wildcard subscriptions', () => {
     const store = createTestStore();
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <Provider store={store}>{children}</Provider>
@@ -229,7 +234,5 @@ describe('useWebSocketSubscription', () => {
     const handler = vi.fn();
 
     renderHook(() => useWebSocketSubscription('*', handler), { wrapper });
-
-    // Handler should receive all events
   });
 });

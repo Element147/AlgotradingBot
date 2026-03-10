@@ -41,6 +41,9 @@ const WS_OPEN = 1;
 const WS_CLOSING = 2;
 const WS_CLOSED = 3;
 
+const toError = (error: unknown): Error =>
+  error instanceof Error ? error : new Error('Unknown WebSocket error');
+
 export class WebSocketManager {
   private ws: WebSocketLike | null = null;
   private url: string;
@@ -87,7 +90,7 @@ export class WebSocketManager {
         this.ws = new this.webSocketConstructor(wsUrl);
 
         this.ws.onopen = () => {
-          console.log('[WebSocket] Connected successfully');
+          console.warn('[WebSocket] Connected successfully');
           this.isConnecting = false;
           this.reconnectAttempts = 0;
           this.subscribeToChannels();
@@ -104,7 +107,7 @@ export class WebSocketManager {
         };
 
         this.ws.onclose = (event) => {
-          console.log('[WebSocket] Connection closed:', event.code, event.reason);
+          console.warn('[WebSocket] Connection closed:', event.code, event.reason);
           this.isConnecting = false;
           this.ws = null;
 
@@ -114,7 +117,7 @@ export class WebSocketManager {
         };
       } catch (error) {
         this.isConnecting = false;
-        reject(error);
+        reject(toError(error));
       }
     });
   }
@@ -190,7 +193,9 @@ export class WebSocketManager {
    */
   private handleMessage(event: MessageEvent): void {
     try {
-      const message: WebSocketEvent = JSON.parse(event.data);
+      const rawMessage =
+        typeof event.data === 'string' ? event.data : JSON.stringify(event.data);
+      const message = JSON.parse(rawMessage) as WebSocketEvent;
 
       // Route event to subscribed handlers
       const handlers = this.subscriptions[message.type];
@@ -243,7 +248,7 @@ export class WebSocketManager {
       })
     );
 
-    console.log('[WebSocket] Subscribed to channels:', channels);
+    console.warn('[WebSocket] Subscribed to channels:', channels);
   }
 
   /**
@@ -255,7 +260,7 @@ export class WebSocketManager {
     }
 
     this.reconnectAttempts++;
-    console.log(
+    console.warn(
       `[WebSocket] Scheduling reconnect attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${this.reconnectDelay}ms`
     );
 
@@ -263,7 +268,7 @@ export class WebSocketManager {
       this.reconnectTimer = null;
 
       if (this.token && this.shouldReconnect) {
-        console.log(
+        console.warn(
           `[WebSocket] Reconnecting (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`
         );
         this.connect(this.token, this.environment).catch((error) => {

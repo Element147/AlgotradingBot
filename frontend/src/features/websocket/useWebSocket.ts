@@ -5,11 +5,15 @@
 
 import { useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+
 import {
   getWebSocketManager,
   type WebSocketEventType,
   type WebSocketEventHandler,
 } from '../../services/websocket';
+import { selectAuthToken } from '../auth/authSlice';
+import { selectEnvironmentMode } from '../environment/environmentSlice';
+
 import {
   connectionStarted,
   connectionEstablished,
@@ -18,8 +22,6 @@ import {
   eventReceived,
   selectIsConnected,
 } from './websocketSlice';
-import { selectAuthToken } from '../auth/authSlice';
-import { selectEnvironmentMode } from '../environment/environmentSlice';
 
 /**
  * Hook to manage WebSocket connection lifecycle
@@ -56,8 +58,9 @@ export const useWebSocketConnection = () => {
         ];
         dispatch(connectionEstablished(channels));
       })
-      .catch((error) => {
-        dispatch(connectionFailed(error.message || 'Connection failed'));
+      .catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : 'Connection failed';
+        dispatch(connectionFailed(message));
       });
 
     // Cleanup on unmount or token/environment change
@@ -82,8 +85,9 @@ export const useWebSocketConnection = () => {
           ];
           dispatch(connectionEstablished(channels));
         })
-        .catch((error) => {
-          dispatch(connectionFailed(error.message || 'Connection failed'));
+        .catch((error: unknown) => {
+          const message = error instanceof Error ? error.message : 'Connection failed';
+          dispatch(connectionFailed(message));
         });
     }
   }, [token, environment, dispatch, wsManager]);
@@ -121,5 +125,7 @@ export const useWebSocketSubscription = (
     };
   }, [eventType, handler, dispatch, wsManager]);
 };
+
+
 
 

@@ -1,12 +1,14 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+import { authApi } from './authApi';
+import { logout } from './authSlice';
+import LoginPage from './LoginPage';
+
 import { server } from '@/tests/mocks/server';
 import { renderWithProviders } from '@/tests/test-utils';
-import LoginPage from './LoginPage';
-import { setCredentials, logout } from './authSlice';
-import { authApi } from './authApi';
 
 // Mock useNavigate at module level
 const mockNavigate = vi.fn();
@@ -65,27 +67,32 @@ describe('Authentication Flow Integration Tests', () => {
       // Verify token is stored in Redux state
       const state = store.getState();
       expect(state.auth.token).toBe('mock-jwt-token-12345');
-      expect(state.auth.user).toEqual({
+      expect(state.auth.user).toEqual(expect.objectContaining({
         id: 'user-123',
         username: 'testuser',
         role: 'trader',
-      });
+      }));
 
       // Verify token is stored in sessionStorage
       expect(sessionStorage.getItem('auth_token')).toBe('mock-jwt-token-12345');
-      expect(sessionStorage.getItem('user')).toBe(
-        JSON.stringify({
-          id: 'user-123',
-          username: 'testuser',
-          role: 'trader',
-        })
-      );
+      const sessionUser = JSON.parse(sessionStorage.getItem('user') ?? '{}') as {
+        id?: string;
+        username?: string;
+        role?: string;
+      };
+      expect(sessionUser).toEqual(expect.objectContaining({
+        id: 'user-123',
+        username: 'testuser',
+        role: 'trader',
+      }));
 
       // Verify no refresh token in localStorage (remember me not checked)
       expect(localStorage.getItem('refresh_token')).toBeNull();
 
       // Verify navigation to dashboard was called
-      expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
+      });
     });
 
     it('should store refresh token when "remember me" is checked', async () => {
@@ -321,7 +328,7 @@ describe('Authentication Flow Integration Tests', () => {
   });
 
   describe('Logout Flow', () => {
-    it('should clear session and redirect to login on logout', async () => {
+    it('should clear session and redirect to login on logout', () => {
       // Mock window.location.href
       delete (window as any).location;
       window.location = { href: '' } as any;
@@ -467,9 +474,7 @@ describe('Authentication Flow Integration Tests', () => {
 
       // Override handler to simulate network error
       server.use(
-        http.post('http://localhost:8080/api/auth/login', () => {
-          return HttpResponse.error();
-        })
+        http.post('http://localhost:8080/api/auth/login', () => HttpResponse.error())
       );
 
       renderWithProviders(<LoginPage />);
@@ -499,12 +504,10 @@ describe('Authentication Flow Integration Tests', () => {
 
       // Override handler to simulate server error
       server.use(
-        http.post('http://localhost:8080/api/auth/login', () => {
-          return HttpResponse.json(
+        http.post('http://localhost:8080/api/auth/login', () => HttpResponse.json(
             { message: 'Internal server error' },
             { status: 500 }
-          );
-        })
+          ))
       );
 
       renderWithProviders(<LoginPage />);

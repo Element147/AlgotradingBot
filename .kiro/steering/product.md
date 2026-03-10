@@ -20,7 +20,7 @@ Any future live-trading consideration must be backed by reproducible evidence. A
 - Max Drawdown < 25%
 - Statistical significance (p-value < 0.05)
 - 2+ years backtest validation
-- Monte Carlo confidence â‰Ą 95%
+- Monte Carlo confidence ≥ 95%
 
 ## Delivery Phases
 1. Phase 1: Solid local platform, auth, dashboard, and research foundations
@@ -34,4 +34,5 @@ Any future live-trading consideration must be backed by reproducible evidence. A
 - Transaction costs: 0.1% taker fee + 3 bips slippage (always included)
 - Honest expectations: no returns should be implied without reproducible evidence
 - NO curve-fitting, over-optimization, or over-leveraging
+
 

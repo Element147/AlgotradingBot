@@ -1,4 +1,4 @@
-# Phase 13: Deployment and Monitoring (Week 13)
+﻿# Phase 13: Deployment and Monitoring (Week 13)
 
 [← Previous: Phase 12 - Testing & Documentation](./phase-12-testing-documentation.md)
 
@@ -52,7 +52,7 @@ Deploy to production with Docker, configure monitoring with Sentry and Google An
   - Configure nginx for SPA routing
   - Build Docker image
   - Test Docker container locally
-  - Update root docker-compose.yml to include frontend service
+  - Update root AlgotradingBot/compose.yaml to include frontend service
   - Configure frontend to connect to backend service
   - _Requirements: 26.12_
 
@@ -164,7 +164,7 @@ Deploy to production with Docker, configure monitoring with Sentry and Google An
   - **Location:** `AlgotradingBot/`
   - **Note:** Backend deployment should already be configured from Phase 6 of backend project
   - Verify `Dockerfile` exists and builds successfully
-  - Verify `docker-compose.yml` includes backend, PostgreSQL, and Kafka services
+  - Verify `AlgotradingBot/compose.yaml` includes backend, PostgreSQL, and Kafka services
   - Test Docker build: `cd AlgotradingBot && docker build -t algotrading-backend .`
   - Verify production application.yml has correct settings
   - Ensure database migrations are configured (Flyway or Liquibase)
@@ -202,3 +202,5 @@ Deploy to production with Docker, configure monitoring with Sentry and Google An
 ---
 
 [← Previous: Phase 12 - Testing & Documentation](./phase-12-testing-documentation.md) | [Back to Overview](./00-overview.md)
+
+

@@ -1,9 +1,11 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { configureStore } from '@reduxjs/toolkit';
 import { render, screen, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import { configureStore } from '@reduxjs/toolkit';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
 import ProtectedRoute from './ProtectedRoute';
+
 import authReducer, { AuthState } from '@/features/auth/authSlice';
 
 describe('ProtectedRoute', () => {
@@ -12,8 +14,7 @@ describe('ProtectedRoute', () => {
     vi.clearAllTimers();
   });
 
-  const createStore = (authState: Partial<AuthState>) => {
-    return configureStore({
+  const createStore = (authState: Partial<AuthState>) => configureStore({
       reducer: {
         auth: authReducer,
       },
@@ -31,9 +32,8 @@ describe('ProtectedRoute', () => {
         },
       },
     });
-  };
 
-  it('should show loading state while checking authentication', async () => {
+  it('should show loading state while checking authentication', () => {
     const store = createStore({
       isAuthenticated: false,
       loading: true,

@@ -1,5 +1,4 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { RootState } from '@/app/store';
 
 /**
  * Settings state interface
@@ -88,10 +87,12 @@ const settingsSlice = createSlice({
 export const { setTheme, setCurrency, setTimezone, resetSettings } = settingsSlice.actions;
 
 // Export selectors
-export const selectTheme = (state: RootState) => state.settings.theme;
-export const selectCurrency = (state: RootState) => state.settings.currency;
-export const selectTimezone = (state: RootState) => state.settings.timezone;
-export const selectSettings = (state: RootState) => state.settings;
+type SettingsRootState = { settings: SettingsState };
+
+export const selectTheme = (state: SettingsRootState) => state.settings.theme;
+export const selectCurrency = (state: SettingsRootState) => state.settings.currency;
+export const selectTimezone = (state: SettingsRootState) => state.settings.timezone;
+export const selectSettings = (state: SettingsRootState) => state.settings;
 
 // Export reducer
 export default settingsSlice.reducer;

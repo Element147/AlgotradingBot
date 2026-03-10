@@ -1,4 +1,4 @@
-# Implementation Plan: Frontend Dashboard
+﻿# Implementation Plan: Frontend Dashboard
 
 ## Overview
 
@@ -32,7 +32,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Initialize Vite project with React-TS template inside `frontend/` directory
     - Configure TypeScript with strict mode enabled
     - Set up project directory structure (features, components, hooks, services, utils, types)
-    - Install core dependencies: React 18+, React Router v6, Redux Toolkit, RTK Query
+    - Install core dependencies: React 18+, React Router v7, Redux Toolkit, RTK Query
     - Configure path aliases in tsconfig.json and vite.config.ts
     - Update root .gitignore to include frontend/node_modules and frontend/dist
     - _Requirements: 26.1, 26.2, 28.2_
@@ -1452,7 +1452,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Configure nginx for SPA routing
     - Build Docker image
     - Test Docker container locally
-    - Update root docker-compose.yml to include frontend service
+    - Update root AlgotradingBot/compose.yaml to include frontend service
     - Configure frontend to connect to backend service
     - _Requirements: 26.12_
   
@@ -1604,3 +1604,5 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
 - Rollback capability implemented
 - Error tracking and monitoring active
 - Performance monitoring dashboards created
+
+

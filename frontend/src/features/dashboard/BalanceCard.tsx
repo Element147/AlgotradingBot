@@ -1,5 +1,6 @@
-import { Card, CardContent, Typography, Box, IconButton, CircularProgress, Alert } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import { Card, CardContent, Typography, Box, IconButton, CircularProgress, Alert } from '@mui/material';
+
 import { useGetBalanceQuery } from '../account/accountApi';
 
 /**
@@ -21,7 +22,7 @@ export const BalanceCard: React.FC = () => {
   const { data: balance, isLoading, error, refetch } = useGetBalanceQuery();
 
   const handleRefresh = () => {
-    refetch();
+    void refetch();
   };
 
   if (isLoading) {

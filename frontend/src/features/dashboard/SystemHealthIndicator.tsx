@@ -10,8 +10,15 @@
  * Requirements: 2.14, 2.15, 2.16
  */
 
-import React from 'react';
-import { useSelector } from 'react-redux';
+import {
+  CheckCircle as CheckCircleIcon,
+  Error as ErrorIcon,
+  Warning as WarningIcon,
+  Wifi as WifiIcon,
+  WifiOff as WifiOffIcon,
+  Shield as ShieldIcon,
+  Update as UpdateIcon,
+} from '@mui/icons-material';
 import {
   Box,
   Card,
@@ -22,16 +29,10 @@ import {
   Tooltip,
   CircularProgress,
 } from '@mui/material';
-import {
-  CheckCircle as CheckCircleIcon,
-  Error as ErrorIcon,
-  Warning as WarningIcon,
-  Wifi as WifiIcon,
-  WifiOff as WifiOffIcon,
-  Shield as ShieldIcon,
-  Update as UpdateIcon,
-} from '@mui/icons-material';
+import React from 'react';
+import { useSelector } from 'react-redux';
 
+import { useGetBalanceQuery } from '../account/accountApi';
 import {
   selectIsConnected,
   selectIsConnecting,
@@ -39,7 +40,7 @@ import {
   selectReconnectAttempts,
   selectLastEventTime,
 } from '../websocket/websocketSlice';
-import { useGetBalanceQuery } from '../account/accountApi';
+
 import { formatDistanceToNow } from '@/utils/formatters';
 
 /**

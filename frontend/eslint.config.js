@@ -16,7 +16,7 @@ export default tseslint.config(
       ecmaVersion: 2020,
       globals: globals.browser,
       parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        project: ['./tsconfig.node.json', './tsconfig.eslint.json'],
         tsconfigRootDir: import.meta.dirname,
       },
     },
@@ -41,7 +41,6 @@ export default tseslint.config(
         'warn',
         { allowConstantExport: true },
       ],
-      // Airbnb-inspired rules
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       'no-debugger': 'warn',
       'prefer-const': 'error',
@@ -63,8 +62,8 @@ export default tseslint.config(
       ],
       'import/no-duplicates': 'error',
       'import/newline-after-import': 'error',
-      'react/prop-types': 'off', // Using TypeScript for prop validation
-      'react/react-in-jsx-scope': 'off', // Not needed in React 17+
+      'react/prop-types': 'off',
+      'react/react-in-jsx-scope': 'off',
       'react/jsx-uses-react': 'off',
       '@typescript-eslint/no-unused-vars': [
         'error',
@@ -73,10 +72,16 @@ export default tseslint.config(
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
-      // Relax rules for test files
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-call': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',
+    },
+  },
+  {
+    files: ['**/*.test.{ts,tsx}', 'src/tests/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      'react-refresh/only-export-components': 'off',
     },
   }
 )

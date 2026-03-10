@@ -11,8 +11,10 @@
  */
 
 import type { Middleware } from '@reduxjs/toolkit';
+
 import { getWebSocketManager, type WebSocketEvent, type WebSocketEventType } from '../../services/websocket';
 import { accountApi } from '../account/accountApi';
+
 import { eventReceived } from './websocketSlice';
 
 /**
@@ -46,7 +48,7 @@ export const websocketMiddleware: Middleware = (storeApi) => {
     isTabActive = !document.hidden;
     
     if (isTabActive) {
-      console.log('[WebSocket Middleware] Tab became active, resuming event processing');
+      console.warn('[WebSocket Middleware] Tab became active, resuming event processing');
       // Process any pending throttled events when tab becomes active
       throttleStates.forEach((state) => {
         if (state.pendingEvent) {
@@ -55,7 +57,7 @@ export const websocketMiddleware: Middleware = (storeApi) => {
         }
       });
     } else {
-      console.log('[WebSocket Middleware] Tab became inactive, pausing event processing');
+      console.warn('[WebSocket Middleware] Tab became inactive, pausing event processing');
     }
   };
 
@@ -76,7 +78,7 @@ export const websocketMiddleware: Middleware = (storeApi) => {
     // Handle different event types
     switch (event.type) {
       case 'balance.updated':
-        console.log('[WebSocket Middleware] Balance updated, invalidating cache');
+        console.warn('[WebSocket Middleware] Balance updated, invalidating cache');
         // Invalidate balance cache to trigger refetch
         dispatch(
           accountApi.util.invalidateTags(['Balance'])
@@ -84,7 +86,7 @@ export const websocketMiddleware: Middleware = (storeApi) => {
         break;
 
       case 'trade.executed':
-        console.log('[WebSocket Middleware] Trade executed, invalidating caches');
+        console.warn('[WebSocket Middleware] Trade executed, invalidating caches');
         // Invalidate both balance and performance caches
         dispatch(
           accountApi.util.invalidateTags(['Balance', 'Performance'])
@@ -92,7 +94,7 @@ export const websocketMiddleware: Middleware = (storeApi) => {
         break;
 
       case 'position.updated':
-        console.log('[WebSocket Middleware] Position updated, invalidating balance cache');
+        console.warn('[WebSocket Middleware] Position updated, invalidating balance cache');
         // Invalidate balance cache (positions affect available balance)
         dispatch(
           accountApi.util.invalidateTags(['Balance'])
@@ -100,13 +102,13 @@ export const websocketMiddleware: Middleware = (storeApi) => {
         break;
 
       case 'strategy.status':
-        console.log('[WebSocket Middleware] Strategy status updated');
+        console.warn('[WebSocket Middleware] Strategy status updated');
         // Future: Dispatch strategy-specific actions
         // For now, just log the event
         break;
 
       case 'risk.alert':
-        console.log('[WebSocket Middleware] Risk alert received:', event.data);
+        console.warn('[WebSocket Middleware] Risk alert received:', event.data);
         // Future: Dispatch notification action
         // For now, just log the event
         break;
@@ -179,7 +181,7 @@ export const websocketMiddleware: Middleware = (storeApi) => {
   const handleWebSocketEvent = (event: WebSocketEvent) => {
     // Pause event processing when tab is inactive
     if (!isTabActive) {
-      console.log('[WebSocket Middleware] Tab inactive, deferring event:', event.type);
+      console.warn('[WebSocket Middleware] Tab inactive, deferring event:', event.type);
       
       // Store the event to process when tab becomes active
       const state = throttleStates.get(event.type);
@@ -213,12 +215,12 @@ export const websocketMiddleware: Middleware = (storeApi) => {
     wsManager.subscribe(eventType, handleWebSocketEvent);
   });
 
-  console.log('[WebSocket Middleware] Initialized and subscribed to events');
+  console.warn('[WebSocket Middleware] Initialized and subscribed to events');
 
   // Return the middleware function
-  return (next) => (action) => {
+  return (next) => (action) => 
     // Pass all actions through
-    return next(action);
-  };
+     next(action)
+  ;
 };
 

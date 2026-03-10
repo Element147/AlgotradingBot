@@ -25,14 +25,14 @@ const baseQuery = fetchBaseQuery({
     
     // Add authentication token if available
     // Note: authSlice will be implemented in task 1.4
-    const token = (state as any).auth?.token;
+    const token = state.auth?.token;
     if (token) {
       headers.set('Authorization', `Bearer ${token}`);
     }
     
     // Add environment mode header (test/live)
     // Note: environmentSlice will be implemented in task 2.3
-    const environment = (state as any).environment?.mode || 'test';
+    const environment = state.environment?.mode ?? 'test';
     headers.set('X-Environment', environment);
     
     // Add content type for JSON requests
@@ -84,7 +84,7 @@ export const baseQueryWithRetry: BaseQueryFn<
     // Network error or 5xx - retry with exponential backoff
     attempt++;
     const delay = Math.pow(2, attempt - 1) * 1000; // 1s, 2s, 4s
-    await new Promise(resolve => setTimeout(resolve, delay));
+    await new Promise((resolve) => setTimeout(resolve, delay));
   }
   
   // Fallback (should never reach here)

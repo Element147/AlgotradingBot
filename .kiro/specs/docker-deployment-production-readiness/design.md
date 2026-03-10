@@ -1,4 +1,4 @@
-# Design Document: Docker Deployment & Production Readiness
+﻿# Design Document: Docker Deployment & Production Readiness
 
 ## Overview
 
@@ -22,15 +22,15 @@ The system orchestrates three core services (PostgreSQL, Apache Kafka, and the t
 The production deployment consists of four primary components:
 
 1. **Multi-Stage Docker Build System**
-   - Builder stage: Gradle 8.5 + JDK 25 for compilation
-   - Runtime stage: Eclipse Temurin JRE 25 Alpine for minimal footprint
+   - Builder stage: Gradle 8.5 + JDK 21 for compilation
+   - Runtime stage: Eclipse Temurin JRE 21 Alpine for minimal footprint
    - Security: Non-root user execution
    - Health monitoring: Built-in health check using Actuator endpoint
 
 2. **Service Orchestration Layer (Docker Compose)**
    - PostgreSQL 16: Persistent data storage with health checks
    - Apache Kafka 7.6.0: Event streaming with KRaft mode (no Zookeeper)
-   - AlgotradingBot Application: Spring Boot 4.0.0+ with graceful shutdown
+   - AlgotradingBot Application: Spring Boot 3.4.1 with graceful shutdown
    - Custom bridge network: Isolated inter-service communication
 
 3. **Validation Suite**
@@ -53,7 +53,7 @@ The production deployment consists of four primary components:
 graph TB
     subgraph "Docker Host"
         subgraph "algotrading-network"
-            APP[AlgotradingBot Container<br/>Port 8080<br/>JRE 25 Alpine]
+            APP[AlgotradingBot Container<br/>Port 8080<br/>JRE 21 Alpine]
             DB[(PostgreSQL 16<br/>Port 5432<br/>Volume: postgres_data)]
             KAFKA[Apache Kafka 7.6.0<br/>Port 9092<br/>Volume: kafka_data]
         end
@@ -104,7 +104,7 @@ sequenceDiagram
     Docker->>Docker: Multi-stage build
     Docker-->>Dev: Image <300MB
     
-    Dev->>Compose: docker-compose up -d
+    Dev->>Compose: docker compose up -d
     Compose->>Compose: Start postgres (health check)
     Compose->>Compose: Start kafka (health check)
     Compose->>Compose: Start app (depends_on healthy)
@@ -134,7 +134,7 @@ sequenceDiagram
 **Purpose**: Build optimized, secure container image for the trading application.
 
 **Builder Stage**:
-- Base image: `gradle:8.5-jdk25`
+- Base image: `gradle:8.5-jdk21`
 - Responsibilities:
   - Copy Gradle wrapper and build files
   - Download dependencies (cached layer)
@@ -143,7 +143,7 @@ sequenceDiagram
 - Output: `build/libs/algotrading-bot.jar`
 
 **Runtime Stage**:
-- Base image: `eclipse-temurin:25-jre-alpine`
+- Base image: `eclipse-temurin:21-jre-alpine`
 - Responsibilities:
   - Create non-root user (`spring:spring`)
   - Copy JAR from builder stage
@@ -161,7 +161,7 @@ sequenceDiagram
 **Interface**:
 ```dockerfile
 # Build stage
-FROM gradle:8.5-jdk25 AS build
+FROM gradle:8.5-jdk21 AS build
 WORKDIR /app
 COPY gradlew gradlew.bat ./
 COPY gradle ./gradle
@@ -171,7 +171,7 @@ COPY src ./src
 RUN ./gradlew bootJar --no-daemon
 
 # Runtime stage
-FROM eclipse-temurin:25-jre-alpine
+FROM eclipse-temurin:21-jre-alpine
 RUN addgroup -S spring && adduser -S spring -G spring
 WORKDIR /app
 COPY --from=build /app/build/libs/algotrading-bot.jar app.jar
@@ -345,7 +345,7 @@ public class BuildValidator {
 
 **OrchestrationValidator**:
 - Responsibilities:
-  - Execute `docker-compose up -d`
+  - Execute `docker compose up -d`
   - Poll PostgreSQL health status (max 60 seconds)
   - Poll Kafka health status (max 90 seconds)
   - Poll Application health status (max 120 seconds)
@@ -423,11 +423,11 @@ public class ResourceValidator {
 **DataPersistenceValidator**:
 - Responsibilities:
   - Insert test trade data via API
-  - Execute `docker-compose restart postgres`
+  - Execute `docker compose restart postgres`
   - Wait for PostgreSQL to become healthy
   - Query test trade data via API
   - Verify data still exists
-  - Execute `docker-compose restart algotrading-app`
+  - Execute `docker compose restart algotrading-app`
   - Wait for application to become healthy
   - Verify application reconnects to database
   - Verify trade data queryable after restart
@@ -477,19 +477,19 @@ public class RepairEngine {
    - If still fails, check Docker daemon status
 
 3. **Orchestration Failure Repair**:
-   - Execute `docker-compose down`
+   - Execute `docker compose down`
    - Wait 5 seconds
-   - Execute `docker-compose up -d`
+   - Execute `docker compose up -d`
    - If still fails, check port conflicts
 
 4. **Health Check Failure Repair**:
-   - Execute `docker-compose restart <service>`
+   - Execute `docker compose restart <service>`
    - Wait for health check to pass
    - If still fails, check service logs for errors
 
 5. **API Failure Repair**:
    - Check application logs for exceptions
-   - Execute `docker-compose restart algotrading-app`
+   - Execute `docker compose restart algotrading-app`
    - Wait for health check to pass
    - Retry API calls
 
@@ -535,38 +535,38 @@ Generated: 2025-12-05T14:30:00Z
 Environment: Docker 24.0.7, Docker Compose 2.23.0
 
 BUILD VALIDATION:
-✅ JAR file created successfully (45.2 MB)
-✅ Docker image built successfully (287 MB)
+[OK] JAR file created successfully (45.2 MB)
+[OK] Docker image built successfully (287 MB)
 
 ORCHESTRATION VALIDATION:
-✅ PostgreSQL healthy in 12 seconds
-✅ Kafka healthy in 45 seconds
-✅ Application healthy in 78 seconds
+[OK] PostgreSQL healthy in 12 seconds
+[OK] Kafka healthy in 45 seconds
+[OK] Application healthy in 78 seconds
 
 API VALIDATION:
-✅ Health endpoint responding (200 OK)
-✅ Strategy status endpoint responding (200 OK)
-✅ Strategy lifecycle working correctly
+[OK] Health endpoint responding (200 OK)
+[OK] Strategy status endpoint responding (200 OK)
+[OK] Strategy lifecycle working correctly
 
 STABILITY VALIDATION:
-✅ 60-minute test completed
-✅ No container restarts
-✅ No ERROR level logs
-✅ Memory usage stable (avg 423 MB)
-✅ CPU usage stable (avg 34%)
+[OK] 60-minute test completed
+[OK] No container restarts
+[OK] No ERROR level logs
+[OK] Memory usage stable (avg 423 MB)
+[OK] CPU usage stable (avg 34%)
 
 RESOURCE VALIDATION:
-✅ Application memory: 412 MB (< 512 MB)
-✅ Database memory: 187 MB (< 256 MB)
-✅ Kafka memory: 456 MB (< 512 MB)
-✅ Total memory: 1055 MB (< 1.5 GB)
-✅ Disk usage: 1.2 GB (< 2 GB)
+[OK] Application memory: 412 MB (< 512 MB)
+[OK] Database memory: 187 MB (< 256 MB)
+[OK] Kafka memory: 456 MB (< 512 MB)
+[OK] Total memory: 1055 MB (< 1.5 GB)
+[OK] Disk usage: 1.2 GB (< 2 GB)
 
 DATA PERSISTENCE VALIDATION:
-✅ Database restart preserves data
-✅ Application reconnects after restart
+[OK] Database restart preserves data
+[OK] Application reconnects after restart
 
-OVERALL STATUS: ✅ PRODUCTION READY
+OVERALL STATUS: [OK] PRODUCTION READY
 
 All 20 requirements passed.
 System is ready for production deployment.
@@ -709,4 +709,5 @@ public class FailureReport {
     public void saveToFile(Path outputPath);
 }
 ```
+
 

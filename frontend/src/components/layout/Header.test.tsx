@@ -1,11 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
-import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
-import { Header } from './Header';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import { BrowserRouter } from 'react-router-dom';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import authReducer from '../../features/auth/authSlice';
 import settingsReducer from '../../features/settings/settingsSlice';
+
+import { Header } from './Header';
+
 
 const mockNavigate = vi.fn();
 
@@ -17,8 +20,7 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
-const createMockStore = (user = { id: '1', username: 'testuser', email: 'test@example.com', role: 'trader' as const }) => {
-  return configureStore({
+const createMockStore = (user = { id: '1', username: 'testuser', email: 'test@example.com', role: 'trader' as const }) => configureStore({
     reducer: {
       auth: authReducer,
       settings: settingsReducer,
@@ -41,22 +43,19 @@ const createMockStore = (user = { id: '1', username: 'testuser', email: 'test@ex
       },
     },
   });
-};
 
 describe('Header', () => {
   const defaultProps = {
     onMenuClick: vi.fn(),
   };
 
-  const renderHeader = (props = defaultProps, store = createMockStore()) => {
-    return render(
+  const renderHeader = (props = defaultProps, store = createMockStore()) => render(
       <Provider store={store}>
         <BrowserRouter>
           <Header {...props} />
         </BrowserRouter>
       </Provider>
     );
-  };
 
   beforeEach(() => {
     mockNavigate.mockClear();

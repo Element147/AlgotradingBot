@@ -78,7 +78,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
       url: window.location.href,
     };
 
-    console.log('Error logged to tracking service:', errorData);
+    console.warn('Error logged to tracking service:', errorData);
     
     // Future implementation:
     // if (import.meta.env.PROD) {

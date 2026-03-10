@@ -95,7 +95,7 @@ This repository is a monorepo with a Spring Boot backend in `AlgotradingBot/` an
 ## Recommended Near-Term Improvements
 
 1. Introduce explicit contract adapters or shared schemas for backend/frontend DTOs.
-2. Finish Phase 2 verification and resolve current lint/test failures before expanding feature surface.
+2. Keep the passing verification baseline stable while expanding beyond dashboard placeholders.
 3. Add a first-class paper-trading service layer distinct from backtest and future live execution.
 4. Add risk config, circuit-breaker status, and environment control endpoints before implementing more operator UI.
 5. Add CI for backend tests, frontend tests, lint, and build checks.

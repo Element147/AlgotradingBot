@@ -1,4 +1,4 @@
----
+﻿---
 inclusion: always
 ---
 
@@ -24,7 +24,7 @@ repository-root/
 │   ├── vite.config.ts       # Vite build config
 │   ├── tsconfig.json        # TypeScript config
 │   └── Dockerfile           # Frontend container
-├── docker-compose.yml       # Orchestrates both services
+├── AlgotradingBot/compose.yaml       # Orchestrates both services
 ├── .gitignore              # Includes both projects
 └── README.md
 ```
@@ -441,3 +441,5 @@ Update both `tech.md` and `structure.md` if:
 - After Phase 2 (Dashboard): Update with dashboard structure
 - After Phase 3-7: Update as new features are added
 - After Phase 8-13: Update with optimization, security, and deployment details
+
+

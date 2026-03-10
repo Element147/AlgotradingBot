@@ -1,4 +1,4 @@
-# Frontend Design Document
+﻿# Frontend Design Document
 ## Algorithmic Trading Bot Dashboard
 
 ## 1. Overview
@@ -8,7 +8,7 @@ This document outlines the frontend design for the Algorithmic Trading Bot dashb
 ### 1.1 Technology Stack
 - **Framework:** React 18+ with TypeScript
 - **State Management:** Redux Toolkit + RTK Query
-- **UI Library:** Material-UI (MUI) v5
+- **UI Library:** Material UI (MUI) v7
 - **Charts:** Recharts or TradingView Lightweight Charts
 - **Real-time:** WebSocket (Socket.io or native WebSocket)
 - **Build Tool:** Vite
@@ -781,3 +781,5 @@ src/
 **Document Version:** 1.0  
 **Last Updated:** March 8, 2024  
 **Author:** Algorithmic Trading Bot Team
+
+

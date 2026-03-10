@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { ThemeProvider, createTheme } from '@mui/material';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { Sidebar } from './Sidebar';
 
 const theme = createTheme();
@@ -18,13 +19,11 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
-const renderWithProviders = (component: React.ReactElement) => {
-  return render(
+const renderWithProviders = (component: React.ReactElement) => render(
     <BrowserRouter>
       <ThemeProvider theme={theme}>{component}</ThemeProvider>
     </BrowserRouter>
   );
-};
 
 describe('Sidebar', () => {
   beforeEach(() => {

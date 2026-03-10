@@ -8,6 +8,7 @@ import com.algotrader.bot.repository.AccountRepository;
 import com.algotrader.bot.repository.BacktestResultRepository;
 import com.algotrader.bot.repository.PortfolioRepository;
 import com.algotrader.bot.repository.TradeRepository;
+import com.algotrader.bot.security.JwtTokenProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,10 +53,16 @@ class TradingStrategyControllerIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
+
+    private String authToken;
     private Account testAccount;
 
     @BeforeEach
     void setUp() {
+        authToken = jwtTokenProvider.generateToken("testuser", "ROLE_USER");
+
         // Clean up
         tradeRepository.deleteAll();
         portfolioRepository.deleteAll();
@@ -107,6 +114,7 @@ class TradingStrategyControllerIntegrationTest {
 
         mockMvc.perform(post("/api/strategy/start")
                 .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + authToken)
                 .content(requestJson))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accountId").exists())
@@ -129,6 +137,7 @@ class TradingStrategyControllerIntegrationTest {
 
         mockMvc.perform(post("/api/strategy/start")
                 .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + authToken)
                 .content(invalidRequestJson))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
@@ -150,6 +159,7 @@ class TradingStrategyControllerIntegrationTest {
 
         mockMvc.perform(post("/api/strategy/start")
                 .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + authToken)
                 .content(invalidRequestJson))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400));
@@ -169,6 +179,7 @@ class TradingStrategyControllerIntegrationTest {
 
         mockMvc.perform(post("/api/strategy/start")
                 .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + authToken)
                 .content(invalidRequestJson))
                 .andExpect(status().isBadRequest());
     }
@@ -179,7 +190,8 @@ class TradingStrategyControllerIntegrationTest {
     void testGetStatus_ExistingAccount_ReturnsSuccess() throws Exception {
         mockMvc.perform(get("/api/strategy/status")
                 .param("accountId", testAccount.getId().toString())
-                .contentType(MediaType.APPLICATION_JSON))
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + authToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accountValue").exists())
                 .andExpect(jsonPath("$.pnl").value(100.00))
@@ -191,7 +203,8 @@ class TradingStrategyControllerIntegrationTest {
     @Test
     void testGetStatus_WithoutAccountId_UsesLatestAccount() throws Exception {
         mockMvc.perform(get("/api/strategy/status")
-                .contentType(MediaType.APPLICATION_JSON))
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + authToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accountValue").exists())
                 .andExpect(jsonPath("$.pnl").exists())
@@ -202,7 +215,8 @@ class TradingStrategyControllerIntegrationTest {
     void testGetStatus_NonExistentAccount_ReturnsNotFound() throws Exception {
         mockMvc.perform(get("/api/strategy/status")
                 .param("accountId", "99999")
-                .contentType(MediaType.APPLICATION_JSON))
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + authToken))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.error").value("Not Found"))
@@ -216,7 +230,8 @@ class TradingStrategyControllerIntegrationTest {
     void testStopStrategy_Success() throws Exception {
         mockMvc.perform(post("/api/strategy/stop")
                 .param("accountId", testAccount.getId().toString())
-                .contentType(MediaType.APPLICATION_JSON))
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + authToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accountId").value(testAccount.getId()))
                 .andExpect(jsonPath("$.status").value("STOPPED"))
@@ -237,7 +252,8 @@ class TradingStrategyControllerIntegrationTest {
     @Test
     void testStopStrategy_WithoutAccountId_UsesLatest() throws Exception {
         mockMvc.perform(post("/api/strategy/stop")
-                .contentType(MediaType.APPLICATION_JSON))
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + authToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accountId").value(testAccount.getId()))
                 .andExpect(jsonPath("$.status").value("STOPPED"));
@@ -250,7 +266,8 @@ class TradingStrategyControllerIntegrationTest {
         createTestTrades();
 
         mockMvc.perform(get("/api/trades/history")
-                .contentType(MediaType.APPLICATION_JSON))
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + authToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(3))))
                 .andExpect(jsonPath("$[0].pair").exists())
@@ -268,7 +285,8 @@ class TradingStrategyControllerIntegrationTest {
 
         mockMvc.perform(get("/api/trades/history")
                 .param("symbol", "BTC/USDT")
-                .contentType(MediaType.APPLICATION_JSON))
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + authToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(1))))
                 .andExpect(jsonPath("$[0].pair").value("BTC/USDT"));
@@ -281,7 +299,8 @@ class TradingStrategyControllerIntegrationTest {
 
         mockMvc.perform(get("/api/trades/history")
                 .param("limit", "2")
-                .contentType(MediaType.APPLICATION_JSON))
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + authToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(lessThanOrEqualTo(2))));
     }
@@ -349,7 +368,8 @@ class TradingStrategyControllerIntegrationTest {
         createTestBacktestResults();
 
         mockMvc.perform(get("/api/backtest/results")
-                .contentType(MediaType.APPLICATION_JSON))
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + authToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(2))))
                 .andExpect(jsonPath("$[0].strategyId").exists())
@@ -368,7 +388,8 @@ class TradingStrategyControllerIntegrationTest {
 
         mockMvc.perform(get("/api/backtest/results")
                 .param("strategyId", "bollinger-bands-v1")
-                .contentType(MediaType.APPLICATION_JSON))
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + authToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(1))))
                 .andExpect(jsonPath("$[0].strategyId").value("bollinger-bands-v1"));
@@ -381,7 +402,8 @@ class TradingStrategyControllerIntegrationTest {
 
         mockMvc.perform(get("/api/backtest/results")
                 .param("symbol", "BTC/USDT")
-                .contentType(MediaType.APPLICATION_JSON))
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + authToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(1))))
                 .andExpect(jsonPath("$[0].symbol").value("BTC/USDT"));
@@ -394,7 +416,8 @@ class TradingStrategyControllerIntegrationTest {
 
         mockMvc.perform(get("/api/backtest/results")
                 .param("limit", "1")
-                .contentType(MediaType.APPLICATION_JSON))
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + authToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)));
     }
@@ -462,6 +485,7 @@ class TradingStrategyControllerIntegrationTest {
         // This is expected behavior - the request never reaches validation
         mockMvc.perform(post("/api/strategy/start")
                 .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + authToken)
                 .content(malformedJson))
                 .andExpect(status().is5xxServerError());
     }
@@ -476,6 +500,7 @@ class TradingStrategyControllerIntegrationTest {
 
         mockMvc.perform(post("/api/strategy/start")
                 .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + authToken)
                 .content(incompleteJson))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
@@ -487,7 +512,8 @@ class TradingStrategyControllerIntegrationTest {
         // Test that all error responses follow the same format
         mockMvc.perform(get("/api/strategy/status")
                 .param("accountId", "99999")
-                .contentType(MediaType.APPLICATION_JSON))
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + authToken))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").exists())
@@ -497,3 +523,5 @@ class TradingStrategyControllerIntegrationTest {
     }
 
 }
+
+

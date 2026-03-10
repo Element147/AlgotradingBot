@@ -51,15 +51,16 @@ public class AccountService {
      */
     @Transactional(readOnly = true)
     public BalanceResponse getBalance(String environment, Long accountId) {
+        Long resolvedAccountId = resolveAccountId(accountId);
         logger.info("Fetching balance for account {} in {} environment", accountId, environment);
 
         if ("live".equalsIgnoreCase(environment)) {
             // TODO: Implement live exchange API integration
             logger.warn("Live environment not yet implemented, returning test data");
-            return getLiveBalance(accountId);
+            return getLiveBalance(resolvedAccountId);
         }
 
-        return getTestBalance(accountId);
+        return getTestBalance(resolvedAccountId);
     }
 
     /**
@@ -127,14 +128,15 @@ public class AccountService {
      */
     @Transactional(readOnly = true)
     public PerformanceResponse getPerformance(String environment, Long accountId, String timeframe) {
+        Long resolvedAccountId = resolveAccountId(accountId);
         logger.info("Fetching performance for account {} in {} environment, timeframe: {}", 
-                   accountId, environment, timeframe);
+                   resolvedAccountId, environment, timeframe);
 
-        Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new RuntimeException("Account not found: " + accountId));
+        Account account = accountRepository.findById(resolvedAccountId)
+                .orElseThrow(() -> new RuntimeException("Account not found: " + resolvedAccountId));
 
         LocalDateTime startTime = calculateStartTime(timeframe);
-        List<Trade> trades = tradeRepository.findByAccountIdAndEntryTimeAfter(accountId, startTime);
+        List<Trade> trades = tradeRepository.findByAccountIdAndEntryTimeAfter(resolvedAccountId, startTime);
 
         // Calculate metrics
         BigDecimal totalPnL = trades.stream()
@@ -157,7 +159,7 @@ public class AccountService {
                         .multiply(BigDecimal.valueOf(100));
 
         // Calculate cash ratio
-        List<Portfolio> portfolios = portfolioRepository.findByAccountId(accountId);
+        List<Portfolio> portfolios = portfolioRepository.findByAccountId(resolvedAccountId);
         BigDecimal portfolioValue = portfolios.stream()
                 .map(Portfolio::getPositionValue)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -187,9 +189,10 @@ public class AccountService {
      */
     @Transactional(readOnly = true)
     public List<OpenPositionResponse> getOpenPositions(String environment, Long accountId) {
-        logger.info("Fetching open positions for account {} in {} environment", accountId, environment);
+        Long resolvedAccountId = resolveAccountId(accountId);
+        logger.info("Fetching open positions for account {} in {} environment", resolvedAccountId, environment);
 
-        List<Portfolio> portfolios = portfolioRepository.findByAccountId(accountId);
+        List<Portfolio> portfolios = portfolioRepository.findByAccountId(resolvedAccountId);
 
         return portfolios.stream()
                 .map(p -> new OpenPositionResponse(
@@ -215,10 +218,11 @@ public class AccountService {
      */
     @Transactional(readOnly = true)
     public List<RecentTradeResponse> getRecentTrades(String environment, Long accountId, int limit) {
+        Long resolvedAccountId = resolveAccountId(accountId);
         logger.info("Fetching recent {} trades for account {} in {} environment", 
-                   limit, accountId, environment);
+                   limit, resolvedAccountId, environment);
 
-        List<Trade> trades = tradeRepository.findByAccountIdAndExitTimeNotNullOrderByExitTimeDesc(accountId);
+        List<Trade> trades = tradeRepository.findByAccountIdAndExitTimeNotNullOrderByExitTimeDesc(resolvedAccountId);
 
         return trades.stream()
                 .limit(limit)
@@ -267,5 +271,15 @@ public class AccountService {
             return "0.00000000";
         }
         return value.setScale(8, RoundingMode.HALF_UP).toPlainString();
+    }
+
+    private Long resolveAccountId(Long requestedAccountId) {
+        if (requestedAccountId != null) {
+            return requestedAccountId;
+        }
+
+        return accountRepository.findTopByOrderByCreatedAtDesc()
+                .map(Account::getId)
+                .orElseThrow(() -> new RuntimeException("No trading account found"));
     }
 }

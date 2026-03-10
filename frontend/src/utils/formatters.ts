@@ -72,7 +72,7 @@ export const formatDateTime = (dateString: string, includeTime: boolean = true):
     }
 
     return new Intl.DateTimeFormat('en-US', options).format(date);
-  } catch (error) {
+  } catch {
     return 'Invalid date';
   }
 };
@@ -83,9 +83,7 @@ export const formatDateTime = (dateString: string, includeTime: boolean = true):
  * @param dateString - ISO 8601 date string
  * @returns Formatted date string (e.g., "Mar 9, 2026")
  */
-export const formatDate = (dateString: string): string => {
-  return formatDateTime(dateString, false);
-};
+export const formatDate = (dateString: string): string => formatDateTime(dateString, false);
 
 /**
  * Format a number with thousands separators

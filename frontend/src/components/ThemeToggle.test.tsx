@@ -1,13 +1,14 @@
-import { describe, it, expect, vi } from 'vitest';
+import { configureStore } from '@reduxjs/toolkit';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { Provider } from 'react-redux';
-import { configureStore } from '@reduxjs/toolkit';
+import { describe, it, expect } from 'vitest';
+
 import ThemeToggle from './ThemeToggle';
-import settingsReducer, { setTheme } from '@/features/settings/settingsSlice';
+
+import settingsReducer from '@/features/settings/settingsSlice';
 
 // Mock store factory
-const createMockStore = (theme: 'light' | 'dark' = 'light') => {
-  return configureStore({
+const createMockStore = (theme: 'light' | 'dark' = 'light') => configureStore({
     reducer: {
       settings: settingsReducer,
     },
@@ -19,7 +20,6 @@ const createMockStore = (theme: 'light' | 'dark' = 'light') => {
       },
     },
   });
-};
 
 describe('ThemeToggle', () => {
   it('should render theme toggle button', () => {

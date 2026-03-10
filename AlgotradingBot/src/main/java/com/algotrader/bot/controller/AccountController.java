@@ -25,8 +25,6 @@ import java.util.List;
 public class AccountController {
 
     private static final Logger logger = LoggerFactory.getLogger(AccountController.class);
-    private static final Long DEFAULT_ACCOUNT_ID = 1L; // Default account for demo
-
     private final AccountService accountService;
 
     public AccountController(AccountService accountService) {
@@ -38,6 +36,7 @@ public class AccountController {
      * Supports environment-aware routing via query parameter.
      *
      * @param env environment mode: "test" or "live" (default: "test")
+     * @param accountId optional account ID (defaults to latest account)
      * @return balance response with total, available, locked, and asset breakdown
      */
     @GetMapping("/account/balance")
@@ -48,11 +47,13 @@ public class AccountController {
     )
     public ResponseEntity<BalanceResponse> getBalance(
             @Parameter(description = "Environment mode: test or live")
-            @RequestParam(defaultValue = "test") String env) {
+            @RequestParam(defaultValue = "test") String env,
+            @Parameter(description = "Account ID (optional, defaults to latest account)")
+            @RequestParam(required = false) Long accountId) {
         
-        logger.info("GET /api/account/balance - environment: {}", env);
+        logger.info("GET /api/account/balance - environment: {}, accountId: {}", env, accountId);
         
-        BalanceResponse balance = accountService.getBalance(env, DEFAULT_ACCOUNT_ID);
+        BalanceResponse balance = accountService.getBalance(env, accountId);
         return ResponseEntity.ok(balance);
     }
 
@@ -61,6 +62,7 @@ public class AccountController {
      *
      * @param env environment mode: "test" or "live" (default: "test")
      * @param timeframe timeframe: "today", "week", "month", "all-time" (default: "month")
+     * @param accountId optional account ID (defaults to latest account)
      * @return performance metrics including P&L, win rate, trade count, cash ratio
      */
     @GetMapping("/account/performance")
@@ -73,11 +75,14 @@ public class AccountController {
             @Parameter(description = "Environment mode: test or live")
             @RequestParam(defaultValue = "test") String env,
             @Parameter(description = "Timeframe: today, week, month, all-time")
-            @RequestParam(defaultValue = "month") String timeframe) {
+            @RequestParam(defaultValue = "month") String timeframe,
+            @Parameter(description = "Account ID (optional, defaults to latest account)")
+            @RequestParam(required = false) Long accountId) {
         
-        logger.info("GET /api/account/performance - environment: {}, timeframe: {}", env, timeframe);
+        logger.info("GET /api/account/performance - environment: {}, timeframe: {}, accountId: {}",
+                env, timeframe, accountId);
         
-        PerformanceResponse performance = accountService.getPerformance(env, DEFAULT_ACCOUNT_ID, timeframe);
+        PerformanceResponse performance = accountService.getPerformance(env, accountId, timeframe);
         return ResponseEntity.ok(performance);
     }
 
@@ -85,6 +90,7 @@ public class AccountController {
      * Get open positions with unrealized P&L.
      *
      * @param env environment mode: "test" or "live" (default: "test")
+     * @param accountId optional account ID (defaults to latest account)
      * @return list of open positions
      */
     @GetMapping("/positions/open")
@@ -95,11 +101,13 @@ public class AccountController {
     )
     public ResponseEntity<List<OpenPositionResponse>> getOpenPositions(
             @Parameter(description = "Environment mode: test or live")
-            @RequestParam(defaultValue = "test") String env) {
+            @RequestParam(defaultValue = "test") String env,
+            @Parameter(description = "Account ID (optional, defaults to latest account)")
+            @RequestParam(required = false) Long accountId) {
         
-        logger.info("GET /api/positions/open - environment: {}", env);
+        logger.info("GET /api/positions/open - environment: {}, accountId: {}", env, accountId);
         
-        List<OpenPositionResponse> positions = accountService.getOpenPositions(env, DEFAULT_ACCOUNT_ID);
+        List<OpenPositionResponse> positions = accountService.getOpenPositions(env, accountId);
         return ResponseEntity.ok(positions);
     }
 
@@ -108,6 +116,7 @@ public class AccountController {
      *
      * @param env environment mode: "test" or "live" (default: "test")
      * @param limit maximum number of trades to return (default: 10)
+     * @param accountId optional account ID (defaults to latest account)
      * @return list of recent completed trades
      */
     @GetMapping("/trades/recent")
@@ -120,11 +129,13 @@ public class AccountController {
             @Parameter(description = "Environment mode: test or live")
             @RequestParam(defaultValue = "test") String env,
             @Parameter(description = "Maximum number of trades to return")
-            @RequestParam(defaultValue = "10") int limit) {
+            @RequestParam(defaultValue = "10") int limit,
+            @Parameter(description = "Account ID (optional, defaults to latest account)")
+            @RequestParam(required = false) Long accountId) {
         
-        logger.info("GET /api/trades/recent - environment: {}, limit: {}", env, limit);
+        logger.info("GET /api/trades/recent - environment: {}, limit: {}, accountId: {}", env, limit, accountId);
         
-        List<RecentTradeResponse> trades = accountService.getRecentTrades(env, DEFAULT_ACCOUNT_ID, limit);
+        List<RecentTradeResponse> trades = accountService.getRecentTrades(env, accountId, limit);
         return ResponseEntity.ok(trades);
     }
 }

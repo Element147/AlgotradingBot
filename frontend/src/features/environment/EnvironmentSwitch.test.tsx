@@ -1,12 +1,12 @@
-import { describe, it, expect, vi } from 'vitest';
+import { configureStore } from '@reduxjs/toolkit';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
-import { configureStore } from '@reduxjs/toolkit';
-import { EnvironmentSwitch } from './EnvironmentSwitch';
-import environmentReducer from './environmentSlice';
+import { describe, it, expect, vi } from 'vitest';
 
-const createMockStore = (initialState = {}) => {
-  return configureStore({
+import environmentReducer from './environmentSlice';
+import { EnvironmentSwitch } from './EnvironmentSwitch';
+
+const createMockStore = (initialState = {}) => configureStore({
     reducer: {
       environment: environmentReducer,
     },
@@ -19,7 +19,6 @@ const createMockStore = (initialState = {}) => {
       },
     },
   });
-};
 
 describe('EnvironmentSwitch', () => {
   it('should render toggle buttons for test and live modes', () => {

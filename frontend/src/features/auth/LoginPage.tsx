@@ -1,5 +1,6 @@
 import { Login as LoginIcon } from '@mui/icons-material';
 import {
+  Alert,
   Box,
   Button,
   Card,
@@ -10,7 +11,6 @@ import {
   FormControlLabel,
   TextField,
   Typography,
-  Alert,
 } from '@mui/material';
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -26,6 +26,21 @@ const loginSchema = z.object({
   username: z.string().min(3, 'Username must be at least 3 characters'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
+
+const getErrorMessage = (error: unknown): string => {
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'data' in error &&
+    typeof (error as { data?: unknown }).data === 'object' &&
+    (error as { data?: { message?: unknown } }).data?.message &&
+    typeof (error as { data?: { message?: unknown } }).data?.message === 'string'
+  ) {
+    return (error as { data: { message: string } }).data.message;
+  }
+
+  return 'Login failed. Please check your credentials.';
+};
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -46,7 +61,6 @@ export default function LoginPage() {
     setErrors({});
     setApiError('');
 
-    // Validate form using Zod schema
     const result = loginSchema.safeParse(formData);
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
@@ -63,8 +77,7 @@ export default function LoginPage() {
 
     try {
       const response = await login(formData).unwrap();
-      
-      // Store credentials with refresh token if "remember me" is checked
+
       dispatch(
         setCredentials({
           token: response.token,
@@ -72,11 +85,10 @@ export default function LoginPage() {
           refreshToken: formData.rememberMe ? response.refreshToken : undefined,
         })
       );
-      
-      // Redirect to dashboard on successful login
-      navigate('/dashboard');
-    } catch (err: any) {
-      setApiError(err?.data?.message || 'Login failed. Please check your credentials.');
+
+      void navigate('/dashboard');
+    } catch (error: unknown) {
+      setApiError(getErrorMessage(error));
     }
   };
 
@@ -103,15 +115,13 @@ export default function LoginPage() {
               </Typography>
             </Box>
 
-            <Box component="form" onSubmit={handleSubmit} noValidate>
-              {/* API Error Display */}
+            <Box component="form" onSubmit={(event) => void handleSubmit(event)} noValidate>
               {apiError && (
                 <Alert severity="error" sx={{ mb: 2 }}>
                   {apiError}
                 </Alert>
               )}
 
-              {/* Username Field */}
               <TextField
                 margin="normal"
                 required
@@ -120,7 +130,6 @@ export default function LoginPage() {
                 label="Username"
                 name="username"
                 autoComplete="username"
-                autoFocus
                 value={formData.username}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, username: e.target.value }))
@@ -130,7 +139,6 @@ export default function LoginPage() {
                 disabled={isLoading}
               />
 
-              {/* Password Field */}
               <TextField
                 margin="normal"
                 required
@@ -149,7 +157,6 @@ export default function LoginPage() {
                 disabled={isLoading}
               />
 
-              {/* Remember Me Checkbox */}
               <FormControlLabel
                 control={
                   <Checkbox
@@ -165,7 +172,6 @@ export default function LoginPage() {
                 sx={{ mt: 1 }}
               />
 
-              {/* Submit Button */}
               <Button
                 type="submit"
                 fullWidth
@@ -183,4 +189,3 @@ export default function LoginPage() {
     </Container>
   );
 }
-

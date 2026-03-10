@@ -1,6 +1,8 @@
 package com.algotrader.bot.controller;
 
+import com.algotrader.bot.security.JwtTokenProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -28,6 +30,16 @@ class GlobalExceptionHandlerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
+
+    private String authToken;
+
+    @BeforeEach
+    void setUp() {
+        authToken = jwtTokenProvider.generateToken("testuser", "ROLE_USER");
+    }
+
     @Test
     void testValidationError_Returns400BadRequest() throws Exception {
         // Create invalid request (negative initial balance)
@@ -40,6 +52,7 @@ class GlobalExceptionHandlerTest {
 
         mockMvc.perform(post("/api/strategy/start")
                 .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + authToken)
                 .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
@@ -61,6 +74,7 @@ class GlobalExceptionHandlerTest {
 
         mockMvc.perform(post("/api/strategy/start")
                 .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + authToken)
                 .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
@@ -73,6 +87,7 @@ class GlobalExceptionHandlerTest {
         // Try to stop strategy with non-existent account ID
         mockMvc.perform(post("/api/strategy/stop")
                 .param("accountId", "999999")
+                .header("Authorization", "Bearer " + authToken)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))

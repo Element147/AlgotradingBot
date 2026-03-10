@@ -1,5 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import ErrorBoundary from './ErrorBoundary';
 
 // Component that throws an error for testing
@@ -85,7 +86,7 @@ describe('ErrorBoundary', () => {
   });
 
   it('resets error state when reset button is clicked', async () => {
-    const { rerender } = render(
+    render(
       <ErrorBoundary>
         <ThrowError shouldThrow={true} />
       </ErrorBoundary>

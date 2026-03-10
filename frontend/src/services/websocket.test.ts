@@ -3,7 +3,12 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { WebSocketManager, getWebSocketManager } from './websocket';
+
+import {
+  WebSocketManager,
+  type WebSocketLikeConstructor,
+  getWebSocketManager,
+} from './websocket';
 
 // Mock WebSocket
 class MockWebSocket {
@@ -46,7 +51,10 @@ describe('WebSocketManager', () => {
   let manager: WebSocketManager;
 
   beforeEach(() => {
-    manager = new WebSocketManager('ws://localhost:8080/ws', MockWebSocket as any);
+    manager = new WebSocketManager(
+      'ws://localhost:8080/ws',
+      MockWebSocket as unknown as WebSocketLikeConstructor
+    );
     vi.clearAllTimers();
   });
 

@@ -1,4 +1,4 @@
-# Backend Tasks Added to Frontend Phases
+﻿# Backend Tasks Added to Frontend Phases
 
 ## Summary
 
@@ -119,7 +119,7 @@ All 13 frontend dashboard phases have been updated to include backend implementa
 ### Phase 13: Deployment and Monitoring (Week 13)
 **New Task 13.14:** Backend - Verify Production Deployment Configuration
 - Verification task only
-- Verify Dockerfile and docker-compose.yml
+- Verify Dockerfile and AlgotradingBot/compose.yaml
 - Test Docker build and container
 - Verify health check and metrics endpoints
 - Test full stack with docker-compose
@@ -215,3 +215,4 @@ The following components need to be created:
 - All backend tasks require authentication (@Secured annotation)
 - All financial calculations must use BigDecimal precision
 - All endpoints must be documented in OpenAPI/Swagger
+
