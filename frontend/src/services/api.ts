@@ -1,4 +1,4 @@
-import { fetchBaseQuery } from '@reduxjs/toolkit/query';
+﻿import { fetchBaseQuery } from '@reduxjs/toolkit/query';
 import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolkit/query';
 import { Mutex } from 'async-mutex';
 
@@ -139,7 +139,22 @@ export const baseQueryWithErrorHandling: BaseQueryFn<
           
           if (refreshResult.data) {
             // Token refresh successful
-            const { token } = refreshResult.data as { token: string; expiresIn: number };
+            const refreshPayload = refreshResult.data as {
+              token?: string;
+              accessToken?: string;
+              expiresIn: number;
+            };
+            const token = refreshPayload.token ?? refreshPayload.accessToken;
+
+            if (!token) {
+              api.dispatch(logout());
+
+              if (typeof window !== 'undefined') {
+                window.location.href = '/login';
+              }
+
+              return result;
+            }
             
             // Update token in Redux store
             api.dispatch(setToken(token));
@@ -187,3 +202,5 @@ export const baseQueryWithErrorHandling: BaseQueryFn<
 
 // Export the configured base query for use in API slices
 export const baseQueryWithEnvironment = baseQueryWithErrorHandling;
+
+

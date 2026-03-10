@@ -1,6 +1,6 @@
-# Product Overview
+﻿# Product Overview
 
-Production-grade cryptocurrency algorithmic trading bot designed to scale profitably from $100 to $10,000 over 12-18 months.
+Local-first cryptocurrency algorithmic trading research platform focused on safe iteration, reproducible validation, and gradual progression from backtesting to paper trading.
 
 ## Core Strategy
 Bollinger Bands Mean Reversion on BTC/USDT and ETH/USDT pairs using 1-hour candles. Entry on lower band bounce, exit at middle band or stop-loss.
@@ -12,25 +12,26 @@ Bollinger Bands Mean Reversion on BTC/USDT and ETH/USDT pairs using 1-hour candl
 - Circuit breakers and emergency stops required
 - Max drawdown limit: 25%
 
-## Performance Requirements
-Strategy must pass ALL criteria before live deployment:
+## Validation Requirements
+Any future live-trading consideration must be backed by reproducible evidence. A strategy should pass all of these criteria before it is even considered for live evaluation:
 - Sharpe Ratio > 1.0
 - Profit Factor > 1.5:1
 - Win Rate 45-55%
 - Max Drawdown < 25%
 - Statistical significance (p-value < 0.05)
 - 2+ years backtest validation
-- Monte Carlo confidence ≥ 95%
+- Monte Carlo confidence â‰Ą 95%
 
-## Scaling Phases
-1. Phase 1 ($100-$500): Proof of concept, 2 pairs, 5-10% monthly
-2. Phase 2 ($500-$2K): Add momentum strategy, 3-4 pairs
-3. Phase 3 ($2K-$10K): Portfolio optimization, 5-8 pairs, micro-leverage
-4. Phase 4 ($10K+): Advanced strategies, options, ML (optional)
+## Delivery Phases
+1. Phase 1: Solid local platform, auth, dashboard, and research foundations
+2. Phase 2: Strategy management, trade history, and backtesting workflows
+3. Phase 3: Paper trading, operator controls, and observability
+4. Phase 4: Optional future live-readiness evaluation after sufficient evidence
 
 ## Critical Constraints
 - Minimum position: $5-10
 - Maximum position: $50-100 per trade
 - Transaction costs: 0.1% taker fee + 3 bips slippage (always included)
-- Realistic expectations: 5-15% monthly returns (not hype)
+- Honest expectations: no returns should be implied without reproducible evidence
 - NO curve-fitting, over-optimization, or over-leveraging
+

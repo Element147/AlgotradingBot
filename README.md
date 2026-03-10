@@ -1,19 +1,19 @@
-# AlgoTrading Bot - Full Stack Application
+﻿# AlgoTrading Bot - Full Stack Application
 
-Production-grade cryptocurrency algorithmic trading bot with React TypeScript frontend dashboard. Designed to scale profitably from $100 to $10,000 over 12-18 months using Bollinger Bands Mean Reversion strategy.
+Local-first cryptocurrency algorithmic trading research platform with a React TypeScript frontend dashboard. The current goal is to build, verify, and safely iterate on strategy research, backtesting, and paper-trading workflows using a Bollinger Bands mean-reversion baseline.
 
-## 🚀 Quick Start (For Beginners)
+## đźš€ Quick Start (For Beginners)
 
 ### Prerequisites
 
 1. **Docker Desktop** - [Download here](https://www.docker.com/products/docker-desktop/)
-   - ✅ Verified: Docker version 29.2.1 installed
+   - âś… Verified: Docker version 29.2.1 installed
    - Make sure Docker Desktop is running before executing commands
    
 2. **Node.js** (v18+) - [Download here](https://nodejs.org/)
-   - ✅ Verified: Node v25.8.0, npm v11.11.0 installed
+   - âś… Verified: Node v25.8.0, npm v11.11.0 installed
 
-3. **Java 25** - ✅ Already installed and verified
+3. **Java 25** - âś… Already installed and verified
 
 ### Simple 3-Step Workflow
 
@@ -37,11 +37,11 @@ Production-grade cryptocurrency algorithmic trading bot with React TypeScript fr
 
 ---
 
-## 🌐 Access URLs
+## đźŚ Access URLs
 
 | Service | URL | Description |
 |---------|-----|-------------|
-| **Frontend Dashboard** | **http://localhost:5173** | Main React UI (⭐ Start here) |
+| **Frontend Dashboard** | **http://localhost:5173** | Main React UI (â­ Start here) |
 | Backend API | http://localhost:8080 | Spring Boot REST API |
 | API Documentation | http://localhost:8080/swagger-ui.html | Interactive API docs |
 | Health Check | http://localhost:8080/actuator/health | Backend status |
@@ -49,45 +49,45 @@ Production-grade cryptocurrency algorithmic trading bot with React TypeScript fr
 
 ---
 
-## 📁 Project Structure
+## đź“ Project Structure
 
 ```
 repository-root/
-├── AlgotradingBot/          # Spring Boot Backend (Java 25)
-│   ├── src/                 # Java source code
-│   │   ├── main/java/       # Application code
-│   │   │   ├── entity/      # Database entities
-│   │   │   ├── risk/        # Risk management (2% max risk)
-│   │   │   ├── strategy/    # Bollinger Bands strategy
-│   │   │   ├── backtest/    # Backtesting engine
-│   │   │   └── controller/  # REST API endpoints
-│   │   └── test/java/       # Unit tests
-│   ├── build.gradle.kts     # Gradle build config
-│   ├── compose.yaml         # Docker services
-│   └── Dockerfile           # Backend container
-│
-├── frontend/                # React TypeScript Frontend
-│   ├── src/                 # React source code
-│   │   ├── app/             # Redux store
-│   │   ├── features/        # Feature modules
-│   │   ├── components/      # Shared components
-│   │   ├── hooks/           # Custom hooks
-│   │   ├── services/        # API services
-│   │   └── types/           # TypeScript types
-│   ├── package.json         # npm dependencies
-│   ├── vite.config.ts       # Vite build config
-│   └── tsconfig.json        # TypeScript config
-│
-├── build-all.ps1           # 🔨 Build everything
-├── run-all.ps1             # ▶️ Start everything
-├── stop-all.ps1            # ⏹️ Stop everything
-├── QUICK_START.md          # Detailed guide
-└── README.md               # This file
+â”śâ”€â”€ AlgotradingBot/          # Spring Boot Backend (Java 25)
+â”‚   â”śâ”€â”€ src/                 # Java source code
+â”‚   â”‚   â”śâ”€â”€ main/java/       # Application code
+â”‚   â”‚   â”‚   â”śâ”€â”€ entity/      # Database entities
+â”‚   â”‚   â”‚   â”śâ”€â”€ risk/        # Risk management (2% max risk)
+â”‚   â”‚   â”‚   â”śâ”€â”€ strategy/    # Bollinger Bands strategy
+â”‚   â”‚   â”‚   â”śâ”€â”€ backtest/    # Backtesting engine
+â”‚   â”‚   â”‚   â””â”€â”€ controller/  # REST API endpoints
+â”‚   â”‚   â””â”€â”€ test/java/       # Unit tests
+â”‚   â”śâ”€â”€ build.gradle.kts     # Gradle build config
+â”‚   â”śâ”€â”€ compose.yaml         # Docker services
+â”‚   â””â”€â”€ Dockerfile           # Backend container
+â”‚
+â”śâ”€â”€ frontend/                # React TypeScript Frontend
+â”‚   â”śâ”€â”€ src/                 # React source code
+â”‚   â”‚   â”śâ”€â”€ app/             # Redux store
+â”‚   â”‚   â”śâ”€â”€ features/        # Feature modules
+â”‚   â”‚   â”śâ”€â”€ components/      # Shared components
+â”‚   â”‚   â”śâ”€â”€ hooks/           # Custom hooks
+â”‚   â”‚   â”śâ”€â”€ services/        # API services
+â”‚   â”‚   â””â”€â”€ types/           # TypeScript types
+â”‚   â”śâ”€â”€ package.json         # npm dependencies
+â”‚   â”śâ”€â”€ vite.config.ts       # Vite build config
+â”‚   â””â”€â”€ tsconfig.json        # TypeScript config
+â”‚
+â”śâ”€â”€ build-all.ps1           # đź”¨ Build everything
+â”śâ”€â”€ run-all.ps1             # â–¶ď¸Ź Start everything
+â”śâ”€â”€ stop-all.ps1            # âŹąď¸Ź Stop everything
+â”śâ”€â”€ QUICK_START.md          # Detailed guide
+â””â”€â”€ README.md               # This file
 ```
 
 ---
 
-## 🔨 Build Commands
+## đź”¨ Build Commands
 
 ### Build Everything (One Command)
 
@@ -102,10 +102,10 @@ This builds:
 **Expected output:**
 ```
 [1/2] Building Backend (Spring Boot)...
-✓ Backend build successful!
+âś“ Backend build successful!
 [2/2] Building Frontend (React)...
-✓ Frontend build successful!
-✓ All builds completed successfully!
+âś“ Frontend build successful!
+âś“ All builds completed successfully!
 ```
 
 ### Build Backend Only
@@ -130,7 +130,7 @@ cd ..
 
 ---
 
-## ▶️ Run Commands
+## â–¶ď¸Ź Run Commands
 
 ### Start Everything (One Command)
 
@@ -147,14 +147,14 @@ This starts:
 **Expected output:**
 ```
 Checking Docker...
-✓ Docker is running
+âś“ Docker is running
 [1/2] Starting Backend + Database + Kafka...
-✓ Backend services started!
+âś“ Backend services started!
 Waiting for backend to be ready...
-✓ Backend is ready!
+âś“ Backend is ready!
 [2/2] Starting Frontend Dev Server...
-✓ Frontend dev server starting...
-✓ All services started!
+âś“ Frontend dev server starting...
+âś“ All services started!
 
 Access your application:
   Frontend:  http://localhost:5173
@@ -181,7 +181,7 @@ cd ..
 
 ---
 
-## ⏹️ Stop Commands
+## âŹąď¸Ź Stop Commands
 
 ### Stop Everything (One Command)
 
@@ -207,7 +207,7 @@ Press `Ctrl+C` in the frontend dev server window.
 
 ---
 
-## 🐳 Docker Commands
+## đźł Docker Commands
 
 ### View Running Containers
 
@@ -241,7 +241,7 @@ cd ..
 
 ---
 
-## ✅ Verification Checklist
+## âś… Verification Checklist
 
 After running `.\run-all.ps1`, verify:
 
@@ -268,7 +268,7 @@ After running `.\run-all.ps1`, verify:
 
 ---
 
-## 🛠️ Development Workflow
+## đź› ď¸Ź Development Workflow
 
 ### Daily Development
 
@@ -303,7 +303,7 @@ cd ..
 
 ---
 
-## 🔧 Troubleshooting
+## đź”§ Troubleshooting
 
 ### Docker not running
 
@@ -368,7 +368,7 @@ cd ..
 
 ---
 
-## 📊 Technology Stack
+## đź“Š Technology Stack
 
 ### Backend (AlgotradingBot/)
 - **Language:** Java 25
@@ -390,7 +390,7 @@ cd ..
 
 ---
 
-## 🎯 Trading Strategy
+## đźŽŻ Trading Strategy
 
 ### Core Strategy
 **Bollinger Bands Mean Reversion** on BTC/USDT and ETH/USDT pairs using 1-hour candles.
@@ -400,16 +400,16 @@ cd ..
 - **Risk:** Maximum 2% per trade
 - **Position Size:** $5-10 minimum, $50-100 maximum
 
-### Performance Requirements
+### Validation Requirements
 
-Strategy must pass ALL criteria before live deployment:
-- ✅ Sharpe Ratio > 1.0
-- ✅ Profit Factor > 1.5:1
-- ✅ Win Rate 45-55%
-- ✅ Max Drawdown < 25%
-- ✅ Statistical significance (p-value < 0.05)
-- ✅ 2+ years backtest validation
-- ✅ Monte Carlo confidence ≥ 95%
+Any future live-trading consideration must be backed by reproducible evidence. At a minimum, the strategy should pass the following research and risk gates:
+- âś… Sharpe Ratio > 1.0
+- âś… Profit Factor > 1.5:1
+- âś… Win Rate 45-55%
+- âś… Max Drawdown < 25%
+- âś… Statistical significance (p-value < 0.05)
+- âś… 2+ years backtest validation
+- âś… Monte Carlo confidence â‰Ą 95%
 
 ### Risk Management
 - Maximum 2% risk per trade (capital preservation first)
@@ -420,16 +420,16 @@ Strategy must pass ALL criteria before live deployment:
 
 ---
 
-## 📈 Scaling Roadmap
+## đź“ Scaling Roadmap
 
-1. **Phase 1 ($100-$500):** Proof of concept, 2 pairs, 5-10% monthly
-2. **Phase 2 ($500-$2K):** Add momentum strategy, 3-4 pairs
-3. **Phase 3 ($2K-$10K):** Portfolio optimization, 5-8 pairs, micro-leverage
-4. **Phase 4 ($10K+):** Advanced strategies, options, ML (optional)
+1. **Phase 1:** Stabilize the local platform, research workflow, and dashboard
+2. **Phase 2:** Expand strategy management, analytics, and backtesting coverage
+3. **Phase 3:** Add robust paper trading, observability, and operator controls
+4. **Phase 4:** Evaluate optional live connectivity only after the earlier phases are verified
 
 ---
 
-## 🧪 Testing
+## đź§Ş Testing
 
 ### Run Backend Tests
 
@@ -461,7 +461,7 @@ Target: 80%+ code coverage
 
 ---
 
-## 📝 Available Scripts
+## đź“ť Available Scripts
 
 ### Backend Scripts (from AlgotradingBot/)
 
@@ -489,7 +489,7 @@ npm run test:coverage        # Run tests with coverage
 
 ---
 
-## 🔐 Security Notes
+## đź” Security Notes
 
 ### Development Environment
 - Default credentials in `compose.yaml` are for **development only**
@@ -505,7 +505,7 @@ npm run test:coverage        # Run tests with coverage
 
 ---
 
-## 📚 Additional Documentation
+## đź“š Additional Documentation
 
 - **QUICK_START.md** - Detailed beginner's guide
 - **AlgotradingBot/ALGOTRADING_PROJECT.md** - Complete backend documentation
@@ -516,7 +516,7 @@ npm run test:coverage        # Run tests with coverage
 
 ---
 
-## 🆘 Getting Help
+## đź† Getting Help
 
 ### Check Logs
 
@@ -553,7 +553,7 @@ docker exec -it algotrading-kafka kafka-broker-api-versions --bootstrap-server l
 
 ---
 
-## 🎓 Learning Resources
+## đźŽ“ Learning Resources
 
 ### Backend (Spring Boot + Java)
 - [Spring Boot Documentation](https://spring.io/projects/spring-boot)
@@ -572,13 +572,13 @@ docker exec -it algotrading-kafka kafka-broker-api-versions --bootstrap-server l
 
 ---
 
-## 📄 License
+## đź“„ License
 
 This project is for educational and personal use.
 
 ---
 
-## 🎉 Summary
+## đźŽ‰ Summary
 
 ### To Get Started:
 
@@ -597,13 +597,14 @@ start http://localhost:5173
 ```
 
 ### Key URLs:
-- **Frontend:** http://localhost:5173 ⭐
+- **Frontend:** http://localhost:5173 â­
 - **Backend:** http://localhost:8080
 - **Health:** http://localhost:8080/actuator/health
 
-That's it! You're ready to develop. 🚀
+That's it! You're ready to develop. đźš€
 
 ---
 
 **Last Updated:** January 2025  
-**Status:** ✅ Backend builds successfully | ✅ Frontend builds successfully | ✅ Docker verified | ✅ All scripts tested and working
+**Status:** âś… Backend builds successfully | âś… Frontend builds successfully | âś… Docker verified | âś… All scripts tested and working
+
