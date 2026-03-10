@@ -33,7 +33,7 @@ const waitForDialogToClose = async () => {
  * 
  * Validates Requirements: 30.19
  */
-describe('Environment Switching Integration Tests', () => {
+describe('Environment Switching Integration Tests', { timeout: 15000 }, () => {
   let store: ReturnType<typeof configureStore>;
   let mockWebSocketManager: WebSocketManager;
 

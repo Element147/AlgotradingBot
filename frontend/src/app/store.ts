@@ -4,8 +4,12 @@ import { setupListeners } from '@reduxjs/toolkit/query';
 import { accountApi } from '@/features/account/accountApi';
 import { authApi } from '@/features/auth/authApi';
 import authReducer from '@/features/auth/authSlice';
+import { backtestApi } from '@/features/backtest/backtestApi';
 import environmentReducer from '@/features/environment/environmentSlice';
+import { paperApi } from '@/features/paperApi';
+import { riskApi } from '@/features/risk/riskApi';
 import settingsReducer from '@/features/settings/settingsSlice';
+import { strategiesApi } from '@/features/strategies/strategiesApi';
 import { websocketMiddleware } from '@/features/websocket/websocketMiddleware';
 import websocketReducer from '@/features/websocket/websocketSlice';
 
@@ -26,6 +30,10 @@ export const store = configureStore({
     websocket: websocketReducer,
     [authApi.reducerPath]: authApi.reducer,
     [accountApi.reducerPath]: accountApi.reducer,
+    [backtestApi.reducerPath]: backtestApi.reducer,
+    [riskApi.reducerPath]: riskApi.reducer,
+    [paperApi.reducerPath]: paperApi.reducer,
+    [strategiesApi.reducerPath]: strategiesApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -37,6 +45,10 @@ export const store = configureStore({
     }).concat(
       authApi.middleware,
       accountApi.middleware,
+      backtestApi.middleware,
+      riskApi.middleware,
+      paperApi.middleware,
+      strategiesApi.middleware,
       websocketMiddleware
     ),
   // Enable Redux DevTools in development only

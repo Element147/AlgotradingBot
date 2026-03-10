@@ -84,4 +84,4 @@ Write-Host "  Frontend:  http://localhost:5173" -ForegroundColor White
 Write-Host "  Backend:   http://localhost:8080" -ForegroundColor White
 Write-Host "  API Docs:  http://localhost:8080/swagger-ui.html" -ForegroundColor White
 Write-Host ""
-Write-Host "To stop all services, run: .\stop-all.ps1" -ForegroundColor Yellow
+Write-Host "To stop all services, run: .\stop.ps1" -ForegroundColor Yellow

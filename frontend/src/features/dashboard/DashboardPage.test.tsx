@@ -16,6 +16,10 @@ vi.mock('./PerformanceCard', () => ({
   PerformanceCard: () => <div data-testid="performance-card">Performance Card</div>,
 }));
 
+vi.mock('./PaperTradingCard', () => ({
+  PaperTradingCard: () => <div data-testid="paper-trading-card">Paper Trading</div>,
+}));
+
 vi.mock('./PositionsList', () => ({
   PositionsList: () => <div data-testid="positions-list">Positions List</div>,
 }));
@@ -117,5 +121,6 @@ describe('DashboardPage', () => {
 
     expect(balanceCard).toBeInTheDocument();
     expect(performanceCard).toBeInTheDocument();
+    expect(screen.getByTestId('paper-trading-card')).toBeInTheDocument();
   });
 });

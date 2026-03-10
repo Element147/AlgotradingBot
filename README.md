@@ -1,66 +1,99 @@
 # AlgoTrading Bot
 
-Local-first full-stack algorithmic trading research platform.
+Local-first full-stack algorithmic trading research platform for strategy management, backtesting, risk controls, and paper trading.
 
-This project is designed for safe iteration on strategy research, backtesting, and paper-trading workflows. It does not assume or claim live profitability.
+This project is research-first and safety-first:
+- default behavior is `test`/`paper`
+- no live-money trading by default
+- no profitability claims without reproducible evidence
 
-## Current Stack
+## Stack
 
 - Backend: Java 21, Spring Boot 3.4.1, Gradle Kotlin DSL
-- Frontend: React 19.2.0, TypeScript, Vite 8 beta, Redux Toolkit, React Router 7.13.1, MUI 7.3.9
-- Infra: Docker Compose (`AlgotradingBot/compose.yaml`) with PostgreSQL 16 and Kafka 7.6.0
+- Frontend: React 19, TypeScript, Vite, Redux Toolkit, RTK Query, React Router 7, MUI 7
+- Local infra: Docker Compose with PostgreSQL and Kafka (`AlgotradingBot/compose.yaml`)
 
-## Quick Start
+## MVP Status (March 10, 2026)
+
+Implemented and wired end-to-end:
+- Strategy Management MVP (backend endpoints + frontend working page)
+- Backtest MVP (run + history/details with fees/slippage metadata)
+- Risk Controls MVP (config + circuit breaker status/override safeguards)
+- Paper Trading MVP (minimal order lifecycle + dashboard paper state)
+
+No placeholder pages remain for:
+- Strategies (`/strategies`)
+- Backtest (`/backtest`)
+- Risk (`/risk`)
+
+## Local Start (Exact Commands)
+
+From repo root (`C:\Git\algotradingbot`):
 
 ```powershell
-.\build-all.ps1
-.\run-all.ps1
+.\build.ps1
+.\run.ps1
 ```
 
-Open:
+These root wrappers orchestrate both backend and frontend:
+- `build.ps1` -> full-stack build
+- `run.ps1` -> start backend + frontend
+- `stop.ps1` -> stop backend + frontend
+
+Stop all services:
+
+```powershell
+.\stop.ps1
+```
+
+## Local URLs
+
 - Frontend: http://localhost:5173
-- Backend health: http://localhost:8080/actuator/health
+- Backend Health: http://localhost:8080/actuator/health
 - Swagger UI: http://localhost:8080/swagger-ui.html
 
-Stop:
+## Local Backtest Workflow
 
-```powershell
-.\stop-all.ps1
+1. Open `http://localhost:5173/backtest`.
+2. In `Dataset Upload`, select your local CSV and upload it.
+3. In `Run Backtest`, choose:
+   - `Algorithm` (`BOLLINGER_BANDS`, `SMA_CROSSOVER`, or `BUY_AND_HOLD`)
+   - uploaded `Dataset`
+   - market/date range/assumptions (fees + slippage)
+4. Click `Run Backtest` and monitor status/results in history/details.
+
+CSV format expected:
+
+```text
+timestamp,symbol,open,high,low,close,volume
 ```
 
-## Local Dev Commands
-
-Backend:
-
-```powershell
-cd AlgotradingBot
-.\gradlew.bat check
-.\gradlew.bat test
-```
+## Verification Commands
 
 Frontend:
 
 ```powershell
 cd frontend
 npm run lint
-npm run test
+npm run test -- --watch=false
 npm run build
 ```
 
-## Safety Defaults
+Backend:
 
-- Default environment behavior should be `test` or `paper`.
-- Do not connect to real-money live trading by default.
-- Do not present simulated/backtest results as guaranteed returns.
-- Keep risk controls and environment separation intact.
+```powershell
+cd AlgotradingBot
+.\gradlew.bat test
+.\gradlew.bat build
+```
 
-## Repo Layout
+Cross-stack orchestration:
 
-```text
-AlgotradingBot/   Spring Boot backend
-frontend/         React + TypeScript frontend
-.kiro/            product specs and steering docs
-docs/             roadmap and acceptance criteria
+```powershell
+cd C:\Git\algotradingbot
+.\stop.ps1
+.\build.ps1
+.\run.ps1
 ```
 
 ## Key Docs
@@ -69,15 +102,6 @@ docs/             roadmap and acceptance criteria
 - `PROJECT_STATUS.md`
 - `ARCHITECTURE.md`
 - `TRADING_GUARDRAILS.md`
+- `VERIFICATION.md`
 - `docs/ROADMAP.md`
 - `docs/ACCEPTANCE_CRITERIA.md`
-- `QUICK_START.md`
-- `VERIFICATION.md`
-
-## Verification Snapshot (March 10, 2026)
-
-- Frontend lint passes
-- Frontend tests pass (`389/389`)
-- Frontend build passes
-- Backend `.\gradlew.bat check` passes
-- Root scripts `build-all`, `run-all`, `stop-all` pass

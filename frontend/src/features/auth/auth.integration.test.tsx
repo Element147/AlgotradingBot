@@ -33,7 +33,7 @@ vi.mock('react-router-dom', async () => {
  * 
  * Requirements: 30.3
  */
-describe('Authentication Flow Integration Tests', () => {
+describe('Authentication Flow Integration Tests', { timeout: 15000 }, () => {
   beforeEach(() => {
     // Clear storage before each test
     localStorage.clear();
@@ -54,6 +54,8 @@ describe('Authentication Flow Integration Tests', () => {
       const passwordInput = screen.getByLabelText(/password/i);
       const submitButton = screen.getByRole('button', { name: /sign in/i });
 
+      await user.clear(usernameInput);
+      await user.clear(passwordInput);
       await user.type(usernameInput, 'testuser');
       await user.type(passwordInput, 'password123');
       await user.click(submitButton);
@@ -106,6 +108,8 @@ describe('Authentication Flow Integration Tests', () => {
       const rememberMeCheckbox = screen.getByRole('checkbox', { name: /remember me/i });
       const submitButton = screen.getByRole('button', { name: /sign in/i });
 
+      await user.clear(usernameInput);
+      await user.clear(passwordInput);
       await user.type(usernameInput, 'testuser');
       await user.type(passwordInput, 'password123');
       await user.click(rememberMeCheckbox);

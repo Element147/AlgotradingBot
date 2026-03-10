@@ -1,6 +1,7 @@
 import { Box, Container, Grid, Typography } from '@mui/material';
 
 import { BalanceCard } from './BalanceCard';
+import { PaperTradingCard } from './PaperTradingCard';
 import { PerformanceCard } from './PerformanceCard';
 import { PositionsList } from './PositionsList';
 import { RecentTradesList } from './RecentTradesList';
@@ -46,6 +47,11 @@ const DashboardPage: React.FC = () => (
             {/* System Health Indicator */}
             <Grid size={{ xs: 12, md: 6, lg: 4 }}>
               <SystemHealthIndicator />
+            </Grid>
+
+            {/* Paper Trading State */}
+            <Grid size={{ xs: 12, md: 6, lg: 4 }}>
+              <PaperTradingCard />
             </Grid>
 
             {/* Open Positions */}

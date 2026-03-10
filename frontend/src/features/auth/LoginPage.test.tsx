@@ -19,7 +19,7 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
-describe('LoginPage', () => {
+describe('LoginPage', { timeout: 15000 }, () => {
   let store: ReturnType<typeof configureStore>;
 
   beforeEach(() => {

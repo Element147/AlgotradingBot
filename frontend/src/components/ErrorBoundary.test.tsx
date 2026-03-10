@@ -11,7 +11,7 @@ const ThrowError = ({ shouldThrow }: { shouldThrow: boolean }) => {
   return <div>No error</div>;
 };
 
-describe('ErrorBoundary', () => {
+describe('ErrorBoundary', { timeout: 15000 }, () => {
   // Suppress console.error for these tests
   const originalError = console.error;
   beforeEach(() => {

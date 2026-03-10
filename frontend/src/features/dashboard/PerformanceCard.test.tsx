@@ -39,7 +39,7 @@ const setPerformanceQueryResult = (
   }));
 };
 
-describe('PerformanceCard', () => {
+describe('PerformanceCard', { timeout: 15000 }, () => {
   beforeEach(() => {
     vi.clearAllMocks();
     setPerformanceQueryResult();

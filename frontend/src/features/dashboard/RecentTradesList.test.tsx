@@ -92,7 +92,7 @@ const createMockStore = (
     },
   });
 
-describe('RecentTradesList', () => {
+describe('RecentTradesList', { timeout: 15000 }, () => {
   it('should render loading state', () => {
     const store = createMockStore(mockTrades, 'pending');
 

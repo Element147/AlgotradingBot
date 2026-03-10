@@ -3,6 +3,7 @@ package com.algotrader.bot;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 /**
  * Spring Boot application entry point for the Algorithmic Trading Bot.
@@ -19,6 +20,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
  */
 @SpringBootApplication
 @EnableJpaRepositories(basePackages = "com.algotrader.bot.repository")
+@EnableAsync
 public class BotApplication {
 
     public static void main(String[] args) {

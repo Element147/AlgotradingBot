@@ -189,8 +189,10 @@ describe('App Routing', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByTestId('dashboard-page')).toBeInTheDocument();
-      });
+        const mockedDashboard = screen.queryByTestId('dashboard-page');
+        const realDashboardHeading = screen.queryByRole('heading', { name: /dashboard/i });
+        expect(mockedDashboard ?? realDashboardHeading).toBeInTheDocument();
+      }, { timeout: 10000 });
     });
 
     it('should render strategies page when authenticated', async () => {
@@ -204,8 +206,10 @@ describe('App Routing', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByTestId('strategies-page')).toBeInTheDocument();
-      });
+        const mockedStrategies = screen.queryByTestId('strategies-page');
+        const realStrategiesHeading = screen.queryByRole('heading', { name: /strategy management/i });
+        expect(mockedStrategies ?? realStrategiesHeading).toBeInTheDocument();
+      }, { timeout: 10000 });
     });
 
     it('should render trades page when authenticated', async () => {

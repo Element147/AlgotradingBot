@@ -1,0 +1,128 @@
+package com.algotrader.bot.controller;
+
+import com.algotrader.bot.entity.Account;
+import com.algotrader.bot.repository.AccountRepository;
+import com.algotrader.bot.repository.PaperOrderRepository;
+import com.algotrader.bot.repository.PortfolioRepository;
+import com.algotrader.bot.security.JwtTokenProvider;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+@Transactional
+class PaperTradingControllerIntegrationTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private PaperOrderRepository paperOrderRepository;
+
+    @Autowired
+    private PortfolioRepository portfolioRepository;
+
+    @Autowired
+    private AccountRepository accountRepository;
+
+    private String authToken;
+
+    @BeforeEach
+    void setUp() {
+        authToken = jwtTokenProvider.generateToken("testuser", "ROLE_USER");
+        paperOrderRepository.deleteAll();
+        portfolioRepository.deleteAll();
+
+        Account account = new Account(
+            new BigDecimal("100000"),
+            new BigDecimal("0.02"),
+            new BigDecimal("0.25")
+        );
+        accountRepository.save(account);
+    }
+
+    @Test
+    void placeOrder_executesAndFillsByDefault() throws Exception {
+        PaperOrderRequest request = new PaperOrderRequest();
+        request.setSymbol("BTC/USDT");
+        request.setSide("BUY");
+        request.setQuantity(new BigDecimal("1"));
+        request.setPrice(new BigDecimal("100"));
+        request.setExecuteNow(true);
+
+        mockMvc.perform(post("/api/paper/orders")
+                .header("Authorization", "Bearer " + authToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("FILLED"))
+            .andExpect(jsonPath("$.fillPrice").exists());
+    }
+
+    @Test
+    void placeOrder_canCreatePendingAndCancel() throws Exception {
+        PaperOrderRequest request = new PaperOrderRequest();
+        request.setSymbol("BTC/USDT");
+        request.setSide("BUY");
+        request.setQuantity(new BigDecimal("1"));
+        request.setPrice(new BigDecimal("100"));
+        request.setExecuteNow(false);
+
+        String response = mockMvc.perform(post("/api/paper/orders")
+                .header("Authorization", "Bearer " + authToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("NEW"))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+        Long orderId = objectMapper.readTree(response).get("id").asLong();
+
+        mockMvc.perform(post("/api/paper/orders/{orderId}/cancel", orderId)
+                .header("Authorization", "Bearer " + authToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("CANCELLED"));
+    }
+
+    @Test
+    void getPaperState_returnsSummary() throws Exception {
+        mockMvc.perform(get("/api/paper/state")
+                .header("Authorization", "Bearer " + authToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.paperMode").value(true))
+            .andExpect(jsonPath("$.cashBalance").exists())
+            .andExpect(jsonPath("$.totalOrders").exists());
+    }
+
+    @Test
+    void listOrders_returnsArray() throws Exception {
+        mockMvc.perform(get("/api/paper/orders")
+                .header("Authorization", "Bearer " + authToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(0))));
+    }
+}

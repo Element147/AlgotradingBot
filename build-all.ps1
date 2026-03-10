@@ -56,6 +56,6 @@ Write-Host "[OK] All builds completed successfully!" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "Next steps:" -ForegroundColor Cyan
-Write-Host "  1. Run: .\run-all.ps1" -ForegroundColor White
+Write-Host "  1. Run: .\run.ps1" -ForegroundColor White
 Write-Host "  2. Access frontend: http://localhost:5173" -ForegroundColor White
 Write-Host "  3. Access backend API: http://localhost:8080" -ForegroundColor White

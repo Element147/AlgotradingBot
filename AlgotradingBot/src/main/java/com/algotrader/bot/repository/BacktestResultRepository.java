@@ -12,6 +12,7 @@ import java.util.List;
  */
 @Repository
 public interface BacktestResultRepository extends JpaRepository<BacktestResult, Long> {
+    List<BacktestResult> findAllByOrderByTimestampDesc();
 
     /**
      * Find all backtest results for a specific strategy.

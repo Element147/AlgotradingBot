@@ -29,10 +29,22 @@ public class BacktestResult {
     @Column(nullable = false, length = 50)
     private String strategyId;
 
+    @Column
+    private Long datasetId;
+
+    @Size(max = 100)
+    @Column(length = 100)
+    private String datasetName;
+
     @NotNull
     @Size(min = 3, max = 20)
     @Column(nullable = false, length = 20)
     private String symbol;
+
+    @NotNull
+    @Size(min = 1, max = 10)
+    @Column(nullable = false, length = 10)
+    private String timeframe;
 
     @NotNull
     @Column(nullable = false)
@@ -78,6 +90,22 @@ public class BacktestResult {
     private ValidationStatus validationStatus;
 
     @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private ExecutionStatus executionStatus;
+
+    @NotNull
+    @Column(nullable = false)
+    private Integer feesBps;
+
+    @NotNull
+    @Column(nullable = false)
+    private Integer slippageBps;
+
+    @Column
+    private String errorMessage;
+
+    @NotNull
     @Column(nullable = false)
     private LocalDateTime timestamp;
 
@@ -97,12 +125,28 @@ public class BacktestResult {
         PRODUCTION_READY
     }
 
+    public enum ExecutionStatus {
+        PENDING,
+        RUNNING,
+        COMPLETED,
+        FAILED
+    }
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
         if (timestamp == null) {
             timestamp = LocalDateTime.now();
+        }
+        if (executionStatus == null) {
+            executionStatus = ExecutionStatus.PENDING;
+        }
+        if (feesBps == null) {
+            feesBps = 10;
+        }
+        if (slippageBps == null) {
+            slippageBps = 3;
         }
     }
 
@@ -121,6 +165,7 @@ public class BacktestResult {
                           BigDecimal maxDrawdown, Integer totalTrades, ValidationStatus validationStatus) {
         this.strategyId = strategyId;
         this.symbol = symbol;
+        this.timeframe = "1h";
         this.startDate = startDate;
         this.endDate = endDate;
         this.initialBalance = initialBalance;
@@ -131,6 +176,9 @@ public class BacktestResult {
         this.maxDrawdown = maxDrawdown;
         this.totalTrades = totalTrades;
         this.validationStatus = validationStatus;
+        this.executionStatus = ExecutionStatus.COMPLETED;
+        this.feesBps = 10;
+        this.slippageBps = 3;
         this.timestamp = LocalDateTime.now();
     }
 
@@ -155,8 +203,32 @@ public class BacktestResult {
         return symbol;
     }
 
+    public Long getDatasetId() {
+        return datasetId;
+    }
+
+    public void setDatasetId(Long datasetId) {
+        this.datasetId = datasetId;
+    }
+
+    public String getDatasetName() {
+        return datasetName;
+    }
+
+    public void setDatasetName(String datasetName) {
+        this.datasetName = datasetName;
+    }
+
     public void setSymbol(String symbol) {
         this.symbol = symbol;
+    }
+
+    public String getTimeframe() {
+        return timeframe;
+    }
+
+    public void setTimeframe(String timeframe) {
+        this.timeframe = timeframe;
     }
 
     public LocalDateTime getStartDate() {
@@ -239,6 +311,38 @@ public class BacktestResult {
         this.validationStatus = validationStatus;
     }
 
+    public ExecutionStatus getExecutionStatus() {
+        return executionStatus;
+    }
+
+    public void setExecutionStatus(ExecutionStatus executionStatus) {
+        this.executionStatus = executionStatus;
+    }
+
+    public Integer getFeesBps() {
+        return feesBps;
+    }
+
+    public void setFeesBps(Integer feesBps) {
+        this.feesBps = feesBps;
+    }
+
+    public Integer getSlippageBps() {
+        return slippageBps;
+    }
+
+    public void setSlippageBps(Integer slippageBps) {
+        this.slippageBps = slippageBps;
+    }
+
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
+    public void setErrorMessage(String errorMessage) {
+        this.errorMessage = errorMessage;
+    }
+
     public LocalDateTime getTimestamp() {
         return timestamp;
     }
@@ -260,6 +364,8 @@ public class BacktestResult {
         return "BacktestResult{" +
                 "id=" + id +
                 ", strategyId='" + strategyId + '\'' +
+                ", datasetId=" + datasetId +
+                ", datasetName='" + datasetName + '\'' +
                 ", symbol='" + symbol + '\'' +
                 ", startDate=" + startDate +
                 ", endDate=" + endDate +

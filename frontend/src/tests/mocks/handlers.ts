@@ -156,4 +156,186 @@ export const handlers = [
       cashRatio: '85.0',
     });
   }),
+
+  // Strategy management endpoints
+  http.get(`${API_BASE_URL}/api/strategies`, () =>
+    HttpResponse.json([
+      {
+        id: 1,
+        name: 'Bollinger BTC Mean Reversion',
+        type: 'bollinger-bands',
+        status: 'STOPPED',
+        symbol: 'BTC/USDT',
+        timeframe: '1h',
+        riskPerTrade: 0.02,
+        minPositionSize: 10,
+        maxPositionSize: 100,
+        profitLoss: 0,
+        tradeCount: 0,
+        currentDrawdown: 0,
+        paperMode: true,
+      },
+    ])
+  ),
+  http.post(`${API_BASE_URL}/api/strategies/:strategyId/start`, ({ params }) =>
+    HttpResponse.json({
+      strategyId: Number(params.strategyId),
+      status: 'RUNNING',
+      message: 'Strategy started in paper mode',
+    })
+  ),
+  http.post(`${API_BASE_URL}/api/strategies/:strategyId/stop`, ({ params }) =>
+    HttpResponse.json({
+      strategyId: Number(params.strategyId),
+      status: 'STOPPED',
+      message: 'Strategy stopped',
+    })
+  ),
+  http.put(`${API_BASE_URL}/api/strategies/:strategyId/config`, async ({ request, params }) => {
+    const body = (await request.json()) as Record<string, unknown>;
+    return HttpResponse.json({
+      id: Number(params.strategyId),
+      name: 'Bollinger BTC Mean Reversion',
+      type: 'bollinger-bands',
+      status: 'STOPPED',
+      ...body,
+      profitLoss: 0,
+      tradeCount: 0,
+      currentDrawdown: 0,
+      paperMode: true,
+    });
+  }),
+
+  // Backtest endpoints
+  http.get(`${API_BASE_URL}/api/backtests/algorithms`, () =>
+    HttpResponse.json([
+      { id: 'BOLLINGER_BANDS', label: 'Bollinger Bands', description: 'Mean-reversion bands strategy' },
+      { id: 'SMA_CROSSOVER', label: 'SMA Crossover', description: 'Fast/slow moving average crossover' },
+      { id: 'BUY_AND_HOLD', label: 'Buy and Hold', description: 'Baseline hold from first to last candle' },
+    ])
+  ),
+  http.get(`${API_BASE_URL}/api/backtests/datasets`, () =>
+    HttpResponse.json([
+      {
+        id: 7,
+        name: 'BTC 1h 2025',
+        originalFilename: 'btc_2025.csv',
+        rowCount: 1000,
+        symbolsCsv: 'BTC/USDT,ETH/USDT',
+        dataStart: '2025-01-01T00:00:00',
+        dataEnd: '2025-12-31T23:00:00',
+        uploadedAt: '2026-03-10T10:00:00',
+      },
+    ])
+  ),
+  http.post(`${API_BASE_URL}/api/backtests/datasets/upload`, () =>
+    HttpResponse.json({
+      id: 8,
+      name: 'Uploaded dataset',
+      originalFilename: 'upload.csv',
+      rowCount: 240,
+      symbolsCsv: 'BTC/USDT',
+      dataStart: '2025-01-01T00:00:00',
+      dataEnd: '2025-01-10T23:00:00',
+      uploadedAt: '2026-03-10T10:01:00',
+    })
+  ),
+  http.get(`${API_BASE_URL}/api/backtests`, () =>
+    HttpResponse.json([
+      {
+        id: 42,
+        strategyId: 'BOLLINGER_BANDS',
+        datasetName: 'BTC 1h 2025',
+        symbol: 'BTC/USDT',
+        timeframe: '1h',
+        executionStatus: 'COMPLETED',
+        validationStatus: 'PASSED',
+        feesBps: 10,
+        slippageBps: 3,
+        timestamp: '2026-03-10T10:00:00',
+        initialBalance: 1000,
+        finalBalance: 1080,
+      },
+    ])
+  ),
+  http.get(`${API_BASE_URL}/api/backtests/:id`, ({ params }) =>
+    HttpResponse.json({
+      id: Number(params.id),
+      strategyId: 'BOLLINGER_BANDS',
+      datasetId: 7,
+      datasetName: 'BTC 1h 2025',
+      symbol: 'BTC/USDT',
+      timeframe: '1h',
+      executionStatus: 'COMPLETED',
+      validationStatus: 'PASSED',
+      feesBps: 10,
+      slippageBps: 3,
+      timestamp: '2026-03-10T10:00:00',
+      initialBalance: 1000,
+      finalBalance: 1080,
+      sharpeRatio: 1.2,
+      profitFactor: 1.6,
+      winRate: 52.0,
+      maxDrawdown: 18.0,
+      totalTrades: 80,
+      startDate: '2025-01-01T00:00:00',
+      endDate: '2025-12-31T00:00:00',
+      errorMessage: null,
+    })
+  ),
+  http.post(`${API_BASE_URL}/api/backtests/run`, () =>
+    HttpResponse.json({
+      id: 43,
+      status: 'PENDING',
+      submittedAt: '2026-03-10T10:01:00',
+    })
+  ),
+
+  // Risk endpoints
+  http.get(`${API_BASE_URL}/api/risk/status`, () =>
+    HttpResponse.json({
+      currentDrawdown: 10,
+      maxDrawdownLimit: 25,
+      dailyLoss: 2,
+      dailyLossLimit: 5,
+      openRiskExposure: 20,
+      positionCorrelation: 35,
+      circuitBreakerActive: false,
+      circuitBreakerReason: '',
+    })
+  ),
+  http.get(`${API_BASE_URL}/api/risk/config`, () =>
+    HttpResponse.json({
+      maxRiskPerTrade: 0.02,
+      maxDailyLossLimit: 0.05,
+      maxDrawdownLimit: 0.25,
+      maxOpenPositions: 5,
+      correlationLimit: 0.75,
+      circuitBreakerActive: false,
+      circuitBreakerReason: '',
+    })
+  ),
+  http.put(`${API_BASE_URL}/api/risk/config`, async ({ request }) =>
+    HttpResponse.json(await request.json())
+  ),
+  http.post(`${API_BASE_URL}/api/risk/circuit-breaker/override`, async ({ request }) =>
+    HttpResponse.json(await request.json())
+  ),
+  http.get(`${API_BASE_URL}/api/risk/alerts`, () =>
+    HttpResponse.json([])
+  ),
+
+  // Paper state endpoint
+  http.get(`${API_BASE_URL}/api/paper/state`, () =>
+    HttpResponse.json({
+      paperMode: true,
+      cashBalance: 10000,
+      positionCount: 2,
+      totalOrders: 12,
+      openOrders: 1,
+      filledOrders: 10,
+      cancelledOrders: 1,
+      lastOrderAt: '2026-03-10T10:00:00',
+    })
+  ),
 ];
