@@ -1,6 +1,4 @@
-import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { z } from 'zod';
+import { Login as LoginIcon } from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -14,10 +12,14 @@ import {
   Typography,
   Alert,
 } from '@mui/material';
-import { Login as LoginIcon } from '@mui/icons-material';
+import { useState, type FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { z } from 'zod';
+
 import { useLoginMutation } from './authApi';
-import { useAppDispatch } from '@/app/hooks';
 import { setCredentials } from './authSlice';
+
+import { useAppDispatch } from '@/app/hooks';
 
 // Zod validation schema
 const loginSchema = z.object({
@@ -120,7 +122,9 @@ export default function LoginPage() {
                 autoComplete="username"
                 autoFocus
                 value={formData.username}
-                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, username: e.target.value }))
+                }
                 error={!!errors.username}
                 helperText={errors.username}
                 disabled={isLoading}
@@ -137,7 +141,9 @@ export default function LoginPage() {
                 id="password"
                 autoComplete="current-password"
                 value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, password: e.target.value }))
+                }
                 error={!!errors.password}
                 helperText={errors.password}
                 disabled={isLoading}
@@ -148,7 +154,9 @@ export default function LoginPage() {
                 control={
                   <Checkbox
                     checked={formData.rememberMe}
-                    onChange={(e) => setFormData({ ...formData, rememberMe: e.target.checked })}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, rememberMe: e.target.checked }))
+                    }
                     color="primary"
                     disabled={isLoading}
                   />
@@ -175,3 +183,4 @@ export default function LoginPage() {
     </Container>
   );
 }
+

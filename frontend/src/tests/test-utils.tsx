@@ -4,7 +4,11 @@ import { Provider } from 'react-redux';
 import { configureStore, PreloadedState } from '@reduxjs/toolkit';
 import { BrowserRouter } from 'react-router-dom';
 import authReducer from '@/features/auth/authSlice';
+import environmentReducer from '@/features/environment/environmentSlice';
+import settingsReducer from '@/features/settings/settingsSlice';
+import websocketReducer from '@/features/websocket/websocketSlice';
 import { authApi } from '@/features/auth/authApi';
+import { accountApi } from '@/features/account/accountApi';
 import type { RootState } from '@/app/store';
 
 /**
@@ -28,10 +32,14 @@ export function setupStore(preloadedState?: PreloadedState<RootState>) {
   return configureStore({
     reducer: {
       auth: authReducer,
+      environment: environmentReducer,
+      settings: settingsReducer,
+      websocket: websocketReducer,
       [authApi.reducerPath]: authApi.reducer,
+      [accountApi.reducerPath]: accountApi.reducer,
     },
     middleware: (getDefaultMiddleware) =>
-      getDefaultMiddleware().concat(authApi.middleware),
+      getDefaultMiddleware().concat(authApi.middleware, accountApi.middleware),
     preloadedState,
   });
 }

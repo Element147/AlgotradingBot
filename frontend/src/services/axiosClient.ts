@@ -1,4 +1,5 @@
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig, type AxiosResponse, type AxiosError } from 'axios';
+
 import { store } from '../app/store';
 import { setToken, logout } from '../features/auth/authSlice';
 
@@ -36,7 +37,7 @@ axiosClient.interceptors.request.use(
     const state = store.getState();
     
     // Add authentication token if available
-    const token = state.auth.token;
+    const {token} = state.auth;
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -166,7 +167,7 @@ export const getErrorMessage = (error: unknown): string => {
   if (axios.isAxiosError(error)) {
     // Server responded with error
     if (error.response?.data) {
-      const data = error.response.data as any;
+      const {data} = error.response;
       return data.message || data.error || 'An error occurred';
     }
     

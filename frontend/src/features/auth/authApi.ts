@@ -1,6 +1,8 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
-import { baseQueryWithEnvironment } from '@/services/api';
+
 import { type User } from './authSlice';
+
+import { baseQueryWithEnvironment } from '@/services/api';
 
 export interface LoginRequest {
   username: string;

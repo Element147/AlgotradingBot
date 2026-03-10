@@ -57,4 +57,21 @@ public interface TradeRepository extends JpaRepository<Trade, Long> {
      * @return list of trades matching the criteria
      */
     List<Trade> findBySymbolAndEntryTimeBetween(String symbol, LocalDateTime start, LocalDateTime end);
+
+    /**
+     * Find all trades for a specific account after a given time.
+     *
+     * @param accountId the account ID
+     * @param startTime the start date/time
+     * @return list of trades after the start time
+     */
+    List<Trade> findByAccountIdAndEntryTimeAfter(Long accountId, LocalDateTime startTime);
+
+    /**
+     * Find all completed trades (with exit time) for a specific account, ordered by exit time descending.
+     *
+     * @param accountId the account ID
+     * @return list of completed trades ordered by exit time (most recent first)
+     */
+    List<Trade> findByAccountIdAndExitTimeNotNullOrderByExitTimeDesc(Long accountId);
 }

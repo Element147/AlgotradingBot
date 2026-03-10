@@ -102,6 +102,12 @@ describe('Authentication Flow Integration Tests', () => {
       await user.type(usernameInput, 'testuser');
       await user.type(passwordInput, 'password123');
       await user.click(rememberMeCheckbox);
+
+      // Ensure checkbox state is committed before submit to avoid timing flakes
+      await waitFor(() => {
+        expect(rememberMeCheckbox).toBeChecked();
+      });
+
       await user.click(submitButton);
 
       // Wait for login to complete
@@ -111,7 +117,9 @@ describe('Authentication Flow Integration Tests', () => {
       });
 
       // Verify refresh token is stored in localStorage
-      expect(localStorage.getItem('refresh_token')).toBe('mock-refresh-token-67890');
+      await waitFor(() => {
+        expect(localStorage.getItem('refresh_token')).toBe('mock-refresh-token-67890');
+      });
 
       // Verify navigation to dashboard was called
       expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
@@ -522,3 +530,4 @@ describe('Authentication Flow Integration Tests', () => {
     });
   });
 });
+

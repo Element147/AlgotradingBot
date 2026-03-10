@@ -1,6 +1,7 @@
+import { CircularProgress, Box } from '@mui/material';
 import { type ReactNode, useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { CircularProgress, Box } from '@mui/material';
+
 import { useAppSelector, useAppDispatch } from '@/app/hooks';
 import { restoreSession, checkSessionTimeout } from '@/features/auth/authSlice';
 

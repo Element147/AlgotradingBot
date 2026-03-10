@@ -1,8 +1,10 @@
 import { fetchBaseQuery } from '@reduxjs/toolkit/query';
 import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolkit/query';
-import type { RootState } from '../app/store';
-import { setToken, logout } from '@/features/auth/authSlice';
 import { Mutex } from 'async-mutex';
+
+import type { RootState } from '../app/store';
+
+import { setToken, logout } from '@/features/auth/authSlice';
 
 // Mutex to prevent multiple simultaneous refresh attempts
 const mutex = new Mutex();

@@ -84,8 +84,11 @@ npm install
 # Run development server (use controlPwshProcess for long-running)
 npm run dev
 
-# Run tests
+# Run tests (single run, non-interactive)
 npm test
+
+# Run tests in watch mode (interactive)
+npm run test:watch
 
 # Run tests with coverage
 npm run test:coverage
@@ -269,7 +272,7 @@ Before deploying any financial calculation code:
 4. Use `getDiagnostics` tool to check for compile/lint issues
 
 ### Frontend: After Creating/Modifying Code
-1. Run `npm test` to verify tests pass
+1. Run `npm test` to verify tests pass (runs once, non-interactive)
 2. Check test coverage with `npm run test:coverage`
 3. Run `npm run lint` to check for linting errors
 4. Use `getDiagnostics` tool to check for TypeScript errors

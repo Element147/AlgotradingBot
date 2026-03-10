@@ -3,6 +3,7 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 export interface User {
   id: string;
   username: string;
+  email: string;
   role: 'admin' | 'trader';
 }
 
@@ -144,5 +145,13 @@ const authSlice = createSlice({
 
 export const { setCredentials, setToken, logout, setLoading, setError, updateActivity, checkSessionTimeout, restoreSession } =
   authSlice.actions;
+
+// Selectors
+export const selectUser = (state: { auth: AuthState }) => state.auth.user;
+export const selectIsAuthenticated = (state: { auth: AuthState }) => state.auth.isAuthenticated;
+export const selectToken = (state: { auth: AuthState }) => state.auth.token;
+export const selectAuthToken = (state: { auth: AuthState }) => state.auth.token; // Alias for consistency
+export const selectAuthLoading = (state: { auth: AuthState }) => state.auth.loading;
+export const selectAuthError = (state: { auth: AuthState }) => state.auth.error;
 
 export default authSlice.reducer;
