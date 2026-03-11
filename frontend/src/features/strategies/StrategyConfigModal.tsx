@@ -16,6 +16,7 @@ import {
   validateStrategyConfig,
 } from './strategyValidation';
 
+import { FieldTooltip } from '@/components/ui/FieldTooltip';
 import { sanitizeText } from '@/utils/security';
 
 interface ConfigDraft {
@@ -80,76 +81,86 @@ export function StrategyConfigModal({
       <DialogTitle>Update Strategy Configuration</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
-          <TextField
-            label="Symbol"
-            value={draft.symbol}
-            onChange={(event) =>
-              setDraft((prev) => ({ ...prev, symbol: sanitizeText(event.target.value) }))
-            }
-            error={Boolean(validation.errors.symbol)}
-            helperText={validation.errors.symbol ?? 'Market pair to trade (for example BTC/USDT).'}
-            fullWidth
-          />
-          <TextField
-            label="Timeframe"
-            value={draft.timeframe}
-            onChange={(event) =>
-              setDraft((prev) => ({ ...prev, timeframe: sanitizeText(event.target.value) }))
-            }
-            error={Boolean(validation.errors.timeframe)}
-            helperText={validation.errors.timeframe ?? 'Candle interval such as 15m, 1h, or 4h.'}
-            fullWidth
-          />
-          <TextField
-            label="Risk Per Trade (0.01 - 0.05)"
-            type="number"
-            value={draft.riskPerTrade}
-            onChange={(event) =>
-              setDraft((prev) => ({
-                ...prev,
-                riskPerTrade: event.target.value,
-              }))
-            }
-            inputProps={{ step: '0.001' }}
-            error={Boolean(validation.errors.riskPerTrade)}
-            helperText={
-              validation.errors.riskPerTrade ??
-              'Fraction of account risked per position. 0.02 means 2%.'
-            }
-            fullWidth
-          />
-          <TextField
-            label="Min Position Size"
-            type="number"
-            value={draft.minPositionSize}
-            onChange={(event) =>
-              setDraft((prev) => ({
-                ...prev,
-                minPositionSize: event.target.value,
-              }))
-            }
-            error={Boolean(validation.errors.minPositionSize)}
-            helperText={
-              validation.errors.minPositionSize ?? 'Lower position bound used by execution sizing logic.'
-            }
-            fullWidth
-          />
-          <TextField
-            label="Max Position Size"
-            type="number"
-            value={draft.maxPositionSize}
-            onChange={(event) =>
-              setDraft((prev) => ({
-                ...prev,
-                maxPositionSize: event.target.value,
-              }))
-            }
-            error={Boolean(validation.errors.maxPositionSize)}
-            helperText={
-              validation.errors.maxPositionSize ?? 'Upper position bound to limit exposure per trade.'
-            }
-            fullWidth
-          />
+          <FieldTooltip title="Trading pair for this strategy. Wrong symbol can invalidate assumptions and risk settings.">
+            <TextField
+              label="Symbol"
+              value={draft.symbol}
+              onChange={(event) =>
+                setDraft((prev) => ({ ...prev, symbol: sanitizeText(event.target.value) }))
+              }
+              error={Boolean(validation.errors.symbol)}
+              helperText={validation.errors.symbol ?? 'Market pair to trade (for example BTC/USDT).'}
+              fullWidth
+            />
+          </FieldTooltip>
+          <FieldTooltip title="Candle interval used by signal logic. Shorter intervals increase trade frequency and noise.">
+            <TextField
+              label="Timeframe"
+              value={draft.timeframe}
+              onChange={(event) =>
+                setDraft((prev) => ({ ...prev, timeframe: sanitizeText(event.target.value) }))
+              }
+              error={Boolean(validation.errors.timeframe)}
+              helperText={validation.errors.timeframe ?? 'Candle interval such as 15m, 1h, or 4h.'}
+              fullWidth
+            />
+          </FieldTooltip>
+          <FieldTooltip title="Fraction of capital risked per trade. Higher values increase drawdown and stop-out probability.">
+            <TextField
+              label="Risk Per Trade (0.01 - 0.05)"
+              type="number"
+              value={draft.riskPerTrade}
+              onChange={(event) =>
+                setDraft((prev) => ({
+                  ...prev,
+                  riskPerTrade: event.target.value,
+                }))
+              }
+              inputProps={{ step: '0.001' }}
+              error={Boolean(validation.errors.riskPerTrade)}
+              helperText={
+                validation.errors.riskPerTrade ??
+                'Fraction of account risked per position. 0.02 means 2%.'
+              }
+              fullWidth
+            />
+          </FieldTooltip>
+          <FieldTooltip title="Minimum order size gate. Too high may skip valid signals; too low may create noisy micro-trades.">
+            <TextField
+              label="Min Position Size"
+              type="number"
+              value={draft.minPositionSize}
+              onChange={(event) =>
+                setDraft((prev) => ({
+                  ...prev,
+                  minPositionSize: event.target.value,
+                }))
+              }
+              error={Boolean(validation.errors.minPositionSize)}
+              helperText={
+                validation.errors.minPositionSize ?? 'Lower position bound used by execution sizing logic.'
+              }
+              fullWidth
+            />
+          </FieldTooltip>
+          <FieldTooltip title="Maximum order size cap. Raising this increases tail risk per signal.">
+            <TextField
+              label="Max Position Size"
+              type="number"
+              value={draft.maxPositionSize}
+              onChange={(event) =>
+                setDraft((prev) => ({
+                  ...prev,
+                  maxPositionSize: event.target.value,
+                }))
+              }
+              error={Boolean(validation.errors.maxPositionSize)}
+              helperText={
+                validation.errors.maxPositionSize ?? 'Upper position bound to limit exposure per trade.'
+              }
+              fullWidth
+            />
+          </FieldTooltip>
 
           {submitError ? <Alert severity="error">{submitError}</Alert> : null}
         </Stack>

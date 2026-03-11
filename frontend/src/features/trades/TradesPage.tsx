@@ -28,6 +28,7 @@ import {
 import { VirtualizedTradeTable } from './VirtualizedTradeTable';
 
 import { AppLayout } from '@/components/layout/AppLayout';
+import { FieldTooltip } from '@/components/ui/FieldTooltip';
 import { selectCurrency, selectTimezone } from '@/features/settings/settingsSlice';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
@@ -296,64 +297,76 @@ export default function TradesPage() {
                   Filters
                 </Typography>
                 <Stack spacing={2}>
-                  <TextField
-                    label="Account ID"
-                    value={draft.accountId}
-                    onChange={(event) =>
-                      setDraft((prev) => ({ ...prev, accountId: event.target.value }))
-                    }
-                    placeholder="e.g. 1"
-                    helperText="Optional: load only trades from one account."
-                  />
-                  <TextField
-                    select
-                    label="Symbol"
-                    value={draft.symbol}
-                    onChange={(event) => setDraft((prev) => ({ ...prev, symbol: event.target.value }))}
-                    helperText="Optional: narrow history to one market pair."
-                  >
-                    <MenuItem value="">All symbols</MenuItem>
-                    {symbols.map((symbol) => (
-                      <MenuItem key={symbol} value={symbol}>
-                        {symbol}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                  <TextField
-                    label="Start Date"
-                    type="datetime-local"
-                    value={draft.startDate}
-                    onChange={(event) =>
-                      setDraft((prev) => ({ ...prev, startDate: event.target.value }))
-                    }
-                    helperText="Optional: include trades opened after this date/time."
-                    slotProps={{ inputLabel: { shrink: true } }}
-                  />
-                  <TextField
-                    label="End Date"
-                    type="datetime-local"
-                    value={draft.endDate}
-                    onChange={(event) => setDraft((prev) => ({ ...prev, endDate: event.target.value }))}
-                    helperText="Optional: include trades opened before this date/time."
-                    slotProps={{ inputLabel: { shrink: true } }}
-                  />
-                  <TextField
-                    label="Result Limit"
-                    type="number"
-                    value={draft.limit}
-                    onChange={(event) => setDraft((prev) => ({ ...prev, limit: event.target.value }))}
-                    helperText="Number of rows to request from backend (1-1000)."
-                    inputProps={{ min: 1, max: 1000, step: 1 }}
-                  />
-                  <TextField
-                    label="Search Trade ID"
-                    value={draft.searchId}
-                    onChange={(event) => {
-                      setDraft((prev) => ({ ...prev, searchId: event.target.value }));
-                      setPage(1);
-                    }}
-                    helperText="Debounced by 300ms."
-                  />
+                  <FieldTooltip title="Optional account scope. Leaving empty queries all visible accounts.">
+                    <TextField
+                      label="Account ID"
+                      value={draft.accountId}
+                      onChange={(event) =>
+                        setDraft((prev) => ({ ...prev, accountId: event.target.value }))
+                      }
+                      placeholder="e.g. 1"
+                      helperText="Optional: load only trades from one account."
+                    />
+                  </FieldTooltip>
+                  <FieldTooltip title="Optional symbol filter. Narrowing too much can hide correlated behavior in review.">
+                    <TextField
+                      select
+                      label="Symbol"
+                      value={draft.symbol}
+                      onChange={(event) => setDraft((prev) => ({ ...prev, symbol: event.target.value }))}
+                      helperText="Optional: narrow history to one market pair."
+                    >
+                      <MenuItem value="">All symbols</MenuItem>
+                      {symbols.map((symbol) => (
+                        <MenuItem key={symbol} value={symbol}>
+                          {symbol}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  </FieldTooltip>
+                  <FieldTooltip title="Lower date boundary for trade inclusion. Wrong timezone assumptions can shift results.">
+                    <TextField
+                      label="Start Date"
+                      type="datetime-local"
+                      value={draft.startDate}
+                      onChange={(event) =>
+                        setDraft((prev) => ({ ...prev, startDate: event.target.value }))
+                      }
+                      helperText="Optional: include trades opened after this date/time."
+                      slotProps={{ inputLabel: { shrink: true } }}
+                    />
+                  </FieldTooltip>
+                  <FieldTooltip title="Upper date boundary for trade inclusion. End before start returns empty/invalid slices.">
+                    <TextField
+                      label="End Date"
+                      type="datetime-local"
+                      value={draft.endDate}
+                      onChange={(event) => setDraft((prev) => ({ ...prev, endDate: event.target.value }))}
+                      helperText="Optional: include trades opened before this date/time."
+                      slotProps={{ inputLabel: { shrink: true } }}
+                    />
+                  </FieldTooltip>
+                  <FieldTooltip title="Backend fetch size. Very high limits increase payload size and response time.">
+                    <TextField
+                      label="Result Limit"
+                      type="number"
+                      value={draft.limit}
+                      onChange={(event) => setDraft((prev) => ({ ...prev, limit: event.target.value }))}
+                      helperText="Number of rows to request from backend (1-1000)."
+                      inputProps={{ min: 1, max: 1000, step: 1 }}
+                    />
+                  </FieldTooltip>
+                  <FieldTooltip title="Client-side trade ID lookup. Non-numeric values are rejected by validation.">
+                    <TextField
+                      label="Search Trade ID"
+                      value={draft.searchId}
+                      onChange={(event) => {
+                        setDraft((prev) => ({ ...prev, searchId: event.target.value }));
+                        setPage(1);
+                      }}
+                      helperText="Debounced by 300ms."
+                    />
+                  </FieldTooltip>
 
                   {validationError ? <Alert severity="error">{validationError}</Alert> : null}
 

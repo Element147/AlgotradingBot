@@ -74,11 +74,19 @@ export const EnvironmentSwitch: React.FC<EnvironmentSwitchProps> = ({ onSwitch }
         aria-label="environment mode"
         size="small"
       >
-        <ToggleButton value="test" aria-label="test environment">
+        <ToggleButton
+          value="test"
+          aria-label="test environment"
+          title="Safe default mode for backtests, forward tests, and paper workflows."
+        >
           <TestIcon sx={{ mr: 1 }} />
           Test/Backtest
         </ToggleButton>
-        <ToggleButton value="live" aria-label="live trading">
+        <ToggleButton
+          value="live"
+          aria-label="live trading"
+          title="Live-connected context. Use intentionally and confirm risk controls first."
+        >
           <LiveIcon sx={{ mr: 1 }} />
           Live Trading
         </ToggleButton>

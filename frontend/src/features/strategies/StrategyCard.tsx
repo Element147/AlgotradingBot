@@ -64,6 +64,7 @@ export function StrategyCard({ strategy, busy, onStart, onStop, onConfigure }: S
               color="warning"
               disabled={busy}
               onClick={() => onStop(strategy)}
+              title="Stop strategy execution. Open positions may still need manual handling based on backend logic."
             >
               Stop
             </Button>
@@ -73,11 +74,17 @@ export function StrategyCard({ strategy, busy, onStart, onStop, onConfigure }: S
               color="success"
               disabled={busy}
               onClick={() => onStart(strategy)}
+              title="Start strategy execution in configured mode. Verify risk settings before enabling."
             >
               Start
             </Button>
           )}
-          <Button variant="outlined" disabled={busy} onClick={() => onConfigure(strategy)}>
+          <Button
+            variant="outlined"
+            disabled={busy}
+            onClick={() => onConfigure(strategy)}
+            title="Edit symbol, timeframe, and risk sizing bounds. Changes affect future behavior."
+          >
             Configure
           </Button>
         </Stack>

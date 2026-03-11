@@ -30,6 +30,7 @@ import { BacktestConfigModal, type BacktestConfigFormState } from './BacktestCon
 import { BacktestResults } from './BacktestResults';
 
 import { AppLayout } from '@/components/layout/AppLayout';
+import { FieldTooltip } from '@/components/ui/FieldTooltip';
 import { getStrategyProfile } from '@/features/strategies/strategyProfiles';
 import { sanitizeText } from '@/utils/security';
 
@@ -148,22 +149,26 @@ export default function BacktestPage() {
                   Dataset Upload
                 </Typography>
                 <Stack spacing={2}>
-                  <TextField
-                    label="Dataset Name (optional)"
-                    value={datasetName}
-                    onChange={(event) => setDatasetName(sanitizeText(event.target.value))}
-                    placeholder="BTC 1h 2025"
-                    helperText="Optional label to identify symbol/timeframe/date range."
-                  />
-                  <Button variant="outlined" component="label">
-                    {datasetFile ? `Selected: ${datasetFile.name}` : 'Choose CSV File'}
-                    <input
-                      hidden
-                      type="file"
-                      accept=".csv,text/csv"
-                      onChange={(event) => setDatasetFile(event.target.files?.[0] ?? null)}
+                  <FieldTooltip title="Human-readable dataset label. Clear naming prevents running backtests on the wrong file.">
+                    <TextField
+                      label="Dataset Name (optional)"
+                      value={datasetName}
+                      onChange={(event) => setDatasetName(sanitizeText(event.target.value))}
+                      placeholder="BTC 1h 2025"
+                      helperText="Optional label to identify symbol/timeframe/date range."
                     />
-                  </Button>
+                  </FieldTooltip>
+                  <FieldTooltip title="CSV upload defines the historical data source. Incorrect format or timeframe invalidates results.">
+                    <Button variant="outlined" component="label">
+                      {datasetFile ? `Selected: ${datasetFile.name}` : 'Choose CSV File'}
+                      <input
+                        hidden
+                        type="file"
+                        accept=".csv,text/csv"
+                        onChange={(event) => setDatasetFile(event.target.files?.[0] ?? null)}
+                      />
+                    </Button>
+                  </FieldTooltip>
                   <Button
                     variant="contained"
                     onClick={() => void onUploadDataset()}

@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 
 import type { RiskAlert } from './riskApi';
 
+import { FieldTooltip } from '@/components/ui/FieldTooltip';
 import { sanitizeText } from '@/utils/security';
 
 interface CircuitBreakerPanelProps {
@@ -42,17 +43,23 @@ export function CircuitBreakerPanel({ alerts, onOverride, busy }: CircuitBreaker
           Override is test/paper only. Use confirmation code and reason for auditability.
         </Alert>
         <Stack spacing={2}>
-          <TextField
-            label="Confirmation Code"
-            value={overrideCode}
-            onChange={(event) => setOverrideCode(sanitizeText(event.target.value))}
-            placeholder="OVERRIDE_PAPER_ONLY"
-          />
-          <TextField
-            label="Override Reason"
-            value={overrideReason}
-            onChange={(event) => setOverrideReason(sanitizeText(event.target.value))}
-          />
+          <FieldTooltip title="Required confirmation token for manual override. Invalid code blocks the action.">
+            <TextField
+              label="Confirmation Code"
+              value={overrideCode}
+              onChange={(event) => setOverrideCode(sanitizeText(event.target.value))}
+              placeholder="OVERRIDE_PAPER_ONLY"
+              helperText="Used as a deliberate safety gate."
+            />
+          </FieldTooltip>
+          <FieldTooltip title="Required audit reason. Weak or empty rationale reduces operational traceability.">
+            <TextField
+              label="Override Reason"
+              value={overrideReason}
+              onChange={(event) => setOverrideReason(sanitizeText(event.target.value))}
+              helperText="Document why override is necessary and temporary."
+            />
+          </FieldTooltip>
           <Button variant="outlined" color="warning" onClick={() => void submit()} disabled={!canSubmit}>
             Override Circuit Breaker
           </Button>

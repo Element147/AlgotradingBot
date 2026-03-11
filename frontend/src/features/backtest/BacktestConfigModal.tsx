@@ -13,6 +13,7 @@ import { useMemo } from 'react';
 
 import type { BacktestAlgorithm, BacktestDataset, RunBacktestPayload } from './backtestApi';
 
+import { FieldTooltip } from '@/components/ui/FieldTooltip';
 import { sanitizeText } from '@/utils/security';
 
 export interface BacktestConfigFormState {
@@ -106,79 +107,106 @@ export function BacktestConfigModal({
       <DialogTitle>Run New Backtest</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
-          <TextField
-            select
-            label="Algorithm"
-            value={form.algorithmType}
-            onChange={(event) => onChange({ ...form, algorithmType: event.target.value })}
-          >
-            {algorithms.map((algorithm) => (
-              <MenuItem key={algorithm.id} value={algorithm.id}>
-                {algorithm.label}
-              </MenuItem>
-            ))}
-          </TextField>
+          <FieldTooltip title="Select the strategy model to evaluate. Different models can produce very different risk and drawdown behavior.">
+            <TextField
+              select
+              label="Algorithm"
+              value={form.algorithmType}
+              onChange={(event) => onChange({ ...form, algorithmType: event.target.value })}
+              helperText="Determines signal logic used in simulation."
+            >
+              {algorithms.map((algorithm) => (
+                <MenuItem key={algorithm.id} value={algorithm.id}>
+                  {algorithm.label}
+                </MenuItem>
+              ))}
+            </TextField>
+          </FieldTooltip>
 
-          <TextField
-            select
-            label="Dataset"
-            value={form.datasetId}
-            onChange={(event) => onChange({ ...form, datasetId: event.target.value })}
-          >
-            {datasets.map((dataset) => (
-              <MenuItem key={dataset.id} value={String(dataset.id)}>
-                {dataset.name} ({dataset.rowCount} rows)
-              </MenuItem>
-            ))}
-          </TextField>
+          <FieldTooltip title="Dataset controls what market history is replayed. Wrong dataset means misleading conclusions.">
+            <TextField
+              select
+              label="Dataset"
+              value={form.datasetId}
+              onChange={(event) => onChange({ ...form, datasetId: event.target.value })}
+              helperText="Uploaded historical CSV dataset for this run."
+            >
+              {datasets.map((dataset) => (
+                <MenuItem key={dataset.id} value={String(dataset.id)}>
+                  {dataset.name} ({dataset.rowCount} rows)
+                </MenuItem>
+              ))}
+            </TextField>
+          </FieldTooltip>
 
-          <TextField
-            select
-            label="Symbol"
-            value={form.symbol}
-            onChange={(event) => onChange({ ...form, symbol: event.target.value })}
-          >
-            <MenuItem value="BTC/USDT">BTC/USDT</MenuItem>
-            <MenuItem value="ETH/USDT">ETH/USDT</MenuItem>
-          </TextField>
+          <FieldTooltip title="Trading pair to simulate. Must match dataset coverage for meaningful results.">
+            <TextField
+              select
+              label="Symbol"
+              value={form.symbol}
+              onChange={(event) => onChange({ ...form, symbol: event.target.value })}
+              helperText="Primary market pair used by the strategy."
+            >
+              <MenuItem value="BTC/USDT">BTC/USDT</MenuItem>
+              <MenuItem value="ETH/USDT">ETH/USDT</MenuItem>
+            </TextField>
+          </FieldTooltip>
 
-          <TextField
-            label="Timeframe"
-            value={form.timeframe}
-            onChange={(event) => onChange({ ...form, timeframe: sanitizeText(event.target.value) })}
-          />
-          <TextField
-            label="Start Date"
-            type="date"
-            value={form.startDate}
-            onChange={(event) => onChange({ ...form, startDate: event.target.value })}
-            slotProps={{ inputLabel: { shrink: true } }}
-          />
-          <TextField
-            label="End Date"
-            type="date"
-            value={form.endDate}
-            onChange={(event) => onChange({ ...form, endDate: event.target.value })}
-            slotProps={{ inputLabel: { shrink: true } }}
-          />
-          <TextField
-            label="Initial Balance"
-            type="number"
-            value={form.initialBalance}
-            onChange={(event) => onChange({ ...form, initialBalance: event.target.value })}
-          />
-          <TextField
-            label="Fees (bps)"
-            type="number"
-            value={form.feesBps}
-            onChange={(event) => onChange({ ...form, feesBps: event.target.value })}
-          />
-          <TextField
-            label="Slippage (bps)"
-            type="number"
-            value={form.slippageBps}
-            onChange={(event) => onChange({ ...form, slippageBps: event.target.value })}
-          />
+          <FieldTooltip title="Candle interval for strategy logic. A mismatch with dataset granularity can distort metrics.">
+            <TextField
+              label="Timeframe"
+              value={form.timeframe}
+              onChange={(event) => onChange({ ...form, timeframe: sanitizeText(event.target.value) })}
+              helperText="Examples: 15m, 1h, 4h, 1d."
+            />
+          </FieldTooltip>
+          <FieldTooltip title="Backtest start boundary. Earlier start includes more market regimes.">
+            <TextField
+              label="Start Date"
+              type="date"
+              value={form.startDate}
+              onChange={(event) => onChange({ ...form, startDate: event.target.value })}
+              helperText="Must be earlier than end date."
+              slotProps={{ inputLabel: { shrink: true } }}
+            />
+          </FieldTooltip>
+          <FieldTooltip title="Backtest end boundary. Very short windows can overfit conclusions.">
+            <TextField
+              label="End Date"
+              type="date"
+              value={form.endDate}
+              onChange={(event) => onChange({ ...form, endDate: event.target.value })}
+              helperText="Choose a window that includes normal and stressed periods."
+              slotProps={{ inputLabel: { shrink: true } }}
+            />
+          </FieldTooltip>
+          <FieldTooltip title="Starting capital for simulation. Small values can exaggerate position-size constraints.">
+            <TextField
+              label="Initial Balance"
+              type="number"
+              value={form.initialBalance}
+              onChange={(event) => onChange({ ...form, initialBalance: event.target.value })}
+              helperText="Must be greater than 100."
+            />
+          </FieldTooltip>
+          <FieldTooltip title="Transaction fee in basis points. Understating fees inflates performance.">
+            <TextField
+              label="Fees (bps)"
+              type="number"
+              value={form.feesBps}
+              onChange={(event) => onChange({ ...form, feesBps: event.target.value })}
+              helperText="1 bps = 0.01%. Keep realistic exchange costs."
+            />
+          </FieldTooltip>
+          <FieldTooltip title="Execution slippage in basis points. Lower values can overstate real-world fills.">
+            <TextField
+              label="Slippage (bps)"
+              type="number"
+              value={form.slippageBps}
+              onChange={(event) => onChange({ ...form, slippageBps: event.target.value })}
+              helperText="Models adverse fill movement during execution."
+            />
+          </FieldTooltip>
 
           {validationError ? <Alert severity="error">{validationError}</Alert> : null}
         </Stack>

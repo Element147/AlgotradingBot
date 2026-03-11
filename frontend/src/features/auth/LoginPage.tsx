@@ -20,6 +20,7 @@ import { useLoginMutation } from './authApi';
 import { setCredentials } from './authSlice';
 
 import { useAppDispatch } from '@/app/hooks';
+import { FieldTooltip } from '@/components/ui/FieldTooltip';
 
 // Zod validation schema
 const loginSchema = z.object({
@@ -146,56 +147,61 @@ export default function LoginPage() {
                 </Alert>
               )}
 
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                id="username"
-                label="Username"
-                name="username"
-                autoComplete="username"
-                value={formData.username}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, username: e.target.value }))
-                }
-                error={!!errors.username}
-                helperText={errors.username || 'Use the username created by Liquibase seed or your custom user.'}
-                disabled={isLoading}
-              />
+              <FieldTooltip title="Account username. Wrong value prevents authentication.">
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  id="username"
+                  label="Username"
+                  name="username"
+                  autoComplete="username"
+                  value={formData.username}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, username: e.target.value }))
+                  }
+                  error={!!errors.username}
+                  helperText={errors.username || 'Use the username created by Liquibase seed or your custom user.'}
+                  disabled={isLoading}
+                />
+              </FieldTooltip>
 
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                name="password"
-                label="Password"
-                type="password"
-                id="password"
-                autoComplete="current-password"
-                value={formData.password}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, password: e.target.value }))
-                }
-                error={!!errors.password}
-                helperText={errors.password || 'Password for selected user account.'}
-                disabled={isLoading}
-              />
+              <FieldTooltip title="Account password. Repeated failures can trigger lockout depending on backend policy.">
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  name="password"
+                  label="Password"
+                  type="password"
+                  id="password"
+                  autoComplete="current-password"
+                  value={formData.password}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, password: e.target.value }))
+                  }
+                  error={!!errors.password}
+                  helperText={errors.password || 'Password for selected user account.'}
+                  disabled={isLoading}
+                />
+              </FieldTooltip>
 
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={formData.rememberMe}
-                    onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, rememberMe: e.target.checked }))
-                    }
-                    color="primary"
-                    disabled={isLoading}
-                  />
-                }
-                label="Remember me"
-                title="Stores refresh token in browser so session can survive page reload."
-                sx={{ mt: 1 }}
-              />
+              <FieldTooltip title="Stores refresh token in browser for longer sessions. Use only on trusted machines.">
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.rememberMe}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, rememberMe: e.target.checked }))
+                      }
+                      color="primary"
+                      disabled={isLoading}
+                    />
+                  }
+                  label="Remember me"
+                  sx={{ mt: 1 }}
+                />
+              </FieldTooltip>
 
               <Button
                 type="submit"

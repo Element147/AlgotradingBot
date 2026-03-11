@@ -80,16 +80,32 @@ export const PerformanceCard: React.FC = () => {
             fullWidth
             aria-label="Performance timeframe"
           >
-            <ToggleButton value="today" aria-label="Today">
+            <ToggleButton
+              value="today"
+              aria-label="Today"
+              title="Current-day performance. Most sensitive to intraday volatility."
+            >
               Today
             </ToggleButton>
-            <ToggleButton value="week" aria-label="This week">
+            <ToggleButton
+              value="week"
+              aria-label="This week"
+              title="Weekly performance window. Useful for short trend validation."
+            >
               Week
             </ToggleButton>
-            <ToggleButton value="month" aria-label="This month">
+            <ToggleButton
+              value="month"
+              aria-label="This month"
+              title="Monthly performance summary. Balances noise and stability."
+            >
               Month
             </ToggleButton>
-            <ToggleButton value="all" aria-label="All time">
+            <ToggleButton
+              value="all"
+              aria-label="All time"
+              title="Full available history. Can hide recent regime changes."
+            >
               All
             </ToggleButton>
           </ToggleButtonGroup>

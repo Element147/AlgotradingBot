@@ -45,6 +45,7 @@ import {
 
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { FieldTooltip } from '@/components/ui/FieldTooltip';
 import { selectEnvironmentMode, setEnvironmentMode } from '@/features/environment/environmentSlice';
 
 const defaultCommandList = [
@@ -189,19 +190,25 @@ export default function SettingsPage() {
                     API Configuration
                   </Typography>
                   <Stack spacing={2}>
-                    <TextField
-                      label="Exchange API Key"
-                      value={revealApiKey ? apiConfig.apiKey : maskValue(apiConfig.apiKey)}
-                      InputProps={{ readOnly: true }}
-                    />
+                    <FieldTooltip title="Exchange credential identifier. Revealing keys on shared screens is a security risk.">
+                      <TextField
+                        label="Exchange API Key"
+                        value={revealApiKey ? apiConfig.apiKey : maskValue(apiConfig.apiKey)}
+                        InputProps={{ readOnly: true }}
+                        helperText="Read-only in this UI. Keep masked unless actively validating."
+                      />
+                    </FieldTooltip>
                     <Button variant="outlined" onClick={() => setRevealApiKey((prev) => !prev)}>
                       {revealApiKey ? 'Hide API Key' : 'Reveal API Key'}
                     </Button>
-                    <TextField
-                      label="Exchange API Secret"
-                      value={revealSecret ? apiConfig.secret : maskValue(apiConfig.secret)}
-                      InputProps={{ readOnly: true }}
-                    />
+                    <FieldTooltip title="Secret used for signed exchange requests. Exposure can compromise account safety.">
+                      <TextField
+                        label="Exchange API Secret"
+                        value={revealSecret ? apiConfig.secret : maskValue(apiConfig.secret)}
+                        InputProps={{ readOnly: true }}
+                        helperText="Treat as highly sensitive; avoid screenshots while revealed."
+                      />
+                    </FieldTooltip>
                     <Button variant="outlined" onClick={() => setRevealSecret((prev) => !prev)}>
                       {revealSecret ? 'Hide Secret' : 'Reveal Secret'}
                     </Button>
@@ -260,67 +267,80 @@ export default function SettingsPage() {
                 Notification Settings
               </Typography>
               <Stack spacing={2}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={notifications.emailAlerts}
-                      onChange={(event) =>
-                        dispatch(updateNotificationSetting({ key: 'emailAlerts', value: event.target.checked }))
-                      }
-                    />
-                  }
-                  label="Email Alerts"
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={notifications.telegramAlerts}
-                      onChange={(event) =>
-                        dispatch(updateNotificationSetting({ key: 'telegramAlerts', value: event.target.checked }))
-                      }
-                    />
-                  }
-                  label="Telegram Alerts"
-                />
-                <TextField
-                  label="Profit/Loss Threshold (%)"
-                  type="number"
-                  value={notifications.profitLossThreshold}
-                  onChange={(event) =>
-                    dispatch(
-                      updateNotificationSetting({
-                        key: 'profitLossThreshold',
-                        value: Number(event.target.value),
-                      })
-                    )
-                  }
-                />
-                <TextField
-                  label="Drawdown Threshold (%)"
-                  type="number"
-                  value={notifications.drawdownThreshold}
-                  onChange={(event) =>
-                    dispatch(
-                      updateNotificationSetting({
-                        key: 'drawdownThreshold',
-                        value: Number(event.target.value),
-                      })
-                    )
-                  }
-                />
-                <TextField
-                  label="Risk Threshold (%)"
-                  type="number"
-                  value={notifications.riskThreshold}
-                  onChange={(event) =>
-                    dispatch(
-                      updateNotificationSetting({
-                        key: 'riskThreshold',
-                        value: Number(event.target.value),
-                      })
-                    )
-                  }
-                />
+                <FieldTooltip title="Enable/disable email alerts. Disabling can delay awareness of critical risk events.">
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={notifications.emailAlerts}
+                        onChange={(event) =>
+                          dispatch(updateNotificationSetting({ key: 'emailAlerts', value: event.target.checked }))
+                        }
+                      />
+                    }
+                    label="Email Alerts"
+                  />
+                </FieldTooltip>
+                <FieldTooltip title="Enable Telegram notifications. Useful for rapid alerts when away from dashboard.">
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={notifications.telegramAlerts}
+                        onChange={(event) =>
+                          dispatch(updateNotificationSetting({ key: 'telegramAlerts', value: event.target.checked }))
+                        }
+                      />
+                    }
+                    label="Telegram Alerts"
+                  />
+                </FieldTooltip>
+                <FieldTooltip title="Profit/loss notification trigger. Too tight can create alert noise; too wide can hide drift.">
+                  <TextField
+                    label="Profit/Loss Threshold (%)"
+                    type="number"
+                    value={notifications.profitLossThreshold}
+                    onChange={(event) =>
+                      dispatch(
+                        updateNotificationSetting({
+                          key: 'profitLossThreshold',
+                          value: Number(event.target.value),
+                        })
+                      )
+                    }
+                    helperText="Threshold for PnL alert generation."
+                  />
+                </FieldTooltip>
+                <FieldTooltip title="Drawdown alert trigger. Lower values warn earlier but may be more frequent.">
+                  <TextField
+                    label="Drawdown Threshold (%)"
+                    type="number"
+                    value={notifications.drawdownThreshold}
+                    onChange={(event) =>
+                      dispatch(
+                        updateNotificationSetting({
+                          key: 'drawdownThreshold',
+                          value: Number(event.target.value),
+                        })
+                      )
+                    }
+                    helperText="Percent drawdown level that emits warning notifications."
+                  />
+                </FieldTooltip>
+                <FieldTooltip title="Risk alert trigger. Higher values can delay warning of concentrated exposure.">
+                  <TextField
+                    label="Risk Threshold (%)"
+                    type="number"
+                    value={notifications.riskThreshold}
+                    onChange={(event) =>
+                      dispatch(
+                        updateNotificationSetting({
+                          key: 'riskThreshold',
+                          value: Number(event.target.value),
+                        })
+                      )
+                    }
+                    helperText="Percent utilization threshold for risk alerts."
+                  />
+                </FieldTooltip>
               </Stack>
             </CardContent>
           </Card>
@@ -333,71 +353,81 @@ export default function SettingsPage() {
                 Display Preferences
               </Typography>
               <Stack spacing={2}>
-                <FormControl fullWidth>
-                  <InputLabel id="theme-label">Theme</InputLabel>
-                  <Select
-                    labelId="theme-label"
-                    value={theme}
-                    label="Theme"
-                    onChange={(event) => dispatch(setTheme(event.target.value))}
-                  >
-                    <MenuItem value="light">Light</MenuItem>
-                    <MenuItem value="dark">Dark</MenuItem>
-                  </Select>
-                </FormControl>
+                <FieldTooltip title="Visual theme preference only. Does not change trading logic or risk behavior.">
+                  <FormControl fullWidth>
+                    <InputLabel id="theme-label">Theme</InputLabel>
+                    <Select
+                      labelId="theme-label"
+                      value={theme}
+                      label="Theme"
+                      onChange={(event) => dispatch(setTheme(event.target.value))}
+                    >
+                      <MenuItem value="light">Light</MenuItem>
+                      <MenuItem value="dark">Dark</MenuItem>
+                    </Select>
+                  </FormControl>
+                </FieldTooltip>
 
-                <FormControl fullWidth>
-                  <InputLabel id="currency-label">Currency Display</InputLabel>
-                  <Select
-                    labelId="currency-label"
-                    value={currency}
-                    label="Currency Display"
-                    onChange={(event) => dispatch(setCurrency(event.target.value))}
-                  >
-                    <MenuItem value="USD">USD (fiat view)</MenuItem>
-                    <MenuItem value="BTC">BTC (crypto unit view)</MenuItem>
-                  </Select>
-                </FormControl>
+                <FieldTooltip title="Formatting preference for displayed values. Does not convert account base currency.">
+                  <FormControl fullWidth>
+                    <InputLabel id="currency-label">Currency Display</InputLabel>
+                    <Select
+                      labelId="currency-label"
+                      value={currency}
+                      label="Currency Display"
+                      onChange={(event) => dispatch(setCurrency(event.target.value))}
+                    >
+                      <MenuItem value="USD">USD (fiat view)</MenuItem>
+                      <MenuItem value="BTC">BTC (crypto unit view)</MenuItem>
+                    </Select>
+                  </FormControl>
+                </FieldTooltip>
 
-                <FormControl fullWidth>
-                  <InputLabel id="timezone-label">Timezone</InputLabel>
-                  <Select
-                    labelId="timezone-label"
-                    value={timezone}
-                    label="Timezone"
-                    onChange={(event) => dispatch(setTimezone(event.target.value))}
-                  >
-                    {timezoneOptions.map((option) => (
-                      <MenuItem key={option} value={option}>
-                        {option}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                <FieldTooltip title="Timezone used for date/time rendering. Wrong timezone can cause analysis mistakes.">
+                  <FormControl fullWidth>
+                    <InputLabel id="timezone-label">Timezone</InputLabel>
+                    <Select
+                      labelId="timezone-label"
+                      value={timezone}
+                      label="Timezone"
+                      onChange={(event) => dispatch(setTimezone(event.target.value))}
+                    >
+                      {timezoneOptions.map((option) => (
+                        <MenuItem key={option} value={option}>
+                          {option}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </FieldTooltip>
 
-                <TextField
-                  label="Text Scale"
-                  type="number"
-                  value={textScale}
-                  inputProps={{ min: 1, max: 2, step: 0.1 }}
-                  onChange={(event) => dispatch(setTextScale(Number(event.target.value)))}
-                  helperText="Supports accessibility scaling up to 200%."
-                />
+                <FieldTooltip title="UI text size multiplier. Larger scale improves accessibility but may reduce data density.">
+                  <TextField
+                    label="Text Scale"
+                    type="number"
+                    value={textScale}
+                    inputProps={{ min: 1, max: 2, step: 0.1 }}
+                    onChange={(event) => dispatch(setTextScale(Number(event.target.value)))}
+                    helperText="Supports accessibility scaling up to 200%."
+                  />
+                </FieldTooltip>
 
-                <FormControl fullWidth>
-                  <InputLabel id="environment-label">Active Mode</InputLabel>
-                  <Select
-                    labelId="environment-label"
-                    value={environmentMode}
-                    label="Active Mode"
-                    onChange={(event) =>
-                      dispatch(setEnvironmentMode(event.target.value))
-                    }
-                  >
-                    <MenuItem value="test">Test / Paper (recommended)</MenuItem>
-                    <MenuItem value="live">Live data view</MenuItem>
-                  </Select>
-                </FormControl>
+                <FieldTooltip title="Critical operating mode selector. Switching to live changes data source context and risk posture.">
+                  <FormControl fullWidth>
+                    <InputLabel id="environment-label">Active Mode</InputLabel>
+                    <Select
+                      labelId="environment-label"
+                      value={environmentMode}
+                      label="Active Mode"
+                      onChange={(event) =>
+                        dispatch(setEnvironmentMode(event.target.value))
+                      }
+                    >
+                      <MenuItem value="test">Test / Paper (recommended)</MenuItem>
+                      <MenuItem value="live">Live data view</MenuItem>
+                    </Select>
+                  </FormControl>
+                </FieldTooltip>
 
                 <Button variant="outlined" color="warning" onClick={() => dispatch(resetSettings())}>
                   Reset Preferences

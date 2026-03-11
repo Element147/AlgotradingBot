@@ -30,3 +30,19 @@ Last updated: 2026-03-11
 - Commit-gate checklist entries are still open in phase files (no `feat: Phase N` commits yet).
 - Phase 7 backend task `7.15` remains open (`exchange/system/backup API endpoints not implemented in backend controllers`).
 - Phase 14 is intentionally optional/deferred by spec.
+
+## Additional Implementation Log (March 11, 2026)
+
+- [x] Added operator-facing workflow guide with concrete examples:
+  - `docs/USER_WORKFLOW_GUIDE.md`
+  - covers local backtest, data-only broker ingest checks, forward test, paper trading, live monitoring context
+- [x] Added field-level tooltip/help system for safer UI operation:
+  - new reusable component: `frontend/src/components/ui/FieldTooltip.tsx`
+  - applied to key forms and controls in:
+    - auth login
+    - backtest upload + backtest config modal
+    - strategy configuration
+    - risk configuration, circuit-breaker override, position sizing
+    - trades filters
+    - settings (API, notifications, display/environment controls)
+    - dashboard performance timeframe toggles and strategy action buttons
