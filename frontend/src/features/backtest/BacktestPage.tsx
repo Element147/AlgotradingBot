@@ -37,15 +37,43 @@ import { getStrategyProfile } from '@/features/strategies/strategyProfiles';
 import { sanitizeText } from '@/utils/security';
 
 const initialForm: BacktestConfigFormState = {
-  algorithmType: 'BOLLINGER_BANDS',
+  algorithmType: 'BUY_AND_HOLD',
   datasetId: '',
-  symbol: 'BTC/USDT',
+  symbol: '',
   timeframe: '1h',
   startDate: '2025-01-01',
   endDate: '2025-12-31',
   initialBalance: '1000',
   feesBps: '10',
   slippageBps: '3',
+};
+
+const parseSymbols = (symbolsCsv: string): string[] =>
+  symbolsCsv
+    .split(',')
+    .map((symbol) => symbol.trim())
+    .filter((symbol) => symbol.length > 0);
+
+const resolveFormState = (
+  form: BacktestConfigFormState,
+  datasets: Array<{ id: number; symbolsCsv: string }>,
+  algorithms: Array<{ id: string; selectionMode: 'SINGLE_SYMBOL' | 'DATASET_UNIVERSE' }>
+): BacktestConfigFormState => {
+  const selectedDatasetId = form.datasetId || (datasets[0] ? String(datasets[0].id) : '');
+  const selectedDataset = datasets.find((dataset) => String(dataset.id) === selectedDatasetId) ?? null;
+  const selectedAlgorithm = algorithms.find((algorithm) => algorithm.id === form.algorithmType) ?? null;
+  const requiresDatasetUniverse = selectedAlgorithm?.selectionMode === 'DATASET_UNIVERSE';
+  const datasetSymbols = selectedDataset ? parseSymbols(selectedDataset.symbolsCsv) : [];
+  const resolvedSymbol =
+    requiresDatasetUniverse || datasetSymbols.length === 0 || datasetSymbols.includes(form.symbol)
+      ? form.symbol
+      : datasetSymbols[0];
+
+  return {
+    ...form,
+    datasetId: selectedDatasetId,
+    symbol: resolvedSymbol,
+  };
 };
 
 const validationColor = (value: string): 'success.main' | 'error.main' | 'warning.main' => {
@@ -90,17 +118,19 @@ export default function BacktestPage() {
     pollingInterval: 5000,
     skipPollingIfUnfocused: true,
   });
+  const resolvedForm = useMemo(() => resolveFormState(form, datasets, algorithms), [algorithms, datasets, form]);
 
   const [uploadDataset, { isLoading: isUploading }] = useUploadBacktestDatasetMutation();
   const [runBacktest, { isLoading: isRunning }] = useRunBacktestMutation();
   const selectedAlgorithm = useMemo(
-    () => algorithms.find((algorithm) => algorithm.id === form.algorithmType) ?? null,
-    [algorithms, form.algorithmType]
+    () => algorithms.find((algorithm) => algorithm.id === resolvedForm.algorithmType) ?? null,
+    [algorithms, resolvedForm.algorithmType]
   );
   const selectedAlgorithmProfile = useMemo(
-    () => getStrategyProfile(form.algorithmType),
-    [form.algorithmType]
+    () => getStrategyProfile(resolvedForm.algorithmType),
+    [resolvedForm.algorithmType]
   );
+  const requiresDatasetUniverse = selectedAlgorithm?.selectionMode === 'DATASET_UNIVERSE';
 
   const { data: details } = useGetBacktestDetailsQuery(selectedId ?? 0, {
     skip: selectedId === null,
@@ -120,7 +150,12 @@ export default function BacktestPage() {
         name: datasetName.trim() || undefined,
       }).unwrap();
 
-      setForm((prev) => ({ ...prev, datasetId: String(uploaded.id) }));
+      const uploadedSymbols = parseSymbols(uploaded.symbolsCsv);
+      setForm((prev) => ({
+        ...prev,
+        datasetId: String(uploaded.id),
+        symbol: uploadedSymbols[0] ?? prev.symbol,
+      }));
       setFeedback({
         severity: 'success',
         message: `Dataset '${uploaded.name}' uploaded (${uploaded.rowCount} rows).`,
@@ -212,6 +247,7 @@ export default function BacktestPage() {
                   <Alert severity="info" sx={{ mb: 2 }}>
                     <strong>{selectedAlgorithm.label}:</strong> {selectedAlgorithm.description}
                     {selectedAlgorithmProfile ? ` Best use: ${selectedAlgorithmProfile.bestFor}` : ''}
+                    {requiresDatasetUniverse ? ' Uses all symbols in the selected dataset.' : ''}
                   </Alert>
                 ) : null}
                 <Button
@@ -320,7 +356,7 @@ export default function BacktestPage() {
 
       <BacktestConfigModal
         open={configModalOpen}
-        form={form}
+        form={resolvedForm}
         algorithms={algorithms}
         datasets={datasets}
         busy={isRunning}

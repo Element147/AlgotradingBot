@@ -26,11 +26,7 @@ public class BacktestManagementController {
     @GetMapping("/algorithms")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<BacktestAlgorithmResponse>> algorithms() {
-        return ResponseEntity.ok(List.of(
-            new BacktestAlgorithmResponse("BOLLINGER_BANDS", "Bollinger Bands", "Mean-reversion bands strategy"),
-            new BacktestAlgorithmResponse("SMA_CROSSOVER", "SMA Crossover", "Fast/slow moving average crossover"),
-            new BacktestAlgorithmResponse("BUY_AND_HOLD", "Buy and Hold", "Baseline hold from first to last candle")
-        ));
+        return ResponseEntity.ok(backtestManagementService.getAlgorithms());
     }
 
     @GetMapping("/datasets")

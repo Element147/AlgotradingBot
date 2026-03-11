@@ -9,7 +9,7 @@ import com.algotrader.bot.repository.BacktestResultRepository;
 import com.algotrader.bot.repository.PortfolioRepository;
 import com.algotrader.bot.repository.TradeRepository;
 import com.algotrader.bot.security.JwtTokenProvider;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,8 +52,7 @@ class TradingStrategyControllerIntegrationTest {
     @Autowired
     private BacktestResultRepository backtestResultRepository;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
@@ -594,5 +593,3 @@ class TradingStrategyControllerIntegrationTest {
     }
 
 }
-
-

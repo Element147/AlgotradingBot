@@ -1,5 +1,6 @@
 # Temporary files
 temp_*.txt
+.pids/
 
 # Backend (Spring Boot / Gradle)
 AlgotradingBot/HELP.md
@@ -61,6 +62,8 @@ frontend/.turbo/
 # Logs
 *.log
 logs/
+AlgotradingBot/backups/
+AlgotradingBot/production-readiness-*.txt
 
 # Kiro settings with sensitive data
 .kiro/settings/models.json

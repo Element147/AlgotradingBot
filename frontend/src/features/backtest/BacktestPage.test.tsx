@@ -6,8 +6,8 @@ import BacktestPage from './BacktestPage';
 vi.mock('./backtestApi', () => ({
   useGetBacktestAlgorithmsQuery: () => ({
     data: [
-      { id: 'BOLLINGER_BANDS', label: 'Bollinger Bands', description: '...' },
-      { id: 'SMA_CROSSOVER', label: 'SMA Crossover', description: '...' },
+      { id: 'BOLLINGER_BANDS', label: 'Bollinger Bands', description: '...', selectionMode: 'SINGLE_SYMBOL' },
+      { id: 'SMA_CROSSOVER', label: 'SMA Crossover', description: '...', selectionMode: 'SINGLE_SYMBOL' },
     ],
   }),
   useGetBacktestDatasetsQuery: () => ({
@@ -75,6 +75,17 @@ vi.mock('./backtestApi', () => ({
 
 vi.mock('@/components/layout/AppLayout', () => ({
   AppLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
+
+vi.mock('./BacktestResults', () => ({
+  BacktestResults: ({ details }: { details: { id: number; strategyId: string; datasetName: string; validationStatus: string } }) => (
+    <div>
+      <div>{`Backtest Details #${details.id}`}</div>
+      <div>{`Algorithm: ${details.strategyId}`}</div>
+      <div>{`Dataset: ${details.datasetName}`}</div>
+      <div>{`Validation: ${details.validationStatus}`}</div>
+    </div>
+  ),
 }));
 
 describe('BacktestPage', { timeout: 15000 }, () => {

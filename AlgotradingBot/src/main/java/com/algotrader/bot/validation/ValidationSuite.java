@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -15,6 +16,7 @@ import java.util.Map;
 
 public class ValidationSuite {
     private static final Logger logger = LoggerFactory.getLogger(ValidationSuite.class);
+    private static final Path DEFAULT_REPORT_DIRECTORY = Paths.get("build", "reports", "validation");
     
     private BuildValidator buildValidator;
     private OrchestrationValidator orchestrationValidator;
@@ -22,14 +24,20 @@ public class ValidationSuite {
     private ResourceValidator resourceValidator;
     private DataPersistenceValidator dataPersistenceValidator;
     private RepairEngine repairEngine;
+    private final Path reportDirectory;
 
     public ValidationSuite() {
+        this(DEFAULT_REPORT_DIRECTORY);
+    }
+
+    ValidationSuite(Path reportDirectory) {
         this.buildValidator = new BuildValidator();
         this.orchestrationValidator = new OrchestrationValidator();
         this.apiValidator = new ApiValidator();
         this.resourceValidator = new ResourceValidator();
         this.dataPersistenceValidator = new DataPersistenceValidator();
         this.repairEngine = new RepairEngine();
+        this.reportDirectory = reportDirectory;
     }
 
     public int runAllValidations() {
@@ -151,7 +159,8 @@ public class ValidationSuite {
         // Save to file
         try {
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
-            Path reportPath = Paths.get("production-readiness-" + timestamp + ".txt");
+            Files.createDirectories(reportDirectory);
+            Path reportPath = reportDirectory.resolve("production-readiness-" + timestamp + ".txt");
             report.saveToFile(reportPath);
             logger.info("Report saved to: {}", reportPath);
         } catch (IOException e) {

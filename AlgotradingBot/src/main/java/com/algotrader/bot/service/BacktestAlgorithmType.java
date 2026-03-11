@@ -1,9 +1,14 @@
 package com.algotrader.bot.service;
 
 public enum BacktestAlgorithmType {
-    BOLLINGER_BANDS,
+    BUY_AND_HOLD,
+    DUAL_MOMENTUM_ROTATION,
+    VOLATILITY_MANAGED_DONCHIAN_BREAKOUT,
+    TREND_PULLBACK_CONTINUATION,
+    REGIME_FILTERED_MEAN_REVERSION,
+    TREND_FIRST_ADAPTIVE_ENSEMBLE,
     SMA_CROSSOVER,
-    BUY_AND_HOLD;
+    BOLLINGER_BANDS;
 
     public static BacktestAlgorithmType from(String value) {
         try {

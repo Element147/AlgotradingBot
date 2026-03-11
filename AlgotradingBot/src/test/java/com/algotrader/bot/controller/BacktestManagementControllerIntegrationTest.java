@@ -5,7 +5,7 @@ import com.algotrader.bot.entity.BacktestResult;
 import com.algotrader.bot.repository.BacktestDatasetRepository;
 import com.algotrader.bot.repository.BacktestResultRepository;
 import com.algotrader.bot.security.JwtTokenProvider;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,8 +44,7 @@ class BacktestManagementControllerIntegrationTest {
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
     private String authToken;
     private Long backtestId;
@@ -183,7 +182,9 @@ class BacktestManagementControllerIntegrationTest {
         mockMvc.perform(get("/api/backtests/algorithms")
                 .header("Authorization", "Bearer " + authToken))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$[0].id").value("BOLLINGER_BANDS"));
+            .andExpect(jsonPath("$[0].id").value("BUY_AND_HOLD"))
+            .andExpect(jsonPath("$[1].id").value("DUAL_MOMENTUM_ROTATION"))
+            .andExpect(jsonPath("$[1].selectionMode").value("DATASET_UNIVERSE"));
 
         mockMvc.perform(get("/api/backtests/datasets")
                 .header("Authorization", "Bearer " + authToken))

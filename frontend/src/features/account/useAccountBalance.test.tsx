@@ -1,5 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit';
-import { renderHook } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { describe, it, expect, beforeEach } from 'vitest';
 
@@ -49,7 +49,9 @@ describe('useAccountBalance', () => {
 
   it('should poll in live mode', () => {
     // Switch to live mode
-    store.dispatch(setEnvironmentMode('live'));
+    act(() => {
+      store.dispatch(setEnvironmentMode('live'));
+    });
 
     const { result } = renderHook(() => useAccountBalance(), {
       wrapper: ({ children }) => <Provider store={store}>{children}</Provider>,
@@ -68,22 +70,28 @@ describe('useAccountBalance', () => {
     expect(result.current).toBeDefined();
 
     // Switch to live mode
-    store.dispatch(setEnvironmentMode('live'));
-    rerender();
+    act(() => {
+      store.dispatch(setEnvironmentMode('live'));
+      rerender();
+    });
 
     // Should now be polling
     expect(result.current).toBeDefined();
 
     // Switch back to test mode
-    store.dispatch(setEnvironmentMode('test'));
-    rerender();
+    act(() => {
+      store.dispatch(setEnvironmentMode('test'));
+      rerender();
+    });
 
     // Should stop polling
     expect(result.current).toBeDefined();
   });
 
   it('should skip polling when tab is unfocused', () => {
-    store.dispatch(setEnvironmentMode('live'));
+    act(() => {
+      store.dispatch(setEnvironmentMode('live'));
+    });
 
     const { result } = renderHook(() => useAccountBalance(), {
       wrapper: ({ children }) => <Provider store={store}>{children}</Provider>,

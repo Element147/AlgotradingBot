@@ -6,6 +6,7 @@ export interface BacktestAlgorithm {
   id: string;
   label: string;
   description: string;
+  selectionMode: 'SINGLE_SYMBOL' | 'DATASET_UNIVERSE';
 }
 
 export interface BacktestDataset {

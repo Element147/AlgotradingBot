@@ -9,7 +9,7 @@ import {
   Stack,
   TextField,
 } from '@mui/material';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import type { BacktestAlgorithm, BacktestDataset, RunBacktestPayload } from './backtestApi';
 
@@ -51,6 +51,12 @@ const normalizePayload = (form: BacktestConfigFormState): RunBacktestPayload => 
   slippageBps: Number(form.slippageBps),
 });
 
+const parseSymbols = (symbolsCsv: string): string[] =>
+  symbolsCsv
+    .split(',')
+    .map((symbol) => symbol.trim())
+    .filter((symbol) => symbol.length > 0);
+
 export function BacktestConfigModal({
   open,
   form,
@@ -61,6 +67,28 @@ export function BacktestConfigModal({
   onClose,
   onRun,
 }: BacktestConfigModalProps) {
+  const selectedAlgorithm = useMemo(
+    () => algorithms.find((algorithm) => algorithm.id === form.algorithmType) ?? null,
+    [algorithms, form.algorithmType]
+  );
+  const selectedDataset = useMemo(
+    () => datasets.find((dataset) => String(dataset.id) === form.datasetId) ?? null,
+    [datasets, form.datasetId]
+  );
+  const availableSymbols = useMemo(
+    () => (selectedDataset ? parseSymbols(selectedDataset.symbolsCsv) : []),
+    [selectedDataset]
+  );
+  const requiresDatasetUniverse = selectedAlgorithm?.selectionMode === 'DATASET_UNIVERSE';
+
+  useEffect(() => {
+    if (requiresDatasetUniverse || availableSymbols.length === 0 || availableSymbols.includes(form.symbol)) {
+      return;
+    }
+
+    onChange({ ...form, symbol: availableSymbols[0] });
+  }, [availableSymbols, form, onChange, requiresDatasetUniverse]);
+
   const validationError = useMemo(() => {
     if (!form.algorithmType.trim()) {
       return 'Algorithm type is required';
@@ -68,6 +96,10 @@ export function BacktestConfigModal({
 
     if (!form.datasetId) {
       return 'Please upload/select a dataset first';
+    }
+
+    if (!requiresDatasetUniverse && !form.symbol.trim()) {
+      return 'Please select a symbol from the dataset';
     }
 
     const initialBalance = Number(form.initialBalance);
@@ -93,7 +125,7 @@ export function BacktestConfigModal({
     }
 
     return null;
-  }, [form]);
+  }, [form, requiresDatasetUniverse]);
 
   const run = async () => {
     if (validationError) {
@@ -139,18 +171,28 @@ export function BacktestConfigModal({
             </TextField>
           </FieldTooltip>
 
-          <FieldTooltip title="Trading pair to simulate. Must match dataset coverage for meaningful results.">
-            <TextField
-              select
-              label="Symbol"
-              value={form.symbol}
-              onChange={(event) => onChange({ ...form, symbol: event.target.value })}
-              helperText="Primary market pair used by the strategy."
-            >
-              <MenuItem value="BTC/USDT">BTC/USDT</MenuItem>
-              <MenuItem value="ETH/USDT">ETH/USDT</MenuItem>
-            </TextField>
-          </FieldTooltip>
+          {requiresDatasetUniverse ? (
+            <Alert severity="info">
+              This strategy uses every symbol in the selected dataset.
+              {selectedDataset ? ` Universe: ${selectedDataset.symbolsCsv}` : ''}
+            </Alert>
+          ) : (
+            <FieldTooltip title="Trading pair to simulate. Must match dataset coverage for meaningful results.">
+              <TextField
+                select
+                label="Symbol"
+                value={form.symbol}
+                onChange={(event) => onChange({ ...form, symbol: event.target.value })}
+                helperText="Primary market pair used by the strategy."
+              >
+                {availableSymbols.map((symbol) => (
+                  <MenuItem key={symbol} value={symbol}>
+                    {symbol}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </FieldTooltip>
+          )}
 
           <FieldTooltip title="Candle interval for strategy logic. A mismatch with dataset granularity can distort metrics.">
             <TextField

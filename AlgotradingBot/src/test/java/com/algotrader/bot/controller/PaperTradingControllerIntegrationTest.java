@@ -5,7 +5,7 @@ import com.algotrader.bot.repository.AccountRepository;
 import com.algotrader.bot.repository.PaperOrderRepository;
 import com.algotrader.bot.repository.PortfolioRepository;
 import com.algotrader.bot.security.JwtTokenProvider;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,8 +37,7 @@ class PaperTradingControllerIntegrationTest {
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
     @Autowired
     private PaperOrderRepository paperOrderRepository;

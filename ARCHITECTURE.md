@@ -16,7 +16,8 @@ This repository is a monorepo with a Spring Boot backend in `AlgotradingBot/` an
 - `src/main/resources/db/changelog/`: Liquibase schema/data migrations (including runtime admin bootstrap)
 - `risk/`: position sizing, slippage, transaction costs, risk checks
 - `strategy/`: Bollinger Band indicator, strategy, trade signal model
-- `backtest/`: backtest engine, metrics, validator, Monte Carlo, walk-forward result types
+- `backtest/`: simulation engine, metrics, validator, Monte Carlo, walk-forward result types
+- `backtest/strategy/`: Spring-managed backtest strategies, registry, shared indicator helpers, selection-mode metadata, and strategy decision types
 - `websocket/`: handler and event publisher
 - `validation/` and `repair/`: local readiness validation and automated repair helpers
 
@@ -28,6 +29,11 @@ This repository is a monorepo with a Spring Boot backend in `AlgotradingBot/` an
 - Entities and repositories provide persistence.
 - Liquibase owns bootstrap migration concerns (schema bootstrap for users + runtime admin seed).
 - Risk and backtest packages contain meaningful research logic and financial calculations.
+- Backtest algorithms are now separated behind a `BacktestStrategy` interface and discovered through `BacktestStrategyRegistry`, instead of being hard-coded inside one execution service.
+- `BacktestSimulationEngine` owns the execution loop, while `BacktestSimulationMetricsCalculator` owns result statistics.
+- The backtest stack now supports both:
+  - `SINGLE_SYMBOL` execution
+  - `DATASET_UNIVERSE` execution with one active rotating position
 
 ## Frontend
 
@@ -72,7 +78,7 @@ This repository is a monorepo with a Spring Boot backend in `AlgotradingBot/` an
 
 1. Strategy logic generates `TradeSignal` instances from market data.
 2. Risk modules calculate position size, fees, slippage, and guardrails.
-3. Backtest engine simulates execution and produces metrics.
+3. `BacktestSimulationEngine` asks the selected `BacktestStrategy` for a strategy decision (hold, buy, sell, rotate) and simulates execution.
 4. Validation modules evaluate results against quality gates.
 5. Today, the research/backtest stack is stronger than the live execution stack.
 
@@ -82,6 +88,8 @@ This repository is a monorepo with a Spring Boot backend in `AlgotradingBot/` an
 - Reasonable backend package separation
 - Real financial calculation code uses `BigDecimal`
 - Backtesting, metrics, and validation modules already exist
+- Backtest strategy dispatch is now open for extension through separate Spring beans
+- Greenfield research strategies from the small-account blueprint are now available through the runtime catalog
 - Frontend uses typed state management and RTK Query
 - Safety-minded default environment behavior exists in the frontend
 
@@ -93,6 +101,7 @@ This repository is a monorepo with a Spring Boot backend in `AlgotradingBot/` an
 - CI and automated cross-stack verification are still missing
 - Live exchange integration is still placeholder logic
 - Audit logging and operator safety controls are not yet complete enough for live-trading consideration
+- Multi-strategy composition now exists at the research level through the adaptive ensemble, but portfolio-level multi-position allocation is still future work
 
 ## Recommended Near-Term Improvements
 

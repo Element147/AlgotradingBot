@@ -1,0 +1,65 @@
+package com.algotrader.bot.backtest.strategy;
+
+import com.algotrader.bot.service.BacktestAlgorithmType;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+class BacktestStrategyRegistryTest {
+
+    @Test
+    void getDefinitions_returnsStrategiesInAlgorithmOrder() {
+        BacktestIndicatorCalculator indicatorCalculator = new BacktestIndicatorCalculator();
+        BacktestStrategyRegistry registry = new BacktestStrategyRegistry(List.of(
+            new BuyAndHoldBacktestStrategy(),
+            new DualMomentumRotationBacktestStrategy(indicatorCalculator),
+            new VolatilityManagedDonchianBreakoutBacktestStrategy(indicatorCalculator),
+            new TrendPullbackContinuationBacktestStrategy(indicatorCalculator),
+            new RegimeFilteredMeanReversionBacktestStrategy(indicatorCalculator),
+            new TrendFirstAdaptiveEnsembleBacktestStrategy(indicatorCalculator),
+            new SmaCrossoverBacktestStrategy(indicatorCalculator),
+            new BollingerBandsBacktestStrategy(indicatorCalculator)
+        ));
+
+        List<BacktestStrategyDefinition> definitions = registry.getDefinitions();
+
+        assertEquals(8, definitions.size());
+        assertEquals(BacktestAlgorithmType.BUY_AND_HOLD, definitions.get(0).type());
+        assertEquals(BacktestAlgorithmType.DUAL_MOMENTUM_ROTATION, definitions.get(1).type());
+        assertEquals(BacktestStrategySelectionMode.DATASET_UNIVERSE, definitions.get(1).selectionMode());
+        assertEquals(BacktestAlgorithmType.TREND_FIRST_ADAPTIVE_ENSEMBLE, definitions.get(5).type());
+        assertEquals(BacktestAlgorithmType.BOLLINGER_BANDS, definitions.get(7).type());
+    }
+
+    @Test
+    void constructor_rejectsDuplicateStrategies() {
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
+            new BacktestStrategyRegistry(List.of(
+                new TestStrategy(BacktestAlgorithmType.BUY_AND_HOLD),
+                new TestStrategy(BacktestAlgorithmType.BUY_AND_HOLD)
+            )));
+
+        assertEquals("Duplicate backtest strategy registered for type: BUY_AND_HOLD", exception.getMessage());
+    }
+
+    private record TestStrategy(BacktestAlgorithmType type) implements BacktestStrategy {
+        @Override
+        public BacktestStrategyDefinition definition() {
+            return new BacktestStrategyDefinition(
+                type,
+                type.name(),
+                "test",
+                BacktestStrategySelectionMode.SINGLE_SYMBOL,
+                1
+            );
+        }
+
+        @Override
+        public BacktestStrategyDecision evaluate(BacktestStrategyContext context) {
+            return BacktestStrategyDecision.hold();
+        }
+    }
+}

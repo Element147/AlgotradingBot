@@ -45,6 +45,8 @@ export function VirtualizedTradeTable({
   onRowSelect,
 }: VirtualizedTradeTableProps) {
   const scrollElementRef = useRef<HTMLDivElement | null>(null);
+  // TanStack Virtual requires calling the hook directly in the component that owns the scroll element.
+  // eslint-disable-next-line react-hooks/incompatible-library
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => scrollElementRef.current,

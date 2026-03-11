@@ -33,16 +33,19 @@ public class SystemOperationsService {
     private final DataSource dataSource;
     private final BuildProperties buildProperties;
     private final String kafkaBootstrapServers;
+    private final Path backupDirectory;
     private final LocalDateTime appStartTime = LocalDateTime.now();
 
     public SystemOperationsService(
         Optional<DataSource> dataSource,
         Optional<BuildProperties> buildProperties,
-        @Value("${spring.kafka.bootstrap-servers:}") String kafkaBootstrapServers
+        @Value("${spring.kafka.bootstrap-servers:}") String kafkaBootstrapServers,
+        @Value("${algotrading.system.backup-dir:backups}") String backupDirectory
     ) {
         this.dataSource = dataSource.orElse(null);
         this.buildProperties = buildProperties.orElse(null);
         this.kafkaBootstrapServers = kafkaBootstrapServers;
+        this.backupDirectory = Paths.get(backupDirectory);
     }
 
     public SystemInfoResponse getSystemInfo() {
@@ -62,11 +65,10 @@ public class SystemOperationsService {
     public BackupResponse triggerBackup() {
         LocalDateTime now = LocalDateTime.now();
         String timestamp = now.format(BACKUP_FILE_TS);
-        Path backupDir = Paths.get("backups");
-        Path backupFile = backupDir.resolve("backup_" + timestamp + ".sql");
+        Path backupFile = backupDirectory.resolve("backup_" + timestamp + ".sql");
 
         try {
-            Files.createDirectories(backupDir);
+            Files.createDirectories(backupDirectory);
             String content = "-- Local metadata backup\n"
                 + "-- generatedAt=" + OffsetDateTime.now(ZoneOffset.UTC) + "\n"
                 + "-- note=Use pg_dump for full PostgreSQL logical backup in runtime environments.\n";

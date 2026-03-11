@@ -24,6 +24,55 @@ Local developer workflow is now optimized for faster iteration:
 
 ## Completed In This Update
 
+### 10) Greenfield Strategy Blueprint Implementation
+
+Backend:
+- Implemented the blueprint strategy catalog as separate Spring-managed backtest strategies:
+  - `DualMomentumRotationBacktestStrategy`
+  - `VolatilityManagedDonchianBreakoutBacktestStrategy`
+  - `TrendPullbackContinuationBacktestStrategy`
+  - `RegimeFilteredMeanReversionBacktestStrategy`
+  - `TrendFirstAdaptiveEnsembleBacktestStrategy`
+- Kept `BuyAndHoldBacktestStrategy`, `SmaCrossoverBacktestStrategy`, and `BollingerBandsBacktestStrategy` available as benchmarks/simple baselines.
+- Evolved the backtest strategy contract from plain `BUY/SELL/HOLD` signals to richer strategy decisions with:
+  - selection mode
+  - target symbol
+  - allocation fraction
+  - position context
+- Extended `BacktestSimulationEngine` to support:
+  - `SINGLE_SYMBOL` strategies
+  - `DATASET_UNIVERSE` strategies
+  - one active position that can rotate between symbols
+- Updated the backtest algorithm API metadata so the frontend can distinguish one-symbol strategies from dataset-universe strategies.
+
+Frontend:
+- Updated the backtest flow so every implemented strategy can be selected from the UI.
+- The run modal now derives symbol options from the selected dataset instead of hard-coding crypto pairs.
+- Dataset-universe strategies now clearly announce that they use all dataset symbols and no longer pretend to be one-symbol runs.
+- Expanded strategy profile content to include the new greenfield strategy set.
+
+Documentation:
+- Added `docs/GREENFIELD_STRATEGY_IMPLEMENTATION.md` to capture the implemented runtime behavior separately from the research blueprint.
+
+### 9) Backtest Strategy SOLID Refactor
+
+Backend:
+- Refactored the mixed algorithm logic out of `BacktestExecutionService` into separate Spring-managed strategy classes:
+  - `BuyAndHoldBacktestStrategy`
+  - `SmaCrossoverBacktestStrategy`
+  - `BollingerBandsBacktestStrategy`
+- Added `BacktestStrategyRegistry` so algorithm discovery/catalog is bean-driven instead of hard-coded in the controller.
+- Added `BacktestSimulationEngine` for execution-loop orchestration and `BacktestSimulationMetricsCalculator` for simulation statistics.
+- Updated `BacktestManagementController` and `BacktestManagementService` so `/api/backtests/algorithms` is backed by the registry catalog.
+- Removed manual/demo-only Bollinger verification classes that were not part of the runtime backtest flow.
+- Fixed test-polluting file generation:
+  - backup test artifacts now go to `build/test-backups` in the `test` profile
+  - production-readiness reports now go to `build/reports/validation`
+
+Tests:
+- Added focused unit tests for the new registry and simulation engine.
+- Existing backend integration and unit tests still pass after the refactor.
+
 ### 8) Settings/Exchange Backend Endpoint Gap Fix
 
 Backend:
@@ -119,11 +168,11 @@ Frontend:
 - Improved Axios refresh compatibility by accepting both `token` and `accessToken` payload variants.
 - Reduced noisy/dev-only response logging payload size.
 
-## Current Verification Snapshot (March 10, 2026)
+## Current Verification Snapshot (March 11, 2026)
 
 Frontend:
 - `npm run lint` -> PASS
-- `npm run test -- --watch=false` -> PASS (`396/396`)
+- `npm run test -- --watch=false` -> PASS (`406/406`)
 - `npm run build` -> PASS
 
 Backend:
@@ -157,3 +206,4 @@ Runtime checks:
 - Test output still contains non-blocking warning/debug noise in several suites; results are passing but logs are noisy.
 - Current paper trading is intentionally minimal and designed for local verification, not full exchange-grade execution simulation.
 - Backtest outputs are research artifacts and not evidence of future profitability.
+- The newly added greenfield strategies currently operate in `long/flat` mode only; no short-proxy or leverage routing is enabled.

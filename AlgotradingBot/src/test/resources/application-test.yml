@@ -43,6 +43,8 @@ logging:
 
 # Application-Specific Configuration for Tests
 algotrading:
+  system:
+    backup-dir: build/test-backups
   risk:
     max-risk-per-trade: 0.02
     max-drawdown-limit: 0.25

@@ -3,7 +3,7 @@ package com.algotrader.bot.controller;
 import com.algotrader.bot.entity.StrategyConfig;
 import com.algotrader.bot.repository.StrategyConfigRepository;
 import com.algotrader.bot.security.JwtTokenProvider;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,8 +39,7 @@ class StrategyManagementControllerIntegrationTest {
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
     private String authToken;
     private Long strategyId;

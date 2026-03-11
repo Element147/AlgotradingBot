@@ -76,10 +76,13 @@ Stop all services:
 1. Open `http://localhost:5173/backtest`.
 2. In `Dataset Upload`, select your local CSV and upload it.
 3. In `Run Backtest`, choose:
-   - `Algorithm` (`BOLLINGER_BANDS`, `SMA_CROSSOVER`, or `BUY_AND_HOLD`)
+   - `Algorithm` from the full research catalog exposed by the backend
    - uploaded `Dataset`
    - market/date range/assumptions (fees + slippage)
-4. Click `Run Backtest` and monitor status/results in history/details.
+4. Strategy behavior depends on execution mode:
+   - `SINGLE_SYMBOL` strategies use one symbol from the dataset
+   - `DATASET_UNIVERSE` strategies automatically use all dataset symbols
+5. Click `Run Backtest` and monitor status/results in history/details.
 
 CSV format expected:
 
@@ -123,6 +126,8 @@ cd C:\Git\algotradingbot
 - `PROJECT_STATUS.md`
 - `ARCHITECTURE.md`
 - `TRADING_GUARDRAILS.md`
+- `docs/BACKTEST_STRATEGY_REFACTOR.md`
+- `docs/GREENFIELD_STRATEGY_IMPLEMENTATION.md`
 - `docs/GREENFIELD_SMALL_ACCOUNT_STRATEGY_BLUEPRINT.md`
 - `docs/SMALL_ACCOUNT_STRATEGY_RESEARCH.md`
 - `docs/USER_WORKFLOW_GUIDE.md`

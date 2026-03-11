@@ -5,7 +5,7 @@ import com.algotrader.bot.repository.AccountRepository;
 import com.algotrader.bot.repository.RiskAlertRepository;
 import com.algotrader.bot.repository.RiskConfigRepository;
 import com.algotrader.bot.security.JwtTokenProvider;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,8 +38,7 @@ class RiskControllerIntegrationTest {
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
     @Autowired
     private RiskConfigRepository riskConfigRepository;

@@ -1,8 +1,10 @@
 package com.algotrader.bot.service;
 
+import com.algotrader.bot.backtest.strategy.BacktestStrategyRegistry;
 import com.algotrader.bot.controller.BacktestDetailsResponse;
 import com.algotrader.bot.controller.BacktestHistoryItemResponse;
 import com.algotrader.bot.controller.BacktestRunResponse;
+import com.algotrader.bot.controller.BacktestAlgorithmResponse;
 import com.algotrader.bot.controller.RunBacktestRequest;
 import com.algotrader.bot.entity.BacktestDataset;
 import com.algotrader.bot.entity.BacktestResult;
@@ -25,13 +27,27 @@ public class BacktestManagementService {
     private final BacktestResultRepository backtestResultRepository;
     private final BacktestExecutionService backtestExecutionService;
     private final BacktestDatasetService backtestDatasetService;
+    private final BacktestStrategyRegistry backtestStrategyRegistry;
 
     public BacktestManagementService(BacktestResultRepository backtestResultRepository,
                                      BacktestExecutionService backtestExecutionService,
-                                     BacktestDatasetService backtestDatasetService) {
+                                     BacktestDatasetService backtestDatasetService,
+                                     BacktestStrategyRegistry backtestStrategyRegistry) {
         this.backtestResultRepository = backtestResultRepository;
         this.backtestExecutionService = backtestExecutionService;
         this.backtestDatasetService = backtestDatasetService;
+        this.backtestStrategyRegistry = backtestStrategyRegistry;
+    }
+
+    @Transactional(readOnly = true)
+    public List<BacktestAlgorithmResponse> getAlgorithms() {
+        return backtestStrategyRegistry.getDefinitions().stream()
+            .map(definition -> new BacktestAlgorithmResponse(
+                definition.type().name(),
+                definition.label(),
+                definition.description(),
+                definition.selectionMode().name()))
+            .toList();
     }
 
     @Transactional(readOnly = true)
@@ -58,13 +74,15 @@ public class BacktestManagementService {
         if (request.getInitialBalance().compareTo(new BigDecimal("100.00")) <= 0) {
             throw new IllegalArgumentException("Initial balance must be greater than 100");
         }
-        BacktestAlgorithmType.from(request.getAlgorithmType());
+        BacktestAlgorithmType algorithmType = BacktestAlgorithmType.from(request.getAlgorithmType());
+        var strategyDefinition = backtestStrategyRegistry.getStrategy(algorithmType).definition();
 
         BacktestDataset dataset = backtestDatasetService.getDataset(request.getDatasetId());
+        String effectiveSymbol = resolveRequestedSymbol(request.getSymbol(), dataset.getSymbolsCsv(), strategyDefinition.selectionMode());
 
         BacktestResult pending = new BacktestResult(
-            request.getAlgorithmType().trim().toUpperCase(),
-            request.getSymbol(),
+            algorithmType.name(),
+            effectiveSymbol,
             request.getStartDate().atStartOfDay(),
             request.getEndDate().atStartOfDay(),
             request.getInitialBalance(),
@@ -90,6 +108,25 @@ public class BacktestManagementService {
         backtestExecutionService.executeAsync(saved.getId());
 
         return new BacktestRunResponse(saved.getId(), saved.getExecutionStatus().name(), saved.getTimestamp());
+    }
+
+    private String resolveRequestedSymbol(String requestedSymbol,
+                                         String datasetSymbolsCsv,
+                                         com.algotrader.bot.backtest.strategy.BacktestStrategySelectionMode selectionMode) {
+        if (selectionMode == com.algotrader.bot.backtest.strategy.BacktestStrategySelectionMode.DATASET_UNIVERSE) {
+            return datasetSymbolsCsv;
+        }
+
+        List<String> supportedSymbols = List.of(datasetSymbolsCsv.split(",")).stream()
+            .map(String::trim)
+            .filter(symbol -> !symbol.isBlank())
+            .toList();
+
+        if (!supportedSymbols.contains(requestedSymbol)) {
+            throw new IllegalArgumentException("Selected symbol is not present in dataset: " + requestedSymbol);
+        }
+
+        return requestedSymbol;
     }
 
     private BacktestHistoryItemResponse toHistoryItem(BacktestResult result) {
