@@ -40,8 +40,8 @@ public class AuthController {
     })
     public ResponseEntity<Map<String, Object>> login(@Valid @RequestBody LoginRequest loginRequest) {
         Map<String, Object> response = authService.login(
-            loginRequest.getUsername(),
-            loginRequest.getPassword()
+            loginRequest.username(),
+            loginRequest.password()
         );
         return ResponseEntity.ok(response);
     }
@@ -84,7 +84,7 @@ public class AuthController {
         @RequestParam(value = "refreshToken", required = false) String refreshTokenParam
     ) {
         String refreshToken = refreshTokenRequest != null
-            ? refreshTokenRequest.getRefreshToken()
+            ? refreshTokenRequest.refreshToken()
             : refreshTokenParam;
 
         if (!StringUtils.hasText(refreshToken)) {

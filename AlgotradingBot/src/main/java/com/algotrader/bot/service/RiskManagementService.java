@@ -53,11 +53,11 @@ public class RiskManagementService {
     public RiskConfigResponse updateConfig(UpdateRiskConfigRequest request) {
         RiskConfig config = ensureConfig();
 
-        config.setMaxRiskPerTrade(request.getMaxRiskPerTrade());
-        config.setMaxDailyLossLimit(request.getMaxDailyLossLimit());
-        config.setMaxDrawdownLimit(request.getMaxDrawdownLimit());
-        config.setMaxOpenPositions(request.getMaxOpenPositions());
-        config.setCorrelationLimit(request.getCorrelationLimit());
+        config.setMaxRiskPerTrade(request.maxRiskPerTrade());
+        config.setMaxDailyLossLimit(request.maxDailyLossLimit());
+        config.setMaxDrawdownLimit(request.maxDrawdownLimit());
+        config.setMaxOpenPositions(request.maxOpenPositions());
+        config.setCorrelationLimit(request.correlationLimit());
 
         RiskConfig saved = riskConfigRepository.save(config);
         return toConfigResponse(saved);
@@ -127,13 +127,13 @@ public class RiskManagementService {
             throw new IllegalArgumentException("Circuit breaker override is disabled for live environment");
         }
 
-        if (!OVERRIDE_CODE.equals(request.getConfirmationCode())) {
+        if (!OVERRIDE_CODE.equals(request.confirmationCode())) {
             throw new IllegalArgumentException("Invalid confirmation code");
         }
 
         RiskConfig config = ensureConfig();
         config.setCircuitBreakerActive(false);
-        config.setCircuitBreakerReason("Overridden: " + request.getReason());
+        config.setCircuitBreakerReason("Overridden: " + request.reason());
         config.setCircuitBreakerOverriddenAt(LocalDateTime.now());
         riskConfigRepository.save(config);
 
@@ -141,7 +141,7 @@ public class RiskManagementService {
             "CIRCUIT_BREAKER_OVERRIDE",
             "MEDIUM",
             "Circuit breaker manually overridden",
-            request.getReason()
+            request.reason()
         ));
 
         return toConfigResponse(config);

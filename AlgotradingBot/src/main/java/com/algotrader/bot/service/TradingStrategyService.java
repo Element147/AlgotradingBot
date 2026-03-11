@@ -63,12 +63,12 @@ public class TradingStrategyService {
     @Transactional
     public StartStrategyResponse startStrategy(StartStrategyRequest request) {
         logger.info("Starting trading strategy with initial balance: {}, pairs: {}",
-            request.getInitialBalance(), request.getPairs());
+            request.initialBalance(), request.pairs());
 
         Account account = new Account(
-            request.getInitialBalance(),
-            request.getRiskPerTrade(),
-            request.getMaxDrawdown()
+            request.initialBalance(),
+            request.riskPerTrade(),
+            request.maxDrawdown()
         );
         account.setStatus(Account.AccountStatus.ACTIVE);
         account = accountRepository.save(account);

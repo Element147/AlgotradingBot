@@ -63,8 +63,8 @@ public class ExchangeIntegrationService {
             return unsupported;
         }
 
-        String apiKey = trimToNull(request == null ? null : request.getApiKey());
-        String apiSecret = trimToNull(request == null ? null : request.getApiSecret());
+        String apiKey = trimToNull(request == null ? null : request.apiKey());
+        String apiSecret = trimToNull(request == null ? null : request.apiSecret());
         if (apiKey == null) {
             apiKey = trimToNull(System.getenv("BINANCE_API_KEY"));
         }
@@ -84,7 +84,7 @@ public class ExchangeIntegrationService {
             return missingCredentials;
         }
 
-        boolean testnet = request != null && Boolean.TRUE.equals(request.getTestnet());
+        boolean testnet = request != null && Boolean.TRUE.equals(request.testnet());
         ExchangeConnectionStatusResponse status = performBinanceConnectivityTest(apiKey, apiSecret, testnet);
         lastStatus.set(status);
         return status;
@@ -153,10 +153,10 @@ public class ExchangeIntegrationService {
     }
 
     private String normalizeExchange(ExchangeConnectionTestRequest request) {
-        if (request == null || request.getExchange() == null || request.getExchange().isBlank()) {
+        if (request == null || request.exchange() == null || request.exchange().isBlank()) {
             return DEFAULT_EXCHANGE;
         }
-        return request.getExchange().trim().toLowerCase(Locale.ROOT);
+        return request.exchange().trim().toLowerCase(Locale.ROOT);
     }
 
     private String trimToNull(String value) {

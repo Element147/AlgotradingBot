@@ -1,6 +1,6 @@
 package com.algotrader.bot.websocket;
 
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -24,13 +24,21 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(WebSocketHandler.class);
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
     
     // Store active sessions
     private final Set<WebSocketSession> sessions = new CopyOnWriteArraySet<>();
     
     // Store subscriptions per session (sessionId -> Set<channel>)
     private final Map<String, Set<String>> subscriptions = new ConcurrentHashMap<>();
+
+    public WebSocketHandler() {
+        this(new ObjectMapper().findAndRegisterModules());
+    }
+
+    public WebSocketHandler(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {

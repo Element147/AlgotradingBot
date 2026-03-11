@@ -68,25 +68,25 @@ public class BacktestManagementService {
 
     @Transactional
     public BacktestRunResponse runBacktest(RunBacktestRequest request) {
-        if (!request.getStartDate().isBefore(request.getEndDate())) {
+        if (!request.startDate().isBefore(request.endDate())) {
             throw new IllegalArgumentException("Start date must be before end date");
         }
-        if (request.getInitialBalance().compareTo(new BigDecimal("100.00")) <= 0) {
+        if (request.initialBalance().compareTo(new BigDecimal("100.00")) <= 0) {
             throw new IllegalArgumentException("Initial balance must be greater than 100");
         }
-        BacktestAlgorithmType algorithmType = BacktestAlgorithmType.from(request.getAlgorithmType());
+        BacktestAlgorithmType algorithmType = BacktestAlgorithmType.from(request.algorithmType());
         var strategyDefinition = backtestStrategyRegistry.getStrategy(algorithmType).definition();
 
-        BacktestDataset dataset = backtestDatasetService.getDataset(request.getDatasetId());
-        String effectiveSymbol = resolveRequestedSymbol(request.getSymbol(), dataset.getSymbolsCsv(), strategyDefinition.selectionMode());
+        BacktestDataset dataset = backtestDatasetService.getDataset(request.datasetId());
+        String effectiveSymbol = resolveRequestedSymbol(request.symbol(), dataset.getSymbolsCsv(), strategyDefinition.selectionMode());
 
         BacktestResult pending = new BacktestResult(
             algorithmType.name(),
             effectiveSymbol,
-            request.getStartDate().atStartOfDay(),
-            request.getEndDate().atStartOfDay(),
-            request.getInitialBalance(),
-            request.getInitialBalance(),
+            request.startDate().atStartOfDay(),
+            request.endDate().atStartOfDay(),
+            request.initialBalance(),
+            request.initialBalance(),
             BigDecimal.ZERO,
             BigDecimal.ZERO,
             BigDecimal.ZERO,
@@ -97,10 +97,10 @@ public class BacktestManagementService {
 
         pending.setDatasetId(dataset.getId());
         pending.setDatasetName(dataset.getName());
-        pending.setTimeframe(request.getTimeframe());
+        pending.setTimeframe(request.timeframe());
         pending.setExecutionStatus(BacktestResult.ExecutionStatus.PENDING);
-        pending.setFeesBps(request.getFeesBps());
-        pending.setSlippageBps(request.getSlippageBps());
+        pending.setFeesBps(request.feesBps());
+        pending.setSlippageBps(request.slippageBps());
         pending.setTimestamp(LocalDateTime.now());
 
         BacktestResult saved = backtestResultRepository.save(pending);

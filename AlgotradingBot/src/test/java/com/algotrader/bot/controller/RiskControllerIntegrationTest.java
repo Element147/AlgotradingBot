@@ -77,12 +77,13 @@ class RiskControllerIntegrationTest {
 
     @Test
     void updateRiskConfig_updatesValues() throws Exception {
-        UpdateRiskConfigRequest request = new UpdateRiskConfigRequest();
-        request.setMaxRiskPerTrade(new BigDecimal("0.03"));
-        request.setMaxDailyLossLimit(new BigDecimal("0.06"));
-        request.setMaxDrawdownLimit(new BigDecimal("0.30"));
-        request.setMaxOpenPositions(4);
-        request.setCorrelationLimit(new BigDecimal("0.70"));
+        UpdateRiskConfigRequest request = new UpdateRiskConfigRequest(
+            new BigDecimal("0.03"),
+            new BigDecimal("0.06"),
+            new BigDecimal("0.30"),
+            4,
+            new BigDecimal("0.70")
+        );
 
         mockMvc.perform(put("/api/risk/config")
                 .header("Authorization", "Bearer " + authToken)
@@ -95,9 +96,10 @@ class RiskControllerIntegrationTest {
 
     @Test
     void overrideCircuitBreaker_requiresCode() throws Exception {
-        CircuitBreakerOverrideRequest request = new CircuitBreakerOverrideRequest();
-        request.setConfirmationCode("WRONG");
-        request.setReason("manual override");
+        CircuitBreakerOverrideRequest request = new CircuitBreakerOverrideRequest(
+            "WRONG",
+            "manual override"
+        );
 
         mockMvc.perform(post("/api/risk/circuit-breaker/override")
                 .header("Authorization", "Bearer " + authToken)

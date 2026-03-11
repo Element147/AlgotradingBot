@@ -6,61 +6,20 @@ import jakarta.validation.constraints.Positive;
 
 import java.math.BigDecimal;
 
-public class PaperOrderRequest {
-
+public record PaperOrderRequest(
     @NotBlank
-    private String symbol;
-
+    String symbol,
     @NotBlank
-    private String side;
-
+    String side,
     @NotNull
     @Positive
-    private BigDecimal quantity;
-
+    BigDecimal quantity,
     @NotNull
     @Positive
-    private BigDecimal price;
-
-    private Boolean executeNow = true;
-
-    public String getSymbol() {
-        return symbol;
-    }
-
-    public void setSymbol(String symbol) {
-        this.symbol = symbol;
-    }
-
-    public String getSide() {
-        return side;
-    }
-
-    public void setSide(String side) {
-        this.side = side;
-    }
-
-    public BigDecimal getQuantity() {
-        return quantity;
-    }
-
-    public void setQuantity(BigDecimal quantity) {
-        this.quantity = quantity;
-    }
-
-    public BigDecimal getPrice() {
-        return price;
-    }
-
-    public void setPrice(BigDecimal price) {
-        this.price = price;
-    }
-
-    public Boolean getExecuteNow() {
-        return executeNow;
-    }
-
-    public void setExecuteNow(Boolean executeNow) {
-        this.executeNow = executeNow;
+    BigDecimal price,
+    Boolean executeNow
+) {
+    public PaperOrderRequest {
+        executeNow = executeNow == null ? Boolean.TRUE : executeNow;
     }
 }

@@ -11,68 +11,26 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @Schema(description = "Request to start a new trading strategy")
-public class StartStrategyRequest {
-    
+public record StartStrategyRequest(
     @Schema(description = "Initial account balance in USDT", example = "1000.00", required = true)
     @NotNull(message = "Initial balance is required")
     @Positive(message = "Initial balance must be positive")
-    private BigDecimal initialBalance;
-    
+    BigDecimal initialBalance,
     @Schema(description = "List of trading pairs to trade", example = "[\"BTC/USDT\", \"ETH/USDT\"]", required = true)
     @NotNull(message = "Trading pairs are required")
     @Size(min = 1, message = "At least one trading pair is required")
-    private List<String> pairs;
-    
+    List<String> pairs,
     @Schema(description = "Risk per trade as a decimal (0.02 = 2%)", example = "0.02", defaultValue = "0.02")
     @DecimalMin(value = "0.001", message = "Risk per trade must be at least 0.1%")
     @DecimalMax(value = "0.05", message = "Risk per trade cannot exceed 5%")
-    private BigDecimal riskPerTrade = new BigDecimal("0.02");
-    
+    BigDecimal riskPerTrade,
     @Schema(description = "Maximum drawdown limit as a decimal (0.25 = 25%)", example = "0.25", defaultValue = "0.25")
     @DecimalMin(value = "0.05", message = "Max drawdown must be at least 5%")
     @DecimalMax(value = "0.50", message = "Max drawdown cannot exceed 50%")
-    private BigDecimal maxDrawdown = new BigDecimal("0.25");
-    
-    public StartStrategyRequest() {
-    }
-    
-    public StartStrategyRequest(BigDecimal initialBalance, List<String> pairs, 
-                               BigDecimal riskPerTrade, BigDecimal maxDrawdown) {
-        this.initialBalance = initialBalance;
-        this.pairs = pairs;
-        this.riskPerTrade = riskPerTrade;
-        this.maxDrawdown = maxDrawdown;
-    }
-    
-    public BigDecimal getInitialBalance() {
-        return initialBalance;
-    }
-    
-    public void setInitialBalance(BigDecimal initialBalance) {
-        this.initialBalance = initialBalance;
-    }
-    
-    public List<String> getPairs() {
-        return pairs;
-    }
-    
-    public void setPairs(List<String> pairs) {
-        this.pairs = pairs;
-    }
-    
-    public BigDecimal getRiskPerTrade() {
-        return riskPerTrade;
-    }
-    
-    public void setRiskPerTrade(BigDecimal riskPerTrade) {
-        this.riskPerTrade = riskPerTrade;
-    }
-    
-    public BigDecimal getMaxDrawdown() {
-        return maxDrawdown;
-    }
-    
-    public void setMaxDrawdown(BigDecimal maxDrawdown) {
-        this.maxDrawdown = maxDrawdown;
+    BigDecimal maxDrawdown
+) {
+    public StartStrategyRequest {
+        riskPerTrade = riskPerTrade == null ? new BigDecimal("0.02") : riskPerTrade;
+        maxDrawdown = maxDrawdown == null ? new BigDecimal("0.25") : maxDrawdown;
     }
 }

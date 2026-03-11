@@ -1,5 +1,6 @@
 package com.algotrader.bot.websocket;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,7 +39,7 @@ class WebSocketHandlerTest {
 
     @BeforeEach
     void setUp() {
-        webSocketHandler = new WebSocketHandler();
+        webSocketHandler = new WebSocketHandler(new ObjectMapper().findAndRegisterModules());
         when(session1.getId()).thenReturn("session-1");
         when(session2.getId()).thenReturn("session-2");
     }

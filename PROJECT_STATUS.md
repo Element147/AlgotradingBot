@@ -24,6 +24,35 @@ Local developer workflow is now optimized for faster iteration:
 
 ## Completed In This Update
 
+### 11) Spring/Java Modernization Iteration 1
+
+Backend:
+- Created `docs/SPRING_MODERNIZATION_AUDIT.md` to inventory legacy Spring-style code and define a phased modernization plan.
+- Executed full planned phases (1-4) for this iteration.
+- Record migration for immutable controller response DTOs:
+  - `BacktestAlgorithmResponse`
+  - `BacktestDatasetResponse`
+  - `BacktestHistoryItemResponse`
+  - `BacktestRunResponse`
+  - `StrategyActionResponse`
+  - `StrategyDetailsResponse`
+  - `StrategyStatusResponse`
+- Record migration for controller request DTOs:
+  - `CircuitBreakerOverrideRequest`
+  - `ExchangeConnectionTestRequest`
+  - `LoginRequest`
+  - `PaperOrderRequest`
+  - `RefreshTokenRequest`
+  - `RunBacktestRequest`
+  - `StartStrategyRequest`
+  - `UpdateRiskConfigRequest`
+  - `UpdateStrategyConfigRequest`
+- Removed temporary `getX()` compatibility methods from migrated response records and updated call sites to canonical record accessors.
+- Updated integration/unit tests to use record constructor patterns for migrated request DTOs.
+- Standardized WebSocket JSON import path to Jackson mainstream package:
+  - migrated `WebSocketHandler` from `tools.jackson.databind.ObjectMapper` to `com.fasterxml.jackson.databind.ObjectMapper`
+  - updated `WebSocketHandlerTest` for constructor-based setup
+
 ### 10) Greenfield Strategy Blueprint Implementation
 
 Backend:

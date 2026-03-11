@@ -137,16 +137,17 @@ class BacktestManagementControllerIntegrationTest {
 
     @Test
     void runBacktest_createsPendingRecord() throws Exception {
-        RunBacktestRequest request = new RunBacktestRequest();
-        request.setAlgorithmType("SMA_CROSSOVER");
-        request.setDatasetId(datasetId);
-        request.setSymbol("BTC/USDT");
-        request.setTimeframe("1h");
-        request.setStartDate(java.time.LocalDate.parse("2025-01-01"));
-        request.setEndDate(java.time.LocalDate.parse("2025-01-02"));
-        request.setInitialBalance(new BigDecimal("2000"));
-        request.setFeesBps(10);
-        request.setSlippageBps(3);
+        RunBacktestRequest request = new RunBacktestRequest(
+            "SMA_CROSSOVER",
+            datasetId,
+            "BTC/USDT",
+            "1h",
+            java.time.LocalDate.parse("2025-01-01"),
+            java.time.LocalDate.parse("2025-01-02"),
+            new BigDecimal("2000"),
+            10,
+            3
+        );
 
         mockMvc.perform(post("/api/backtests/run")
                 .header("Authorization", "Bearer " + authToken)
@@ -159,16 +160,17 @@ class BacktestManagementControllerIntegrationTest {
 
     @Test
     void runBacktest_rejectsInvalidDateRange() throws Exception {
-        RunBacktestRequest request = new RunBacktestRequest();
-        request.setAlgorithmType("BOLLINGER_BANDS");
-        request.setDatasetId(datasetId);
-        request.setSymbol("BTC/USDT");
-        request.setTimeframe("1h");
-        request.setStartDate(java.time.LocalDate.parse("2025-01-02"));
-        request.setEndDate(java.time.LocalDate.parse("2025-01-01"));
-        request.setInitialBalance(new BigDecimal("2000"));
-        request.setFeesBps(10);
-        request.setSlippageBps(3);
+        RunBacktestRequest request = new RunBacktestRequest(
+            "BOLLINGER_BANDS",
+            datasetId,
+            "BTC/USDT",
+            "1h",
+            java.time.LocalDate.parse("2025-01-02"),
+            java.time.LocalDate.parse("2025-01-01"),
+            new BigDecimal("2000"),
+            10,
+            3
+        );
 
         mockMvc.perform(post("/api/backtests/run")
                 .header("Authorization", "Bearer " + authToken)

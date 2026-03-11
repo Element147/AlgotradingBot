@@ -66,12 +66,13 @@ class PaperTradingControllerIntegrationTest {
 
     @Test
     void placeOrder_executesAndFillsByDefault() throws Exception {
-        PaperOrderRequest request = new PaperOrderRequest();
-        request.setSymbol("BTC/USDT");
-        request.setSide("BUY");
-        request.setQuantity(new BigDecimal("1"));
-        request.setPrice(new BigDecimal("100"));
-        request.setExecuteNow(true);
+        PaperOrderRequest request = new PaperOrderRequest(
+            "BTC/USDT",
+            "BUY",
+            new BigDecimal("1"),
+            new BigDecimal("100"),
+            true
+        );
 
         mockMvc.perform(post("/api/paper/orders")
                 .header("Authorization", "Bearer " + authToken)
@@ -84,12 +85,13 @@ class PaperTradingControllerIntegrationTest {
 
     @Test
     void placeOrder_canCreatePendingAndCancel() throws Exception {
-        PaperOrderRequest request = new PaperOrderRequest();
-        request.setSymbol("BTC/USDT");
-        request.setSide("BUY");
-        request.setQuantity(new BigDecimal("1"));
-        request.setPrice(new BigDecimal("100"));
-        request.setExecuteNow(false);
+        PaperOrderRequest request = new PaperOrderRequest(
+            "BTC/USDT",
+            "BUY",
+            new BigDecimal("1"),
+            new BigDecimal("100"),
+            false
+        );
 
         String response = mockMvc.perform(post("/api/paper/orders")
                 .header("Authorization", "Bearer " + authToken)

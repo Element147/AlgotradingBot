@@ -105,11 +105,12 @@ class TradingStrategyControllerIntegrationTest {
     @Test
     void testStartStrategy_ValidRequest_ReturnsSuccess() throws Exception {
         // Prepare request
-        StartStrategyRequest request = new StartStrategyRequest();
-        request.setInitialBalance(new BigDecimal("500.00"));
-        request.setPairs(java.util.Arrays.asList("BTC/USDT", "ETH/USDT"));
-        request.setRiskPerTrade(new BigDecimal("0.02"));
-        request.setMaxDrawdown(new BigDecimal("0.25"));
+        StartStrategyRequest request = new StartStrategyRequest(
+            new BigDecimal("500.00"),
+            java.util.Arrays.asList("BTC/USDT", "ETH/USDT"),
+            new BigDecimal("0.02"),
+            new BigDecimal("0.25")
+        );
 
         String requestJson = objectMapper.writeValueAsString(request);
 

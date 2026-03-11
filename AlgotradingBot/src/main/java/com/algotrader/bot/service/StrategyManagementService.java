@@ -79,7 +79,7 @@ public class StrategyManagementService {
     public StrategyDetailsResponse updateStrategyConfig(Long strategyId, UpdateStrategyConfigRequest request) {
         StrategyConfig strategy = getById(strategyId);
 
-        if (request.getMaxPositionSize().compareTo(request.getMinPositionSize()) < 0) {
+        if (request.maxPositionSize().compareTo(request.minPositionSize()) < 0) {
             throw new IllegalArgumentException("Max position size must be greater than or equal to min position size");
         }
 
@@ -88,11 +88,11 @@ public class StrategyManagementService {
             strategy.setStoppedAt(LocalDateTime.now());
         }
 
-        strategy.setSymbol(request.getSymbol());
-        strategy.setTimeframe(request.getTimeframe());
-        strategy.setRiskPerTrade(request.getRiskPerTrade());
-        strategy.setMinPositionSize(request.getMinPositionSize());
-        strategy.setMaxPositionSize(request.getMaxPositionSize());
+        strategy.setSymbol(request.symbol());
+        strategy.setTimeframe(request.timeframe());
+        strategy.setRiskPerTrade(request.riskPerTrade());
+        strategy.setMinPositionSize(request.minPositionSize());
+        strategy.setMaxPositionSize(request.maxPositionSize());
 
         StrategyConfig saved = strategyConfigRepository.save(strategy);
 

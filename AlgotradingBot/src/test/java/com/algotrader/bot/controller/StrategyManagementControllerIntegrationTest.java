@@ -91,12 +91,13 @@ class StrategyManagementControllerIntegrationTest {
 
     @Test
     void updateConfig_validatesRangeAndUpdates() throws Exception {
-        UpdateStrategyConfigRequest request = new UpdateStrategyConfigRequest();
-        request.setSymbol("ETH/USDT");
-        request.setTimeframe("4h");
-        request.setRiskPerTrade(new BigDecimal("0.03"));
-        request.setMinPositionSize(new BigDecimal("20.00"));
-        request.setMaxPositionSize(new BigDecimal("120.00"));
+        UpdateStrategyConfigRequest request = new UpdateStrategyConfigRequest(
+            "ETH/USDT",
+            "4h",
+            new BigDecimal("0.03"),
+            new BigDecimal("20.00"),
+            new BigDecimal("120.00")
+        );
 
         mockMvc.perform(put("/api/strategies/{strategyId}/config", strategyId)
                 .header("Authorization", "Bearer " + authToken)
@@ -110,12 +111,13 @@ class StrategyManagementControllerIntegrationTest {
 
     @Test
     void updateConfig_rejectsInvalidRisk() throws Exception {
-        UpdateStrategyConfigRequest request = new UpdateStrategyConfigRequest();
-        request.setSymbol("ETH/USDT");
-        request.setTimeframe("4h");
-        request.setRiskPerTrade(new BigDecimal("0.10"));
-        request.setMinPositionSize(new BigDecimal("20.00"));
-        request.setMaxPositionSize(new BigDecimal("120.00"));
+        UpdateStrategyConfigRequest request = new UpdateStrategyConfigRequest(
+            "ETH/USDT",
+            "4h",
+            new BigDecimal("0.10"),
+            new BigDecimal("20.00"),
+            new BigDecimal("120.00")
+        );
 
         mockMvc.perform(put("/api/strategies/{strategyId}/config", strategyId)
                 .header("Authorization", "Bearer " + authToken)

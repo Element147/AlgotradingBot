@@ -47,15 +47,15 @@ public class PaperTradingService {
 
         PaperOrder order = new PaperOrder(
             account.getId(),
-            request.getSymbol(),
-            PaperOrder.Side.valueOf(request.getSide().toUpperCase()),
-            request.getQuantity(),
-            request.getPrice()
+            request.symbol(),
+            PaperOrder.Side.valueOf(request.side().toUpperCase()),
+            request.quantity(),
+            request.price()
         );
 
         PaperOrder saved = paperOrderRepository.save(order);
 
-        if (Boolean.TRUE.equals(request.getExecuteNow())) {
+        if (Boolean.TRUE.equals(request.executeNow())) {
             saved = fillOrderInternal(saved.getId());
         }
 
