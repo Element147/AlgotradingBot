@@ -13,6 +13,7 @@ This document is aligned with:
 - `TRADING_GUARDRAILS.md`
 - `.kiro/steering/product.md`
 - the current built-in backtest algorithms in `BacktestAlgorithmType`: `BOLLINGER_BANDS`, `SMA_CROSSOVER`, and `BUY_AND_HOLD`
+- the proposed next trend addition in this document: `ICHIMOKU_TREND`
 
 ## Executive View
 
@@ -25,11 +26,12 @@ If you start with around EUR 150 and stay conservative, the realistic path is:
 
 The best candidates for this repo right now are:
 
-1. `SMA_CROSSOVER` / slow trend following
-2. `BOLLINGER_BANDS` mean reversion, but only as a secondary, range-market strategy
-3. `BUY_AND_HOLD` as the benchmark
-4. `DONCHIAN_BREAKOUT` as the next strategy worth adding
-5. small-basket relative-strength rotation as a later addition
+1. `BUY_AND_HOLD` as the benchmark
+2. `SMA_CROSSOVER` / slow trend following as the first primary research strategy
+3. `DONCHIAN_BREAKOUT` as the next clean trend strategy to add
+4. `ICHIMOKU_TREND` as a strong trend filter or later standalone trend strategy
+5. `BOLLINGER_BANDS` mean reversion, but only as a secondary, range-market strategy
+6. small-basket relative-strength rotation as a later addition
 
 ## What EUR 150 Means In Practice
 
@@ -81,6 +83,15 @@ Examples of stock-account short proxies:
 Those products can express a bearish view without borrowing stock yourself, but they are still daily-reset products with path dependence. They are tactical tools, not "hold forever" shorts.
 
 ## Recommended Strategy Shortlist
+
+The sections below are grouped by strategy family. The explicit priority order for this repo is:
+
+1. `BUY_AND_HOLD`
+2. `SMA_CROSSOVER`
+3. `DONCHIAN_BREAKOUT`
+4. `ICHIMOKU_TREND`
+5. `BOLLINGER_BANDS`
+6. small-basket relative-strength rotation
 
 ### 1. Slow Trend Following / Time-Series Momentum
 
@@ -201,7 +212,42 @@ Main risks:
 - frequent small losses in choppy ranges
 - breakout failure after news spikes
 
-### 5. Small-Basket Relative-Strength Rotation
+### 5. Ichimoku Cloud Trend / Regime Filter
+
+Status for this repo: `strong second-wave candidate`
+
+Implementation fit:
+
+- not built in today, but it fits the current backtest model if added as a conservative `long/cash` trend strategy
+- best suited to `4h` and `1d` bars, which matches the repo's local-first workflow better than fast intraday trading
+- more expressive than a simple moving-average crossover, but also more fragile to implement honestly because some lines are shifted in time
+
+Why it fits:
+
+- Fidelity describes Ichimoku as a single framework for trend, momentum, and support/resistance. It reinforces buy signals when the Tenkan Sen crosses above the Kijun Sen while Tenkan, Kijun, and price are all above the cloud, and bearish confirmation when the reverse happens below the cloud.
+- It can be used as a `long/cash` system for both stocks and crypto.
+- It is especially useful as a regime filter: trade only when the broader cloud structure agrees with the trend.
+
+Why it is not the first strategy to implement:
+
+- The evidence base for trend following as a family is stronger than the evidence for Ichimoku specifically as a standalone edge.
+- It is easier to backtest incorrectly than SMA or Donchian because Senkou spans are plotted forward and Chikou is plotted backward.
+- It has more moving parts, which increases overfitting risk on a small dataset.
+
+Best use here:
+
+- crypto: `BTC/USDT`, `ETH/USDT` on `4h` or `1d`
+- stocks: liquid ETFs or a few large-cap names on `1d`
+- operating mode: `long` above the cloud, `cash` when structure deteriorates
+- first deployment role: trend filter for `SMA_CROSSOVER` or a later standalone `ICHIMOKU_TREND` algorithm
+
+Main risks:
+
+- look-ahead bias if the cloud is implemented with future-visible values
+- late exits after sharp reversals because the cloud is intentionally slower than price
+- false confidence if the default `9/26/52` settings are tuned too aggressively to one market
+
+### 6. Small-Basket Relative-Strength Rotation
 
 Status for this repo: `later, but relevant`
 
@@ -246,14 +292,98 @@ Why they do not fit:
 - some depend on borrow, margin interest, derivatives, or exchange-specific liquidation behavior
 - many are harder to simulate honestly than they look
 
+## `ICHIMOKU_TREND` Backend Design
+
+Goal:
+
+- add a conservative `long/cash` trend strategy that works on the same OHLCV pipeline as the current backtester
+- keep the first version simple enough to audit and hard to misuse
+
+Recommended code touch points:
+
+- `AlgotradingBot/src/main/java/com/algotrader/bot/service/BacktestAlgorithmType.java`: add `ICHIMOKU_TREND`
+- `AlgotradingBot/src/main/java/com/algotrader/bot/controller/BacktestManagementController.java`: add the algorithm to `/api/backtests/algorithms`
+- `AlgotradingBot/src/main/java/com/algotrader/bot/strategy/IchimokuCloudSnapshot.java`: immutable value object for Tenkan, Kijun, visible Senkou A/B, Chikou confirmation, and cloud state
+- `AlgotradingBot/src/main/java/com/algotrader/bot/strategy/IchimokuCloudIndicator.java`: compute Ichimoku values from OHLCV candles
+- `AlgotradingBot/src/main/java/com/algotrader/bot/strategy/IchimokuTrendStrategy.java`: generate `TradeSignal`
+- `AlgotradingBot/src/main/java/com/algotrader/bot/service/BacktestExecutionService.java`: route buy/sell logic to the new strategy or refactor strategy selection into dedicated evaluators
+- `frontend/src/features/strategies/strategyProfiles.ts`: add the new profile copy after backend support exists
+
+Default windows:
+
+- Tenkan Sen: `9`
+- Kijun Sen: `26`
+- Senkou Span B: `52`
+- Cloud projection shift: `26`
+- Minimum candles before the first valid signal: `78`
+
+Look-ahead rule:
+
+- This is the most important implementation rule.
+- At candle index `i`, compare the current close to the cloud that is visible at `i`, which means using Senkou values computed at `i - 26` and plotted forward.
+- Do not compare candle `i` to Senkou values computed from candle `i` and then plotted forward. That would leak future structure into the decision.
+
+Proposed long-entry rules:
+
+1. No open position.
+2. `close[i] > visibleCloudTop[i]`.
+3. `tenkan[i] > kijun[i]`.
+4. At least one trigger is true:
+   - `tenkan[i - 1] <= kijun[i - 1]` and `tenkan[i] > kijun[i]`
+   - `close[i - 1] <= visibleCloudTop[i - 1]` and `close[i] > visibleCloudTop[i]`
+5. Optional strict confirmation for v1:
+   - `close[i] > close[i - 26]`
+
+Proposed stop and sizing rules:
+
+1. `structuralStop = min(kijun[i], visibleCloudBottom[i])`
+2. `hardRiskStop = entryPrice * 0.97`
+3. `actualStop = max(structuralStop, hardRiskStop)`
+4. Use the existing `PositionSizer` with the repository `2%` risk rule.
+5. If the resulting notional falls below exchange or broker minimums, skip the trade.
+
+Proposed exit rules:
+
+1. Hard exit if `close[i] < visibleCloudBottom[i]`
+2. Soft exit if `close[i] < kijun[i]`
+3. Soft exit if `tenkan[i] < kijun[i]`
+4. If multiple exit conditions fire at once, close the position and go to cash rather than trying to reverse short
+
+Signal-strength scoring for `TradeSignal`:
+
+- start at `0.4` if price is above the visible cloud
+- add `0.2` if Tenkan crossed above Kijun on this bar
+- add `0.2` if visible Senkou A is above visible Senkou B
+- add `0.2` if `close[i] > close[i - 26]`
+- cap at `1.0`
+
+Recommended engine behavior:
+
+- prefer SELL-to-cash exits over a fixed take-profit target
+- if the current `TradeSignal` contract still requires `takeProfitPrice`, set it to a reporting target such as `entry + 3R`, but keep the actual strategy logic driven by cloud and Kijun exits
+
+Recommended first instruments and timeframes:
+
+- crypto: `BTC/USDT`, `ETH/USDT` on `4h` and `1d`
+- stocks: `SPY`, `QQQ`, `VTI`, `VT` on `1d`
+
+## Ichimoku vs SMA vs Bollinger For A EUR 150 Account
+
+| Strategy | Best regime | Turnover / cost drag | Small-account fit | No-leverage bearish mode | Implementation risk in this repo | Main failure mode | Recommendation |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `SMA_CROSSOVER` | sustained trends | low to medium | high | go to cash, later test inverse ETF on stocks | low | whipsaws in chop | first primary strategy |
+| `ICHIMOKU_TREND` | sustained trends plus regime filtering | low to medium | medium-high | go to cash, later test inverse ETF on stocks | medium-high because of shifted spans | late reversals and look-ahead bugs if coded badly | add after Donchian or use as filter |
+| `BOLLINGER_BANDS` | sideways and mean-reverting regimes | medium to high | medium | go to cash on structure failure | medium | buying into strong downtrends and repeated stop-outs | secondary only |
+
 ## Recommended Order Of Work In This Repo
 
 1. Keep `BUY_AND_HOLD` as the benchmark on every dataset.
 2. Treat `SMA_CROSSOVER` as the first serious research strategy for both stocks and crypto.
-3. Keep `BOLLINGER_BANDS` as a conditional range-market strategy, not the main engine.
-4. Add `DONCHIAN_BREAKOUT` next.
-5. Add small-basket rotation after the market-data workflow is more mature.
-6. Defer true short-selling support until the platform can model borrow, margin interest, liquidations, audit trails, and clearer environment separation.
+3. Add `DONCHIAN_BREAKOUT` next.
+4. Add `ICHIMOKU_TREND` after Donchian, or use Ichimoku first as a trend filter for existing strategies.
+5. Keep `BOLLINGER_BANDS` as a conditional range-market strategy, not the main engine.
+6. Add small-basket rotation after the market-data workflow is more mature.
+7. Defer true short-selling support until the platform can model borrow, margin interest, liquidations, audit trails, and clearer environment separation.
 
 ## Practical Starting Universe
 
@@ -276,8 +406,9 @@ If the goal is to start with EUR 150 and grow only if the evidence supports it, 
 
 1. `BUY_AND_HOLD` benchmark
 2. `SMA_CROSSOVER` or similar slow trend-following system as the primary live research candidate
-3. `BOLLINGER_BANDS` only as a secondary regime-specific strategy
-4. `DONCHIAN_BREAKOUT` as the next strategy to implement
+3. `DONCHIAN_BREAKOUT` as the next clean trend strategy to implement
+4. `ICHIMOKU_TREND` as a strong filter or later standalone trend strategy
+5. `BOLLINGER_BANDS` only as a secondary regime-specific strategy
 
 For bearish exposure, the conservative answer today is:
 
@@ -295,9 +426,12 @@ Primary and official references used:
 - [Interactive Brokers Campus: Fractional Shares](https://www.interactivebrokers.com/campus/trading-lessons/fractional-shares/)
 - [Binance Spot API Docs: Filters](https://developers.binance.com/docs/binance-spot-api-docs/filters)
 - [Binance Margin Trading Docs: Best Practice](https://developers.binance.com/docs/margin_trading/best-practice)
+- [Fidelity: Ichimoku Cloud](https://www.fidelity.com/learning-center/trading-investing/technical-analysis/technical-indicator-guide/ichimoku-cloud)
+- [Barchart: Trader's Guide to Understanding Ichimoku Kinko Hyo Clouds](https://www.barchart.com/media/education/pdf/Trader%27s%20Guide%20to%20Understanding%20Ichimoku%20Kinko%20Hyo%20Clouds.pdf)
 - [AQR: A Century of Evidence on Trend-Following Investing](https://www.aqr.com/insights/research/journal-article/a-century-of-evidence-on-trend-following-investing)
 - [Moskowitz, Ooi, Pedersen: Time Series Momentum](https://research.cbs.dk/files/58851003/time_series_momentum_lasse_heje.pdf)
 - [Time-Series Momentum in Nearly 100 Years of Stock Returns](https://www.sciencedirect.com/science/article/abs/pii/S0378426618302346)
+- [A Decade of Evidence of Trend Following Investing in Cryptocurrencies](https://arxiv.org/abs/2009.12155)
 - [ProShares: SH](https://www.proshares.com/our-etfs/leveraged-and-inverse/sh)
 - [ProShares: PSQ](https://www.proshares.com/our-etfs/leveraged-and-inverse/psq)
 - [ProShares: BITI](https://www.proshares.com/our-etfs/leveraged-and-inverse/biti)
@@ -306,4 +440,5 @@ Primary and official references used:
 Where this document makes an inference:
 
 - The research papers support trend and momentum as real market effects, but not a guarantee that your exact implementation will work.
+- The recommendation to rank `ICHIMOKU_TREND` below simple SMA or Donchian rules is an implementation judgment based on evidence strength, code complexity, and the risk of look-ahead mistakes.
 - The recommendation to prefer `long/cash` over direct shorting for this repo is an implementation judgment based on your account size, current architecture, and safety rules.
