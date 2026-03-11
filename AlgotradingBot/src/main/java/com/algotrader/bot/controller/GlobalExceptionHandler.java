@@ -14,6 +14,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.stream.Collectors;
 
@@ -92,6 +93,15 @@ public class GlobalExceptionHandler {
             EntityNotFoundException ex, HttpServletRequest request) {
         
         logger.warn("Entity not found: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFound(
+        NoResourceFoundException ex,
+        HttpServletRequest request
+    ) {
+        logger.warn("Resource not found: {}", ex.getMessage());
         return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
     

@@ -52,6 +52,7 @@ export function EquityCurve({ title = 'Equity Curve', points }: EquityCurveProps
   return (
     <ChartContainer
       title={title}
+      tooltipText="Tracks account equity over time. Rising slope means compounding gains, while long flat or declining periods suggest weak or unstable strategy behavior."
       description="Account balance over time with timeframe filtering."
       headers={['Timestamp', 'Equity']}
       rows={rows}
@@ -71,7 +72,7 @@ export function EquityCurve({ title = 'Equity Curve', points }: EquityCurveProps
               </Button>
             ))}
           </Stack>
-          <Box sx={{ width: '100%', height: 320 }}>
+          <Box sx={{ width: '100%', height: { xs: 320, md: 420 } }}>
             <ResponsiveContainer>
               <LineChart data={filtered}>
                 <CartesianGrid strokeDasharray="3 3" />

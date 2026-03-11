@@ -1,5 +1,17 @@
 import DownloadIcon from '@mui/icons-material/Download';
-import { Alert, Box, Button, Card, CardContent, Grid, Stack, Typography } from '@mui/material';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Grid,
+  Stack,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import { useMemo, useRef } from 'react';
@@ -33,6 +45,49 @@ const validationColor = (status: BacktestDetails['validationStatus']) => {
   return 'warning.main';
 };
 
+const metricDefinitions: Array<{ key: string; label: string; description: string }> = [
+  {
+    key: 'sharpe',
+    label: 'Sharpe Ratio',
+    description: 'Risk-adjusted return. Higher means more return per unit of volatility.',
+  },
+  {
+    key: 'profitFactor',
+    label: 'Profit Factor',
+    description: 'Gross profits divided by gross losses. Values above 1 suggest positive expectancy.',
+  },
+  {
+    key: 'winRate',
+    label: 'Win Rate',
+    description: 'Percentage of trades closed as winners. Use with profit factor, not alone.',
+  },
+  {
+    key: 'maxDrawdown',
+    label: 'Max Drawdown',
+    description: 'Largest peak-to-trough decline. Lower values imply smoother equity behavior.',
+  },
+  {
+    key: 'totalTrades',
+    label: 'Total Trades',
+    description: 'Trade sample size. Larger samples generally improve confidence in conclusions.',
+  },
+  {
+    key: 'initialBalance',
+    label: 'Initial Balance',
+    description: 'Starting capital used by the simulation assumptions.',
+  },
+  {
+    key: 'finalBalance',
+    label: 'Final Balance',
+    description: 'Ending account value after all simulated trades and costs.',
+  },
+  {
+    key: 'validation',
+    label: 'Validation',
+    description: 'Quality gate summary from platform checks. Treat as research signal, not guarantee.',
+  },
+];
+
 export function BacktestResults({ details }: BacktestResultsProps) {
   const exportRef = useRef<HTMLDivElement | null>(null);
   const equityCurve = useMemo(() => createSyntheticEquityCurve(details), [details]);
@@ -41,6 +96,16 @@ export function BacktestResults({ details }: BacktestResultsProps) {
   const tradeDistribution = useMemo(() => createTradeDistribution(details), [details]);
   const monteCarlo = useMemo(() => createMonteCarloProjection(details), [details]);
   const walkForward = useMemo(() => createWalkForwardProjection(details), [details]);
+  const metricValues = [
+    details.sharpeRatio.toFixed(2),
+    details.profitFactor.toFixed(2),
+    `${details.winRate.toFixed(2)}%`,
+    `${details.maxDrawdown.toFixed(2)}%`,
+    details.totalTrades,
+    details.initialBalance.toFixed(2),
+    details.finalBalance.toFixed(2),
+    details.validationStatus,
+  ];
 
   const exportPdf = async () => {
     const doc = new jsPDF('p', 'mm', 'a4');
@@ -73,54 +138,57 @@ export function BacktestResults({ details }: BacktestResultsProps) {
                 {details.timeframe})
               </Typography>
             </Box>
-            <Button variant="outlined" startIcon={<DownloadIcon />} onClick={() => void exportPdf()}>
-              Export PDF
-            </Button>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Chip
+                size="small"
+                label={`Validation: ${details.validationStatus}`}
+                sx={{ color: validationColor(details.validationStatus) }}
+              />
+              <Button variant="outlined" startIcon={<DownloadIcon />} onClick={() => void exportPdf()}>
+                Export PDF
+              </Button>
+            </Stack>
           </Stack>
 
-          <Grid container spacing={1} sx={{ mt: 1 }}>
-            <Grid size={{ xs: 6, md: 3 }}>
-              <Typography variant="body2">Sharpe: {details.sharpeRatio.toFixed(2)}</Typography>
-            </Grid>
-            <Grid size={{ xs: 6, md: 3 }}>
-              <Typography variant="body2">Profit Factor: {details.profitFactor.toFixed(2)}</Typography>
-            </Grid>
-            <Grid size={{ xs: 6, md: 3 }}>
-              <Typography variant="body2">Win Rate: {details.winRate.toFixed(2)}%</Typography>
-            </Grid>
-            <Grid size={{ xs: 6, md: 3 }}>
-              <Typography variant="body2">Max DD: {details.maxDrawdown.toFixed(2)}%</Typography>
-            </Grid>
-            <Grid size={{ xs: 6, md: 3 }}>
-              <Typography variant="body2">Trades: {details.totalTrades}</Typography>
-            </Grid>
-            <Grid size={{ xs: 6, md: 3 }}>
-              <Typography variant="body2">Start Balance: {details.initialBalance.toFixed(2)}</Typography>
-            </Grid>
-            <Grid size={{ xs: 6, md: 3 }}>
-              <Typography variant="body2">Final Balance: {details.finalBalance.toFixed(2)}</Typography>
-            </Grid>
-            <Grid size={{ xs: 6, md: 3 }}>
-              <Typography variant="body2" sx={{ color: validationColor(details.validationStatus) }}>
-                Validation: {details.validationStatus}
-              </Typography>
-            </Grid>
+          <Grid container spacing={1.5} sx={{ mt: 1 }}>
+            {metricDefinitions.map((metric, index) => (
+              <Grid key={metric.key} size={{ xs: 12, sm: 6, lg: 3 }}>
+                <Card variant="outlined" sx={{ height: '100%' }}>
+                  <CardContent sx={{ py: 1.25, '&:last-child': { pb: 1.25 } }}>
+                    <Stack direction="row" spacing={0.5} alignItems="center">
+                      <Typography variant="caption" color="text.secondary">
+                        {metric.label}
+                      </Typography>
+                      <Tooltip title={metric.description} arrow>
+                        <InfoOutlinedIcon fontSize="inherit" color="action" sx={{ cursor: 'help' }} />
+                      </Tooltip>
+                    </Stack>
+                    <Typography
+                      variant="body1"
+                      sx={metric.key === 'validation' ? { color: validationColor(details.validationStatus) } : undefined}
+                    >
+                      {metricValues[index]}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
           </Grid>
         </CardContent>
       </Card>
 
       <Box ref={exportRef}>
         <Grid container spacing={2}>
-          <Grid size={{ xs: 12, xl: 6 }}>
+          <Grid size={{ xs: 12 }}>
             <EquityCurve points={equityCurve} />
           </Grid>
-          <Grid size={{ xs: 12, xl: 6 }}>
+          <Grid size={{ xs: 12 }}>
             <DrawdownChart points={drawdownCurve} maxDrawdownLimitPct={25} />
           </Grid>
-          <Grid size={{ xs: 12, xl: 6 }}>
+          <Grid size={{ xs: 12 }}>
             <MonthlyReturnsHeatmap data={monthlyReturns} />
           </Grid>
-          <Grid size={{ xs: 12, xl: 6 }}>
+          <Grid size={{ xs: 12 }}>
             <TradeDistributionHistogram bins={tradeDistribution} />
           </Grid>
         </Grid>
@@ -128,14 +196,34 @@ export function BacktestResults({ details }: BacktestResultsProps) {
 
       <Grid container spacing={2} sx={{ mt: 0.5 }}>
         <Grid size={{ xs: 12, md: 6 }}>
-          <Alert severity="info">
+          <Alert
+            severity="info"
+            icon={
+              <Tooltip
+                title="Monte Carlo projection stress-tests robustness by randomizing trade paths, showing expected dispersion."
+                arrow
+              >
+                <InfoOutlinedIcon fontSize="small" sx={{ cursor: 'help' }} />
+              </Tooltip>
+            }
+          >
             Monte Carlo 95% interval: {monteCarlo.confidence95Floor.toFixed(2)} -{' '}
             {monteCarlo.confidence95Ceiling.toFixed(2)}. Worst-case projection:{' '}
             {monteCarlo.worstCase.toFixed(2)}.
           </Alert>
         </Grid>
         <Grid size={{ xs: 12, md: 6 }}>
-          <Alert severity="warning">
+          <Alert
+            severity="warning"
+            icon={
+              <Tooltip
+                title="Walk-forward compares in-sample tuning vs out-of-sample behavior. Large degradation suggests overfitting risk."
+                arrow
+              >
+                <InfoOutlinedIcon fontSize="small" sx={{ cursor: 'help' }} />
+              </Tooltip>
+            }
+          >
             Walk-forward: in-sample PF {walkForward.inSampleProfitFactor.toFixed(2)}, out-of-sample PF{' '}
             {walkForward.outOfSampleProfitFactor.toFixed(2)} ({walkForward.degradationPct.toFixed(1)}%
             degradation).

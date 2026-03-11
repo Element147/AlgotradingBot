@@ -32,6 +32,13 @@ export interface ExchangeConnectionStatus {
   error?: string;
 }
 
+export interface ExchangeConnectionTestRequest {
+  exchange?: string;
+  apiKey?: string;
+  apiSecret?: string;
+  testnet?: boolean;
+}
+
 export interface SystemInfo {
   applicationVersion: string;
   lastDeploymentDate: string;
@@ -75,10 +82,11 @@ export const exchangeApi = createApi({
         })),
       providesTags: ['Exchange'],
     }),
-    testExchangeConnection: builder.mutation<ExchangeConnectionStatus, void>({
-      query: () => ({
+    testExchangeConnection: builder.mutation<ExchangeConnectionStatus, ExchangeConnectionTestRequest | void>({
+      query: (body) => ({
         url: '/api/system/test-connection',
         method: 'POST',
+        body,
       }),
       invalidatesTags: ['Exchange'],
     }),

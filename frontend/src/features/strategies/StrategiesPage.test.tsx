@@ -46,7 +46,9 @@ describe('StrategiesPage', () => {
 
     expect(screen.getByText('Strategy Management')).toBeInTheDocument();
     expect(screen.getByText('Bollinger BTC Mean Reversion')).toBeInTheDocument();
-    expect(screen.getByText('Market: BTC/USDT (1h)')).toBeInTheDocument();
+    expect(screen.getByText('Available Strategies')).toBeInTheDocument();
+    expect(screen.getByText('BTC/USDT (1h)')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
   });
 
   it('shows start confirmation dialog before mutation execution', async () => {

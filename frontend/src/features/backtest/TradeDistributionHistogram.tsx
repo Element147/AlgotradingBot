@@ -1,3 +1,4 @@
+import { Box } from '@mui/material';
 import {
   Bar,
   BarChart,
@@ -25,13 +26,14 @@ export function TradeDistributionHistogram({ bins }: TradeDistributionHistogramP
   return (
     <ChartContainer
       title="Trade Distribution Histogram"
+      tooltipText="Shows where trades cluster by profit/loss bins. A right-skewed distribution with limited left-tail losses is generally healthier."
       description="Distribution of trade outcomes across PnL bins."
       headers={['PnL Range', 'Count']}
       rows={rows}
       csvFileName="trade-distribution.csv"
       pngFileName="trade-distribution.png"
       chart={
-        <div style={{ width: '100%', height: 320 }}>
+        <Box sx={{ width: '100%', height: { xs: 320, md: 420 } }}>
           <ResponsiveContainer>
             <BarChart data={bins}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -41,7 +43,7 @@ export function TradeDistributionHistogram({ bins }: TradeDistributionHistogramP
               <Bar dataKey="count" fill="#0288d1" />
             </BarChart>
           </ResponsiveContainer>
-        </div>
+        </Box>
       }
     />
   );

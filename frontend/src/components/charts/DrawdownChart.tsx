@@ -1,3 +1,4 @@
+import { Box } from '@mui/material';
 import {
   Area,
   AreaChart,
@@ -28,13 +29,14 @@ export function DrawdownChart({ points, maxDrawdownLimitPct = 25 }: DrawdownChar
   return (
     <ChartContainer
       title="Drawdown Curve"
+      tooltipText="Shows how far equity falls from prior peaks. Lower drawdown is safer; sustained or deep drawdowns can indicate strategy fragility."
       description="Percent decline from previous equity peaks."
       headers={['Timestamp', 'Drawdown %']}
       rows={rows}
       csvFileName="drawdown-curve.csv"
       pngFileName="drawdown-curve.png"
       chart={
-        <div style={{ width: '100%', height: 320 }}>
+        <Box sx={{ width: '100%', height: { xs: 320, md: 420 } }}>
           <ResponsiveContainer>
             <AreaChart data={points}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -55,7 +57,7 @@ export function DrawdownChart({ points, maxDrawdownLimitPct = 25 }: DrawdownChar
               <Brush dataKey="timestamp" height={22} />
             </AreaChart>
           </ResponsiveContainer>
-        </div>
+        </Box>
       }
     />
   );

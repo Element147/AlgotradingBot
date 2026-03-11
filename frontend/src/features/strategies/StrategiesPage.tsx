@@ -1,9 +1,11 @@
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {
   Alert,
   Box,
   Button,
   Card,
   CardContent,
+  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -11,6 +13,13 @@ import {
   DialogContentText,
   DialogTitle,
   Grid,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
@@ -22,7 +31,6 @@ import {
   useStopStrategyMutation,
   useUpdateStrategyConfigMutation,
 } from './strategiesApi';
-import { StrategyCard } from './StrategyCard';
 import { StrategyConfigModal } from './StrategyConfigModal';
 import { getAllStrategyProfiles } from './strategyProfiles';
 import type { StrategyConfigOutput } from './strategyValidation';
@@ -33,6 +41,32 @@ type ActionDialogState = {
   strategy: Strategy;
   action: 'start' | 'stop';
 } | null;
+
+const statusColor = (status: Strategy['status']): 'success' | 'warning' | 'error' => {
+  if (status === 'RUNNING') {
+    return 'success';
+  }
+  if (status === 'ERROR') {
+    return 'error';
+  }
+  return 'warning';
+};
+
+interface HeaderCellProps {
+  label: string;
+  description: string;
+}
+
+function HeaderCellWithTooltip({ label, description }: HeaderCellProps) {
+  return (
+    <Stack direction="row" spacing={0.5} alignItems="center">
+      <span>{label}</span>
+      <Tooltip title={description} arrow>
+        <InfoOutlinedIcon fontSize="inherit" color="action" sx={{ cursor: 'help' }} />
+      </Tooltip>
+    </Stack>
+  );
+}
 
 export default function StrategiesPage() {
   const { data: strategies = [], isLoading, isError, error } = useGetStrategiesQuery(undefined, {
@@ -156,19 +190,126 @@ export default function StrategiesPage() {
           </Alert>
         ) : null}
 
-        <Grid container spacing={2}>
-          {strategies.map((strategy) => (
-            <Grid key={strategy.id} size={{ xs: 12, md: 6 }}>
-              <StrategyCard
-                strategy={strategy}
-                busy={isBusy}
-                onStart={(selected) => setActionDialog({ strategy: selected, action: 'start' })}
-                onStop={(selected) => setActionDialog({ strategy: selected, action: 'stop' })}
-                onConfigure={setSelectedStrategy}
-              />
-            </Grid>
-          ))}
-        </Grid>
+        {!isLoading && !isError ? (
+          <Card>
+            <CardContent>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                Available Strategies
+              </Typography>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>
+                      <HeaderCellWithTooltip
+                        label="Name"
+                        description="Human-readable strategy identifier used in operations and reporting."
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <HeaderCellWithTooltip
+                        label="Type"
+                        description="Underlying strategy model (for example mean reversion or trend-following logic)."
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <HeaderCellWithTooltip
+                        label="Status"
+                        description="Current runtime state in paper mode."
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <HeaderCellWithTooltip
+                        label="Market"
+                        description="Configured symbol and timeframe this strategy monitors."
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <HeaderCellWithTooltip
+                        label="Risk/Trade"
+                        description="Fraction of equity risked per trade according to current config."
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <HeaderCellWithTooltip
+                        label="P&L"
+                        description="Current strategy profit or loss value as reported by backend metrics."
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <HeaderCellWithTooltip
+                        label="Trades"
+                        description="Number of trades associated with current strategy state."
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <HeaderCellWithTooltip
+                        label="Drawdown"
+                        description="Current decline from recent equity peak. Lower is generally safer."
+                      />
+                    </TableCell>
+                    <TableCell align="right">
+                      <HeaderCellWithTooltip
+                        label="Actions"
+                        description="Start/stop execution and open configuration edit dialog."
+                      />
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {strategies.map((strategy) => (
+                    <TableRow key={strategy.id} hover>
+                      <TableCell>{strategy.name}</TableCell>
+                      <TableCell>{strategy.type}</TableCell>
+                      <TableCell>
+                        <Chip label={strategy.status} size="small" color={statusColor(strategy.status)} />
+                      </TableCell>
+                      <TableCell>
+                        {strategy.symbol} ({strategy.timeframe})
+                      </TableCell>
+                      <TableCell>{(strategy.riskPerTrade * 100).toFixed(2)}%</TableCell>
+                      <TableCell>{strategy.profitLoss.toFixed(2)}</TableCell>
+                      <TableCell>{strategy.tradeCount}</TableCell>
+                      <TableCell>{strategy.currentDrawdown.toFixed(2)}%</TableCell>
+                      <TableCell align="right">
+                        <Stack direction="row" spacing={1} justifyContent="flex-end">
+                          {strategy.status === 'RUNNING' ? (
+                            <Button
+                              size="small"
+                              variant="contained"
+                              color="warning"
+                              disabled={isBusy}
+                              onClick={() => setActionDialog({ strategy, action: 'stop' })}
+                            >
+                              Stop
+                            </Button>
+                          ) : (
+                            <Button
+                              size="small"
+                              variant="contained"
+                              color="success"
+                              disabled={isBusy}
+                              onClick={() => setActionDialog({ strategy, action: 'start' })}
+                            >
+                              Start
+                            </Button>
+                          )}
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            disabled={isBusy}
+                            onClick={() => setSelectedStrategy(strategy)}
+                          >
+                            Edit
+                          </Button>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        ) : null}
       </Box>
 
       <Dialog open={Boolean(actionDialog)} onClose={() => setActionDialog(null)}>

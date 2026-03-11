@@ -37,6 +37,7 @@ export function MonthlyReturnsHeatmap({ data }: MonthlyReturnsHeatmapProps) {
   return (
     <ChartContainer
       title="Monthly Returns Heatmap"
+      tooltipText="Highlights consistency by month. Frequent red months or extreme swings may signal regime sensitivity and unstable edge."
       description="Year-by-month return map with positive/negative color encoding."
       headers={['Year', 'Month', 'Return %']}
       rows={rows}

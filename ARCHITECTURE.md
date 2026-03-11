@@ -10,7 +10,7 @@ This repository is a monorepo with a Spring Boot backend in `AlgotradingBot/` an
 
 - `config/`: Spring security, OpenAPI, WebSocket
 - `controller/`: auth, dashboard/account, and strategy-related REST endpoints plus DTOs
-- `service/`: auth, account/dashboard, and strategy lifecycle service logic
+- `service/`: auth, account/dashboard, strategy lifecycle, and system/exchange integration service logic
 - `repository/`: Spring Data JPA repositories
 - `entity/`: `Account`, `Trade`, `Portfolio`, `BacktestResult`, `User`
 - `src/main/resources/db/changelog/`: Liquibase schema/data migrations (including runtime admin bootstrap)
@@ -24,6 +24,7 @@ This repository is a monorepo with a Spring Boot backend in `AlgotradingBot/` an
 
 - Controllers expose HTTP endpoints and map to DTOs.
 - Services hold business logic with DTO-safe boundaries and integration-test coverage on H2 profile.
+- Settings/exchange operations are exposed via `SystemController` (`/api/system/*`) and `ExchangeController` (`/api/exchange/*`), with connectivity checks isolated in `ExchangeIntegrationService`.
 - Entities and repositories provide persistence.
 - Liquibase owns bootstrap migration concerns (schema bootstrap for users + runtime admin seed).
 - Risk and backtest packages contain meaningful research logic and financial calculations.

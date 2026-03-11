@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 import java.util.List;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -97,5 +98,15 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.message").exists())
                 .andExpect(jsonPath("$.path").value("/api/strategy/stop"))
                 .andExpect(jsonPath("$.timestamp").exists());
+    }
+
+    @Test
+    void testMissingApiRoute_Returns404Not500() throws Exception {
+        mockMvc.perform(get("/api/missing/route")
+                .header("Authorization", "Bearer " + authToken)
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.status").value(404))
+            .andExpect(jsonPath("$.error").value("Not Found"));
     }
 }

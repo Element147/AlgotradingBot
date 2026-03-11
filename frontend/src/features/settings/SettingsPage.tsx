@@ -58,16 +58,11 @@ const defaultCommandList = [
 
 type SettingsTab = 'api' | 'notifications' | 'display' | 'database' | 'exchange';
 
-const maskValue = (value: string): string => {
-  if (value.length <= 4) {
-    return '*'.repeat(value.length);
-  }
-  return `${value.slice(0, 2)}${'*'.repeat(Math.max(0, value.length - 4))}${value.slice(-2)}`;
-};
-
 const initialApiConfig = {
-  apiKey: 'BINANCE-KEY-LOCAL',
-  secret: 'BINANCE-SECRET-LOCAL',
+  exchange: 'binance',
+  apiKey: '',
+  secret: '',
+  testnet: true,
 };
 
 export default function SettingsPage() {
@@ -85,7 +80,7 @@ export default function SettingsPage() {
     null
   );
   const [tab, setTab] = useState<SettingsTab>(isAdmin ? 'api' : 'display');
-  const [apiConfig] = useState(initialApiConfig);
+  const [apiConfig, setApiConfig] = useState(initialApiConfig);
   const [revealApiKey, setRevealApiKey] = useState(false);
   const [revealSecret, setRevealSecret] = useState(false);
 
@@ -120,7 +115,12 @@ export default function SettingsPage() {
 
   const runConnectionTest = async () => {
     try {
-      const result = await testConnection().unwrap();
+      const result = await testConnection({
+        exchange: apiConfig.exchange,
+        apiKey: apiConfig.apiKey,
+        apiSecret: apiConfig.secret,
+        testnet: apiConfig.testnet,
+      }).unwrap();
       setFeedback({
         severity: 'success',
         message: `Connection ${result.connected ? 'successful' : 'failed'} (${result.rateLimitUsage}).`,
@@ -190,12 +190,25 @@ export default function SettingsPage() {
                     API Configuration
                   </Typography>
                   <Stack spacing={2}>
+                    <FieldTooltip title="Exchange name for connection test. Binance is currently supported by backend test endpoint.">
+                      <TextField
+                        label="Exchange"
+                        value={apiConfig.exchange}
+                        onChange={(event) =>
+                          setApiConfig((prev) => ({ ...prev, exchange: event.target.value }))
+                        }
+                        helperText="Use binance for current backend support."
+                      />
+                    </FieldTooltip>
                     <FieldTooltip title="Exchange credential identifier. Revealing keys on shared screens is a security risk.">
                       <TextField
                         label="Exchange API Key"
-                        value={revealApiKey ? apiConfig.apiKey : maskValue(apiConfig.apiKey)}
-                        InputProps={{ readOnly: true }}
-                        helperText="Read-only in this UI. Keep masked unless actively validating."
+                        type={revealApiKey ? 'text' : 'password'}
+                        value={apiConfig.apiKey}
+                        onChange={(event) =>
+                          setApiConfig((prev) => ({ ...prev, apiKey: event.target.value }))
+                        }
+                        helperText="Used only for connection test request."
                       />
                     </FieldTooltip>
                     <Button variant="outlined" onClick={() => setRevealApiKey((prev) => !prev)}>
@@ -204,14 +217,30 @@ export default function SettingsPage() {
                     <FieldTooltip title="Secret used for signed exchange requests. Exposure can compromise account safety.">
                       <TextField
                         label="Exchange API Secret"
-                        value={revealSecret ? apiConfig.secret : maskValue(apiConfig.secret)}
-                        InputProps={{ readOnly: true }}
-                        helperText="Treat as highly sensitive; avoid screenshots while revealed."
+                        type={revealSecret ? 'text' : 'password'}
+                        value={apiConfig.secret}
+                        onChange={(event) =>
+                          setApiConfig((prev) => ({ ...prev, secret: event.target.value }))
+                        }
+                        helperText="Used only for signed connectivity test. Not persisted by frontend."
                       />
                     </FieldTooltip>
                     <Button variant="outlined" onClick={() => setRevealSecret((prev) => !prev)}>
                       {revealSecret ? 'Hide Secret' : 'Reveal Secret'}
                     </Button>
+                    <FieldTooltip title="Testnet avoids production account scope. Keep enabled unless intentionally validating mainnet keys.">
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={apiConfig.testnet}
+                            onChange={(event) =>
+                              setApiConfig((prev) => ({ ...prev, testnet: event.target.checked }))
+                            }
+                          />
+                        }
+                        label="Use Binance Testnet"
+                      />
+                    </FieldTooltip>
                     <Button
                       variant="contained"
                       onClick={() => void runConnectionTest()}

@@ -24,6 +24,23 @@ Local developer workflow is now optimized for faster iteration:
 
 ## Completed In This Update
 
+### 8) Settings/Exchange Backend Endpoint Gap Fix
+
+Backend:
+- Implemented missing `ExchangeController` endpoint: `GET /api/exchange/connection-status`.
+- Implemented missing `SystemController` endpoints: `GET /api/system/info`, `POST /api/system/test-connection`, and `POST /api/system/backup`.
+- Added `ExchangeIntegrationService` with Binance signed read-only connectivity check (mainnet/testnet selection), credential fallback from env vars, and last-known connection status tracking.
+- Added `SystemOperationsService` for runtime system info and local backup metadata file creation.
+- Updated `GlobalExceptionHandler` to map `NoResourceFoundException` to `404 Not Found` instead of returning `500 Internal Server Error`.
+
+Frontend:
+- Updated settings exchange API mutation to send optional test payload (`exchange`, `apiKey`, `apiSecret`, `testnet`) to backend.
+- Updated settings API config section to accept entered credentials and submit them in the connection test flow.
+
+Verification:
+- Backend targeted tests: exchange/system integration + global exception handler pass.
+- Frontend targeted settings tests and production build pass.
+
 ### 1) Strategy Management MVP
 
 Backend:

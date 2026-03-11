@@ -1,4 +1,5 @@
 import AddIcon from '@mui/icons-material/Add';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {
   Alert,
   Box,
@@ -13,6 +14,7 @@ import {
   TableHead,
   TableRow,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { useMemo, useState } from 'react';
@@ -55,6 +57,22 @@ const validationColor = (value: string): 'success.main' | 'error.main' | 'warnin
   }
   return 'warning.main';
 };
+
+interface HeaderCellProps {
+  label: string;
+  description: string;
+}
+
+function HeaderCellWithTooltip({ label, description }: HeaderCellProps) {
+  return (
+    <Stack direction="row" spacing={0.5} alignItems="center">
+      <span>{label}</span>
+      <Tooltip title={description} arrow>
+        <InfoOutlinedIcon fontSize="inherit" color="action" sx={{ cursor: 'help' }} />
+      </Tooltip>
+    </Stack>
+  );
+}
 
 export default function BacktestPage() {
   const [form, setForm] = useState(initialForm);
@@ -142,8 +160,8 @@ export default function BacktestPage() {
         ) : null}
 
         <Grid container spacing={2}>
-          <Grid size={{ xs: 12, lg: 4 }}>
-            <Card sx={{ mb: 2 }}>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Card sx={{ height: '100%' }}>
               <CardContent>
                 <Typography variant="h6" sx={{ mb: 2 }}>
                   Dataset Upload
@@ -182,8 +200,10 @@ export default function BacktestPage() {
                 </Stack>
               </CardContent>
             </Card>
+          </Grid>
 
-            <Card>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Card sx={{ height: '100%' }}>
               <CardContent>
                 <Typography variant="h6" sx={{ mb: 2 }}>
                   Run Backtest
@@ -206,7 +226,7 @@ export default function BacktestPage() {
             </Card>
           </Grid>
 
-          <Grid size={{ xs: 12, lg: 8 }}>
+          <Grid size={{ xs: 12 }}>
             <Card>
               <CardContent>
                 <Typography variant="h6" sx={{ mb: 2 }}>
@@ -219,13 +239,48 @@ export default function BacktestPage() {
                   <Table size="small">
                     <TableHead>
                       <TableRow>
-                        <TableCell>ID</TableCell>
-                        <TableCell>Algorithm</TableCell>
-                        <TableCell>Dataset</TableCell>
-                        <TableCell>Market</TableCell>
-                        <TableCell>Status</TableCell>
-                        <TableCell>Validation</TableCell>
-                        <TableCell>Fees/Slippage</TableCell>
+                        <TableCell>
+                          <HeaderCellWithTooltip
+                            label="ID"
+                            description="Unique run identifier. Select a row to open full details and charts."
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <HeaderCellWithTooltip
+                            label="Algorithm"
+                            description="Strategy logic used for this backtest run."
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <HeaderCellWithTooltip
+                            label="Dataset"
+                            description="Historical file used as market-data input."
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <HeaderCellWithTooltip
+                            label="Market"
+                            description="Symbol and timeframe tested in the simulation."
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <HeaderCellWithTooltip
+                            label="Status"
+                            description="Execution lifecycle status of the run (pending, running, completed, failed)."
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <HeaderCellWithTooltip
+                            label="Validation"
+                            description="Quality gate result from internal checks; not proof of profitability."
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <HeaderCellWithTooltip
+                            label="Fees/Slippage"
+                            description="Trading cost assumptions applied in basis points (bps)."
+                          />
+                        </TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -235,6 +290,7 @@ export default function BacktestPage() {
                           hover
                           onClick={() => setSelectedId(item.id)}
                           sx={{ cursor: 'pointer' }}
+                          selected={item.id === selectedId}
                         >
                           <TableCell>{item.id}</TableCell>
                           <TableCell>{item.strategyId}</TableCell>
@@ -256,9 +312,9 @@ export default function BacktestPage() {
                 ) : null}
               </CardContent>
             </Card>
-
-            {details ? <BacktestResults details={details} /> : null}
           </Grid>
+
+          <Grid size={{ xs: 12 }}>{details ? <BacktestResults details={details} /> : null}</Grid>
         </Grid>
       </Box>
 

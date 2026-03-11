@@ -1,12 +1,14 @@
 import DownloadIcon from '@mui/icons-material/Download';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import TimelineIcon from '@mui/icons-material/Timeline';
-import { Box, Button, Card, CardContent, Stack, Typography } from '@mui/material';
+import { Box, Button, Card, CardContent, Stack, Tooltip, Typography } from '@mui/material';
 import { toPng } from 'html-to-image';
 import { useRef, useState } from 'react';
 
 interface ChartContainerProps {
   title: string;
+  tooltipText?: string;
   description?: string;
   csvFileName: string;
   pngFileName: string;
@@ -23,6 +25,7 @@ const toCsv = (headers: string[], rows: Array<Array<string | number>>): string =
 
 export function ChartContainer({
   title,
+  tooltipText,
   description,
   csvFileName,
   pngFileName,
@@ -65,7 +68,14 @@ export function ChartContainer({
       <CardContent>
         <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2} sx={{ mb: 2 }}>
           <Box>
-            <Typography variant="h6">{title}</Typography>
+            <Stack direction="row" spacing={0.75} alignItems="center">
+              <Typography variant="h6">{title}</Typography>
+              {tooltipText ? (
+                <Tooltip title={tooltipText} arrow>
+                  <InfoOutlinedIcon fontSize="small" color="action" sx={{ cursor: 'help' }} />
+                </Tooltip>
+              ) : null}
+            </Stack>
             {description ? (
               <Typography variant="body2" color="text.secondary">
                 {description}
