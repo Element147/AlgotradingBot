@@ -11,7 +11,7 @@ It is not a profitability claim. Every strategy below remains a research hypothe
 This document is aligned with:
 
 - `TRADING_GUARDRAILS.md`
-- `.kiro/steering/product.md`
+- `PRODUCT.md`
 - the current built-in backtest algorithms in `BacktestAlgorithmType`: `BOLLINGER_BANDS`, `SMA_CROSSOVER`, and `BUY_AND_HOLD`
 - the proposed next trend addition in this document: `ICHIMOKU_TREND`
 

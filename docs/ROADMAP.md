@@ -16,7 +16,7 @@ Status updated: March 11, 2026
    - frontend `lint/test/build`
 2. Complete remaining DTO modernization to records where safe.
 3. Improve auditability for overrides, environment changes, and system operations.
-4. Keep docs lean: only canonical docs and active specs remain current.
+4. Keep docs lean: only canonical root docs remain current.
 
 ## Next (1-2 months)
 
@@ -39,6 +39,9 @@ Status updated: March 11, 2026
    - generated/shared frontend-backend API contracts
 3. Optional live-readiness evaluation
    - only after paper stability, audit controls, and guardrail verification
+4. Optional production-readiness automation
+   - container health/startup-order validation
+   - resource and stability checks for long-running local operation
 
 ## Strategy R&D Focus Order
 

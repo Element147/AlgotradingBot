@@ -41,6 +41,11 @@ Every change is done only when all are true:
 
 - Update only canonical docs for durable decisions:
   - `README.md`
+  - `PLAN.md`
+  - `PRODUCT.md`
+  - `TECH.md`
+  - `STRUCTURE.md`
+  - `GRADLE_AUTOMATION.md`
   - `PROJECT_STATUS.md`
   - `ARCHITECTURE.md`
   - `TRADING_GUARDRAILS.md`

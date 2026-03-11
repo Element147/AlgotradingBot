@@ -36,6 +36,7 @@ Completed in this update:
 - Removed legacy completion/progress/verification docs that duplicated finished work.
 - Merged key long-term findings into canonical docs (`README`, `PROJECT_STATUS`, `ARCHITECTURE`, `TRADING_GUARDRAILS`, roadmap/acceptance).
 - Kept only current and future-facing guidance plus essential guardrails.
+- Migrated steering/planning guidance to root docs (`PLAN.md`, `PRODUCT.md`, `TECH.md`, `STRUCTURE.md`, `GRADLE_AUTOMATION.md`) and retired `.kiro` usage.
 
 ## Remaining Work (Current Priorities)
 

@@ -10,7 +10,6 @@ This repository does not assume strategy profitability. Treat every strategy as 
 
 - Backend: `AlgotradingBot/` Java 21, Spring Boot 4.0.3, Gradle, PostgreSQL, Kafka, WebSocket, JWT auth
 - Frontend: `frontend/` React 19, TypeScript, Vite, Redux Toolkit, RTK Query, React Router 7, MUI 7
-- Product and phase context: `.kiro/`
 - Local orchestration: PowerShell scripts in repo root and Docker Compose in `AlgotradingBot/compose.yaml`
 
 ## Non-Negotiables
@@ -29,11 +28,16 @@ Before changing code, read in this order:
 2. `PROJECT_STATUS.md`
 3. `ARCHITECTURE.md`
 4. `TRADING_GUARDRAILS.md`
-5. Relevant `.kiro/steering/*.md`
-6. Relevant `.kiro/specs/**/*.md`
-7. The modules and tests you are about to change
+5. `PLAN.md`
+6. `PRODUCT.md`
+7. `TECH.md`
+8. `STRUCTURE.md`
+9. `GRADLE_AUTOMATION.md`
+10. `docs/ROADMAP.md`
+11. `docs/ACCEPTANCE_CRITERIA.md`
+12. The modules and tests you are about to change
 
-If a task touches a spec-backed feature, cite the relevant spec or phase in your reasoning and keep implementation aligned with what is actually present in the repo.
+If a task touches a planned feature, cite the relevant root planning document and keep implementation aligned with what is actually present in the repo.
 
 ## Working Rules
 
@@ -60,7 +64,7 @@ If a task touches a spec-backed feature, cite the relevant spec or phase in your
 
 ## Preferred Workflow
 
-1. Read the relevant spec and current implementation.
+1. Read the relevant root plan/docs and current implementation.
 2. Identify the smallest safe change that moves the project forward.
 3. Implement the change without disturbing unrelated work.
 4. Run the narrowest useful verification first, then broader checks if needed.
@@ -71,7 +75,7 @@ If a task touches a spec-backed feature, cite the relevant spec or phase in your
 
 A task is done when all of the following are true:
 
-- The change matches the relevant spec or explicitly documents why it does not.
+- The change matches the relevant plan/architecture docs or explicitly documents why it does not.
 - Behavior is verified with the most relevant available checks.
 - New or changed API behavior is reflected in the frontend contract and docs.
 - Safety defaults remain conservative.
@@ -102,6 +106,11 @@ If sandboxing, missing services, or local environment limits prevent verificatio
 
 ## Documentation Files To Keep Current
 
+- `PLAN.md`: slim current/future implementation plan
+- `PRODUCT.md`: product intent and operating boundaries
+- `TECH.md`: stack and command standards
+- `STRUCTURE.md`: module boundaries and architectural structure
+- `GRADLE_AUTOMATION.md`: backend build/test execution guidance
 - `PROJECT_STATUS.md`: current completion, gaps, contradictions, risks, priorities
 - `ARCHITECTURE.md`: actual module boundaries and data flow
 - `TRADING_GUARDRAILS.md`: risk, paper/live rules, validation gates

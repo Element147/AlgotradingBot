@@ -85,6 +85,11 @@ cd AlgotradingBot
 ## Canonical Documentation
 
 - `AGENTS.md`
+- `PLAN.md`
+- `PRODUCT.md`
+- `TECH.md`
+- `STRUCTURE.md`
+- `GRADLE_AUTOMATION.md`
 - `PROJECT_STATUS.md`
 - `ARCHITECTURE.md`
 - `TRADING_GUARDRAILS.md`
