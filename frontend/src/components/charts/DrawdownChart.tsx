@@ -38,11 +38,11 @@ export function DrawdownChart({ points, maxDrawdownLimitPct = 25 }: DrawdownChar
           <ResponsiveContainer>
             <AreaChart data={points}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="timestamp" tickFormatter={(value: string) => value.slice(0, 10)} />
-              <YAxis tickFormatter={(value) => `${value.toFixed(1)}%`} />
+              <XAxis dataKey="timestamp" tickFormatter={(value) => String(value ?? '').slice(0, 10)} />
+              <YAxis tickFormatter={(value) => `${Number(value ?? 0).toFixed(1)}%`} />
               <Tooltip
-                formatter={(value: number) => `${value.toFixed(2)}%`}
-                labelFormatter={(label: string) => new Date(label).toLocaleString()}
+                formatter={(value) => `${Number(value ?? 0).toFixed(2)}%`}
+                labelFormatter={(label) => new Date(String(label ?? '')).toLocaleString()}
               />
               <ReferenceLine y={maxDrawdownLimitPct} stroke="#d32f2f" strokeDasharray="4 4" />
               <Area

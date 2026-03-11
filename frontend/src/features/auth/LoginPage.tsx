@@ -132,7 +132,7 @@ export default function LoginPage() {
                   py: 1,
                   borderRadius: 1,
                   backgroundColor: 'info.light',
-                  color: 'info.contrastText',
+                  color: 'text.primary',
                 }}
               >
                 <Typography variant="body2">

@@ -77,13 +77,13 @@ export function EquityCurve({ title = 'Equity Curve', points }: EquityCurveProps
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
                   dataKey="timestamp"
-                  tickFormatter={(value: string) => value.slice(0, 10)}
+                  tickFormatter={(value) => String(value ?? '').slice(0, 10)}
                   minTickGap={40}
                 />
                 <YAxis domain={['dataMin - 50', 'dataMax + 50']} />
                 <Tooltip
-                  formatter={(value: number) => value.toFixed(2)}
-                  labelFormatter={(label: string) => new Date(label).toLocaleString()}
+                  formatter={(value) => Number(value ?? 0).toFixed(2)}
+                  labelFormatter={(label) => new Date(String(label ?? '')).toLocaleString()}
                 />
                 <Line type="monotone" dataKey="equity" stroke="#2e7d32" strokeWidth={2} dot={false} />
                 <Brush dataKey="timestamp" height={22} />

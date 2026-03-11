@@ -42,6 +42,14 @@ This is the final active phase in the current roadmap.
   - Keep `test`/`paper` as default operating mode
   - Reiterate that backtest results are research artifacts
 
+## Verification Log (2026-03-11)
+
+- Frontend: `npm run lint` (passes, 1 known virtualizer warning), `npm run test -- --watch=false` (406/406), `npm run build` (pass)
+- Frontend security: `npm audit --omit=dev` (0 vulnerabilities) after `jspdf` upgrade to `^4.2.0`
+- Frontend performance/accessibility audits:
+  - Lighthouse desktop: performance 100, accessibility 95, best-practices 92
+  - axe CLI on `/login`: 0 violations after login info-banner contrast fix
+
 ## Out of scope in this phase
 
 - Production deployment automation

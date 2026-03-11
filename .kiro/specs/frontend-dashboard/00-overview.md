@@ -33,6 +33,10 @@ Primary goal: evaluate strategy hypotheses on 2-3 years of historical data with 
 
 This optional phase is intentionally excluded from the current default execution path.
 
+## Progress Tracking
+
+- [Implementation Progress Log](./IMPLEMENTATION_PROGRESS.md)
+
 ## Success Criteria for Local-First Track
 
 - Core dashboard pages are implemented (no core placeholders).

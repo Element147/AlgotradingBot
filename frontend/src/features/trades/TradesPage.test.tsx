@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 
 import TradesPage from './TradesPage';
@@ -47,9 +48,34 @@ vi.mock('@/components/layout/AppLayout', () => ({
   AppLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
+vi.mock('./VirtualizedTradeTable', () => ({
+  VirtualizedTradeTable: ({
+    rows,
+    onRowSelect,
+  }: {
+    rows: Array<{ id: number; pair: string }>;
+    onRowSelect: (trade: { id: number; pair: string }) => void;
+  }) => (
+    <div>
+      {rows.map((row) => (
+        <button key={row.id} type="button" onClick={() => onRowSelect(row)}>
+          {row.pair}
+        </button>
+      ))}
+    </div>
+  ),
+}));
+
 describe('TradesPage', () => {
+  const renderPage = () =>
+    render(
+      <MemoryRouter>
+        <TradesPage />
+      </MemoryRouter>
+    );
+
   it('renders trade table and summary', () => {
-    render(<TradesPage />);
+    renderPage();
 
     expect(screen.getByText('Trade History')).toBeInTheDocument();
     expect(screen.getByText('Results')).toBeInTheDocument();
@@ -58,7 +84,7 @@ describe('TradesPage', () => {
   });
 
   it('shows detail panel after selecting row', () => {
-    render(<TradesPage />);
+    renderPage();
 
     fireEvent.click(screen.getByText('BTC/USDT'));
 

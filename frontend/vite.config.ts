@@ -3,6 +3,41 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 import { visualizer } from 'rollup-plugin-visualizer';
 
+const vendorChunkFromModule = (id: string): string | undefined => {
+  const normalizedId = id.replaceAll('\\', '/');
+
+  if (!normalizedId.includes('/node_modules/')) {
+    return undefined;
+  }
+
+  if (
+    normalizedId.includes('/node_modules/react/') ||
+    normalizedId.includes('/node_modules/react-dom/') ||
+    normalizedId.includes('/node_modules/react-router-dom/')
+  ) {
+    return 'vendor-react';
+  }
+  if (
+    normalizedId.includes('/node_modules/react-redux/') ||
+    normalizedId.includes('/node_modules/@reduxjs/toolkit/')
+  ) {
+    return 'vendor-redux';
+  }
+  if (
+    normalizedId.includes('/node_modules/@mui/material/') ||
+    normalizedId.includes('/node_modules/@mui/icons-material/') ||
+    normalizedId.includes('/node_modules/@emotion/react/') ||
+    normalizedId.includes('/node_modules/@emotion/styled/')
+  ) {
+    return 'vendor-mui';
+  }
+  if (normalizedId.includes('/node_modules/recharts/')) {
+    return 'vendor-charts';
+  }
+
+  return undefined;
+};
+
 export default defineConfig({
   plugins: [
     react(),
@@ -33,17 +68,9 @@ export default defineConfig({
     target: 'es2022',
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-redux': ['react-redux', '@reduxjs/toolkit'],
-          'vendor-mui': ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
-          'vendor-charts': ['recharts'],
-        },
+        manualChunks: vendorChunkFromModule,
       },
     },
-  },
-  esbuild: {
-    drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
   },
   test: {
     environment: 'jsdom',

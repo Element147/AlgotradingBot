@@ -9,9 +9,9 @@
 ### Verification Checklist
 Before starting Phase 4, verify:
 - [ ] Phase 3 git commit exists: `git log --oneline --grep="feat: Phase 3"`
-- [ ] Phase 3 verification passed (build, run, test)
-- [ ] Strategy management is functional
-- [ ] All Phase 3 tests passing
+- [x] Phase 3 verification passed (build, run, test)
+- [x] Strategy management is functional
+- [x] All Phase 3 tests passing
 
 ### If Phase 3 is Incomplete
 1. **STOP** - Do not proceed with Phase 4
@@ -27,7 +27,7 @@ Before starting Phase 4, verify:
 
 ## Tasks
 
-- [ ] 4.1 Create trades API slice with history and details endpoints
+- [x] 4.1 Create trades API slice with history and details endpoints
   - Implement tradesApi with getTradeHistory, getTradeDetails, getTradeStatistics queries
   - Support pagination parameters (page, pageSize)
   - Support filter parameters (date range, symbol, status, strategy)
@@ -35,7 +35,7 @@ Before starting Phase 4, verify:
   - Configure caching with 5 minute TTL
   - _Requirements: 6.1, 6.6, 7.2_
 
-- [ ] 4.2 Build trades page with paginated table
+- [x] 4.2 Build trades page with paginated table
   - Create TradesPage component
   - Display paginated table with 50 trades per page
   - Show columns: ID, timestamp, symbol, side, entry/exit prices, quantity, P&L, P&L %, duration, strategy
@@ -43,21 +43,21 @@ Before starting Phase 4, verify:
   - Add loading skeleton for table rows
   - _Requirements: 6.1, 6.2, 6.9_
 
-- [ ] 4.3 Implement virtualized trade table for performance
+- [x] 4.3 Implement virtualized trade table for performance
   - Use @tanstack/react-virtual for virtualization
   - Render only visible rows (50px height each)
   - Add 10 row overscan for smooth scrolling
   - Optimize for tables with 100+ rows
   - _Requirements: 19.3_
 
-- [ ] 4.4 Add table sorting functionality
+- [x] 4.4 Add table sorting functionality
   - Make all column headers clickable
   - Toggle between ascending and descending sort on click
   - Display sort indicator (arrow icon) on active column
   - Fetch sorted data from API
   - _Requirements: 6.3, 6.4_
 
-- [ ] 4.5 Implement trade filtering controls
+- [x] 4.5 Implement trade filtering controls
   - Create filter panel with date range picker, symbol dropdown, status dropdown, strategy dropdown
   - Fetch filtered data from API when filters change
   - Update URL query parameters to persist filters
@@ -65,21 +65,21 @@ Before starting Phase 4, verify:
   - Clear filters button to reset all
   - _Requirements: 6.5, 6.6, 23.7, 23.8_
 
-- [ ] 4.6 Add trade search with debouncing
+- [x] 4.6 Add trade search with debouncing
   - Create search input for trade ID lookup
   - Implement 300ms debounce using useDebouncedCallback
   - Fetch search results from API
   - Display "no results" message when search returns empty
   - _Requirements: 6.7, 6.8, 19.4_
 
-- [ ] 4.7 Display aggregate trade statistics
+- [x] 4.7 Display aggregate trade statistics
   - Create TradeStatistics component above table
   - Show total trades, win rate, average win, average loss, profit factor
   - Calculate from filtered trade data
   - Update when filters change
   - _Requirements: 6.10_
 
-- [ ] 4.8 Create trade details modal with full information
+- [x] 4.8 Create trade details modal with full information
   - Build TradeDetailsModal component
   - Fetch complete trade data from /api/trades/{id}
   - Display entry/exit reasons, slippage breakdown, fees breakdown
@@ -87,7 +87,7 @@ Before starting Phase 4, verify:
   - Add price action chart during trade duration
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
 
-- [ ] 4.9 Implement CSV export functionality
+- [x] 4.9 Implement CSV export functionality
   - Create export button on trades page
   - Generate CSV file with all filtered trade records
   - Include column headers as first row
@@ -96,7 +96,7 @@ Before starting Phase 4, verify:
   - Trigger browser download with filename trades_YYYY-MM-DD_HHmmss.csv
   - _Requirements: 20.1, 20.2, 20.3, 20.4, 20.5, 20.6_
 
-- [ ] 4.10 Write unit tests for trade components
+- [x] 4.10 Write unit tests for trade components
   - Test TradesPage renders table with pagination
   - Test TradeTable sorting functionality
   - Test filter controls update query parameters
@@ -106,7 +106,7 @@ Before starting Phase 4, verify:
   - Achieve 80%+ coverage
   - _Requirements: 25.1, 25.4_
 
-- [ ] 4.11 Write property tests for table sorting and CSV export
+- [x] 4.11 Write property tests for table sorting and CSV export
   - **Property 7: Table Sorting Correctness**
   - **Validates: Requirements 6.4**
   - Test that sorting by any column produces correctly ordered data
@@ -125,7 +125,7 @@ Before starting Phase 4, verify:
   - Use fast-check with 100+ iterations for each property
   - _Requirements: 30.1_
 
-- [ ] 4.12 Write integration tests for trade history
+- [x] 4.12 Write integration tests for trade history
   - Test fetch trade history with pagination
   - Test filter trades by date range, symbol, status
   - Test sort trades by column (ascending/descending)
@@ -135,13 +135,13 @@ Before starting Phase 4, verify:
   - Verify pagination, filtering, sorting functionality
   - _Requirements: 30.5, 30.14, 30.15_
 
-- [ ] 4.13 Checkpoint - Verify trade history complete
+- [x] 4.13 Checkpoint - Verify trade history complete
   - Ensure all tests pass (unit, property, integration)
   - Verify pagination, sorting, filtering work correctly
   - Check CSV export generates valid files
   - Ask user if questions arise
 
-- [ ] 4.14 Phase 4 Verification - Build, Run, and Test Application
+- [x] 4.14 Phase 4 Verification - Build, Run, and Test Application
   - Stop all running services using `.\stop-all.ps1`
   - Build both backend and frontend using `.\build-all.ps1`
   - Verify builds complete successfully without errors
@@ -162,7 +162,7 @@ Before starting Phase 4, verify:
   - Do not proceed to Phase 5 until all verification passes and code is committed
   - _Requirements: 26.8, 26.9, 26.10_
 
-- [ ] 4.15 Backend - Implement Trade History API Endpoints
+- [x] 4.15 Backend - Implement Trade History API Endpoints
   - **Location:** `AlgotradingBot/src/main/java/com/algotrader/bot/`
   - **Note:** Trade history endpoint already exists in `controller/TradingStrategyController.java`
   - Enhance existing GET `/api/trades/history` endpoint with pagination, sorting, filtering
@@ -197,3 +197,6 @@ Once all tasks are complete and verification passes:
 - ✅ Changes committed to git
 
 **Next:** [Phase 5: Backtest Visualization](./phase-05-backtest-visualization.md)
+
+
+

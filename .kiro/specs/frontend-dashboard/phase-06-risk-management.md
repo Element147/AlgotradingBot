@@ -9,9 +9,9 @@
 ### Verification Checklist
 Before starting Phase 6, verify:
 - [ ] Phase 5 git commit exists: `git log --oneline --grep="feat: Phase 5"`
-- [ ] Phase 5 verification passed (build, run, test)
-- [ ] Backtest visualization is functional
-- [ ] All Phase 5 tests passing
+- [x] Phase 5 verification passed (build, run, test)
+- [x] Backtest visualization is functional
+- [x] All Phase 5 tests passing
 
 ### If Phase 5 is Incomplete
 1. **STOP** - Do not proceed with Phase 6
@@ -27,19 +27,19 @@ Before starting Phase 6, verify:
 
 ## Tasks
 
-- [ ] 6.1 Create risk API slice with status and config endpoints
+- [x] 6.1 Create risk API slice with status and config endpoints
   - Implement riskApi with getRiskStatus, getRiskConfig, updateRiskConfig, overrideCircuitBreaker mutations
   - Configure polling for risk status (30 second interval)
   - Set up cache invalidation on mutations
   - _Requirements: 10.7, 13.9_
 
-- [ ] 6.2 Build risk management page layout
+- [x] 6.2 Build risk management page layout
   - Create RiskPage component
   - Organize sections: risk metrics, circuit breakers, position calculator, configuration
   - Add loading and error states
   - _Requirements: 11.1_
 
-- [ ] 6.3 Implement risk metrics display with progress bars
+- [x] 6.3 Implement risk metrics display with progress bars
   - Create RiskMetrics component
   - Display current drawdown with progress bar (current/max limit)
   - Display daily loss limit with progress bar (used/available)
@@ -49,7 +49,7 @@ Before starting Phase 6, verify:
   - Update in real-time via WebSocket
   - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6_
 
-- [ ] 6.4 Create circuit breaker management panel
+- [x] 6.4 Create circuit breaker management panel
   - Build CircuitBreakerPanel component
   - Display list of active circuit breakers
   - Show trigger condition, activation time, reset time for each
@@ -57,7 +57,7 @@ Before starting Phase 6, verify:
   - Display risk alerts log with timestamp, type, severity, action
   - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.7_
 
-- [ ] 6.5 Implement circuit breaker override with password
+- [x] 6.5 Implement circuit breaker override with password
   - Create password confirmation dialog
   - Send POST request to /api/risk/circuit-breaker/override with password
   - Display error if password is incorrect
@@ -65,14 +65,14 @@ Before starting Phase 6, verify:
   - Invalidate risk status cache to refetch
   - _Requirements: 11.3, 11.4, 11.5_
 
-- [ ] 6.6 Add high-priority notifications for circuit breakers and risk alerts
+- [x] 6.6 Add high-priority notifications for circuit breakers and risk alerts
   - Display high-priority notification when circuit breaker triggers
   - Display notification when risk alert event received via WebSocket
   - Play subtle sound for high-priority notifications
   - Keep notifications visible until manually dismissed
   - _Requirements: 11.6, 15.7, 21.9_
 
-- [ ] 6.7 Create position sizing calculator widget
+- [x] 6.7 Create position sizing calculator widget
   - Build PositionSizingCalculator component
   - Add input fields: account balance, risk percentage, stop-loss distance
   - Calculate position size in real-time on input change
@@ -83,7 +83,7 @@ Before starting Phase 6, verify:
   - Use BigDecimal precision for calculations
   - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8_
 
-- [ ] 6.8 Implement risk configuration form
+- [x] 6.8 Implement risk configuration form
   - Create risk configuration form with fields: max risk per trade, max daily loss limit, max drawdown limit, max open positions, correlation limits
   - Validate max risk per trade is between 1% and 5%
   - Validate max daily loss limit is between 1% and 10%
@@ -94,14 +94,14 @@ Before starting Phase 6, verify:
   - Display error notification if rejected by backend
   - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 13.8_
 
-- [ ] 6.9 Add real-time risk updates via WebSocket
+- [x] 6.9 Add real-time risk updates via WebSocket
   - Subscribe to risk.alert WebSocket events
   - Update risk metrics within 1 second of event
   - Display high-priority notification for risk alerts
   - Update circuit breaker status in real-time
   - _Requirements: 10.6, 10.8, 15.7_
 
-- [ ] 6.10 Write unit tests for risk components
+- [x] 6.10 Write unit tests for risk components
   - Test RiskMetrics displays correct values and colors
   - Test CircuitBreakerPanel shows active breakers
   - Test password confirmation dialog
@@ -110,7 +110,7 @@ Before starting Phase 6, verify:
   - Achieve 80%+ coverage
   - _Requirements: 25.1, 25.4_
 
-- [ ] 6.11 Write property tests for risk validation and calculations
+- [x] 6.11 Write property tests for risk validation and calculations
   - **Property 11: Position Sizing Calculator Risk Validation**
   - **Validates: Requirements 12.5**
   - Test risk values outside [0.1%, 5%] are rejected
@@ -129,7 +129,7 @@ Before starting Phase 6, verify:
   - Use fast-check with 100+ iterations for each property
   - _Requirements: 30.1_
 
-- [ ] 6.12 Write integration tests for risk management
+- [x] 6.12 Write integration tests for risk management
   - Test fetch risk status with metrics
   - Test update risk configuration
   - Test override circuit breaker with password
@@ -137,14 +137,14 @@ Before starting Phase 6, verify:
   - Test position sizing calculator calculations match backend
   - _Requirements: 30.7_
 
-- [ ] 6.13 Checkpoint - Verify risk management complete
+- [x] 6.13 Checkpoint - Verify risk management complete
   - Ensure all tests pass (unit, property, integration)
   - Verify risk metrics display correctly
   - Check circuit breaker override works
   - Verify position calculator accuracy
   - Ask user if questions arise
 
-- [ ] 6.14 Phase 6 Verification - Build, Run, and Test Application
+- [x] 6.14 Phase 6 Verification - Build, Run, and Test Application
   - Stop all running services using `.\stop-all.ps1`
   - Build both backend and frontend using `.\build-all.ps1`
   - Verify builds complete successfully without errors
@@ -164,7 +164,7 @@ Before starting Phase 6, verify:
   - Do not proceed to Phase 7 until all verification passes and code is committed
   - _Requirements: 26.8, 26.9, 26.10_
 
-- [ ] 6.15 Backend - Implement Risk Management API Endpoints
+- [x] 6.15 Backend - Implement Risk Management API Endpoints
   - **Location:** `AlgotradingBot/src/main/java/com/algotrader/bot/`
   - **Note:** Risk management logic already exists in `risk/RiskManager.java`
   - Create `controller/RiskController.java` with REST endpoints
@@ -205,3 +205,6 @@ Once all tasks are complete and verification passes:
 - ✅ Changes committed to git
 
 **Next:** [Phase 7: Settings and Exchange Integration](./phase-07-settings-exchange.md)
+
+
+

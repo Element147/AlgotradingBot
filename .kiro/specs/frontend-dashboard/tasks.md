@@ -1,4 +1,4 @@
-﻿# Implementation Plan: Frontend Dashboard
+# Implementation Plan: Frontend Dashboard
 
 ## Overview
 
@@ -9,17 +9,17 @@ The dashboard is a production-grade React TypeScript SPA providing real-time tra
 **Repository Structure:**
 ```
 repository-root/
-├── AlgotradingBot/          # Spring Boot backend
-│   ├── src/
-│   ├── build.gradle.kts
-│   └── ...
-├── frontend/                 # React TypeScript frontend (NEW)
-│   ├── src/
-│   ├── package.json
-│   ├── vite.config.ts
-│   └── ...
-├── .gitignore               # Updated to include frontend/node_modules and frontend/dist
-└── README.md
++�� AlgotradingBot/          # Spring Boot backend
+-   +�� src/
+-   +�� build.gradle.kts
+-   L�� ...
++�� frontend/                 # React TypeScript frontend (NEW)
+-   +�� src/
+-   +�� package.json
+-   +�� vite.config.ts
+-   L�� ...
++�� .gitignore               # Updated to include frontend/node_modules and frontend/dist
+L�� README.md
 ```
 
 Both frontend and backend will coexist in the same Git repository, allowing for coordinated development and deployment.
@@ -282,15 +282,15 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Do not proceed to Phase 3 until all verification passes and code is committed
     - _Requirements: 26.8, 26.9, 26.10_
 
-- [ ] 3. Phase 3: Strategy Management (Week 3)
-  - [ ] 3.1 Create strategies API slice with CRUD operations
+- [x] 3. Phase 3: Strategy Management (Week 3)
+  - [x] 3.1 Create strategies API slice with CRUD operations
     - Implement strategiesApi with getStrategies, startStrategy, stopStrategy, updateStrategyConfig mutations
     - Configure cache invalidation on mutations
     - Add optimistic updates for start/stop actions
     - Set up polling for strategy metrics (30 second interval)
     - _Requirements: 4.1, 4.6, 4.7, 4.8_
   
-  - [ ] 3.2 Build strategies page with strategy list
+  - [x] 3.2 Build strategies page with strategy list
     - Create StrategiesPage component
     - Display list of all available strategies
     - Show strategy name, type, status badge (RUNNING/STOPPED/ERROR)
@@ -298,7 +298,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Add loading and error states
     - _Requirements: 4.1, 4.2, 4.10_
   
-  - [ ] 3.3 Implement strategy card component with controls
+  - [x] 3.3 Implement strategy card component with controls
     - Create StrategyCard component for individual strategy display
     - Add start button (visible when STOPPED)
     - Add stop button (visible when RUNNING)
@@ -307,7 +307,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Display status badge with color coding
     - _Requirements: 4.3, 4.4, 4.5, 4.11_
   
-  - [ ] 3.4 Create strategy configuration modal with validation
+  - [x] 3.4 Create strategy configuration modal with validation
     - Build StrategyConfigModal component
     - Add input fields: symbol, timeframe, risk per trade, min/max position size
     - Implement Zod validation schema
@@ -317,7 +317,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Disable save button while validation errors exist
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7_
   
-  - [ ] 3.5 Implement strategy configuration save logic
+  - [x] 3.5 Implement strategy configuration save logic
     - Send PUT request to /api/strategies/config on save
     - Stop strategy before applying config if currently RUNNING
     - Close modal and show success notification on save
@@ -325,14 +325,14 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Invalidate strategy cache to refetch updated data
     - _Requirements: 5.8, 5.9, 5.10_
   
-  - [ ] 3.6 Add real-time strategy status updates via WebSocket
+  - [x] 3.6 Add real-time strategy status updates via WebSocket
     - Subscribe to strategy.status WebSocket events
     - Update strategy status badge within 1 second of event
     - Update strategy metrics in real-time
     - Handle strategy error events with error notification
     - _Requirements: 4.11, 15.6_
   
-  - [ ] 3.7 Write unit tests for strategy components
+  - [x] 3.7 Write unit tests for strategy components
     - Test StrategiesPage renders strategy list
     - Test StrategyCard displays correct status and metrics
     - Test start/stop buttons show confirmation dialogs
@@ -341,7 +341,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Achieve 80%+ coverage
     - _Requirements: 25.1, 25.4_
   
-  - [ ] 3.8 Write property tests for risk percentage validation
+  - [x] 3.8 Write property tests for risk percentage validation
     - **Property 5: Risk Percentage Validation**
     - **Validates: Requirements 5.4, 13.2**
     - Test that risk values outside [1%, 5%] are rejected
@@ -349,7 +349,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Use fast-check with 100+ iterations
     - _Requirements: 30.1_
   
-  - [ ] 3.9 Write property tests for position size validation
+  - [x] 3.9 Write property tests for position size validation
     - **Property 6: Position Size Validation**
     - **Validates: Requirements 5.5**
     - Test that non-positive position sizes are rejected
@@ -357,7 +357,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Use fast-check with 100+ iterations
     - _Requirements: 30.1_
   
-  - [ ] 3.10 Write integration tests for strategy management
+  - [x] 3.10 Write integration tests for strategy management
     - Test start strategy API call updates status to RUNNING
     - Test stop strategy API call updates status to STOPPED
     - Test update strategy configuration saves changes
@@ -365,13 +365,13 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Test optimistic updates revert on error
     - _Requirements: 30.4_
   
-  - [ ] 3.11 Checkpoint - Verify strategy management complete
+  - [x] 3.11 Checkpoint - Verify strategy management complete
     - Ensure all tests pass (unit, property, integration)
     - Verify start/stop/configure functionality works
     - Check real-time status updates via WebSocket
     - Ask user if questions arise
   
-  - [ ] 3.12 Phase 3 Verification - Build, Run, and Test Application
+  - [x] 3.12 Phase 3 Verification - Build, Run, and Test Application
     - Stop all running services using `.\stop-all.ps1`
     - Build both backend and frontend using `.\build-all.ps1`
     - Verify builds complete successfully without errors
@@ -390,8 +390,8 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Do not proceed to Phase 4 until all verification passes and code is committed
     - _Requirements: 26.8, 26.9, 26.10_
 
-- [ ] 4. Phase 4: Trade History and Details (Week 4)
-  - [ ] 4.1 Create trades API slice with history and details endpoints
+- [x] 4. Phase 4: Trade History and Details (Week 4)
+  - [x] 4.1 Create trades API slice with history and details endpoints
     - Implement tradesApi with getTradeHistory, getTradeDetails, getTradeStatistics queries
     - Support pagination parameters (page, pageSize)
     - Support filter parameters (date range, symbol, status, strategy)
@@ -399,7 +399,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Configure caching with 5 minute TTL
     - _Requirements: 6.1, 6.6, 7.2_
   
-  - [ ] 4.2 Build trades page with paginated table
+  - [x] 4.2 Build trades page with paginated table
     - Create TradesPage component
     - Display paginated table with 50 trades per page
     - Show columns: ID, timestamp, symbol, side, entry/exit prices, quantity, P&L, P&L %, duration, strategy
@@ -407,21 +407,21 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Add loading skeleton for table rows
     - _Requirements: 6.1, 6.2, 6.9_
   
-  - [ ] 4.3 Implement virtualized trade table for performance
+  - [x] 4.3 Implement virtualized trade table for performance
     - Use @tanstack/react-virtual for virtualization
     - Render only visible rows (50px height each)
     - Add 10 row overscan for smooth scrolling
     - Optimize for tables with 100+ rows
     - _Requirements: 19.3_
   
-  - [ ] 4.4 Add table sorting functionality
+  - [x] 4.4 Add table sorting functionality
     - Make all column headers clickable
     - Toggle between ascending and descending sort on click
     - Display sort indicator (arrow icon) on active column
     - Fetch sorted data from API
     - _Requirements: 6.3, 6.4_
   
-  - [ ] 4.5 Implement trade filtering controls
+  - [x] 4.5 Implement trade filtering controls
     - Create filter panel with date range picker, symbol dropdown, status dropdown, strategy dropdown
     - Fetch filtered data from API when filters change
     - Update URL query parameters to persist filters
@@ -429,21 +429,21 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Clear filters button to reset all
     - _Requirements: 6.5, 6.6, 23.7, 23.8_
   
-  - [ ] 4.6 Add trade search with debouncing
+  - [x] 4.6 Add trade search with debouncing
     - Create search input for trade ID lookup
     - Implement 300ms debounce using useDebouncedCallback
     - Fetch search results from API
     - Display "no results" message when search returns empty
     - _Requirements: 6.7, 6.8, 19.4_
   
-  - [ ] 4.7 Display aggregate trade statistics
+  - [x] 4.7 Display aggregate trade statistics
     - Create TradeStatistics component above table
     - Show total trades, win rate, average win, average loss, profit factor
     - Calculate from filtered trade data
     - Update when filters change
     - _Requirements: 6.10_
   
-  - [ ] 4.8 Create trade details modal with full information
+  - [x] 4.8 Create trade details modal with full information
     - Build TradeDetailsModal component
     - Fetch complete trade data from /api/trades/{id}
     - Display entry/exit reasons, slippage breakdown, fees breakdown
@@ -451,7 +451,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Add price action chart during trade duration
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
   
-  - [ ] 4.9 Implement CSV export functionality
+  - [x] 4.9 Implement CSV export functionality
     - Create export button on trades page
     - Generate CSV file with all filtered trade records
     - Include column headers as first row
@@ -460,7 +460,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Trigger browser download with filename trades_YYYY-MM-DD_HHmmss.csv
     - _Requirements: 20.1, 20.2, 20.3, 20.4, 20.5, 20.6_
   
-  - [ ] 4.10 Write unit tests for trade components
+  - [x] 4.10 Write unit tests for trade components
     - Test TradesPage renders table with pagination
     - Test TradeTable sorting functionality
     - Test filter controls update query parameters
@@ -470,7 +470,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Achieve 80%+ coverage
     - _Requirements: 25.1, 25.4_
 
-  - [ ] 4.11 Write property tests for table sorting and CSV export
+  - [x] 4.11 Write property tests for table sorting and CSV export
     - **Property 7: Table Sorting Correctness**
     - **Validates: Requirements 6.4**
     - Test that sorting by any column produces correctly ordered data
@@ -489,7 +489,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Use fast-check with 100+ iterations for each property
     - _Requirements: 30.1_
   
-  - [ ] 4.12 Write integration tests for trade history
+  - [x] 4.12 Write integration tests for trade history
     - Test fetch trade history with pagination
     - Test filter trades by date range, symbol, status
     - Test sort trades by column (ascending/descending)
@@ -499,13 +499,13 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Verify pagination, filtering, sorting functionality
     - _Requirements: 30.5, 30.14, 30.15_
   
-  - [ ] 4.13 Checkpoint - Verify trade history complete
+  - [x] 4.13 Checkpoint - Verify trade history complete
     - Ensure all tests pass (unit, property, integration)
     - Verify pagination, sorting, filtering work correctly
     - Check CSV export generates valid files
     - Ask user if questions arise
   
-  - [ ] 4.14 Phase 4 Verification - Build, Run, and Test Application
+  - [x] 4.14 Phase 4 Verification - Build, Run, and Test Application
     - Stop all running services using `.\stop-all.ps1`
     - Build both backend and frontend using `.\build-all.ps1`
     - Verify builds complete successfully without errors
@@ -526,14 +526,14 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Do not proceed to Phase 5 until all verification passes and code is committed
     - _Requirements: 26.8, 26.9, 26.10_
 
-- [ ] 5. Phase 5: Backtest Visualization (Week 5)
-  - [ ] 5.1 Create backtest API slice with results and run endpoints
+- [x] 5. Phase 5: Backtest Visualization (Week 5)
+  - [x] 5.1 Create backtest API slice with results and run endpoints
     - Implement backtestApi with getBacktestResults, getBacktestDetails, runBacktest mutation
     - Configure caching with 10 minute TTL for results
     - Add polling mechanism for pending backtest status
     - _Requirements: 8.1, 8.4, 9.6_
   
-  - [ ] 5.2 Build backtest results page with list view
+  - [x] 5.2 Build backtest results page with list view
     - Create BacktestPage component
     - Display list of backtest results with date, strategy, symbol, timeframe, validation status
     - Color-code validation status (green=PASSED, red=FAILED, yellow=PENDING)
@@ -541,7 +541,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Make rows clickable to view details
     - _Requirements: 8.1, 8.2, 9.1_
   
-  - [ ] 5.3 Create backtest details view with performance metrics
+  - [x] 5.3 Create backtest details view with performance metrics
     - Build BacktestResults component
     - Fetch complete backtest data from /api/backtest/{id}
     - Display performance metrics table: Sharpe ratio, profit factor, win rate, max drawdown, total trades, avg win/loss
@@ -549,7 +549,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Display validation status prominently
     - _Requirements: 8.4, 8.5_
   
-  - [ ] 5.4 Implement equity curve chart
+  - [x] 5.4 Implement equity curve chart
     - Create EquityCurve chart component using Recharts
     - Display account balance over time as line chart
     - Add hover tooltips with exact values
@@ -558,7 +558,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Apply theme-aware colors
     - _Requirements: 8.6, 22.1, 22.2, 22.6, 22.7, 22.8_
   
-  - [ ] 5.5 Implement drawdown chart
+  - [x] 5.5 Implement drawdown chart
     - Create DrawdownChart component
     - Display drawdown percentage as area chart
     - Add horizontal line for max drawdown limit
@@ -566,21 +566,21 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Add tooltips with exact values
     - _Requirements: 8.7_
   
-  - [ ] 5.6 Create monthly returns heatmap
+  - [x] 5.6 Create monthly returns heatmap
     - Build MonthlyReturnsHeatmap component
     - Display returns as color-coded grid (rows=years, columns=months)
     - Use green for positive returns, red for negative
     - Add tooltips showing exact percentage
     - _Requirements: 8.8_
 
-  - [ ] 5.7 Add trade distribution histogram
+  - [x] 5.7 Add trade distribution histogram
     - Create TradeDistributionHistogram component
     - Display trade P&L distribution as bar chart
     - Group trades into bins (-10 to -5, -5 to 0, 0 to 5, etc.)
     - Show count of trades in each bin
     - _Requirements: 8.9_
   
-  - [ ] 5.8 Display Monte Carlo and walk-forward results
+  - [x] 5.8 Display Monte Carlo and walk-forward results
     - Show Monte Carlo confidence intervals (95%)
     - Display worst-case scenario projections
     - Show in-sample vs out-of-sample performance comparison
@@ -588,7 +588,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Only render if data exists
     - _Requirements: 8.10, 8.11_
   
-  - [ ] 5.9 Create backtest configuration modal
+  - [x] 5.9 Create backtest configuration modal
     - Build BacktestConfigModal component
     - Add input fields: strategy, symbol, timeframe, start date, end date, initial balance
     - Validate start date < end date
@@ -597,7 +597,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Disable run button while errors exist
     - _Requirements: 9.2, 9.3, 9.4, 9.5_
   
-  - [ ] 5.10 Implement backtest execution and polling
+  - [x] 5.10 Implement backtest execution and polling
     - Send POST request to /api/backtest/run on submit
     - Display pending notification with backtest ID
     - Poll /api/backtest/results every 5 seconds while pending
@@ -606,14 +606,14 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Stop polling when complete or failed
     - _Requirements: 9.6, 9.7, 9.8, 9.9, 9.10_
   
-  - [ ] 5.11 Add PDF export functionality for backtest results
+  - [x] 5.11 Add PDF export functionality for backtest results
     - Create export button on backtest details page
     - Generate PDF with all metrics and charts
     - Include chart visualizations as images
     - Trigger download with filename backtest_{id}_YYYY-MM-DD.pdf
     - _Requirements: 8.12, 20.7, 20.8, 20.9, 20.10_
   
-  - [ ] 5.12 Write unit tests for backtest components
+  - [x] 5.12 Write unit tests for backtest components
     - Test BacktestPage renders results list
     - Test BacktestResults displays metrics correctly
     - Test chart components render with data
@@ -623,7 +623,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Achieve 80%+ coverage
     - _Requirements: 25.1, 25.4_
   
-  - [ ] 5.13 Write property tests for backtest validation
+  - [x] 5.13 Write property tests for backtest validation
     - **Property 9: Date Range Validation**
     - **Validates: Requirements 9.4**
     - Test that start date >= end date is rejected
@@ -633,7 +633,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Use fast-check with 100+ iterations
     - _Requirements: 30.1_
   
-  - [ ] 5.14 Write integration tests for backtest operations
+  - [x] 5.14 Write integration tests for backtest operations
     - Test fetch backtest results list
     - Test fetch backtest details by ID
     - Test run new backtest with valid configuration
@@ -642,13 +642,13 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Test export backtest to PDF
     - _Requirements: 30.6_
   
-  - [ ] 5.15 Checkpoint - Verify backtest visualization complete
+  - [x] 5.15 Checkpoint - Verify backtest visualization complete
     - Ensure all tests pass (unit, property, integration)
     - Verify all charts render correctly
     - Check backtest execution and polling work
     - Ask user if questions arise
   
-  - [ ] 5.16 Phase 5 Verification - Build, Run, and Test Application
+  - [x] 5.16 Phase 5 Verification - Build, Run, and Test Application
     - Stop all running services using `.\stop-all.ps1`
     - Build both backend and frontend using `.\build-all.ps1`
     - Verify builds complete successfully without errors
@@ -669,20 +669,20 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Do not proceed to Phase 6 until all verification passes and code is committed
     - _Requirements: 26.8, 26.9, 26.10_
 
-- [ ] 6. Phase 6: Risk Management (Week 6)
-  - [ ] 6.1 Create risk API slice with status and config endpoints
+- [x] 6. Phase 6: Risk Management (Week 6)
+  - [x] 6.1 Create risk API slice with status and config endpoints
     - Implement riskApi with getRiskStatus, getRiskConfig, updateRiskConfig, overrideCircuitBreaker mutations
     - Configure polling for risk status (30 second interval)
     - Set up cache invalidation on mutations
     - _Requirements: 10.7, 13.9_
   
-  - [ ] 6.2 Build risk management page layout
+  - [x] 6.2 Build risk management page layout
     - Create RiskPage component
     - Organize sections: risk metrics, circuit breakers, position calculator, configuration
     - Add loading and error states
     - _Requirements: 11.1_
 
-  - [ ] 6.3 Implement risk metrics display with progress bars
+  - [x] 6.3 Implement risk metrics display with progress bars
     - Create RiskMetrics component
     - Display current drawdown with progress bar (current/max limit)
     - Display daily loss limit with progress bar (used/available)
@@ -692,7 +692,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Update in real-time via WebSocket
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6_
   
-  - [ ] 6.4 Create circuit breaker management panel
+  - [x] 6.4 Create circuit breaker management panel
     - Build CircuitBreakerPanel component
     - Display list of active circuit breakers
     - Show trigger condition, activation time, reset time for each
@@ -700,7 +700,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Display risk alerts log with timestamp, type, severity, action
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.7_
   
-  - [ ] 6.5 Implement circuit breaker override with password
+  - [x] 6.5 Implement circuit breaker override with password
     - Create password confirmation dialog
     - Send POST request to /api/risk/circuit-breaker/override with password
     - Display error if password is incorrect
@@ -708,14 +708,14 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Invalidate risk status cache to refetch
     - _Requirements: 11.3, 11.4, 11.5_
   
-  - [ ] 6.6 Add high-priority notifications for circuit breakers and risk alerts
+  - [x] 6.6 Add high-priority notifications for circuit breakers and risk alerts
     - Display high-priority notification when circuit breaker triggers
     - Display notification when risk alert event received via WebSocket
     - Play subtle sound for high-priority notifications
     - Keep notifications visible until manually dismissed
     - _Requirements: 11.6, 15.7, 21.9_
   
-  - [ ] 6.7 Create position sizing calculator widget
+  - [x] 6.7 Create position sizing calculator widget
     - Build PositionSizingCalculator component
     - Add input fields: account balance, risk percentage, stop-loss distance
     - Calculate position size in real-time on input change
@@ -726,7 +726,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Use BigDecimal precision for calculations
     - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8_
   
-  - [ ] 6.8 Implement risk configuration form
+  - [x] 6.8 Implement risk configuration form
     - Create risk configuration form with fields: max risk per trade, max daily loss limit, max drawdown limit, max open positions, correlation limits
     - Validate max risk per trade is between 1% and 5%
     - Validate max daily loss limit is between 1% and 10%
@@ -737,14 +737,14 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Display error notification if rejected by backend
     - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 13.8_
   
-  - [ ] 6.9 Add real-time risk updates via WebSocket
+  - [x] 6.9 Add real-time risk updates via WebSocket
     - Subscribe to risk.alert WebSocket events
     - Update risk metrics within 1 second of event
     - Display high-priority notification for risk alerts
     - Update circuit breaker status in real-time
     - _Requirements: 10.6, 10.8, 15.7_
   
-  - [ ] 6.10 Write unit tests for risk components
+  - [x] 6.10 Write unit tests for risk components
     - Test RiskMetrics displays correct values and colors
     - Test CircuitBreakerPanel shows active breakers
     - Test password confirmation dialog
@@ -753,7 +753,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Achieve 80%+ coverage
     - _Requirements: 25.1, 25.4_
   
-  - [ ] 6.11 Write property tests for risk validation and calculations
+  - [x] 6.11 Write property tests for risk validation and calculations
     - **Property 11: Position Sizing Calculator Risk Validation**
     - **Validates: Requirements 12.5**
     - Test risk values outside [0.1%, 5%] are rejected
@@ -772,7 +772,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Use fast-check with 100+ iterations for each property
     - _Requirements: 30.1_
 
-  - [ ] 6.12 Write integration tests for risk management
+  - [x] 6.12 Write integration tests for risk management
     - Test fetch risk status with metrics
     - Test update risk configuration
     - Test override circuit breaker with password
@@ -780,14 +780,14 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Test position sizing calculator calculations match backend
     - _Requirements: 30.7_
   
-  - [ ] 6.13 Checkpoint - Verify risk management complete
+  - [x] 6.13 Checkpoint - Verify risk management complete
     - Ensure all tests pass (unit, property, integration)
     - Verify risk metrics display correctly
     - Check circuit breaker override works
     - Verify position calculator accuracy
     - Ask user if questions arise
   
-  - [ ] 6.14 Phase 6 Verification - Build, Run, and Test Application
+  - [x] 6.14 Phase 6 Verification - Build, Run, and Test Application
     - Stop all running services using `.\stop-all.ps1`
     - Build both backend and frontend using `.\build-all.ps1`
     - Verify builds complete successfully without errors
@@ -807,20 +807,20 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Do not proceed to Phase 7 until all verification passes and code is committed
     - _Requirements: 26.8, 26.9, 26.10_
 
-- [ ] 7. Phase 7: Settings and Exchange Integration (Week 7)
-  - [ ] 7.1 Create exchange API slice with balance and connection endpoints
+- [x] 7. Phase 7: Settings and Exchange Integration (Week 7)
+  - [x] 7.1 Create exchange API slice with balance and connection endpoints
     - Implement exchangeApi with getExchangeBalance, getExchangeOrders, testExchangeConnection mutation
     - Configure polling for live balance (60 second interval)
     - Add cache invalidation on connection test
     - _Requirements: 31.2, 31.9_
   
-  - [ ] 7.2 Build settings page with multiple sections
+  - [x] 7.2 Build settings page with multiple sections
     - Create SettingsPage component
     - Organize sections: API configuration, notifications, display preferences, database management
     - Add tabbed navigation for sections
     - _Requirements: 14.1_
   
-  - [ ] 7.3 Implement API configuration section
+  - [x] 7.3 Implement API configuration section
     - Display masked API keys with reveal button
     - Add "Test Connection" button
     - Send request to /api/system/test-connection on click
@@ -828,14 +828,14 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Display error message on failure
     - _Requirements: 14.2, 14.3, 14.4_
   
-  - [ ] 7.4 Create notification settings section
+  - [x] 7.4 Create notification settings section
     - Add toggle switches for email alerts, Telegram notifications
     - Add input fields for alert thresholds (profit/loss, drawdown, risk)
     - Save settings to backend on change
     - Persist to localStorage
     - _Requirements: 14.5_
   
-  - [ ] 7.5 Implement display preferences section
+  - [x] 7.5 Implement display preferences section
     - Add theme selector (light/dark) with immediate preview
     - Add currency display options (USD/BTC)
     - Add timezone selection with auto-detection
@@ -843,14 +843,14 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Apply changes immediately without reload
     - _Requirements: 14.6, 14.7, 14.8, 14.9, 14.10_
   
-  - [ ] 7.6 Add database management section
+  - [x] 7.6 Add database management section
     - Display system information: app version, last deployment date, database status, Kafka status
     - Add database backup button
     - Trigger /api/system/backup on click
     - Display success/error notification
     - _Requirements: 14.11, 14.12_
   
-  - [ ] 7.7 Create exchange balance display for live mode
+  - [x] 7.7 Create exchange balance display for live mode
     - Display connected exchange name (Binance, Coinbase, Kraken)
     - Show available, locked, and total balance from exchange
     - Display balance breakdown by asset (USDT, BTC, ETH)
@@ -859,7 +859,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Display last sync timestamp
     - _Requirements: 31.1, 31.2, 31.3, 31.4, 31.5, 31.6, 31.7_
   
-  - [ ] 7.8 Implement exchange connection status and testing
+  - [x] 7.8 Implement exchange connection status and testing
     - Display exchange API connection status (connected/disconnected)
     - Show error message if connection fails
     - Add "Test Connection" button to verify connectivity
@@ -867,14 +867,14 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Warn when approaching rate limits
     - _Requirements: 31.8, 31.9, 31.10, 31.11_
   
-  - [ ] 7.9 Add exchange order display
+  - [x] 7.9 Add exchange order display
     - Fetch and display open orders from connected exchange
     - Show order ID, symbol, side, price, quantity, status
     - Synchronize with exchange account positions
     - Display exchange-specific trading fees and limits
     - _Requirements: 31.12, 31.13, 31.14, 31.15_
   
-  - [ ] 7.10 Write unit tests for settings components
+  - [x] 7.10 Write unit tests for settings components
     - Test SettingsPage renders all sections
     - Test API configuration with masked keys
     - Test notification settings toggles
@@ -883,7 +883,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Achieve 80%+ coverage
     - _Requirements: 25.1, 25.4_
 
-  - [ ] 7.11 Write property tests for user preferences persistence
+  - [x] 7.11 Write property tests for user preferences persistence
     - **Property 21: User Preferences Persistence**
     - **Validates: Requirements 23.5**
     - Test that any preference change is persisted to localStorage
@@ -893,7 +893,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Use fast-check with 100+ iterations
     - _Requirements: 30.1_
   
-  - [ ] 7.12 Write integration tests for settings and exchange
+  - [x] 7.12 Write integration tests for settings and exchange
     - Test API connection test endpoint
     - Test fetch exchange balance in live mode
     - Test exchange connection status
@@ -901,13 +901,13 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Test persist and restore display preferences
     - _Requirements: 30.1_
   
-  - [ ] 7.13 Checkpoint - Verify settings and exchange integration complete
+  - [x] 7.13 Checkpoint - Verify settings and exchange integration complete
     - Ensure all tests pass (unit, property, integration)
     - Verify exchange balance displays correctly in live mode
     - Check settings persist and restore properly
     - Ask user if questions arise
   
-  - [ ] 7.14 Phase 7 Verification - Build, Run, and Test Application
+  - [x] 7.14 Phase 7 Verification - Build, Run, and Test Application
     - Stop all running services using `.\stop-all.ps1`
     - Build both backend and frontend using `.\build-all.ps1`
     - Verify builds complete successfully without errors
@@ -928,8 +928,8 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Do not proceed to Phase 8 until all verification passes and code is committed
     - _Requirements: 26.8, 26.9, 26.10_
 
-- [ ] 8. Phase 8: Charts and Visualization (Week 8)
-  - [ ] 8.1 Implement equity curve chart component
+- [x] 8. Phase 8: Charts and Visualization (Week 8)
+  - [x] 8.1 Implement equity curve chart component
     - Create EquityCurve component using Recharts or Lightweight Charts
     - Display account balance over time as line chart
     - Add timeframe selection buttons (1d, 1w, 1m, 3m, 1y, all)
@@ -938,7 +938,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Apply theme-aware color scheme
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.6, 3.7, 22.1, 22.2, 22.5_
   
-  - [ ] 8.2 Implement drawdown chart component
+  - [x] 8.2 Implement drawdown chart component
     - Create DrawdownChart component
     - Display percentage decline from peak as area chart
     - Add horizontal line for max drawdown limit
@@ -947,35 +947,35 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Apply theme-aware colors
     - _Requirements: 3.1, 3.2, 22.1, 22.2, 22.5_
   
-  - [ ] 8.3 Add chart zoom and pan functionality
+  - [x] 8.3 Add chart zoom and pan functionality
     - Implement zoom for charts with 100+ data points
     - Add pan functionality for zoomed charts
     - Add reset zoom button to return to default view
     - Ensure smooth interaction without lag
     - _Requirements: 22.6, 22.7, 22.8_
   
-  - [ ] 8.4 Create accessible table alternatives for charts
+  - [x] 8.4 Create accessible table alternatives for charts
     - Provide data table view as alternative to visual charts
     - Include all chart data in accessible format
     - Add toggle to switch between chart and table view
     - Ensure screen reader compatibility
     - _Requirements: 17.6_
   
-  - [ ] 8.5 Optimize chart rendering performance
+  - [x] 8.5 Optimize chart rendering performance
     - Render charts within 500ms of data availability
     - Update charts smoothly without full re-render
     - Use memoization for expensive calculations
     - Implement canvas-based rendering for large datasets
     - _Requirements: 22.9, 22.10_
   
-  - [ ] 8.6 Add chart export functionality
+  - [x] 8.6 Add chart export functionality
     - Provide export button for each chart
     - Export chart as PNG image
     - Export underlying data as CSV
     - Include chart in PDF exports
     - _Requirements: 20.7, 20.9_
   
-  - [ ] 8.7 Write unit tests for chart components
+  - [x] 8.7 Write unit tests for chart components
     - Test EquityCurve renders with data
     - Test DrawdownChart renders with data
     - Test timeframe selection updates chart
@@ -985,14 +985,14 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Achieve 80%+ coverage
     - _Requirements: 25.1, 25.4_
   
-  - [ ] 8.8 Checkpoint - Verify charts and visualization complete
+  - [x] 8.8 Checkpoint - Verify charts and visualization complete
     - Ensure all tests pass
     - Verify charts render correctly in both themes
     - Check zoom/pan interactions work smoothly
     - Verify accessible alternatives work
     - Ask user if questions arise
   
-  - [ ] 8.9 Phase 8 Verification - Build, Run, and Test Application
+  - [x] 8.9 Phase 8 Verification - Build, Run, and Test Application
     - Stop all running services using `.\stop-all.ps1`
     - Build both backend and frontend using `.\build-all.ps1`
     - Verify builds complete successfully without errors
@@ -1013,43 +1013,43 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Do not proceed to Phase 9 until all verification passes and code is committed
     - _Requirements: 26.8, 26.9, 26.10_
 
-- [ ] 9. Phase 9: Performance Optimization (Week 9)
-  - [ ] 9.1 Implement code splitting for all route components
+- [x] 9. Phase 9: Performance Optimization (Week 9)
+  - [x] 9.1 Implement code splitting for all route components
     - Use React.lazy() for all page components
     - Configure Suspense with loading fallbacks
     - Create separate bundles for each route
     - Verify bundle sizes with rollup-plugin-visualizer
     - _Requirements: 19.1, 26.7_
   
-  - [ ] 9.2 Add virtualization for all large lists
+  - [x] 9.2 Add virtualization for all large lists
     - Implement virtualization for trade history table (100+ rows)
     - Implement virtualization for strategy list if needed
     - Use @tanstack/react-virtual consistently
     - Measure scroll performance improvement
     - _Requirements: 19.3_
   
-  - [ ] 9.3 Optimize WebSocket event handling with throttling
+  - [x] 9.3 Optimize WebSocket event handling with throttling
     - Throttle balance updates to max 1 per second
     - Throttle position updates to max 1 per second
     - Batch multiple Redux updates within 16ms
     - Pause event processing when tab is inactive
     - _Requirements: 15.11, 15.12, 19.7_
   
-  - [ ] 9.4 Implement comprehensive caching strategy
+  - [x] 9.4 Implement comprehensive caching strategy
     - Configure RTK Query cache TTL (5 minutes default)
     - Implement optimistic updates for mutations
     - Cache static data (strategies, symbols) longer
     - Preload critical data on app startup
     - _Requirements: 19.5, 19.6, 19.9, 23.3, 23.4_
   
-  - [ ] 9.5 Add background tab optimization
+  - [x] 9.5 Add background tab optimization
     - Pause polling when tab is inactive
     - Pause WebSocket event processing when inactive
     - Resume on tab activation
     - Use Page Visibility API
     - _Requirements: 19.8_
   
-  - [ ] 9.6 Optimize bundle size with Vite configuration
+  - [x] 9.6 Optimize bundle size with Vite configuration
     - Configure manual chunks for vendor libraries
     - Split react, redux, ui, and chart vendors
     - Enable terser minification with console.log removal
@@ -1057,22 +1057,22 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Analyze bundle with visualizer
     - _Requirements: 26.5, 26.6_
   
-  - [ ] 9.7 Run Lighthouse audits and optimize
+  - [x] 9.7 Run Lighthouse audits and optimize
     - Measure Core Web Vitals (LCP, FID, CLS)
     - Achieve initial load < 3 seconds on 3G
-    - Achieve Lighthouse performance score ≥ 90
+    - Achieve Lighthouse performance score ? 90
     - Optimize images and assets
     - Implement resource hints (preload, prefetch)
     - _Requirements: 19.2, 19.10, 27.4_
   
-  - [ ] 9.8 Checkpoint - Verify performance optimization complete
-    - Ensure Lighthouse score ≥ 90
+  - [x] 9.8 Checkpoint - Verify performance optimization complete
+    - Ensure Lighthouse score ? 90
     - Verify initial load < 3 seconds
     - Check bundle sizes are optimized
     - Verify smooth scrolling and interactions
     - Ask user if questions arise
   
-  - [ ] 9.9 Phase 9 Verification - Build, Run, and Test Application
+  - [x] 9.9 Phase 9 Verification - Build, Run, and Test Application
     - Stop all running services using `.\stop-all.ps1`
     - Build both backend and frontend using `.\build-all.ps1`
     - Verify builds complete successfully without errors
@@ -1082,7 +1082,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Verify backend is accessible at http://localhost:8080
     - Verify frontend is accessible at http://localhost:5173
     - Test initial page load time (should be < 3 seconds)
-    - Run Lighthouse audit (score should be ≥ 90)
+    - Run Lighthouse audit (score should be ? 90)
     - Test virtualized lists scroll smoothly
     - Test code splitting with network tab
     - Test WebSocket throttling with rapid updates
@@ -1094,61 +1094,61 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Do not proceed to Phase 10 until all verification passes and code is committed
     - _Requirements: 26.8, 26.9, 26.10, 19.2, 19.10_
 
-- [ ] 10. Phase 10: Security Hardening (Week 10)
-  - [ ] 10.1 Enforce HTTPS in production environment
+- [x] 10. Phase 10: Security Hardening (Week 10)
+  - [x] 10.1 Enforce HTTPS in production environment
     - Configure API_CONFIG to use HTTPS in production
     - Redirect HTTP to HTTPS automatically
     - Use WSS for WebSocket in production
     - _Requirements: 24.1_
   
-  - [ ] 10.2 Implement secure token management
+  - [x] 10.2 Implement secure token management
     - Store tokens in memory and sessionStorage (not localStorage)
     - Clear tokens on logout and session timeout
     - Never log or display tokens in plain text
     - Use httpOnly cookies for refresh tokens in production
     - _Requirements: 1.3, 24.3_
   
-  - [ ] 10.3 Add XSS input sanitization
+  - [x] 10.3 Add XSS input sanitization
     - Sanitize all user input before rendering
     - Escape HTML tags in user-generated content
     - Use DOMPurify library for sanitization
     - Test with XSS payloads
     - _Requirements: 24.5_
   
-  - [ ] 10.4 Implement CSRF protection
+  - [x] 10.4 Implement CSRF protection
     - Add CSRF token to all mutation requests
     - Validate CSRF token on backend
     - Use SameSite cookie attribute
     - _Requirements: 24.6_
   
-  - [ ] 10.5 Add Content Security Policy headers
+  - [x] 10.5 Add Content Security Policy headers
     - Configure CSP headers in production
     - Restrict script sources to same-origin
     - Prevent inline scripts and eval()
     - Allow only trusted CDNs
     - _Requirements: 24.10_
 
-  - [ ] 10.6 Implement role-based access control
+  - [x] 10.6 Implement role-based access control
     - Hide admin-only features from non-admin users
     - Check user role in ProtectedRoute component
     - Validate permissions on backend as well
     - _Requirements: 24.8_
   
-  - [ ] 10.7 Add security headers and best practices
+  - [x] 10.7 Add security headers and best practices
     - Implement X-Content-Type-Options: nosniff
     - Implement X-Frame-Options: DENY
     - Implement Strict-Transport-Security
     - Mask sensitive data (API keys, passwords) with reveal buttons
     - _Requirements: 14.2, 24.4_
   
-  - [ ] 10.8 Write property test for XSS sanitization
+  - [x] 10.8 Write property test for XSS sanitization
     - **Property 23: XSS Input Sanitization**
     - **Validates: Requirements 24.5**
     - Test that all user input is sanitized (HTML tags escaped/removed)
     - Use fast-check with 100+ iterations testing various XSS payloads
     - _Requirements: 30.1_
   
-  - [ ] 10.9 Conduct security audit
+  - [x] 10.9 Conduct security audit
     - Test authentication and authorization flows
     - Test for XSS vulnerabilities
     - Test for CSRF vulnerabilities
@@ -1157,14 +1157,14 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Document findings and fixes
     - _Requirements: 25.1_
   
-  - [ ] 10.10 Checkpoint - Verify security hardening complete
+  - [x] 10.10 Checkpoint - Verify security hardening complete
     - Ensure all security tests pass
     - Verify HTTPS enforcement works
     - Check XSS and CSRF protection
     - Review security audit report
     - Ask user if questions arise
   
-  - [ ] 10.11 Phase 10 Verification - Build, Run, and Test Application
+  - [x] 10.11 Phase 10 Verification - Build, Run, and Test Application
     - Stop all running services using `.\stop-all.ps1`
     - Build both backend and frontend using `.\build-all.ps1`
     - Verify builds complete successfully without errors
@@ -1186,69 +1186,69 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Do not proceed to Phase 11 until all verification passes and code is committed
     - _Requirements: 26.8, 26.9, 26.10, 24.1, 24.3, 24.5, 24.6_
 
-- [ ] 11. Phase 11: Accessibility Compliance (Week 11)
-  - [ ] 11.1 Implement keyboard navigation for all interactive elements
+- [x] 11. Phase 11: Accessibility Compliance (Week 11)
+  - [x] 11.1 Implement keyboard navigation for all interactive elements
     - Ensure logical tab order throughout app
     - Add keyboard shortcuts for common actions
     - Test navigation with keyboard only
     - Ensure all buttons, links, inputs are keyboard accessible
     - _Requirements: 17.1_
   
-  - [ ] 11.2 Add skip to main content link
+  - [x] 11.2 Add skip to main content link
     - Create skip link at top of each page
     - Link jumps to main content area
     - Make visible on keyboard focus
     - _Requirements: 17.2_
   
-  - [ ] 11.3 Use semantic HTML and ARIA labels
+  - [x] 11.3 Use semantic HTML and ARIA labels
     - Use semantic HTML elements (nav, main, article, section)
     - Add ARIA labels to all icon-only buttons
     - Add ARIA roles where semantic HTML is insufficient
     - Add ARIA descriptions for complex components
     - _Requirements: 17.3, 17.4_
   
-  - [ ] 11.4 Implement ARIA live regions for real-time updates
+  - [x] 11.4 Implement ARIA live regions for real-time updates
     - Add aria-live="polite" for balance updates
     - Add aria-live="assertive" for critical alerts
     - Announce WebSocket events to screen readers
     - Test with screen reader (NVDA, JAWS, VoiceOver)
     - _Requirements: 17.5_
   
-  - [ ] 11.5 Create accessible alternatives for charts
+  - [x] 11.5 Create accessible alternatives for charts
     - Provide data tables as alternatives to visual charts
     - Add text descriptions of chart trends
     - Ensure chart data is available to screen readers
     - Add toggle between chart and table view
     - _Requirements: 17.6_
   
-  - [ ] 11.6 Ensure color contrast compliance
+  - [x] 11.6 Ensure color contrast compliance
     - Maintain minimum 4.5:1 contrast ratio for text
     - Test both light and dark themes
     - Use color contrast checker tool
     - Fix any failing contrast ratios
     - _Requirements: 17.7_
   
-  - [ ] 11.7 Add non-color indicators for information
+  - [x] 11.7 Add non-color indicators for information
     - Use icons and text labels in addition to color
     - Add patterns or textures to charts
     - Ensure status is conveyed through multiple means
     - _Requirements: 17.8_
   
-  - [ ] 11.8 Support text resizing up to 200%
+  - [x] 11.8 Support text resizing up to 200%
     - Test UI at 200% text size
     - Ensure no loss of functionality
     - Fix any layout issues
     - Use relative units (rem, em) instead of px
     - _Requirements: 17.9_
   
-  - [ ] 11.9 Add visible focus indicators
+  - [x] 11.9 Add visible focus indicators
     - Ensure all interactive elements have visible focus
     - Use consistent focus styling
     - Test focus visibility in both themes
     - Never remove outline without replacement
     - _Requirements: 17.10_
   
-  - [ ] 11.10 Conduct accessibility audit
+  - [x] 11.10 Conduct accessibility audit
     - Run automated accessibility tests (axe, Lighthouse)
     - Test with keyboard navigation
     - Test with screen readers
@@ -1258,14 +1258,14 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Fix any violations
     - _Requirements: 25.1_
   
-  - [ ] 11.11 Checkpoint - Verify accessibility compliance complete
+  - [x] 11.11 Checkpoint - Verify accessibility compliance complete
     - Ensure WCAG 2.1 AA compliance
     - Verify keyboard navigation works
     - Check screen reader compatibility
     - Review accessibility audit report
     - Ask user if questions arise
   
-  - [ ] 11.12 Phase 11 Verification - Build, Run, and Test Application
+  - [x] 11.12 Phase 11 Verification - Build, Run, and Test Application
     - Stop all running services using `.\stop-all.ps1`
     - Build both backend and frontend using `.\build-all.ps1`
     - Verify builds complete successfully without errors
@@ -1309,7 +1309,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - _Requirements: 30.1, 30.2, 30.3, 30.4, 30.5, 30.6, 30.7, 30.8, 30.9, 30.13, 30.14, 30.15_
   
   - [ ] 12.3 Write end-to-end tests for critical user flows
-    - Test complete trading workflow (login → dashboard → start strategy → view trades)
+    - Test complete trading workflow (login � dashboard � start strategy � view trades)
     - Test backtest execution flow
     - Test risk management flow
     - Test settings configuration flow
@@ -1548,7 +1548,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
     - Verify monitoring dashboards show correct data
     - Test CI/CD pipeline (if configured)
     - Verify rollback capability works
-    - Run final Lighthouse audit (score should be ≥ 90)
+    - Run final Lighthouse audit (score should be ? 90)
     - Test on multiple browsers and devices
     - If any issues found, diagnose and repair immediately
     - Once all verification passes, commit to git:
@@ -1586,13 +1586,13 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
 
 **Performance Requirements:**
 - Initial load < 3 seconds on 3G connection
-- Lighthouse performance score ≥ 90
+- Lighthouse performance score ? 90
 - Time to Interactive < 5 seconds
 - First Contentful Paint < 1.5 seconds
 - Smooth scrolling with virtualized lists
 
 **Quality Requirements:**
-- Unit test coverage ≥ 80%
+- Unit test coverage ? 80%
 - All 25 property tests passing (100+ iterations each)
 - All integration tests passing
 - Zero critical security vulnerabilities
@@ -1604,5 +1604,7 @@ Both frontend and backend will coexist in the same Git repository, allowing for 
 - Rollback capability implemented
 - Error tracking and monitoring active
 - Performance monitoring dashboards created
+
+
 
 

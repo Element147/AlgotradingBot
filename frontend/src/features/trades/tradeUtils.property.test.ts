@@ -9,12 +9,19 @@ import {
   sortTrades,
 } from './tradeUtils';
 
+const isoTimestampArbitrary = fc
+  .integer({
+    min: Date.parse('2000-01-01T00:00:00.000Z'),
+    max: Date.parse('2100-01-01T00:00:00.000Z'),
+  })
+  .map((timestamp) => new Date(timestamp).toISOString());
+
 const tradeArbitrary = fc.record<TradeHistoryItem>({
   id: fc.integer({ min: 1, max: 100000 }),
   pair: fc.constantFrom('BTC/USDT', 'ETH/USDT'),
-  entryTime: fc.date().map((date) => date.toISOString()),
+  entryTime: isoTimestampArbitrary,
   entryPrice: fc.double({ min: 1, max: 100000, noNaN: true }),
-  exitTime: fc.option(fc.date().map((date) => date.toISOString()), { nil: null }),
+  exitTime: fc.option(isoTimestampArbitrary, { nil: null }),
   exitPrice: fc.option(fc.double({ min: 1, max: 100000, noNaN: true }), { nil: null }),
   signal: fc.constantFrom('BUY', 'SELL'),
   positionSize: fc.double({ min: 0.0001, max: 10, noNaN: true }),
