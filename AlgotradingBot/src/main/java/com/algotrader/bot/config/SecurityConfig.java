@@ -33,7 +33,7 @@ public class SecurityConfig {
     private final boolean relaxedAuth;
 
     public SecurityConfig(@Lazy JwtAuthenticationFilter jwtAuthenticationFilter,
-                          @Value("${algotrading.security.relaxed-auth:true}") boolean relaxedAuth) {
+                          @Value("${algotrading.security.relaxed-auth:false}") boolean relaxedAuth) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.relaxedAuth = relaxedAuth;
     }

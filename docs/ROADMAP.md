@@ -11,21 +11,25 @@ Status updated: March 11, 2026
 
 ## Now (0-4 weeks)
 
-1. Stabilize CI verification gates
-   - backend `test/build`
-   - frontend `lint/test/build`
-2. Complete remaining DTO modernization to records where safe.
-3. Improve auditability for overrides, environment changes, and system operations.
+1. Frontend adoption of newly shipped backend hardening features
+   - operator audit-event visibility
+   - backtest replay and comparison workflow wiring
+2. Complete remaining contract modernization
+   - maintain DTO record style
+   - reduce frontend/backend drift with shared contracts
+3. Risk-elimination migration phase 2
+   - strict-default auth posture shipped
+   - explicit local-dev override guidance and rollout/rollback playbook
 4. Keep docs lean: only canonical root docs remain current.
 
 ## Next (1-2 months)
 
 1. Research reproducibility infrastructure
-   - dataset ingestion/replay workflow
+   - dataset lifecycle tooling beyond upload/download (inventory, retention)
    - repeatable experiment structure
 2. Backtest analytics depth
    - persist equity/trade series
-   - strategy comparison views and exports
+   - strategy comparison views/exports in frontend
 3. Strategy parameter lifecycle
    - typed parameter sets
    - versioned defaults and changelog

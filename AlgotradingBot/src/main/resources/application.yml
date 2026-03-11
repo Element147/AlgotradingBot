@@ -113,7 +113,7 @@ jwt:
 # Application-Specific Configuration
 algotrading:
   security:
-    relaxed-auth: ${ALGOTRADING_RELAXED_AUTH:true}
+    relaxed-auth: ${ALGOTRADING_RELAXED_AUTH:false}
   risk:
     max-risk-per-trade: 0.02
     max-drawdown-limit: 0.25

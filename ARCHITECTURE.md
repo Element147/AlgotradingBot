@@ -17,6 +17,7 @@ Primary packages in `com.algotrader.bot`:
 - `service`: orchestration and business logic
 - `repository`: Spring Data JPA access
 - `entity`: persistence models
+- `entity` + `repository` include `operator_audit_events` for critical action auditability
 - `backtest`: simulation engine, metrics, validators
 - `backtest/strategy`: strategy interface, implementations, registry, indicator helpers
 - `risk`: risk and execution-cost calculations
@@ -29,6 +30,8 @@ Primary packages in `com.algotrader.bot`:
 - Registry seam: `BacktestStrategyRegistry` resolves strategy metadata and execution routing.
 - Simulation seam: `BacktestSimulationEngine` runs execution loops and position transitions.
 - Metrics seam: `BacktestSimulationMetricsCalculator` computes performance statistics.
+- Reproducibility seam: dataset metadata includes checksum/schema version and supports download + replay flows.
+- Comparison seam: dedicated compare API provides side-by-side metric deltas for selected backtests.
 
 This avoids single-class "all-logic" backtesting and supports extension without rewriting orchestration.
 
@@ -79,11 +82,11 @@ Key frontend design rules:
 3. Prefer immutable DTOs as Java records where possible.
 4. Isolate exchange/live connectivity behind dedicated service boundaries.
 5. Keep risk/guardrail logic independent from UI concerns.
+6. Persist critical operator actions with durable audit events for post-incident review.
 
 ## Near-Term Architecture Work
 
-1. Finish remaining DTO record migration safely.
-2. Add stronger audit/event trails for critical operator actions.
-3. Improve strategy analytics persistence (equity curve, trade-level series).
-4. Add contract-drift protection (generated/shared API contracts).
-5. Add CI gates for cross-stack regression checks.
+1. Surface audit/replay/compare capabilities in frontend feature modules.
+2. Improve strategy analytics persistence (equity curve, trade-level series).
+3. Add contract-drift protection (generated/shared API contracts).
+4. Harden auth defaults with explicit dev-profile overrides and rollout safeguards.

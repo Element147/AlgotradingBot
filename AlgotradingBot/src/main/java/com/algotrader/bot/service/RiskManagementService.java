@@ -30,17 +30,20 @@ public class RiskManagementService {
     private final AccountRepository accountRepository;
     private final TradeRepository tradeRepository;
     private final PortfolioRepository portfolioRepository;
+    private final OperatorAuditService operatorAuditService;
 
     public RiskManagementService(RiskConfigRepository riskConfigRepository,
                                  RiskAlertRepository riskAlertRepository,
                                  AccountRepository accountRepository,
                                  TradeRepository tradeRepository,
-                                 PortfolioRepository portfolioRepository) {
+                                 PortfolioRepository portfolioRepository,
+                                 OperatorAuditService operatorAuditService) {
         this.riskConfigRepository = riskConfigRepository;
         this.riskAlertRepository = riskAlertRepository;
         this.accountRepository = accountRepository;
         this.tradeRepository = tradeRepository;
         this.portfolioRepository = portfolioRepository;
+        this.operatorAuditService = operatorAuditService;
     }
 
     @Transactional(readOnly = true)
@@ -60,6 +63,15 @@ public class RiskManagementService {
         config.setCorrelationLimit(request.correlationLimit());
 
         RiskConfig saved = riskConfigRepository.save(config);
+        operatorAuditService.recordSuccess(
+            "RISK_CONFIG_UPDATED",
+            "test",
+            "RISK_CONFIG",
+            String.valueOf(saved.getId()),
+            "maxRiskPerTrade=" + saved.getMaxRiskPerTrade()
+                + ", maxDailyLossLimit=" + saved.getMaxDailyLossLimit()
+                + ", maxDrawdownLimit=" + saved.getMaxDrawdownLimit()
+        );
         return toConfigResponse(saved);
     }
 
@@ -107,6 +119,13 @@ public class RiskManagementService {
             config.setCircuitBreakerTriggeredAt(LocalDateTime.now());
             riskConfigRepository.save(config);
             riskAlertRepository.save(new RiskAlert("CIRCUIT_BREAKER", "HIGH", config.getCircuitBreakerReason(), "Trading halted"));
+            operatorAuditService.recordSuccess(
+                "CIRCUIT_BREAKER_TRIGGERED",
+                "paper",
+                "RISK_CONFIG",
+                String.valueOf(config.getId()),
+                config.getCircuitBreakerReason()
+            );
         }
 
         return new RiskStatusResponse(
@@ -124,10 +143,24 @@ public class RiskManagementService {
     @Transactional
     public RiskConfigResponse overrideCircuitBreaker(String environment, CircuitBreakerOverrideRequest request) {
         if ("live".equalsIgnoreCase(environment)) {
+            operatorAuditService.recordFailure(
+                "CIRCUIT_BREAKER_OVERRIDE",
+                environment,
+                "RISK_CONFIG",
+                null,
+                "Override blocked for live environment"
+            );
             throw new IllegalArgumentException("Circuit breaker override is disabled for live environment");
         }
 
         if (!OVERRIDE_CODE.equals(request.confirmationCode())) {
+            operatorAuditService.recordFailure(
+                "CIRCUIT_BREAKER_OVERRIDE",
+                environment,
+                "RISK_CONFIG",
+                null,
+                "Invalid confirmation code"
+            );
             throw new IllegalArgumentException("Invalid confirmation code");
         }
 
@@ -143,6 +176,14 @@ public class RiskManagementService {
             "Circuit breaker manually overridden",
             request.reason()
         ));
+
+        operatorAuditService.recordSuccess(
+            "CIRCUIT_BREAKER_OVERRIDE",
+            environment,
+            "RISK_CONFIG",
+            String.valueOf(config.getId()),
+            request.reason()
+        );
 
         return toConfigResponse(config);
     }

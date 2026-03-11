@@ -225,6 +225,8 @@ export const handlers = [
         dataStart: '2025-01-01T00:00:00',
         dataEnd: '2025-12-31T23:00:00',
         uploadedAt: '2026-03-10T10:00:00',
+        checksumSha256: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        schemaVersion: 'ohlcv-v1',
       },
     ])
   ),
@@ -238,6 +240,8 @@ export const handlers = [
       dataStart: '2025-01-01T00:00:00',
       dataEnd: '2025-01-10T23:00:00',
       uploadedAt: '2026-03-10T10:01:00',
+      checksumSha256: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      schemaVersion: 'ohlcv-v1',
     })
   ),
   http.get(`${API_BASE_URL}/api/backtests`, () =>

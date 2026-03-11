@@ -3,26 +3,25 @@ package com.algotrader.bot.controller;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-public record BacktestDetailsResponse(
+public record BacktestComparisonItemResponse(
     Long id,
     String strategyId,
-    Long datasetId,
     String datasetName,
     String symbol,
     String timeframe,
     String executionStatus,
     String validationStatus,
+    Integer feesBps,
+    Integer slippageBps,
+    LocalDateTime timestamp,
     BigDecimal initialBalance,
     BigDecimal finalBalance,
+    BigDecimal totalReturnPercent,
     BigDecimal sharpeRatio,
     BigDecimal profitFactor,
     BigDecimal winRate,
     BigDecimal maxDrawdown,
     Integer totalTrades,
-    Integer feesBps,
-    Integer slippageBps,
-    LocalDateTime startDate,
-    LocalDateTime endDate,
-    LocalDateTime timestamp,
-    String errorMessage
+    BigDecimal finalBalanceDelta,
+    BigDecimal totalReturnDeltaPercent
 ) {}

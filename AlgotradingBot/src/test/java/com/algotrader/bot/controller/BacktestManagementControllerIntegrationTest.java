@@ -19,10 +19,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -48,6 +51,7 @@ class BacktestManagementControllerIntegrationTest {
 
     private String authToken;
     private Long backtestId;
+    private Long comparisonBacktestId;
     private Long datasetId;
 
     @BeforeEach
@@ -90,6 +94,8 @@ class BacktestManagementControllerIntegrationTest {
         dataset.setSymbolsCsv("BTC/USDT");
         dataset.setDataStart(LocalDateTime.parse("2025-01-01T00:00:00"));
         dataset.setDataEnd(LocalDateTime.parse("2025-01-01T23:00:00"));
+        dataset.setChecksumSha256("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+        dataset.setSchemaVersion("ohlcv-v1");
         datasetId = backtestDatasetRepository.save(dataset).getId();
 
         BacktestResult result = new BacktestResult(
@@ -111,6 +117,26 @@ class BacktestManagementControllerIntegrationTest {
         result.setDatasetId(datasetId);
         result.setDatasetName("sample-btc");
         backtestId = backtestResultRepository.save(result).getId();
+
+        BacktestResult comparison = new BacktestResult(
+            "SMA_CROSSOVER",
+            "BTC/USDT",
+            LocalDateTime.now().minusDays(30),
+            LocalDateTime.now().minusDays(1),
+            new BigDecimal("1000"),
+            new BigDecimal("950"),
+            new BigDecimal("0.7"),
+            new BigDecimal("1.2"),
+            new BigDecimal("45.0"),
+            new BigDecimal("22.0"),
+            48,
+            BacktestResult.ValidationStatus.FAILED
+        );
+        comparison.setExecutionStatus(BacktestResult.ExecutionStatus.COMPLETED);
+        comparison.setTimeframe("1h");
+        comparison.setDatasetId(datasetId);
+        comparison.setDatasetName("sample-btc");
+        comparisonBacktestId = backtestResultRepository.save(comparison).getId();
     }
 
     @Test
@@ -191,6 +217,41 @@ class BacktestManagementControllerIntegrationTest {
         mockMvc.perform(get("/api/backtests/datasets")
                 .header("Authorization", "Bearer " + authToken))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$[0].name").value("sample-btc"));
+            .andExpect(jsonPath("$[0].name").value("sample-btc"))
+            .andExpect(jsonPath("$[0].checksumSha256").isString())
+            .andExpect(jsonPath("$[0].schemaVersion").value("ohlcv-v1"));
+    }
+
+    @Test
+    void replayBacktest_createsPendingRecord() throws Exception {
+        mockMvc.perform(post("/api/backtests/{backtestId}/replay", backtestId)
+                .header("Authorization", "Bearer " + authToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").exists())
+            .andExpect(jsonPath("$.status").value("PENDING"));
+    }
+
+    @Test
+    void compareBacktests_returnsComparisonItems() throws Exception {
+        mockMvc.perform(get("/api/backtests/compare")
+                .param("ids", String.valueOf(backtestId))
+                .param("ids", String.valueOf(comparisonBacktestId))
+                .header("Authorization", "Bearer " + authToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.baselineBacktestId").value(backtestId))
+            .andExpect(jsonPath("$.items", hasSize(2)))
+            .andExpect(jsonPath("$.items[0].id").value(backtestId))
+            .andExpect(jsonPath("$.items[1].id").value(comparisonBacktestId))
+            .andExpect(jsonPath("$.items[1].totalReturnDeltaPercent").exists());
+    }
+
+    @Test
+    void downloadDataset_returnsCsvWithMetadataHeaders() throws Exception {
+        mockMvc.perform(get("/api/backtests/datasets/{datasetId}/download", datasetId)
+                .header("Authorization", "Bearer " + authToken))
+            .andExpect(status().isOk())
+            .andExpect(header().exists("X-Dataset-Checksum-Sha256"))
+            .andExpect(header().string("X-Dataset-Schema-Version", "ohlcv-v1"))
+            .andExpect(content().string(containsString("timestamp,symbol,open,high,low,close,volume")));
     }
 }

@@ -18,6 +18,7 @@ Every change is done only when all are true:
 - Controller/service/repository concerns remain separated.
 - Money/risk calculations use `BigDecimal`.
 - DTO boundaries are preserved (no JPA entity leakage to HTTP).
+- Critical operator actions have audit visibility when scope touches overrides, starts/stops, or system operations.
 - New strategy or execution logic includes risk checks and mode gating.
 - Tests cover success path plus meaningful failure/validation cases.
 
@@ -32,9 +33,11 @@ Every change is done only when all are true:
 ## Strategy/Backtest Change
 
 - Inputs, assumptions, and parameters are explicit.
+- Dataset identity is reproducible (version/metadata/checksum where applicable).
 - Fees/slippage are included.
 - Action model (`long/flat/short-proxy`) is explicit and mode-safe.
 - Metrics include at least return, drawdown, Sharpe, profit factor, win rate, trade count.
+- Replay/verification path exists for research claims.
 - Claims are clearly labeled as simulated/paper unless proven otherwise.
 
 ## Documentation Change

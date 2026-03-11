@@ -52,10 +52,23 @@ public class BacktestDataset {
     @Column(name = "uploaded_at", nullable = false)
     private LocalDateTime uploadedAt;
 
+    @NotNull
+    @Size(min = 64, max = 64)
+    @Column(name = "checksum_sha256", nullable = false, length = 64)
+    private String checksumSha256;
+
+    @NotNull
+    @Size(min = 1, max = 32)
+    @Column(name = "schema_version", nullable = false, length = 32)
+    private String schemaVersion;
+
     @PrePersist
     protected void onCreate() {
         if (uploadedAt == null) {
             uploadedAt = LocalDateTime.now();
+        }
+        if (schemaVersion == null || schemaVersion.isBlank()) {
+            schemaVersion = "ohlcv-v1";
         }
     }
 
@@ -125,5 +138,21 @@ public class BacktestDataset {
 
     public void setUploadedAt(LocalDateTime uploadedAt) {
         this.uploadedAt = uploadedAt;
+    }
+
+    public String getChecksumSha256() {
+        return checksumSha256;
+    }
+
+    public void setChecksumSha256(String checksumSha256) {
+        this.checksumSha256 = checksumSha256;
+    }
+
+    public String getSchemaVersion() {
+        return schemaVersion;
+    }
+
+    public void setSchemaVersion(String schemaVersion) {
+        this.schemaVersion = schemaVersion;
     }
 }
