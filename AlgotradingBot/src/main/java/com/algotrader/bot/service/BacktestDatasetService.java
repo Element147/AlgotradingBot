@@ -11,10 +11,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.TreeSet;
 
 @Service
 public class BacktestDatasetService {
@@ -53,9 +52,24 @@ public class BacktestDatasetService {
         }
 
         List<OHLCVData> candles = historicalDataCsvParser.parse(csvData);
-        Set<String> symbols = candles.stream().map(OHLCVData::getSymbol).collect(Collectors.toSet());
-        LocalDateTime start = candles.stream().map(OHLCVData::getTimestamp).min(Comparator.naturalOrder()).orElseThrow();
-        LocalDateTime end = candles.stream().map(OHLCVData::getTimestamp).max(Comparator.naturalOrder()).orElseThrow();
+        if (candles.isEmpty()) {
+            throw new IllegalArgumentException("CSV dataset does not contain any rows");
+        }
+
+        Set<String> symbols = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        LocalDateTime start = null;
+        LocalDateTime end = null;
+
+        for (OHLCVData candle : candles) {
+            symbols.add(candle.getSymbol());
+            LocalDateTime timestamp = candle.getTimestamp();
+            if (start == null || timestamp.isBefore(start)) {
+                start = timestamp;
+            }
+            if (end == null || timestamp.isAfter(end)) {
+                end = timestamp;
+            }
+        }
 
         BacktestDataset dataset = new BacktestDataset();
         dataset.setName(name);
@@ -72,8 +86,7 @@ public class BacktestDatasetService {
 
     @Transactional(readOnly = true)
     public List<BacktestDatasetResponse> listDatasets() {
-        return backtestDatasetRepository.findAll().stream()
-            .sorted(Comparator.comparing(BacktestDataset::getUploadedAt).reversed())
+        return backtestDatasetRepository.findAllByOrderByUploadedAtDesc().stream()
             .map(this::toResponse)
             .toList();
     }

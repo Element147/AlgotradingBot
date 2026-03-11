@@ -1,0 +1,129 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0001-create-users-table-if-missing
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          tableExists:
+            tableName: users
+      changes:
+        - createTable:
+            tableName: users
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: username
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: password_hash
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: email
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: enabled
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+        - addUniqueConstraint:
+            tableName: users
+            columnNames: username
+            constraintName: uk_users_username
+        - addUniqueConstraint:
+            tableName: users
+            columnNames: email
+            constraintName: uk_users_email
+
+  - changeSet:
+      id: 0002-seed-admin-user-postgresql
+      author: codex
+      dbms: postgresql
+      preConditions:
+        onFail: MARK_RAN
+        tableExists:
+          tableName: users
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              CREATE EXTENSION IF NOT EXISTS pgcrypto;
+              INSERT INTO users (username, password_hash, email, role, enabled, created_at, updated_at)
+              VALUES (
+                'admin',
+                crypt('dogbert', gen_salt('bf', 10)),
+                'admin@algotrading.local',
+                'ADMIN',
+                true,
+                NOW(),
+                NOW()
+              )
+              ON CONFLICT (username) DO UPDATE
+                SET password_hash = EXCLUDED.password_hash,
+                    email = EXCLUDED.email,
+                    role = EXCLUDED.role,
+                    enabled = EXCLUDED.enabled,
+                    updated_at = NOW();
+
+  - changeSet:
+      id: 0003-migrate-backtest-dataset-csv-to-bytea
+      author: codex
+      dbms: postgresql
+      preConditions:
+        onFail: MARK_RAN
+        and:
+          - tableExists:
+              tableName: backtest_datasets
+          - columnExists:
+              tableName: backtest_datasets
+              columnName: csv_data
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              DO $$
+              DECLARE
+                csv_data_type TEXT;
+              BEGIN
+                SELECT data_type
+                  INTO csv_data_type
+                  FROM information_schema.columns
+                 WHERE table_schema = 'public'
+                   AND table_name = 'backtest_datasets'
+                   AND column_name = 'csv_data';
+
+                IF csv_data_type = 'oid' THEN
+                  ALTER TABLE backtest_datasets ADD COLUMN IF NOT EXISTS csv_data_tmp BYTEA;
+                  UPDATE backtest_datasets
+                     SET csv_data_tmp = lo_get(csv_data)
+                   WHERE csv_data IS NOT NULL;
+                  ALTER TABLE backtest_datasets DROP COLUMN csv_data;
+                  ALTER TABLE backtest_datasets RENAME COLUMN csv_data_tmp TO csv_data;
+                END IF;
+              END $$;

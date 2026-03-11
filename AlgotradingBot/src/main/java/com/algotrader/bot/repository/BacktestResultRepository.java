@@ -1,6 +1,7 @@
 package com.algotrader.bot.repository;
 
 import com.algotrader.bot.entity.BacktestResult;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -13,6 +14,7 @@ import java.util.List;
 @Repository
 public interface BacktestResultRepository extends JpaRepository<BacktestResult, Long> {
     List<BacktestResult> findAllByOrderByTimestampDesc();
+    List<BacktestResult> findAllByOrderByTimestampDesc(Pageable pageable);
 
     /**
      * Find all backtest results for a specific strategy.
@@ -21,6 +23,7 @@ public interface BacktestResultRepository extends JpaRepository<BacktestResult, 
      * @return list of backtest results for the strategy
      */
     List<BacktestResult> findByStrategyId(String strategyId);
+    List<BacktestResult> findByStrategyIdOrderByTimestampDesc(String strategyId, Pageable pageable);
 
     /**
      * Find all backtest results for a specific symbol.
@@ -29,6 +32,7 @@ public interface BacktestResultRepository extends JpaRepository<BacktestResult, 
      * @return list of backtest results for the symbol
      */
     List<BacktestResult> findBySymbol(String symbol);
+    List<BacktestResult> findBySymbolOrderByTimestampDesc(String symbol, Pageable pageable);
 
     /**
      * Find all backtest results with a specific validation status.
@@ -46,4 +50,5 @@ public interface BacktestResultRepository extends JpaRepository<BacktestResult, 
      * @return list of backtest results matching both criteria
      */
     List<BacktestResult> findByStrategyIdAndSymbol(String strategyId, String symbol);
+    List<BacktestResult> findByStrategyIdAndSymbolOrderByTimestampDesc(String strategyId, String symbol, Pageable pageable);
 }

@@ -27,6 +27,7 @@ import {
 } from './backtestApi';
 
 import { AppLayout } from '@/components/layout/AppLayout';
+import { getStrategyProfile } from '@/features/strategies/strategyProfiles';
 
 const initialForm = {
   algorithmType: 'BOLLINGER_BANDS',
@@ -55,6 +56,14 @@ export default function BacktestPage() {
 
   const [uploadDataset, { isLoading: isUploading }] = useUploadBacktestDatasetMutation();
   const [runBacktest, { isLoading: isRunning }] = useRunBacktestMutation();
+  const selectedAlgorithm = useMemo(
+    () => algorithms.find((algorithm) => algorithm.id === form.algorithmType) ?? null,
+    [algorithms, form.algorithmType]
+  );
+  const selectedAlgorithmProfile = useMemo(
+    () => getStrategyProfile(form.algorithmType),
+    [form.algorithmType]
+  );
 
   const { data: details } = useGetBacktestDetailsQuery(selectedId ?? 0, {
     skip: selectedId === null,
@@ -161,6 +170,7 @@ export default function BacktestPage() {
                     value={datasetName}
                     onChange={(event) => setDatasetName(event.target.value)}
                     placeholder="BTC 1h 2025"
+                    helperText="Optional label to identify symbol/timeframe/date range."
                   />
                   <Button variant="outlined" component="label">
                     {datasetFile ? `Selected: ${datasetFile.name}` : 'Choose CSV File'}
@@ -185,11 +195,20 @@ export default function BacktestPage() {
               <CardContent>
                 <Typography variant="h6" sx={{ mb: 2 }}>Run Backtest</Typography>
                 <Stack spacing={2}>
+                  {selectedAlgorithm ? (
+                    <Alert severity="info">
+                      <strong>{selectedAlgorithm.label}:</strong>{' '}
+                      {selectedAlgorithm.description}
+                      {selectedAlgorithmProfile ? ` Best use: ${selectedAlgorithmProfile.bestFor}` : ''}
+                    </Alert>
+                  ) : null}
+
                   <TextField
                     select
                     label="Algorithm"
                     value={form.algorithmType}
                     onChange={(event) => setForm((prev) => ({ ...prev, algorithmType: event.target.value }))}
+                    helperText="Trading logic used for simulation."
                   >
                     {algorithms.map((algorithm) => (
                       <MenuItem key={algorithm.id} value={algorithm.id}>
@@ -203,6 +222,7 @@ export default function BacktestPage() {
                     label="Dataset"
                     value={form.datasetId}
                     onChange={(event) => setForm((prev) => ({ ...prev, datasetId: event.target.value }))}
+                    helperText="Uploaded historical candles to replay in backtest."
                   >
                     {datasets.map((dataset) => (
                       <MenuItem key={dataset.id} value={String(dataset.id)}>
@@ -216,6 +236,7 @@ export default function BacktestPage() {
                     label="Symbol"
                     value={form.symbol}
                     onChange={(event) => setForm((prev) => ({ ...prev, symbol: event.target.value }))}
+                    helperText="Market pair to run over selected dataset."
                   >
                     <MenuItem value="BTC/USDT">BTC/USDT</MenuItem>
                     <MenuItem value="ETH/USDT">ETH/USDT</MenuItem>
@@ -225,12 +246,14 @@ export default function BacktestPage() {
                     label="Timeframe"
                     value={form.timeframe}
                     onChange={(event) => setForm((prev) => ({ ...prev, timeframe: event.target.value }))}
+                    helperText="Candle interval. Keep consistent with uploaded dataset granularity."
                   />
                   <TextField
                     label="Start Date"
                     type="date"
                     value={form.startDate}
                     onChange={(event) => setForm((prev) => ({ ...prev, startDate: event.target.value }))}
+                    helperText="Backtest start boundary (inclusive)."
                     slotProps={{ inputLabel: { shrink: true } }}
                   />
                   <TextField
@@ -238,6 +261,7 @@ export default function BacktestPage() {
                     type="date"
                     value={form.endDate}
                     onChange={(event) => setForm((prev) => ({ ...prev, endDate: event.target.value }))}
+                    helperText="Backtest end boundary (inclusive)."
                     slotProps={{ inputLabel: { shrink: true } }}
                   />
                   <TextField
@@ -245,18 +269,21 @@ export default function BacktestPage() {
                     type="number"
                     value={form.initialBalance}
                     onChange={(event) => setForm((prev) => ({ ...prev, initialBalance: event.target.value }))}
+                    helperText="Simulated starting capital. Must be greater than 100."
                   />
                   <TextField
                     label="Fees (bps)"
                     type="number"
                     value={form.feesBps}
                     onChange={(event) => setForm((prev) => ({ ...prev, feesBps: event.target.value }))}
+                    helperText="Execution fee in basis points. Example: 10 bps = 0.10%."
                   />
                   <TextField
                     label="Slippage (bps)"
                     type="number"
                     value={form.slippageBps}
                     onChange={(event) => setForm((prev) => ({ ...prev, slippageBps: event.target.value }))}
+                    helperText="Expected price impact in basis points."
                   />
 
                   {validationError ? <Alert severity="error">{validationError}</Alert> : null}

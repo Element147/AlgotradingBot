@@ -1,5 +1,15 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
+import {
+  clearStoredAuth,
+  getStoredAuthToken,
+  getStoredRefreshToken,
+  getStoredUser,
+  setStoredAuthToken,
+  setStoredRefreshToken,
+  setStoredSession,
+} from './authStorage';
+
 export interface User {
   id: string;
   username: string;
@@ -32,6 +42,20 @@ const initialState: AuthState = {
 // Session timeout: 30 minutes in milliseconds
 const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
 
+const parseStoredUser = (userJson: string): User | null => {
+  const parsed = JSON.parse(userJson) as Partial<User>;
+  if (!parsed.id || typeof parsed.username !== 'string' || parsed.username.trim() === '') {
+    return null;
+  }
+
+  return {
+    id: String(parsed.id),
+    username: parsed.username,
+    email: parsed.email ?? '',
+    role: parsed.role === 'admin' ? 'admin' : 'trader',
+  };
+};
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -49,14 +73,8 @@ const authSlice = createSlice({
       state.loading = false;
       state.error = null;
 
-      // Store token in sessionStorage (not localStorage for security)
-      sessionStorage.setItem('auth_token', action.payload.token);
-      sessionStorage.setItem('user', JSON.stringify(action.payload.user));
-
-      // Store refresh token in localStorage only if "remember me" is enabled
-      if (action.payload.refreshToken) {
-        localStorage.setItem('refresh_token', action.payload.refreshToken);
-      }
+      setStoredSession(action.payload.token, action.payload.user);
+      setStoredRefreshToken(action.payload.refreshToken ?? null);
     },
 
     setToken: (state, action: PayloadAction<string>) => {
@@ -64,8 +82,7 @@ const authSlice = createSlice({
       state.lastActivity = Date.now();
       state.sessionTimeout = Date.now() + SESSION_TIMEOUT_MS;
 
-      // Update token in sessionStorage
-      sessionStorage.setItem('auth_token', action.payload);
+      setStoredAuthToken(action.payload);
     },
 
     logout: (state) => {
@@ -78,10 +95,7 @@ const authSlice = createSlice({
       state.loading = false;
       state.error = null;
 
-      // Clear all storage
-      sessionStorage.removeItem('auth_token');
-      sessionStorage.removeItem('user');
-      localStorage.removeItem('refresh_token');
+      clearStoredAuth();
     },
 
     setLoading: (state, action: PayloadAction<boolean>) => {
@@ -110,22 +124,23 @@ const authSlice = createSlice({
           state.isAuthenticated = false;
           state.sessionTimeout = null;
 
-          // Clear session storage
-          sessionStorage.removeItem('auth_token');
-          sessionStorage.removeItem('user');
-          localStorage.removeItem('refresh_token');
+          clearStoredAuth();
         }
       }
     },
 
     restoreSession: (state) => {
-      const token = sessionStorage.getItem('auth_token');
-      const userStr = sessionStorage.getItem('user');
-      const refreshToken = localStorage.getItem('refresh_token');
+      const token = getStoredAuthToken();
+      const userStr = getStoredUser();
+      const refreshToken = getStoredRefreshToken();
 
       if (token && userStr) {
         try {
-          const user = JSON.parse(userStr);
+          const user = parseStoredUser(userStr);
+          if (!user) {
+            clearStoredAuth();
+            return;
+          }
           state.token = token;
           state.user = user;
           state.refreshToken = refreshToken;
@@ -133,10 +148,7 @@ const authSlice = createSlice({
           state.lastActivity = Date.now();
           state.sessionTimeout = Date.now() + SESSION_TIMEOUT_MS;
         } catch {
-          // Invalid session data, clear it
-          sessionStorage.removeItem('auth_token');
-          sessionStorage.removeItem('user');
-          localStorage.removeItem('refresh_token');
+          clearStoredAuth();
         }
       }
     },

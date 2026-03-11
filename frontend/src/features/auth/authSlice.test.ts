@@ -29,7 +29,7 @@ describe('authSlice', () => {
 
   describe('setCredentials', () => {
     it('should set token and user', () => {
-      const user: User = { id: '1', username: 'testuser', role: 'trader' };
+      const user: User = { id: '1', username: 'testuser', email: '', role: 'trader' };
       const token = 'test-token-123';
 
       const state = authReducer(initialState, setCredentials({ token, user }));
@@ -41,7 +41,7 @@ describe('authSlice', () => {
     });
 
     it('should store token in sessionStorage', () => {
-      const user: User = { id: '1', username: 'testuser', role: 'trader' };
+      const user: User = { id: '1', username: 'testuser', email: '', role: 'trader' };
       const token = 'test-token-123';
 
       authReducer(initialState, setCredentials({ token, user }));
@@ -55,7 +55,7 @@ describe('authSlice', () => {
     it('should clear token and user', () => {
       const authenticatedState: AuthState = {
         token: 'test-token',
-        user: { id: '1', username: 'testuser', role: 'trader' },
+        user: { id: '1', username: 'testuser', email: '', role: 'trader' },
         isAuthenticated: true,
         sessionTimeout: Date.now() + 1000000,
         lastActivity: Date.now(),
@@ -96,7 +96,7 @@ describe('authSlice', () => {
     it('should extend sessionTimeout for authenticated users', () => {
       const authenticatedState: AuthState = {
         token: 'test-token',
-        user: { id: '1', username: 'testuser', role: 'trader' },
+        user: { id: '1', username: 'testuser', email: '', role: 'trader' },
         isAuthenticated: true,
         sessionTimeout: Date.now() + 1000,
         lastActivity: Date.now() - 10000,
@@ -112,7 +112,7 @@ describe('authSlice', () => {
     it('should logout if session has expired', () => {
       const expiredState: AuthState = {
         token: 'test-token',
-        user: { id: '1', username: 'testuser', role: 'trader' },
+        user: { id: '1', username: 'testuser', email: '', role: 'trader' },
         isAuthenticated: true,
         sessionTimeout: Date.now() - 1000, // Expired 1 second ago
         lastActivity: Date.now() - 100000,
@@ -143,7 +143,7 @@ describe('authSlice', () => {
 
   describe('restoreSession', () => {
     it('should restore session from sessionStorage', () => {
-      const user: User = { id: '1', username: 'testuser', role: 'trader' };
+      const user: User = { id: '1', username: 'testuser', email: '', role: 'trader' };
       const token = 'test-token-123';
 
       sessionStorage.setItem('auth_token', token);

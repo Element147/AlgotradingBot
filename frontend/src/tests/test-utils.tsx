@@ -10,6 +10,7 @@ import { authApi } from '@/features/auth/authApi';
 import authReducer from '@/features/auth/authSlice';
 import environmentReducer from '@/features/environment/environmentSlice';
 import settingsReducer from '@/features/settings/settingsSlice';
+import { tradesApi } from '@/features/trades/tradesApi';
 import websocketReducer from '@/features/websocket/websocketSlice';
 
 /**
@@ -38,9 +39,10 @@ export function setupStore(preloadedState?: PreloadedState<RootState>) {
       websocket: websocketReducer,
       [authApi.reducerPath]: authApi.reducer,
       [accountApi.reducerPath]: accountApi.reducer,
+      [tradesApi.reducerPath]: tradesApi.reducer,
     },
     middleware: (getDefaultMiddleware) =>
-      getDefaultMiddleware().concat(authApi.middleware, accountApi.middleware),
+      getDefaultMiddleware().concat(authApi.middleware, accountApi.middleware, tradesApi.middleware),
     preloadedState,
   });
 }

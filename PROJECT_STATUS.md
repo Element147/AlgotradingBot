@@ -1,11 +1,11 @@
 # PROJECT_STATUS.md
 
-Status updated: March 10, 2026
+Status updated: March 11, 2026
 
 ## Summary
 
-The local MVP is now functional end-to-end for core research operations with the existing stack:
-- Spring Boot backend in `AlgotradingBot/`
+The local MVP is now functional end-to-end for core research operations with the upgraded stack:
+- Spring Boot 4.0.3 backend in `AlgotradingBot/`
 - React + TypeScript + Vite frontend in `frontend/`
 - local PostgreSQL/Kafka via Docker Compose
 
@@ -16,6 +16,11 @@ The following MVP slices are implemented and wired through UI to backend APIs:
 4. Paper Trading minimal lifecycle + dashboard state
 
 The system remains paper/test-first by default, and no live-money behavior is enabled by default.
+
+Local developer workflow is now optimized for faster iteration:
+- `run.ps1` starts PostgreSQL in Docker and runs backend/frontend directly on host.
+- Kafka is not required for the default local run path.
+- Backend test/build flow is Docker-independent and runs against H2 in-memory via Spring `test` profile.
 
 ## Completed In This Update
 
@@ -60,6 +65,43 @@ Frontend:
 - Added dashboard paper-trading state card.
 - Added tests for paper dashboard card and dashboard integration.
 
+### 5) Backend Test Database Isolation Hardening
+
+Backend:
+- Enforced Spring `test` profile for Gradle test task so CLI `test`/`build` always use H2 in-memory.
+- Added missing `@ActiveProfiles("test")` to Spring Boot integration tests for consistent behavior outside aggregate runs.
+- Fixed `BacktestDataset` JPA mapping to be H2/PostgreSQL compatible so `backtest_datasets` table is generated in test schema.
+
+### 6) Platform Upgrade + Liquibase + Auth/CORS Stabilization
+
+Backend:
+- Upgraded runtime/build stack to Spring Boot `4.0.3` and Gradle wrapper `9.4.0`.
+- Updated explicit dependencies to current compatible versions (`springdoc 3.0.2`, `jjwt 0.13.0`, `logstash-logback-encoder 9.0`, JaCoCo `0.8.14`).
+- Added Liquibase changelog bootstrap for users table + admin seed (`admin` / `dogbert`) on first PostgreSQL migration run.
+- Added PostgreSQL-safe migration for `backtest_datasets.csv_data` legacy `oid` -> `bytea`.
+- Removed legacy `DataInitializer` default users (`admin123`, `trader123`) to avoid config drift.
+- Simplified and centralized auth error handling in `GlobalExceptionHandler` (DRY cleanup) and reduced local auth strictness with `algotrading.security.relaxed-auth=true` default.
+- Expanded CORS handling via `allowedOriginPatterns` to reduce local preflight mismatch issues.
+
+Frontend:
+- Updated refresh-token mutation to always send request body (`{ refreshToken }`) for backend contract consistency.
+
+### 7) Full-Repo Smell Audit Refactor (FE + BE)
+
+Backend:
+- Replaced several `findAll()` + in-memory `sorted/limit` code paths with DB-level ordered/limited repository queries (`Pageable`), reducing unnecessary memory use and query latency for history/result endpoints.
+- Fixed `TradingStrategyService` metrics scope to be account-specific (`getStatus` now uses trades for requested account only).
+- Fixed trade-history filtering so `accountId` is consistently respected in all filter combinations.
+- Converted remaining field injection (`@Autowired` fields) to constructor injection in strategy controller/service.
+- Hardened dataset upload metadata extraction to avoid multiple stream passes and enforce empty-CSV validation.
+- Added regression integration tests for account-scoped status/trade-history behavior.
+
+Frontend:
+- Centralized auth storage operations into a single utility (`authStorage.ts`) to remove duplicated storage keys and clear/store logic.
+- Unified refresh-token retrieval and login-redirect behavior across RTK Query base client and Axios client.
+- Improved Axios refresh compatibility by accepting both `token` and `accessToken` payload variants.
+- Reduced noisy/dev-only response logging payload size.
+
 ## Current Verification Snapshot (March 10, 2026)
 
 Frontend:
@@ -70,6 +112,7 @@ Frontend:
 Backend:
 - `.\gradlew.bat test` -> PASS
 - `.\gradlew.bat build` -> PASS
+- Verified without requiring Docker PostgreSQL
 
 Root scripts:
 - `.\stop-all.ps1` -> PASS
@@ -80,6 +123,9 @@ Runtime checks:
 - `http://localhost:5173` -> `200`
 - `http://localhost:8080/actuator/health` -> `200`
 - `http://localhost:8080/swagger-ui.html` -> `200`
+- Runtime DB verification: Liquibase created `databasechangelog` tables and applied user/bootstrap migrations.
+- Runtime auth verification: login with `admin` / `dogbert` returns valid access + refresh tokens.
+- Runtime backtest verification: dataset upload + `/api/backtests/run` persisted records in PostgreSQL (`backtest_results`).
 
 ## What Remains (Post-MVP)
 

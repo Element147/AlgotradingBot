@@ -14,6 +14,7 @@ import type { Middleware } from '@reduxjs/toolkit';
 
 import { getWebSocketManager, type WebSocketEvent, type WebSocketEventType } from '../../services/websocket';
 import { accountApi } from '../account/accountApi';
+import { tradesApi } from '../trades/tradesApi';
 
 import { eventReceived } from './websocketSlice';
 
@@ -90,6 +91,9 @@ export const websocketMiddleware: Middleware = (storeApi) => {
         // Invalidate both balance and performance caches
         dispatch(
           accountApi.util.invalidateTags(['Balance', 'Performance'])
+        );
+        dispatch(
+          tradesApi.util.invalidateTags(['TradeHistory'])
         );
         break;
 

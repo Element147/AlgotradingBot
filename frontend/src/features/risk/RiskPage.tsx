@@ -10,7 +10,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import {
   useGetRiskAlertsQuery,
@@ -41,13 +41,43 @@ export default function RiskPage() {
   const [overrideReason, setOverrideReason] = useState('');
   const [feedback, setFeedback] = useState<{ severity: 'success' | 'error'; message: string } | null>(null);
 
-  const formValues = form ?? {
-    maxRiskPerTrade: String(config?.maxRiskPerTrade ?? '0.02'),
-    maxDailyLossLimit: String(config?.maxDailyLossLimit ?? '0.05'),
-    maxDrawdownLimit: String(config?.maxDrawdownLimit ?? '0.25'),
-    maxOpenPositions: String(config?.maxOpenPositions ?? '5'),
-    correlationLimit: String(config?.correlationLimit ?? '0.75'),
-  };
+  const formValues = useMemo(
+    () =>
+      form ?? {
+        maxRiskPerTrade: String(config?.maxRiskPerTrade ?? '0.02'),
+        maxDailyLossLimit: String(config?.maxDailyLossLimit ?? '0.05'),
+        maxDrawdownLimit: String(config?.maxDrawdownLimit ?? '0.25'),
+        maxOpenPositions: String(config?.maxOpenPositions ?? '5'),
+        correlationLimit: String(config?.correlationLimit ?? '0.75'),
+      },
+    [config, form]
+  );
+
+  const configValidationError = useMemo(() => {
+    const maxRiskPerTrade = Number(formValues.maxRiskPerTrade);
+    const maxDailyLossLimit = Number(formValues.maxDailyLossLimit);
+    const maxDrawdownLimit = Number(formValues.maxDrawdownLimit);
+    const maxOpenPositions = Number(formValues.maxOpenPositions);
+    const correlationLimit = Number(formValues.correlationLimit);
+
+    if (Number.isNaN(maxRiskPerTrade) || maxRiskPerTrade < 0.01 || maxRiskPerTrade > 0.05) {
+      return 'Max risk per trade must be between 0.01 and 0.05.';
+    }
+    if (Number.isNaN(maxDailyLossLimit) || maxDailyLossLimit < 0.01 || maxDailyLossLimit > 0.10) {
+      return 'Max daily loss limit must be between 0.01 and 0.10.';
+    }
+    if (Number.isNaN(maxDrawdownLimit) || maxDrawdownLimit < 0.10 || maxDrawdownLimit > 0.50) {
+      return 'Max drawdown limit must be between 0.10 and 0.50.';
+    }
+    if (!Number.isInteger(maxOpenPositions) || maxOpenPositions < 1 || maxOpenPositions > 10) {
+      return 'Max open positions must be an integer between 1 and 10.';
+    }
+    if (Number.isNaN(correlationLimit) || correlationLimit < 0.10 || correlationLimit > 1.00) {
+      return 'Correlation limit must be between 0.10 and 1.00.';
+    }
+
+    return null;
+  }, [formValues]);
 
   const saveRiskConfig = async () => {
     try {
@@ -142,28 +172,38 @@ export default function RiskPage() {
                       label="Max Risk Per Trade (0.01 - 0.05)"
                       value={formValues.maxRiskPerTrade}
                       onChange={(event) => setForm((prev) => ({ ...(prev ?? formValues), maxRiskPerTrade: event.target.value }))}
+                      helperText="Fraction of account equity risked on one new position."
                     />
                     <TextField
                       label="Max Daily Loss Limit (0.01 - 0.10)"
                       value={formValues.maxDailyLossLimit}
                       onChange={(event) => setForm((prev) => ({ ...(prev ?? formValues), maxDailyLossLimit: event.target.value }))}
+                      helperText="Daily loss threshold that can pause strategy activity."
                     />
                     <TextField
                       label="Max Drawdown Limit (0.10 - 0.50)"
                       value={formValues.maxDrawdownLimit}
                       onChange={(event) => setForm((prev) => ({ ...(prev ?? formValues), maxDrawdownLimit: event.target.value }))}
+                      helperText="Maximum peak-to-trough decline before circuit protection."
                     />
                     <TextField
                       label="Max Open Positions (1 - 10)"
                       value={formValues.maxOpenPositions}
                       onChange={(event) => setForm((prev) => ({ ...(prev ?? formValues), maxOpenPositions: event.target.value }))}
+                      helperText="Upper limit of simultaneous open positions."
                     />
                     <TextField
                       label="Correlation Limit (0.10 - 1.00)"
                       value={formValues.correlationLimit}
                       onChange={(event) => setForm((prev) => ({ ...(prev ?? formValues), correlationLimit: event.target.value }))}
+                      helperText="Controls how similar open positions can be."
                     />
-                    <Button variant="contained" onClick={() => void saveRiskConfig()} disabled={isSavingConfig}>
+                    {configValidationError ? <Alert severity="error">{configValidationError}</Alert> : null}
+                    <Button
+                      variant="contained"
+                      onClick={() => void saveRiskConfig()}
+                      disabled={isSavingConfig || Boolean(configValidationError)}
+                    >
                       Save Risk Config
                     </Button>
                   </Stack>
@@ -185,11 +225,13 @@ export default function RiskPage() {
                     value={overrideCode}
                     onChange={(event) => setOverrideCode(event.target.value)}
                     placeholder="OVERRIDE_PAPER_ONLY"
+                    helperText="Safety code required for manual override."
                   />
                   <TextField
                     label="Override Reason"
                     value={overrideReason}
                     onChange={(event) => setOverrideReason(event.target.value)}
+                    helperText="Write why override is needed and what safeguards are in place."
                   />
                   <Button
                     variant="outlined"

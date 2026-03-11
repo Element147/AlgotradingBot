@@ -8,11 +8,12 @@ This repository is a monorepo with a Spring Boot backend in `AlgotradingBot/` an
 
 ### Current modules
 
-- `config/`: Spring security, OpenAPI, WebSocket, startup data initialization
+- `config/`: Spring security, OpenAPI, WebSocket
 - `controller/`: auth, dashboard/account, and strategy-related REST endpoints plus DTOs
 - `service/`: auth, account/dashboard, and strategy lifecycle service logic
 - `repository/`: Spring Data JPA repositories
 - `entity/`: `Account`, `Trade`, `Portfolio`, `BacktestResult`, `User`
+- `src/main/resources/db/changelog/`: Liquibase schema/data migrations (including runtime admin bootstrap)
 - `risk/`: position sizing, slippage, transaction costs, risk checks
 - `strategy/`: Bollinger Band indicator, strategy, trade signal model
 - `backtest/`: backtest engine, metrics, validator, Monte Carlo, walk-forward result types
@@ -22,8 +23,9 @@ This repository is a monorepo with a Spring Boot backend in `AlgotradingBot/` an
 ### Current responsibilities
 
 - Controllers expose HTTP endpoints and map to DTOs.
-- Services hold business logic, but strategy execution is still relatively thin and partly placeholder-based.
+- Services hold business logic with DTO-safe boundaries and integration-test coverage on H2 profile.
 - Entities and repositories provide persistence.
+- Liquibase owns bootstrap migration concerns (schema bootstrap for users + runtime admin seed).
 - Risk and backtest packages contain meaningful research logic and financial calculations.
 
 ## Frontend
@@ -86,9 +88,8 @@ This repository is a monorepo with a Spring Boot backend in `AlgotradingBot/` an
 
 - Environment separation is not yet deeply enforced in persistence, execution, and operator workflows
 - Backend strategy lifecycle APIs are not yet backed by a robust execution engine
-- Frontend/backend API contracts are not centrally defined and have already drifted
-- Several frontend routes are present only as placeholders
-- CI and automated cross-stack verification are missing
+- Frontend/backend API contracts are not centrally defined and can drift without schema generation
+- CI and automated cross-stack verification are still missing
 - Live exchange integration is still placeholder logic
 - Audit logging and operator safety controls are not yet complete enough for live-trading consideration
 

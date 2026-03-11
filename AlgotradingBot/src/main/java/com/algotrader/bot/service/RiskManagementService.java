@@ -179,7 +179,7 @@ public class RiskManagementService {
     }
 
     private RiskConfig ensureConfig() {
-        return riskConfigRepository.findAll().stream().findFirst().orElseGet(() ->
+        return riskConfigRepository.findFirstByOrderByIdAsc().orElseGet(() ->
             riskConfigRepository.save(new RiskConfig(
                 new BigDecimal("0.02"),
                 new BigDecimal("0.05"),

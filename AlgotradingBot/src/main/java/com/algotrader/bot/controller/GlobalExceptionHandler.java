@@ -5,7 +5,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -21,6 +25,20 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
     
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    private ResponseEntity<ErrorResponse> buildErrorResponse(
+        HttpStatus status,
+        String message,
+        HttpServletRequest request
+    ) {
+        ErrorResponse error = new ErrorResponse(
+            status.value(),
+            status.getReasonPhrase(),
+            message,
+            request.getRequestURI()
+        );
+        return ResponseEntity.status(status).body(error);
+    }
     
     /**
      * Handle validation errors (400 Bad Request).
@@ -35,15 +53,34 @@ public class GlobalExceptionHandler {
             .collect(Collectors.joining(", "));
         
         logger.warn("Validation error: {}", errorMessage);
-        
-        ErrorResponse error = new ErrorResponse(
-            HttpStatus.BAD_REQUEST.value(),
-            "Bad Request",
-            errorMessage,
-            request.getRequestURI()
-        );
-        
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, errorMessage, request);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleMalformedJson(
+        HttpMessageNotReadableException ex,
+        HttpServletRequest request
+    ) {
+        logger.warn("Malformed JSON payload: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Malformed JSON request", request);
+    }
+
+    @ExceptionHandler({BadCredentialsException.class, UsernameNotFoundException.class})
+    public ResponseEntity<ErrorResponse> handleAuthenticationErrors(
+        RuntimeException ex,
+        HttpServletRequest request
+    ) {
+        logger.warn("Authentication error: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(
+        AccessDeniedException ex,
+        HttpServletRequest request
+    ) {
+        logger.warn("Access denied: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.FORBIDDEN, "Access denied", request);
     }
     
     /**
@@ -55,15 +92,7 @@ public class GlobalExceptionHandler {
             EntityNotFoundException ex, HttpServletRequest request) {
         
         logger.warn("Entity not found: {}", ex.getMessage());
-        
-        ErrorResponse error = new ErrorResponse(
-            HttpStatus.NOT_FOUND.value(),
-            "Not Found",
-            ex.getMessage(),
-            request.getRequestURI()
-        );
-        
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
     
     /**
@@ -75,15 +104,7 @@ public class GlobalExceptionHandler {
             IllegalArgumentException ex, HttpServletRequest request) {
         
         logger.warn("Business logic error: {}", ex.getMessage());
-        
-        ErrorResponse error = new ErrorResponse(
-            HttpStatus.UNPROCESSABLE_ENTITY.value(),
-            "Unprocessable Entity",
-            ex.getMessage(),
-            request.getRequestURI()
-        );
-        
-        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
+        return buildErrorResponse(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request);
     }
     
     /**
@@ -95,14 +116,10 @@ public class GlobalExceptionHandler {
             Exception ex, HttpServletRequest request) {
         
         logger.error("Internal server error", ex);
-        
-        ErrorResponse error = new ErrorResponse(
-            HttpStatus.INTERNAL_SERVER_ERROR.value(),
-            "Internal Server Error",
+        return buildErrorResponse(
+            HttpStatus.INTERNAL_SERVER_ERROR,
             "An unexpected error occurred. Please try again later.",
-            request.getRequestURI()
+            request
         );
-        
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 }

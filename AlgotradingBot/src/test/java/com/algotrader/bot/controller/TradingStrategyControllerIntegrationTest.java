@@ -9,13 +9,14 @@ import com.algotrader.bot.repository.BacktestResultRepository;
 import com.algotrader.bot.repository.PortfolioRepository;
 import com.algotrader.bot.repository.TradeRepository;
 import com.algotrader.bot.security.JwtTokenProvider;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
+@ActiveProfiles("test")
 @Transactional
 class TradingStrategyControllerIntegrationTest {
 
@@ -201,6 +203,39 @@ class TradingStrategyControllerIntegrationTest {
     }
 
     @Test
+    void testGetStatus_UsesOnlyTradesForRequestedAccount() throws Exception {
+        Account anotherAccount = new Account(
+            new BigDecimal("1000.00"),
+            new BigDecimal("0.02"),
+            new BigDecimal("0.25")
+        );
+        anotherAccount = accountRepository.save(anotherAccount);
+
+        Trade trade = new Trade(
+            anotherAccount.getId(),
+            "BTC/USDT",
+            Trade.SignalType.BUY,
+            LocalDateTime.now().minusDays(1),
+            new BigDecimal("50000.00"),
+            new BigDecimal("0.01"),
+            new BigDecimal("20.00"),
+            new BigDecimal("49000.00"),
+            new BigDecimal("51000.00"),
+            new BigDecimal("5.00"),
+            new BigDecimal("1.50")
+        );
+        trade.setPnl(new BigDecimal("10.00"));
+        tradeRepository.save(trade);
+
+        mockMvc.perform(get("/api/strategy/status")
+                .param("accountId", testAccount.getId().toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + authToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.totalTrades").value(0));
+    }
+
+    @Test
     void testGetStatus_WithoutAccountId_UsesLatestAccount() throws Exception {
         mockMvc.perform(get("/api/strategy/status")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -303,6 +338,41 @@ class TradingStrategyControllerIntegrationTest {
                 .header("Authorization", "Bearer " + authToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(lessThanOrEqualTo(2))));
+    }
+
+    @Test
+    void testGetTradeHistory_WithAccountFilter_ReturnsOnlyRequestedAccountTrades() throws Exception {
+        createTestTrades();
+
+        Account anotherAccount = new Account(
+            new BigDecimal("1000.00"),
+            new BigDecimal("0.02"),
+            new BigDecimal("0.25")
+        );
+        anotherAccount = accountRepository.save(anotherAccount);
+
+        Trade anotherTrade = new Trade(
+            anotherAccount.getId(),
+            "SOL/USDT",
+            Trade.SignalType.BUY,
+            LocalDateTime.now().minusHours(12),
+            new BigDecimal("100.00"),
+            new BigDecimal("1.0"),
+            new BigDecimal("10.00"),
+            new BigDecimal("95.00"),
+            new BigDecimal("105.00"),
+            new BigDecimal("0.10"),
+            new BigDecimal("0.03")
+        );
+        tradeRepository.save(anotherTrade);
+
+        mockMvc.perform(get("/api/trades/history")
+                .param("accountId", testAccount.getId().toString())
+                .param("symbol", "SOL/USDT")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + authToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$", hasSize(0)));
     }
 
     private void createTestTrades() {
@@ -481,13 +551,14 @@ class TradingStrategyControllerIntegrationTest {
     void testErrorHandling_MalformedJson_ReturnsBadRequest() throws Exception {
         String malformedJson = "{ invalid json }";
 
-        // Malformed JSON returns 500 (Internal Server Error) because it fails at parsing level
-        // This is expected behavior - the request never reaches validation
+        // Malformed JSON is normalized by GlobalExceptionHandler to 400 with consistent error payload.
         mockMvc.perform(post("/api/strategy/start")
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("Authorization", "Bearer " + authToken)
                 .content(malformedJson))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").value("Malformed JSON request"));
     }
 
     @Test

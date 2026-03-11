@@ -2,6 +2,7 @@ import axios, { type AxiosInstance, type InternalAxiosRequestConfig, type AxiosR
 
 import { store } from '../app/store';
 import { setToken, logout } from '../features/auth/authSlice';
+import { getStoredRefreshToken, redirectToLogin } from '../features/auth/authStorage';
 
 /**
  * Axios client instance with authentication and environment injection
@@ -28,12 +29,15 @@ const toError = (error: unknown): Error =>
   error instanceof Error ? error : new Error('Unknown error');
 
 const extractTokenFromRefreshResponse = (data: unknown): string | null => {
-  if (typeof data !== 'object' || data === null || !('token' in data)) {
+  if (typeof data !== 'object' || data === null) {
     return null;
   }
 
-  const { token } = data as { token: unknown };
-  return typeof token === 'string' ? token : null;
+  const payload = data as { token?: unknown; accessToken?: unknown };
+  if (typeof payload.token === 'string') {
+    return payload.token;
+  }
+  return typeof payload.accessToken === 'string' ? payload.accessToken : null;
 };
 
 /**
@@ -90,9 +94,9 @@ axiosClient.interceptors.response.use(
     // Log response in development
     if (import.meta.env.DEV) {
       console.warn('API Response:', {
+        method: response.config.method,
         url: response.config.url,
         status: response.status,
-        data: response.data,
       });
     }
     return response;
@@ -106,7 +110,7 @@ axiosClient.interceptors.response.use(
       
       try {
         const state = store.getState();
-        const refreshToken = state.auth.refreshToken || localStorage.getItem('refresh_token');
+        const refreshToken = state.auth.refreshToken || getStoredRefreshToken();
         
         if (refreshToken) {
           // Attempt to refresh the token
@@ -138,19 +142,11 @@ axiosClient.interceptors.response.use(
         
         // Token refresh failed or no refresh token - logout user
         store.dispatch(logout());
-        
-        // Redirect to login page
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login';
-        }
+        redirectToLogin();
       } catch (refreshError) {
         // Token refresh failed - logout user
         store.dispatch(logout());
-        
-        // Redirect to login page
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login';
-        }
+        redirectToLogin();
         
         return Promise.reject(toError(refreshError));
       }

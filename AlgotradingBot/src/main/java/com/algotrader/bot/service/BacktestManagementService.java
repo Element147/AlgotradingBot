@@ -8,6 +8,7 @@ import com.algotrader.bot.entity.BacktestDataset;
 import com.algotrader.bot.entity.BacktestResult;
 import com.algotrader.bot.repository.BacktestResultRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +18,9 @@ import java.util.List;
 
 @Service
 public class BacktestManagementService {
+
+    private static final int DEFAULT_HISTORY_LIMIT = 20;
+    private static final int MAX_HISTORY_LIMIT = 500;
 
     private final BacktestResultRepository backtestResultRepository;
     private final BacktestExecutionService backtestExecutionService;
@@ -32,8 +36,8 @@ public class BacktestManagementService {
 
     @Transactional(readOnly = true)
     public List<BacktestHistoryItemResponse> getHistory(int limit) {
-        return backtestResultRepository.findAllByOrderByTimestampDesc().stream()
-            .limit(limit)
+        int boundedLimit = sanitizeLimit(limit);
+        return backtestResultRepository.findAllByOrderByTimestampDesc(PageRequest.of(0, boundedLimit)).stream()
             .map(this::toHistoryItem)
             .toList();
     }
@@ -103,6 +107,13 @@ public class BacktestManagementService {
             result.getInitialBalance(),
             result.getFinalBalance()
         );
+    }
+
+    private int sanitizeLimit(int limit) {
+        if (limit <= 0) {
+            return DEFAULT_HISTORY_LIMIT;
+        }
+        return Math.min(limit, MAX_HISTORY_LIMIT);
     }
 
     private BacktestDetailsResponse toDetails(BacktestResult result) {

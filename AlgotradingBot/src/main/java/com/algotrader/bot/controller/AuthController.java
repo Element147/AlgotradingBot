@@ -6,10 +6,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -40,20 +38,12 @@ public class AuthController {
             @ApiResponse(responseCode = "401", description = "Invalid credentials"),
             @ApiResponse(responseCode = "400", description = "Invalid request")
     })
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
-        try {
-            Map<String, Object> response = authService.login(
-                    loginRequest.getUsername(),
-                    loginRequest.getPassword()
-            );
-            return ResponseEntity.ok(response);
-        } catch (UsernameNotFoundException | BadCredentialsException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Invalid username or password"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "An error occurred during login"));
-        }
+    public ResponseEntity<Map<String, Object>> login(@Valid @RequestBody LoginRequest loginRequest) {
+        Map<String, Object> response = authService.login(
+            loginRequest.getUsername(),
+            loginRequest.getPassword()
+        );
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -67,15 +57,14 @@ public class AuthController {
             @ApiResponse(responseCode = "200", description = "Logout successful"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    public ResponseEntity<?> logout(@RequestHeader("Authorization") String authHeader) {
-        try {
+    public ResponseEntity<Map<String, String>> logout(
+        @RequestHeader(value = "Authorization", required = false) String authHeader
+    ) {
+        if (StringUtils.hasText(authHeader)) {
             String token = extractToken(authHeader);
             authService.logout(token);
-            return ResponseEntity.ok(Map.of("message", "Logout successful"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "An error occurred during logout"));
         }
+        return ResponseEntity.ok(Map.of("message", "Logout successful"));
     }
 
     /**
@@ -90,20 +79,19 @@ public class AuthController {
             @ApiResponse(responseCode = "401", description = "Invalid refresh token"),
             @ApiResponse(responseCode = "400", description = "Invalid request")
     })
-    public ResponseEntity<?> refreshToken(@Valid @RequestBody RefreshTokenRequest refreshTokenRequest) {
-        try {
-            Map<String, Object> response = authService.refreshToken(refreshTokenRequest.getRefreshToken());
-            return ResponseEntity.ok(response);
-        } catch (BadCredentialsException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Invalid or expired refresh token"));
-        } catch (UsernameNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "User not found"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "An error occurred during token refresh"));
+    public ResponseEntity<Map<String, Object>> refreshToken(
+        @RequestBody(required = false) RefreshTokenRequest refreshTokenRequest,
+        @RequestParam(value = "refreshToken", required = false) String refreshTokenParam
+    ) {
+        String refreshToken = refreshTokenRequest != null
+            ? refreshTokenRequest.getRefreshToken()
+            : refreshTokenParam;
+
+        if (!StringUtils.hasText(refreshToken)) {
+            throw new IllegalArgumentException("Refresh token is required");
         }
+
+        return ResponseEntity.ok(authService.refreshToken(refreshToken));
     }
 
     /**
@@ -117,21 +105,12 @@ public class AuthController {
             @ApiResponse(responseCode = "200", description = "User information retrieved"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    public ResponseEntity<?> getCurrentUser(@RequestHeader("Authorization") String authHeader) {
-        try {
-            String token = extractToken(authHeader);
-            Map<String, Object> user = authService.getCurrentUser(token);
-            return ResponseEntity.ok(user);
-        } catch (BadCredentialsException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Invalid token"));
-        } catch (UsernameNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "User not found"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "An error occurred while retrieving user information"));
-        }
+    public ResponseEntity<Map<String, Object>> getCurrentUser(
+        @RequestHeader("Authorization") String authHeader
+    ) {
+        String token = extractToken(authHeader);
+        Map<String, Object> user = authService.getCurrentUser(token);
+        return ResponseEntity.ok(user);
     }
 
     /**
@@ -140,9 +119,9 @@ public class AuthController {
      * @return JWT token
      */
     private String extractToken(String authHeader) {
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+        if (StringUtils.hasText(authHeader) && authHeader.startsWith("Bearer ")) {
             return authHeader.substring(7);
         }
-        throw new IllegalArgumentException("Invalid Authorization header");
+        throw new IllegalArgumentException("Authorization header with Bearer token is required");
     }
 }

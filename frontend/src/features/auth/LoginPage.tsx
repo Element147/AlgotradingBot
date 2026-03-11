@@ -31,6 +31,15 @@ const getErrorMessage = (error: unknown): string => {
   if (
     typeof error === 'object' &&
     error !== null &&
+    'status' in error &&
+    (error as { status?: unknown }).status === 'FETCH_ERROR'
+  ) {
+    return 'Login failed because the app could not reach the backend. Check that the backend is running and allows requests from this frontend.';
+  }
+
+  if (
+    typeof error === 'object' &&
+    error !== null &&
     'data' in error &&
     typeof (error as { data?: unknown }).data === 'object' &&
     (error as { data?: { message?: unknown } }).data?.message &&
@@ -116,6 +125,21 @@ export default function LoginPage() {
             </Box>
 
             <Box component="form" onSubmit={(event) => void handleSubmit(event)} noValidate>
+              <Box
+                sx={{
+                  mb: 2,
+                  px: 1.5,
+                  py: 1,
+                  borderRadius: 1,
+                  backgroundColor: 'info.light',
+                  color: 'info.contrastText',
+                }}
+              >
+                <Typography variant="body2">
+                  Local default account on first startup: <strong>admin</strong> / <strong>dogbert</strong>.
+                </Typography>
+              </Box>
+
               {apiError && (
                 <Alert severity="error" sx={{ mb: 2 }}>
                   {apiError}
@@ -135,7 +159,7 @@ export default function LoginPage() {
                   setFormData((prev) => ({ ...prev, username: e.target.value }))
                 }
                 error={!!errors.username}
-                helperText={errors.username}
+                helperText={errors.username || 'Use the username created by Liquibase seed or your custom user.'}
                 disabled={isLoading}
               />
 
@@ -153,7 +177,7 @@ export default function LoginPage() {
                   setFormData((prev) => ({ ...prev, password: e.target.value }))
                 }
                 error={!!errors.password}
-                helperText={errors.password}
+                helperText={errors.password || 'Password for selected user account.'}
                 disabled={isLoading}
               />
 
@@ -169,6 +193,7 @@ export default function LoginPage() {
                   />
                 }
                 label="Remember me"
+                title="Stores refresh token in browser so session can survive page reload."
                 sx={{ mt: 1 }}
               />
 

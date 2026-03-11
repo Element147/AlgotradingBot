@@ -43,7 +43,7 @@ public class AuthService {
     @Transactional(readOnly = true)
     public Map<String, Object> login(String username, String password) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+                .orElseThrow(() -> new BadCredentialsException("Invalid username or password"));
 
         if (!user.getEnabled()) {
             throw new BadCredentialsException("User account is disabled");

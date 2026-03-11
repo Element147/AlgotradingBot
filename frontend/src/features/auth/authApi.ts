@@ -1,6 +1,7 @@
 ﻿import { createApi } from '@reduxjs/toolkit/query/react';
 
 import { type User } from './authSlice';
+import { getStoredRefreshToken } from './authStorage';
 
 import { baseQueryWithEnvironment } from '@/services/api';
 
@@ -92,10 +93,15 @@ export const authApi = createApi({
     }),
 
     refreshToken: builder.mutation<RefreshTokenResponse, void>({
-      query: () => ({
-        url: '/api/auth/refresh',
-        method: 'POST',
-      }),
+      query: () => {
+        const refreshToken = getStoredRefreshToken();
+
+        return {
+          url: '/api/auth/refresh',
+          method: 'POST',
+          body: refreshToken ? { refreshToken } : {},
+        };
+      },
       transformResponse: (response: RawRefreshTokenResponse): RefreshTokenResponse => ({
         token: resolveToken(response.token, response.accessToken),
         expiresIn: response.expiresIn,

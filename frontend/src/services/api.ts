@@ -5,6 +5,7 @@ import { Mutex } from 'async-mutex';
 import type { RootState } from '../app/store';
 
 import { setToken, logout } from '@/features/auth/authSlice';
+import { getStoredRefreshToken, redirectToLogin } from '@/features/auth/authStorage';
 
 // Mutex to prevent multiple simultaneous refresh attempts
 const mutex = new Mutex();
@@ -123,7 +124,7 @@ export const baseQueryWithErrorHandling: BaseQueryFn<
       
       try {
         const state = api.getState() as RootState;
-        const refreshToken = state.auth.refreshToken || localStorage.getItem('refresh_token');
+        const refreshToken = state.auth.refreshToken || getStoredRefreshToken();
         
         if (refreshToken) {
           // Attempt to refresh the token
@@ -148,10 +149,7 @@ export const baseQueryWithErrorHandling: BaseQueryFn<
 
             if (!token) {
               api.dispatch(logout());
-
-              if (typeof window !== 'undefined') {
-                window.location.href = '/login';
-              }
+              redirectToLogin();
 
               return result;
             }
@@ -164,20 +162,12 @@ export const baseQueryWithErrorHandling: BaseQueryFn<
           } else {
             // Token refresh failed - logout user
             api.dispatch(logout());
-            
-            // Redirect to login page
-            if (typeof window !== 'undefined') {
-              window.location.href = '/login';
-            }
+            redirectToLogin();
           }
         } else {
           // No refresh token available - logout user
           api.dispatch(logout());
-          
-          // Redirect to login page
-          if (typeof window !== 'undefined') {
-            window.location.href = '/login';
-          }
+          redirectToLogin();
         }
       } finally {
         release();

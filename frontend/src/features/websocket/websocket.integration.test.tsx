@@ -20,6 +20,7 @@ import { server } from '../../tests/mocks/server';
 import { accountApi } from '../account/accountApi';
 import authReducer from '../auth/authSlice';
 import environmentReducer from '../environment/environmentSlice';
+import { tradesApi } from '../trades/tradesApi';
 
 import { websocketMiddleware } from './websocketMiddleware';
 import websocketReducer from './websocketSlice';
@@ -147,9 +148,10 @@ describe('WebSocket Integration Tests', () => {
         auth: authReducer,
         environment: environmentReducer,
         [accountApi.reducerPath]: accountApi.reducer,
+        [tradesApi.reducerPath]: tradesApi.reducer,
       },
       middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware().concat(accountApi.middleware, websocketMiddleware),
+        getDefaultMiddleware().concat(accountApi.middleware, tradesApi.middleware, websocketMiddleware),
     });
 
     // Clear all timers

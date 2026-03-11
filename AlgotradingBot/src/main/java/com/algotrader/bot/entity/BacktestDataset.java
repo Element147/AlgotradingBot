@@ -3,14 +3,13 @@ package com.algotrader.bot.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "backtest_datasets", indexes = {
-    @Index(name = "idx_backtest_datasets_name", columnList = "name"),
-    @Index(name = "idx_backtest_datasets_uploaded", columnList = "uploadedAt")
-})
+@Table(name = "backtest_datasets")
 public class BacktestDataset {
 
     @Id
@@ -24,34 +23,33 @@ public class BacktestDataset {
 
     @NotNull
     @Size(min = 3, max = 255)
-    @Column(nullable = false, length = 255)
+    @Column(name = "original_filename", nullable = false, length = 255)
     private String originalFilename;
 
     @NotNull
-    @Lob
-    @Basic(fetch = FetchType.LAZY)
-    @Column(nullable = false)
+    @JdbcTypeCode(SqlTypes.LONGVARBINARY)
+    @Column(name = "csv_data", nullable = false)
     private byte[] csvData;
 
     @NotNull
-    @Column(nullable = false)
+    @Column(name = "row_count", nullable = false)
     private Integer rowCount;
 
     @NotNull
     @Size(min = 1, max = 255)
-    @Column(nullable = false, length = 255)
+    @Column(name = "symbols_csv", nullable = false, length = 255)
     private String symbolsCsv;
 
     @NotNull
-    @Column(nullable = false)
+    @Column(name = "data_start", nullable = false)
     private LocalDateTime dataStart;
 
     @NotNull
-    @Column(nullable = false)
+    @Column(name = "data_end", nullable = false)
     private LocalDateTime dataEnd;
 
     @NotNull
-    @Column(nullable = false)
+    @Column(name = "uploaded_at", nullable = false)
     private LocalDateTime uploadedAt;
 
     @PrePersist

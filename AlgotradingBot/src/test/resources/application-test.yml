@@ -18,16 +18,14 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+  liquibase:
+    enabled: false
   
   # Disable Kafka for tests
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
   
-  # Disable Actuator endpoints for tests
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
-
 # JWT Configuration for Tests
 jwt:
   secret: testSecretKeyForJWTTokenGenerationThatIsAtLeast256BitsLongForHS256AlgorithmInTestEnvironment

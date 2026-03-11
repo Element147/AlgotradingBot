@@ -34,6 +34,10 @@ spring:
           batch_size: 20
         order_inserts: true
         order_updates: true
+
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
   
   # Kafka Configuration
   kafka:
@@ -56,6 +60,9 @@ spring:
         batch.size: 16384
     listener:
       ack-mode: manual
+      missing-topics-fatal: false
+    admin:
+      fail-fast: false
 
 # Actuator Configuration
 management:
@@ -78,6 +85,8 @@ management:
       enabled: true
     readinessState:
       enabled: true
+    kafka:
+      enabled: false
 
 # Logging Configuration
 logging:
@@ -103,6 +112,8 @@ jwt:
 
 # Application-Specific Configuration
 algotrading:
+  security:
+    relaxed-auth: ${ALGOTRADING_RELAXED_AUTH:true}
   risk:
     max-risk-per-trade: 0.02
     max-drawdown-limit: 0.25

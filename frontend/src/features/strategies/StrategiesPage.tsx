@@ -24,6 +24,7 @@ import {
   useStopStrategyMutation,
   useUpdateStrategyConfigMutation,
 } from './strategiesApi';
+import { getAllStrategyProfiles, getStrategyProfile } from './strategyProfiles';
 
 import { AppLayout } from '@/components/layout/AppLayout';
 
@@ -64,6 +65,7 @@ export default function StrategiesPage() {
   const [feedback, setFeedback] = useState<{ severity: 'success' | 'error'; message: string } | null>(null);
 
   const isBusy = isStarting || isStopping || isSavingConfig;
+  const strategyProfiles = getAllStrategyProfiles();
 
   const validationError = useMemo(() => {
     const risk = Number(form.riskPerTrade);
@@ -162,6 +164,45 @@ export default function StrategiesPage() {
           All strategy execution is paper-mode only by default.
         </Typography>
 
+        <Card sx={{ mb: 2 }}>
+          <CardContent>
+            <Typography variant="h6" sx={{ mb: 1 }}>
+              Strategy Guide
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Use this quick guide when choosing strategy behavior for backtesting and paper trading.
+            </Typography>
+            <Grid container spacing={2}>
+              {strategyProfiles.map((profile) => (
+                <Grid key={profile.key} size={{ xs: 12, md: 4 }}>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+                        {profile.title}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {profile.shortDescription}
+                      </Typography>
+                      <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+                        Entry: {profile.entryRule}
+                      </Typography>
+                      <Typography variant="caption" display="block">
+                        Exit: {profile.exitRule}
+                      </Typography>
+                      <Typography variant="caption" display="block">
+                        Best for: {profile.bestFor}
+                      </Typography>
+                      <Typography variant="caption" display="block">
+                        Risk note: {profile.riskNotes}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          </CardContent>
+        </Card>
+
         {feedback && (
           <Alert
             severity={feedback.severity}
@@ -189,6 +230,15 @@ export default function StrategiesPage() {
             <Grid key={strategy.id} size={{ xs: 12, md: 6 }}>
               <Card>
                 <CardContent>
+                  {(() => {
+                    const profile = getStrategyProfile(strategy.type);
+                    return profile ? (
+                      <Alert severity="info" sx={{ mb: 2 }}>
+                        <strong>{profile.title}:</strong> {profile.shortDescription}
+                      </Alert>
+                    ) : null;
+                  })()}
+
                   <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
                     <Typography variant="h6">{strategy.name}</Typography>
                     <Chip
@@ -250,12 +300,14 @@ export default function StrategiesPage() {
               label="Symbol"
               value={form.symbol}
               onChange={(event) => setForm((prev) => ({ ...prev, symbol: event.target.value }))}
+              helperText="Market pair to trade (for example BTC/USDT)."
               fullWidth
             />
             <TextField
               label="Timeframe"
               value={form.timeframe}
               onChange={(event) => setForm((prev) => ({ ...prev, timeframe: event.target.value }))}
+              helperText="Candle interval such as 15m, 1h, or 4h."
               fullWidth
             />
             <TextField
@@ -265,12 +317,14 @@ export default function StrategiesPage() {
               onChange={(event) => setForm((prev) => ({ ...prev, riskPerTrade: event.target.value }))}
               fullWidth
               inputProps={{ step: '0.001' }}
+              helperText="Fraction of account risked per position. 0.02 means 2%."
             />
             <TextField
               label="Min Position Size"
               type="number"
               value={form.minPositionSize}
               onChange={(event) => setForm((prev) => ({ ...prev, minPositionSize: event.target.value }))}
+              helperText="Lower position bound used by execution sizing logic."
               fullWidth
             />
             <TextField
@@ -278,6 +332,7 @@ export default function StrategiesPage() {
               type="number"
               value={form.maxPositionSize}
               onChange={(event) => setForm((prev) => ({ ...prev, maxPositionSize: event.target.value }))}
+              helperText="Upper position bound to limit exposure per trade."
               fullWidth
             />
             {validationError ? <Alert severity="error">{validationError}</Alert> : null}

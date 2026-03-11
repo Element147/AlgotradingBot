@@ -1,6 +1,6 @@
 # Phase 11: Accessibility Compliance (Week 11)
 
-[← Previous: Phase 10 - Security Hardening](./phase-10-security-hardening.md) | [Next: Phase 12 - Testing & Documentation →](./phase-12-testing-documentation.md)
+[Previous: Phase 10 - Security Hardening](./phase-10-security-hardening.md) | [Next: Phase 12 - Local Deployment and Testing](./phase-12-local-deployment-testing.md)
 
 ## Prerequisites
 
@@ -154,4 +154,6 @@ Ensure WCAG 2.1 AA compliance through keyboard navigation, semantic HTML, ARIA l
 
 ---
 
-[← Previous: Phase 10 - Security Hardening](./phase-10-security-hardening.md) | [Next: Phase 12 - Testing & Documentation →](./phase-12-testing-documentation.md) | [Back to Overview](./00-overview.md)
+[Previous: Phase 10 - Security Hardening](./phase-10-security-hardening.md) | [Next: Phase 12 - Local Deployment and Testing](./phase-12-local-deployment-testing.md) | [Back to Overview](./00-overview.md)
+
+

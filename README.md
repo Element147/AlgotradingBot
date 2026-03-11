@@ -9,9 +9,28 @@ This project is research-first and safety-first:
 
 ## Stack
 
-- Backend: Java 21, Spring Boot 3.4.1, Gradle Kotlin DSL
+- Backend: Java 21, Spring Boot 4.0.3, Gradle Kotlin DSL (wrapper 9.4.0)
 - Frontend: React 19, TypeScript, Vite, Redux Toolkit, RTK Query, React Router 7, MUI 7
-- Local infra: Docker Compose with PostgreSQL and Kafka (`AlgotradingBot/compose.yaml`)
+- Local infra: Docker Compose for PostgreSQL (`AlgotradingBot/compose.yaml`)
+
+## Database Mode Policy
+
+- Runtime backend (`bootRun` / app start) uses PostgreSQL (`jdbc:postgresql://localhost:5432/algotrading`) and expects Docker DB to be running.
+- Backend tests (`.\gradlew.bat test`, `.\gradlew.bat build`) run with Spring `test` profile on H2 in-memory database.
+- Build/test flow must not require Docker PostgreSQL.
+- Liquibase runs on runtime PostgreSQL startup and seeds default admin credentials (`admin` / `dogbert`) on first migration run.
+
+## Direct CMD Commands
+
+Use these directly from Windows `cmd`:
+
+```cmd
+cd /d C:\Git\algotradingbot\AlgotradingBot && docker compose -f compose.yaml up -d postgres
+cd /d C:\Git\algotradingbot\AlgotradingBot && gradlew.bat clean build
+cd /d C:\Git\algotradingbot\AlgotradingBot && gradlew.bat bootRun
+cd /d C:\Git\algotradingbot\frontend && npm run build
+cd /d C:\Git\algotradingbot\frontend && npm run dev
+```
 
 ## MVP Status (March 10, 2026)
 
@@ -35,10 +54,10 @@ From repo root (`C:\Git\algotradingbot`):
 .\run.ps1
 ```
 
-These root wrappers orchestrate both backend and frontend:
-- `build.ps1` -> full-stack build
-- `run.ps1` -> start backend + frontend
-- `stop.ps1` -> stop backend + frontend
+These root wrappers orchestrate local development:
+- `.\build.ps1` -> full-stack build
+- `.\run.ps1` -> start PostgreSQL (Docker), backend (local), frontend (local)
+- `.\stop.ps1` -> stop backend + frontend local processes and PostgreSQL container
 
 Stop all services:
 
@@ -86,6 +105,8 @@ cd AlgotradingBot
 .\gradlew.bat test
 .\gradlew.bat build
 ```
+
+Backend verification commands above do not require PostgreSQL Docker container.
 
 Cross-stack orchestration:
 

@@ -445,6 +445,7 @@ describe('Authentication Flow Integration Tests', { timeout: 15000 }, () => {
       expect(state.auth.user).toEqual({
         id: 'user-123',
         username: 'testuser',
+        email: '',
         role: 'trader',
       });
       expect(state.auth.refreshToken).toBe('mock-refresh-token-67890');

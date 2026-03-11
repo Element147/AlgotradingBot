@@ -14,6 +14,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import { getWebSocketManager, WebSocketEvent } from '../../services/websocket';
 import { accountApi } from '../account/accountApi';
+import { tradesApi } from '../trades/tradesApi';
 
 import { websocketMiddleware } from './websocketMiddleware';
 import websocketReducer from './websocketSlice';
@@ -61,9 +62,10 @@ describe('websocketMiddleware', () => {
       reducer: {
         websocket: websocketReducer,
         [accountApi.reducerPath]: accountApi.reducer,
+        [tradesApi.reducerPath]: tradesApi.reducer,
       },
       middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware().concat(accountApi.middleware, websocketMiddleware),
+        getDefaultMiddleware().concat(accountApi.middleware, tradesApi.middleware, websocketMiddleware),
     });
 
     wsManager = getWebSocketManager();

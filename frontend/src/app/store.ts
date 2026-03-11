@@ -10,6 +10,7 @@ import { paperApi } from '@/features/paperApi';
 import { riskApi } from '@/features/risk/riskApi';
 import settingsReducer from '@/features/settings/settingsSlice';
 import { strategiesApi } from '@/features/strategies/strategiesApi';
+import { tradesApi } from '@/features/trades/tradesApi';
 import { websocketMiddleware } from '@/features/websocket/websocketMiddleware';
 import websocketReducer from '@/features/websocket/websocketSlice';
 
@@ -34,6 +35,7 @@ export const store = configureStore({
     [riskApi.reducerPath]: riskApi.reducer,
     [paperApi.reducerPath]: paperApi.reducer,
     [strategiesApi.reducerPath]: strategiesApi.reducer,
+    [tradesApi.reducerPath]: tradesApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -49,6 +51,7 @@ export const store = configureStore({
       riskApi.middleware,
       paperApi.middleware,
       strategiesApi.middleware,
+      tradesApi.middleware,
       websocketMiddleware
     ),
   // Enable Redux DevTools in development only

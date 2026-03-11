@@ -12,14 +12,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
 /**
  * REST API controller for trading strategy operations.
@@ -33,8 +31,11 @@ public class TradingStrategyController {
     
     private static final Logger logger = LoggerFactory.getLogger(TradingStrategyController.class);
     
-    @Autowired
-    private TradingStrategyService tradingStrategyService;
+    private final TradingStrategyService tradingStrategyService;
+
+    public TradingStrategyController(TradingStrategyService tradingStrategyService) {
+        this.tradingStrategyService = tradingStrategyService;
+    }
     
     /**
      * Start a new trading strategy.
