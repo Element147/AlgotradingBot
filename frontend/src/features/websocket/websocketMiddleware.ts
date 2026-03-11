@@ -14,6 +14,8 @@ import type { Middleware } from '@reduxjs/toolkit';
 
 import { getWebSocketManager, type WebSocketEvent, type WebSocketEventType } from '../../services/websocket';
 import { accountApi } from '../account/accountApi';
+import { riskApi } from '../risk/riskApi';
+import { strategiesApi } from '../strategies/strategiesApi';
 import { tradesApi } from '../trades/tradesApi';
 
 import { eventReceived } from './websocketSlice';
@@ -106,15 +108,17 @@ export const websocketMiddleware: Middleware = (storeApi) => {
         break;
 
       case 'strategy.status':
-        console.warn('[WebSocket Middleware] Strategy status updated');
-        // Future: Dispatch strategy-specific actions
-        // For now, just log the event
+        console.warn('[WebSocket Middleware] Strategy status updated, invalidating strategies cache');
+        dispatch(
+          strategiesApi.util.invalidateTags(['Strategies'])
+        );
         break;
 
       case 'risk.alert':
         console.warn('[WebSocket Middleware] Risk alert received:', event.data);
-        // Future: Dispatch notification action
-        // For now, just log the event
+        dispatch(
+          riskApi.util.invalidateTags(['Risk'])
+        );
         break;
 
       case 'system.error':

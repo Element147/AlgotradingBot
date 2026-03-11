@@ -31,6 +31,7 @@ export const strategiesApi = createApi({
   reducerPath: 'strategiesApi',
   baseQuery: baseQueryWithEnvironment,
   tagTypes: ['Strategies'],
+  keepUnusedDataFor: 300,
   endpoints: (builder) => ({
     getStrategies: builder.query<Strategy[], void>({
       query: () => '/api/strategies',
@@ -41,6 +42,21 @@ export const strategiesApi = createApi({
         url: `/api/strategies/${strategyId}/start`,
         method: 'POST',
       }),
+      async onQueryStarted(strategyId, { dispatch, queryFulfilled }) {
+        const patchResult = dispatch(
+          strategiesApi.util.updateQueryData('getStrategies', undefined, (draft) => {
+            const match = draft.find((strategy) => strategy.id === strategyId);
+            if (match) {
+              match.status = 'RUNNING';
+            }
+          })
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResult.undo();
+        }
+      },
       invalidatesTags: ['Strategies'],
     }),
     stopStrategy: builder.mutation<{ strategyId: number; status: string }, number>({
@@ -48,6 +64,21 @@ export const strategiesApi = createApi({
         url: `/api/strategies/${strategyId}/stop`,
         method: 'POST',
       }),
+      async onQueryStarted(strategyId, { dispatch, queryFulfilled }) {
+        const patchResult = dispatch(
+          strategiesApi.util.updateQueryData('getStrategies', undefined, (draft) => {
+            const match = draft.find((strategy) => strategy.id === strategyId);
+            if (match) {
+              match.status = 'STOPPED';
+            }
+          })
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResult.undo();
+        }
+      },
       invalidatesTags: ['Strategies'],
     }),
     updateStrategyConfig: builder.mutation<Strategy, UpdateStrategyConfigPayload>({

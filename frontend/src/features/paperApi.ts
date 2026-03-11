@@ -17,6 +17,7 @@ export const paperApi = createApi({
   reducerPath: 'paperApi',
   baseQuery: baseQueryWithEnvironment,
   tagTypes: ['PaperTrading'],
+  keepUnusedDataFor: 300,
   endpoints: (builder) => ({
     getPaperTradingState: builder.query<PaperTradingState, void>({
       query: () => '/api/paper/state',

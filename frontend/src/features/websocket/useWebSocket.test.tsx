@@ -72,7 +72,6 @@ const createTestStore = (initialState = {}) =>
         mode: 'test',
         connectedExchange: null,
         lastSyncTime: null,
-        switchInProgress: false,
       },
       ...initialState,
     },

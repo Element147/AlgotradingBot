@@ -33,13 +33,21 @@ const createMockStore = (user = { id: '1', username: 'testuser', email: 'test@ex
         isAuthenticated: true,
         loading: false,
         error: null,
-        sessionExpiry: null,
-        lastActivity: null,
+        sessionTimeout: null,
+        lastActivity: Date.now(),
       },
       settings: {
         theme: 'light',
         currency: 'USD',
         timezone: 'UTC',
+        textScale: 1,
+        notifications: {
+          emailAlerts: true,
+          telegramAlerts: false,
+          profitLossThreshold: 5,
+          drawdownThreshold: 15,
+          riskThreshold: 75,
+        },
       },
     },
   });
@@ -65,7 +73,7 @@ describe('Header', () => {
   it('renders menu button', () => {
     renderHeader();
 
-    const menuButton = screen.getByLabelText('menu');
+    const menuButton = screen.getByLabelText('Toggle navigation menu');
     expect(menuButton).toBeInTheDocument();
   });
 
@@ -73,7 +81,7 @@ describe('Header', () => {
     const onMenuClick = vi.fn();
     renderHeader({ onMenuClick });
 
-    const menuButton = screen.getByLabelText('menu');
+    const menuButton = screen.getByLabelText('Toggle navigation menu');
     fireEvent.click(menuButton);
 
     expect(onMenuClick).toHaveBeenCalled();
@@ -82,7 +90,7 @@ describe('Header', () => {
   it('renders notifications button with badge', () => {
     renderHeader();
 
-    const notificationsButton = screen.getByLabelText('notifications');
+    const notificationsButton = screen.getByLabelText('Open notifications');
     expect(notificationsButton).toBeInTheDocument();
   });
 
@@ -96,7 +104,7 @@ describe('Header', () => {
   it('opens user menu when avatar is clicked', async () => {
     renderHeader();
 
-    const accountButton = screen.getByLabelText('account');
+    const accountButton = screen.getByLabelText('Open account menu');
     fireEvent.click(accountButton);
 
     await waitFor(() => {
@@ -108,7 +116,7 @@ describe('Header', () => {
   it('displays settings and logout options in user menu', async () => {
     renderHeader();
 
-    const accountButton = screen.getByLabelText('account');
+    const accountButton = screen.getByLabelText('Open account menu');
     fireEvent.click(accountButton);
 
     await waitFor(() => {
@@ -120,7 +128,7 @@ describe('Header', () => {
   it('navigates to settings when settings menu item is clicked', async () => {
     renderHeader();
 
-    const accountButton = screen.getByLabelText('account');
+    const accountButton = screen.getByLabelText('Open account menu');
     fireEvent.click(accountButton);
 
     await waitFor(() => {
@@ -135,7 +143,7 @@ describe('Header', () => {
     const store = createMockStore();
     renderHeader(defaultProps, store);
 
-    const accountButton = screen.getByLabelText('account');
+    const accountButton = screen.getByLabelText('Open account menu');
     fireEvent.click(accountButton);
 
     await waitFor(() => {
@@ -154,7 +162,7 @@ describe('Header', () => {
   it('opens notifications menu when notifications button is clicked', async () => {
     renderHeader();
 
-    const notificationsButton = screen.getByLabelText('notifications');
+    const notificationsButton = screen.getByLabelText('Open notifications');
     fireEvent.click(notificationsButton);
 
     await waitFor(() => {

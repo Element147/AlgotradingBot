@@ -11,11 +11,33 @@ const mockState = {
     theme: 'light' as const,
     currency: 'USD' as const,
     timezone: 'UTC',
+    textScale: 1,
+    notifications: {
+      emailAlerts: true,
+      telegramAlerts: false,
+      profitLossThreshold: 5,
+      drawdownThreshold: 15,
+      riskThreshold: 75,
+    },
   },
   environment: {
     mode: 'test' as const,
   },
+  auth: {
+    user: {
+      role: 'admin' as const,
+    },
+  },
 };
+
+vi.mock('./exchangeApi', () => ({
+  useGetSystemInfoQuery: () => ({ data: undefined, isError: true }),
+  useGetExchangeBalanceQuery: () => ({ data: undefined, isError: true, refetch: vi.fn() }),
+  useGetExchangeOrdersQuery: () => ({ data: [] }),
+  useGetExchangeConnectionStatusQuery: () => ({ data: undefined, isError: true }),
+  useTestExchangeConnectionMutation: () => [vi.fn(), { isLoading: false }],
+  useTriggerBackupMutation: () => [vi.fn(), { isLoading: false }],
+}));
 
 vi.mock('@/app/hooks', () => ({
   useAppDispatch: () => mockDispatch,
@@ -38,16 +60,20 @@ describe('SettingsPage', () => {
     });
   });
 
-  it('renders settings sections and local commands', () => {
+  it('renders tab navigation and api section', () => {
     render(<SettingsPage />);
 
     expect(screen.getByText('Settings')).toBeInTheDocument();
-    expect(screen.getByText('User Preferences')).toBeInTheDocument();
-    expect(screen.getByText('Environment Safety')).toBeInTheDocument();
-    expect(screen.getByText('Research Defaults')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'API Config' })).toBeInTheDocument();
+    expect(screen.getByText('API Configuration')).toBeInTheDocument();
     expect(screen.getByText('Local Commands (CMD)')).toBeInTheDocument();
-    expect(screen.getByText('Backtest Data Workflow')).toBeInTheDocument();
-    expect(screen.getByText(/docker compose -f compose.yaml up -d postgres/)).toBeInTheDocument();
+  });
+
+  it('switches to notifications tab', () => {
+    render(<SettingsPage />);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Notifications' }));
+    expect(screen.getByText('Notification Settings')).toBeInTheDocument();
   });
 
   it('copies command to clipboard', async () => {

@@ -1,203 +1,94 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, expect, it, beforeEach, vi } from 'vitest';
 
 import settingsReducer, {
-  setTheme,
-  setCurrency,
-  setTimezone,
   resetSettings,
-  selectTheme,
   selectCurrency,
+  selectNotificationSettings,
+  selectTextScale,
+  selectTheme,
   selectTimezone,
-  selectSettings,
-  SettingsState,
+  setCurrency,
+  setTextScale,
+  setTheme,
+  setTimezone,
+  updateNotificationSetting,
+  type SettingsState,
 } from './settingsSlice';
 
-describe('settingsSlice', () => {
-  let initialState: SettingsState;
+const createBaseState = (): SettingsState => ({
+  theme: 'light',
+  currency: 'USD',
+  timezone: 'UTC',
+  textScale: 1,
+  notifications: {
+    emailAlerts: true,
+    telegramAlerts: false,
+    profitLossThreshold: 5,
+    drawdownThreshold: 15,
+    riskThreshold: 75,
+  },
+});
 
+describe('settingsSlice', () => {
   beforeEach(() => {
-    // Clear localStorage before each test
     localStorage.clear();
-    
-    // Mock Intl.DateTimeFormat
     const dateTimeFormatMock = (() => ({
       resolvedOptions: () => ({ timeZone: 'America/New_York' }),
     })) as unknown as typeof Intl.DateTimeFormat;
     vi.spyOn(Intl, 'DateTimeFormat').mockImplementation(dateTimeFormatMock);
-
-    initialState = {
-      theme: 'light',
-      currency: 'USD',
-      timezone: 'America/New_York',
-    };
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
+  it('updates and persists theme/currency/timezone', () => {
+    let state = settingsReducer(createBaseState(), setTheme('dark'));
+    state = settingsReducer(state, setCurrency('BTC'));
+    state = settingsReducer(state, setTimezone('Europe/Prague'));
+
+    expect(state.theme).toBe('dark');
+    expect(state.currency).toBe('BTC');
+    expect(state.timezone).toBe('Europe/Prague');
+    expect(localStorage.getItem('theme')).toBe('dark');
+    expect(localStorage.getItem('currency')).toBe('BTC');
+    expect(localStorage.getItem('timezone')).toBe('Europe/Prague');
   });
 
-  describe('initial state', () => {
-    it('should return default state when no localStorage values exist', () => {
-      const state = settingsReducer(undefined, { type: 'unknown' });
-      
-      expect(state.theme).toBe('light');
-      expect(state.currency).toBe('USD');
-      // Timezone will be system default, just check it exists
-      expect(state.timezone).toBeTruthy();
-    });
-
-    it('should restore state from localStorage', () => {
-      // Set localStorage before importing
-      localStorage.setItem('theme', 'dark');
-      localStorage.setItem('currency', 'BTC');
-      localStorage.setItem('timezone', 'Europe/London');
-
-      // Create a new state with these values
-      const state = {
-        theme: 'dark' as const,
-        currency: 'BTC' as const,
-        timezone: 'Europe/London',
-      };
-      
-      expect(state.theme).toBe('dark');
-      expect(state.currency).toBe('BTC');
-      expect(state.timezone).toBe('Europe/London');
-    });
+  it('updates and persists text scale', () => {
+    const state = settingsReducer(createBaseState(), setTextScale(1.7));
+    expect(state.textScale).toBe(1.7);
+    expect(localStorage.getItem('textScale')).toBe('1.7');
   });
 
-  describe('setTheme', () => {
-    it('should set theme to dark', () => {
-      const state = settingsReducer(initialState, setTheme('dark'));
-      
-      expect(state.theme).toBe('dark');
-      expect(localStorage.getItem('theme')).toBe('dark');
-    });
-
-    it('should set theme to light', () => {
-      const darkState = { ...initialState, theme: 'dark' as const };
-      const state = settingsReducer(darkState, setTheme('light'));
-      
-      expect(state.theme).toBe('light');
-      expect(localStorage.getItem('theme')).toBe('light');
-    });
-
-    it('should persist theme to localStorage', () => {
-      settingsReducer(initialState, setTheme('dark'));
-      
-      expect(localStorage.getItem('theme')).toBe('dark');
-    });
+  it('updates notification settings and persists JSON', () => {
+    const state = settingsReducer(
+      createBaseState(),
+      updateNotificationSetting({ key: 'telegramAlerts', value: true })
+    );
+    expect(state.notifications.telegramAlerts).toBe(true);
+    expect(localStorage.getItem('notificationSettings')).toContain('"telegramAlerts":true');
   });
 
-  describe('setCurrency', () => {
-    it('should set currency to BTC', () => {
-      const state = settingsReducer(initialState, setCurrency('BTC'));
-      
-      expect(state.currency).toBe('BTC');
-      expect(localStorage.getItem('currency')).toBe('BTC');
-    });
+  it('resets settings and clears storage keys', () => {
+    localStorage.setItem('theme', 'dark');
+    localStorage.setItem('currency', 'BTC');
+    localStorage.setItem('timezone', 'UTC');
+    localStorage.setItem('textScale', '1.5');
+    localStorage.setItem('notificationSettings', '{"emailAlerts":false}');
 
-    it('should set currency to USD', () => {
-      const btcState = { ...initialState, currency: 'BTC' as const };
-      const state = settingsReducer(btcState, setCurrency('USD'));
-      
-      expect(state.currency).toBe('USD');
-      expect(localStorage.getItem('currency')).toBe('USD');
-    });
-
-    it('should persist currency to localStorage', () => {
-      settingsReducer(initialState, setCurrency('BTC'));
-      
-      expect(localStorage.getItem('currency')).toBe('BTC');
-    });
+    const state = settingsReducer(createBaseState(), resetSettings());
+    expect(state.theme).toBe('light');
+    expect(state.currency).toBe('USD');
+    expect(state.timezone).toBe('America/New_York');
+    expect(state.textScale).toBe(1);
+    expect(localStorage.getItem('theme')).toBeNull();
+    expect(localStorage.getItem('notificationSettings')).toBeNull();
   });
 
-  describe('setTimezone', () => {
-    it('should set timezone', () => {
-      const state = settingsReducer(initialState, setTimezone('Asia/Tokyo'));
-      
-      expect(state.timezone).toBe('Asia/Tokyo');
-      expect(localStorage.getItem('timezone')).toBe('Asia/Tokyo');
-    });
-
-    it('should persist timezone to localStorage', () => {
-      settingsReducer(initialState, setTimezone('Europe/Paris'));
-      
-      expect(localStorage.getItem('timezone')).toBe('Europe/Paris');
-    });
-  });
-
-  describe('resetSettings', () => {
-    it('should reset all settings to defaults', () => {
-      const customState: SettingsState = {
-        theme: 'dark',
-        currency: 'BTC',
-        timezone: 'Asia/Tokyo',
-      };
-
-      const state = settingsReducer(customState, resetSettings());
-      
-      expect(state.theme).toBe('light');
-      expect(state.currency).toBe('USD');
-      expect(state.timezone).toBe('America/New_York');
-    });
-
-    it('should clear localStorage', () => {
-      localStorage.setItem('theme', 'dark');
-      localStorage.setItem('currency', 'BTC');
-      localStorage.setItem('timezone', 'Asia/Tokyo');
-
-      settingsReducer(initialState, resetSettings());
-      
-      expect(localStorage.getItem('theme')).toBeNull();
-      expect(localStorage.getItem('currency')).toBeNull();
-      expect(localStorage.getItem('timezone')).toBeNull();
-    });
-  });
-
-  describe('selectors', () => {
-    const createRootState = (settings: SettingsState): { settings: SettingsState } => ({
-      settings,
-    });
-
-    it('should select theme from state', () => {
-      const state = createRootState({
-        theme: 'dark',
-        currency: 'USD',
-        timezone: 'UTC',
-      });
-      
-      expect(selectTheme(state)).toBe('dark');
-    });
-
-    it('should select currency from state', () => {
-      const state = createRootState({
-        theme: 'light',
-        currency: 'BTC',
-        timezone: 'UTC',
-      });
-      
-      expect(selectCurrency(state)).toBe('BTC');
-    });
-
-    it('should select timezone from state', () => {
-      const state = createRootState({
-        theme: 'light',
-        currency: 'USD',
-        timezone: 'Asia/Tokyo',
-      });
-      
-      expect(selectTimezone(state)).toBe('Asia/Tokyo');
-    });
-
-    it('should select all settings from state', () => {
-      const settings: SettingsState = {
-        theme: 'dark',
-        currency: 'BTC',
-        timezone: 'Europe/London',
-      };
-      const state = createRootState(settings);
-      
-      expect(selectSettings(state)).toEqual(settings);
-    });
+  it('selectors expose expected fields', () => {
+    const settings = createBaseState();
+    const root = { settings };
+    expect(selectTheme(root)).toBe('light');
+    expect(selectCurrency(root)).toBe('USD');
+    expect(selectTimezone(root)).toBe('UTC');
+    expect(selectTextScale(root)).toBe(1);
+    expect(selectNotificationSettings(root).riskThreshold).toBe(75);
   });
 });

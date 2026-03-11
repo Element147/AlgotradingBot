@@ -1,6 +1,7 @@
 const AUTH_TOKEN_KEY = 'auth_token';
 const AUTH_USER_KEY = 'user';
 const REFRESH_TOKEN_KEY = 'refresh_token';
+const CSRF_TOKEN_KEY = 'csrf_token';
 
 export const setStoredSession = (token: string, user: unknown): void => {
   sessionStorage.setItem(AUTH_TOKEN_KEY, token);
@@ -22,6 +23,7 @@ export const setStoredRefreshToken = (refreshToken?: string | null): void => {
 export const clearStoredAuth = (): void => {
   sessionStorage.removeItem(AUTH_TOKEN_KEY);
   sessionStorage.removeItem(AUTH_USER_KEY);
+  sessionStorage.removeItem(CSRF_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
 };
 

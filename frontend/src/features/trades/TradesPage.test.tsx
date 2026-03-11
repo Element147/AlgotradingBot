@@ -14,24 +14,29 @@ vi.mock('react-redux', async () => {
 
 vi.mock('./tradesApi', () => ({
   useGetTradeHistoryQuery: () => ({
-    data: [
-      {
-        id: 10,
-        pair: 'BTC/USDT',
-        entryTime: '2026-02-01T10:00:00',
-        entryPrice: 100,
-        exitTime: '2026-02-01T14:00:00',
-        exitPrice: 110,
-        signal: 'BUY',
-        positionSize: 0.5,
-        riskAmount: 20,
-        pnl: 5,
-        feesActual: 1,
-        slippageActual: 0.2,
-        stopLoss: 90,
-        takeProfit: 120,
-      },
-    ],
+    data: {
+      items: [
+        {
+          id: 10,
+          pair: 'BTC/USDT',
+          entryTime: '2026-02-01T10:00:00',
+          entryPrice: 100,
+          exitTime: '2026-02-01T14:00:00',
+          exitPrice: 110,
+          signal: 'BUY',
+          positionSize: 0.5,
+          riskAmount: 20,
+          pnl: 5,
+          feesActual: 1,
+          slippageActual: 0.2,
+          stopLoss: 90,
+          takeProfit: 120,
+        },
+      ],
+      total: 1,
+      page: 1,
+      pageSize: 50,
+    },
     isFetching: false,
     isError: false,
     refetch: vi.fn(),

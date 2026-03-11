@@ -123,6 +123,7 @@ export const accountApi = createApi({
   reducerPath: 'accountApi',
   baseQuery: baseQueryWithEnvironment,
   tagTypes: ['Balance', 'Performance', 'Positions', 'Trades'],
+  keepUnusedDataFor: 300,
   endpoints: (builder) => ({
     /**
      * Get account balance

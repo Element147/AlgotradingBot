@@ -8,6 +8,7 @@ import { backtestApi } from '@/features/backtest/backtestApi';
 import environmentReducer from '@/features/environment/environmentSlice';
 import { paperApi } from '@/features/paperApi';
 import { riskApi } from '@/features/risk/riskApi';
+import { exchangeApi } from '@/features/settings/exchangeApi';
 import settingsReducer from '@/features/settings/settingsSlice';
 import { strategiesApi } from '@/features/strategies/strategiesApi';
 import { tradesApi } from '@/features/trades/tradesApi';
@@ -33,6 +34,7 @@ export const store = configureStore({
     [accountApi.reducerPath]: accountApi.reducer,
     [backtestApi.reducerPath]: backtestApi.reducer,
     [riskApi.reducerPath]: riskApi.reducer,
+    [exchangeApi.reducerPath]: exchangeApi.reducer,
     [paperApi.reducerPath]: paperApi.reducer,
     [strategiesApi.reducerPath]: strategiesApi.reducer,
     [tradesApi.reducerPath]: tradesApi.reducer,
@@ -49,6 +51,7 @@ export const store = configureStore({
       accountApi.middleware,
       backtestApi.middleware,
       riskApi.middleware,
+      exchangeApi.middleware,
       paperApi.middleware,
       strategiesApi.middleware,
       tradesApi.middleware,

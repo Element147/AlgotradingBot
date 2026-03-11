@@ -8,22 +8,30 @@ import {
   CardContent,
   Grid,
   MenuItem,
+  Pagination,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
   TextField,
   Typography,
 } from '@mui/material';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
+import { useSearchParams } from 'react-router-dom';
 
+import { TradeDetailsModal } from './TradeDetailsModal';
 import { useGetTradeHistoryQuery, type TradeHistoryQuery } from './tradesApi';
+import {
+  buildTradesCsv,
+  calculateTradeStats,
+  sortTrades,
+  type TradeSortField,
+} from './tradeUtils';
+import { VirtualizedTradeTable } from './VirtualizedTradeTable';
 
 import { AppLayout } from '@/components/layout/AppLayout';
 import { selectCurrency, selectTimezone } from '@/features/settings/settingsSlice';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+
+const STORAGE_KEY = 'trades_page_filters_v2';
 
 interface TradeFilterDraft {
   accountId: string;
@@ -31,6 +39,7 @@ interface TradeFilterDraft {
   startDate: string;
   endDate: string;
   limit: string;
+  searchId: string;
 }
 
 const defaultDraft: TradeFilterDraft = {
@@ -39,6 +48,7 @@ const defaultDraft: TradeFilterDraft = {
   startDate: '',
   endDate: '',
   limit: '200',
+  searchId: '',
 };
 
 const toDateTimeParam = (value: string): string | undefined => {
@@ -49,33 +59,70 @@ const toDateTimeParam = (value: string): string | undefined => {
   return value.length === 16 ? `${value}:00` : value;
 };
 
-const csvValue = (value: string | number | null): string => {
-  const escaped = String(value ?? '').replaceAll('"', '""');
-  return `"${escaped}"`;
+const readStoredDraft = (): TradeFilterDraft => {
+  const raw = sessionStorage.getItem(STORAGE_KEY);
+  if (!raw) {
+    return defaultDraft;
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<TradeFilterDraft>;
+    return {
+      accountId: parsed.accountId ?? '',
+      symbol: parsed.symbol ?? '',
+      startDate: parsed.startDate ?? '',
+      endDate: parsed.endDate ?? '',
+      limit: parsed.limit ?? '200',
+      searchId: parsed.searchId ?? '',
+    };
+  } catch {
+    return defaultDraft;
+  }
 };
 
 export default function TradesPage() {
   const timezone = useSelector(selectTimezone);
   const currency = useSelector(selectCurrency);
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [draft, setDraft] = useState<TradeFilterDraft>(defaultDraft);
+  const [draft, setDraft] = useState<TradeFilterDraft>(() => {
+    const fromStorage = readStoredDraft();
+    if (Array.from(searchParams.keys()).length === 0) {
+      return fromStorage;
+    }
+    return {
+      accountId: searchParams.get('accountId') ?? fromStorage.accountId,
+      symbol: searchParams.get('symbol') ?? fromStorage.symbol,
+      startDate: searchParams.get('startDate') ?? fromStorage.startDate,
+      endDate: searchParams.get('endDate') ?? fromStorage.endDate,
+      limit: searchParams.get('limit') ?? fromStorage.limit,
+      searchId: searchParams.get('searchId') ?? fromStorage.searchId,
+    };
+  });
   const [query, setQuery] = useState<TradeHistoryQuery>({ limit: 200 });
   const [selectedTradeId, setSelectedTradeId] = useState<number | null>(null);
-  const [feedback, setFeedback] = useState<{ severity: 'success' | 'error'; message: string } | null>(null);
+  const [feedback, setFeedback] = useState<{ severity: 'success' | 'error'; message: string } | null>(
+    null
+  );
+  const [page, setPage] = useState(1);
+  const [sortField, setSortField] = useState<TradeSortField>('entryTime');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
-  const {
-    data: trades = [],
-    isFetching,
-    isError,
-    refetch,
-  } = useGetTradeHistoryQuery(query, {
+  const debouncedSearchId = useDebouncedValue(draft.searchId, 300);
+
+  const { data, isFetching, isError, refetch } = useGetTradeHistoryQuery(query, {
     pollingInterval: 10000,
+    skipPollingIfUnfocused: true,
   });
 
-  const validationError = useMemo(() => {
-    const limit = Number(draft.limit);
+  const trades = useMemo(() => data?.items ?? [], [data]);
+  const limit = Number(draft.limit) || 200;
+  const pageSize = 50;
 
-    if (!Number.isInteger(limit) || limit < 1 || limit > 1000) {
+  const validationError = useMemo(() => {
+    const parsedLimit = Number(draft.limit);
+
+    if (!Number.isInteger(parsedLimit) || parsedLimit < 1 || parsedLimit > 1000) {
       return 'Limit must be an integer between 1 and 1000.';
     }
 
@@ -86,6 +133,13 @@ export default function TradesPage() {
       }
     }
 
+    if (draft.searchId.trim()) {
+      const tradeId = Number(draft.searchId);
+      if (!Number.isInteger(tradeId) || tradeId <= 0) {
+        return 'Trade ID search must be a positive integer.';
+      }
+    }
+
     if (draft.startDate && draft.endDate && new Date(draft.startDate) > new Date(draft.endDate)) {
       return 'Start date must be earlier than end date.';
     }
@@ -93,9 +147,30 @@ export default function TradesPage() {
     return null;
   }, [draft]);
 
+  const filteredTrades = useMemo(() => {
+    const sorted = sortTrades(trades, sortField, sortDirection);
+
+    if (!debouncedSearchId.trim()) {
+      return sorted;
+    }
+
+    const searchId = Number(debouncedSearchId);
+    if (!Number.isInteger(searchId)) {
+      return sorted;
+    }
+
+    return sorted.filter((trade) => trade.id === searchId);
+  }, [debouncedSearchId, sortDirection, sortField, trades]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredTrades.length / pageSize));
+  const pagedTrades = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredTrades.slice(start, start + pageSize);
+  }, [filteredTrades, page]);
+
   const selectedTrade = useMemo(
-    () => trades.find((trade) => trade.id === selectedTradeId) ?? null,
-    [selectedTradeId, trades]
+    () => filteredTrades.find((trade) => trade.id === selectedTradeId) ?? null,
+    [filteredTrades, selectedTradeId]
   );
 
   const symbols = useMemo(() => {
@@ -103,36 +178,7 @@ export default function TradesPage() {
     return Array.from(unique).sort((left, right) => left.localeCompare(right));
   }, [trades]);
 
-  const totals = useMemo(() => {
-    const totalPnl = trades.reduce((sum, trade) => sum + trade.pnl, 0);
-    const totalFees = trades.reduce((sum, trade) => sum + trade.feesActual, 0);
-    const totalSlippage = trades.reduce((sum, trade) => sum + trade.slippageActual, 0);
-    const wins = trades.filter((trade) => trade.pnl > 0).length;
-
-    return {
-      totalPnl,
-      totalFees,
-      totalSlippage,
-      winRate: trades.length === 0 ? 0 : (wins / trades.length) * 100,
-    };
-  }, [trades]);
-
-  const formatDate = (value: string | null): string => {
-    if (!value) {
-      return '-';
-    }
-
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) {
-      return value;
-    }
-
-    return new Intl.DateTimeFormat('cs-CZ', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-      timeZone: timezone,
-    }).format(parsed);
-  };
+  const stats = useMemo(() => calculateTradeStats(filteredTrades), [filteredTrades]);
 
   const formatAmount = (amount: number): string => {
     if (currency === 'BTC') {
@@ -146,6 +192,21 @@ export default function TradesPage() {
     }).format(amount);
   };
 
+  useEffect(() => {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
+  }, [draft]);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (draft.accountId) params.set('accountId', draft.accountId);
+    if (draft.symbol) params.set('symbol', draft.symbol);
+    if (draft.startDate) params.set('startDate', draft.startDate);
+    if (draft.endDate) params.set('endDate', draft.endDate);
+    if (draft.limit) params.set('limit', draft.limit);
+    if (draft.searchId) params.set('searchId', draft.searchId);
+    setSearchParams(params, { replace: true });
+  }, [draft, setSearchParams]);
+
   const applyFilters = () => {
     if (validationError) {
       setFeedback({ severity: 'error', message: validationError });
@@ -153,7 +214,7 @@ export default function TradesPage() {
     }
 
     const nextQuery: TradeHistoryQuery = {
-      limit: Number(draft.limit),
+      limit,
     };
 
     if (draft.accountId.trim()) {
@@ -170,66 +231,45 @@ export default function TradesPage() {
     }
 
     setQuery(nextQuery);
+    setPage(1);
     setFeedback({ severity: 'success', message: 'Filters applied.' });
   };
 
   const resetFilters = () => {
     setDraft(defaultDraft);
     setQuery({ limit: 200 });
+    setPage(1);
     setFeedback({ severity: 'success', message: 'Filters reset.' });
   };
 
   const exportCsv = () => {
-    if (trades.length === 0) {
+    if (filteredTrades.length === 0) {
       setFeedback({ severity: 'error', message: 'There are no rows to export.' });
       return;
     }
 
-    const headers = [
-      'id',
-      'pair',
-      'signal',
-      'entryTime',
-      'exitTime',
-      'entryPrice',
-      'exitPrice',
-      'positionSize',
-      'riskAmount',
-      'pnl',
-      'feesActual',
-      'slippageActual',
-      'stopLoss',
-      'takeProfit',
-    ];
-
-    const rows = trades.map((trade) => [
-      trade.id,
-      trade.pair,
-      trade.signal,
-      trade.entryTime,
-      trade.exitTime,
-      trade.entryPrice,
-      trade.exitPrice,
-      trade.positionSize,
-      trade.riskAmount,
-      trade.pnl,
-      trade.feesActual,
-      trade.slippageActual,
-      trade.stopLoss,
-      trade.takeProfit,
-    ]);
-
-    const csv = [headers.map((header) => csvValue(header)).join(','), ...rows.map((row) => row.map(csvValue).join(','))].join('\n');
-
+    const csv = buildTradesCsv(filteredTrades);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `trade-history-${new Date().toISOString().slice(0, 19).replaceAll(':', '-')}.csv`;
+    link.download = `trades_${new Date().toISOString().replaceAll(':', '').replaceAll('-', '').slice(0, 15)}.csv`;
     link.click();
     URL.revokeObjectURL(url);
 
     setFeedback({ severity: 'success', message: 'CSV export downloaded.' });
+  };
+
+  const changeSort = (field: TradeSortField) => {
+    if (field === sortField) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+      setPage(1);
+      return;
+    }
+
+    setSortField(field);
+    setSortDirection('asc');
+    setPage(1);
   };
 
   return (
@@ -252,16 +292,19 @@ export default function TradesPage() {
           <Grid size={{ xs: 12, lg: 4 }}>
             <Card>
               <CardContent>
-                <Typography variant="h6" sx={{ mb: 2 }}>Filters</Typography>
+                <Typography variant="h6" sx={{ mb: 2 }}>
+                  Filters
+                </Typography>
                 <Stack spacing={2}>
                   <TextField
                     label="Account ID"
                     value={draft.accountId}
-                    onChange={(event) => setDraft((prev) => ({ ...prev, accountId: event.target.value }))}
+                    onChange={(event) =>
+                      setDraft((prev) => ({ ...prev, accountId: event.target.value }))
+                    }
                     placeholder="e.g. 1"
                     helperText="Optional: load only trades from one account."
                   />
-
                   <TextField
                     select
                     label="Symbol"
@@ -276,16 +319,16 @@ export default function TradesPage() {
                       </MenuItem>
                     ))}
                   </TextField>
-
                   <TextField
                     label="Start Date"
                     type="datetime-local"
                     value={draft.startDate}
-                    onChange={(event) => setDraft((prev) => ({ ...prev, startDate: event.target.value }))}
+                    onChange={(event) =>
+                      setDraft((prev) => ({ ...prev, startDate: event.target.value }))
+                    }
                     helperText="Optional: include trades opened after this date/time."
                     slotProps={{ inputLabel: { shrink: true } }}
                   />
-
                   <TextField
                     label="End Date"
                     type="datetime-local"
@@ -294,7 +337,6 @@ export default function TradesPage() {
                     helperText="Optional: include trades opened before this date/time."
                     slotProps={{ inputLabel: { shrink: true } }}
                   />
-
                   <TextField
                     label="Result Limit"
                     type="number"
@@ -303,17 +345,35 @@ export default function TradesPage() {
                     helperText="Number of rows to request from backend (1-1000)."
                     inputProps={{ min: 1, max: 1000, step: 1 }}
                   />
+                  <TextField
+                    label="Search Trade ID"
+                    value={draft.searchId}
+                    onChange={(event) => {
+                      setDraft((prev) => ({ ...prev, searchId: event.target.value }));
+                      setPage(1);
+                    }}
+                    helperText="Debounced by 300ms."
+                  />
 
                   {validationError ? <Alert severity="error">{validationError}</Alert> : null}
 
                   <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-                    <Button variant="contained" onClick={applyFilters} disabled={isFetching || Boolean(validationError)}>
+                    <Button
+                      variant="contained"
+                      onClick={applyFilters}
+                      disabled={isFetching || Boolean(validationError)}
+                    >
                       Apply
                     </Button>
                     <Button variant="outlined" onClick={resetFilters} disabled={isFetching}>
                       Reset
                     </Button>
-                    <Button variant="outlined" startIcon={<RefreshIcon />} onClick={() => void refetch()} disabled={isFetching}>
+                    <Button
+                      variant="outlined"
+                      startIcon={<RefreshIcon />}
+                      onClick={() => void refetch()}
+                      disabled={isFetching}
+                    >
                       Refresh
                     </Button>
                   </Stack>
@@ -325,14 +385,24 @@ export default function TradesPage() {
           <Grid size={{ xs: 12, lg: 8 }}>
             <Card sx={{ mb: 2 }}>
               <CardContent>
-                <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2} sx={{ mb: 2 }}>
+                <Stack
+                  direction={{ xs: 'column', md: 'row' }}
+                  justifyContent="space-between"
+                  spacing={2}
+                  sx={{ mb: 2 }}
+                >
                   <Box>
                     <Typography variant="h6">Results</Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Rows: {trades.length} | Win rate: {totals.winRate.toFixed(1)}%
+                      Trades: {stats.totalTrades} | Win rate: {stats.winRate.toFixed(1)}% | Profit
+                      factor: {stats.profitFactor.toFixed(2)}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      PnL: {formatAmount(totals.totalPnl)} | Fees: {formatAmount(totals.totalFees)} | Slippage: {formatAmount(totals.totalSlippage)}
+                      Avg win: {formatAmount(stats.averageWin)} | Avg loss: {formatAmount(stats.averageLoss)}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      PnL: {formatAmount(stats.totalPnl)} | Fees: {formatAmount(stats.totalFees)} |
+                      Slippage: {formatAmount(stats.totalSlippage)}
                     </Typography>
                   </Box>
                   <Button variant="outlined" startIcon={<FileDownloadIcon />} onClick={exportCsv}>
@@ -343,76 +413,45 @@ export default function TradesPage() {
                 {isError ? <Alert severity="error">Failed to load trade history from backend.</Alert> : null}
                 {!isError && isFetching ? <Typography>Loading trade history...</Typography> : null}
 
-                {!isFetching && !isError && trades.length === 0 ? (
+                {!isFetching && !isError && filteredTrades.length === 0 ? (
                   <Alert severity="info">No trades found for selected filters.</Alert>
                 ) : null}
 
-                {trades.length > 0 ? (
-                  <Box sx={{ overflowX: 'auto' }}>
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>ID</TableCell>
-                          <TableCell>Pair</TableCell>
-                          <TableCell>Signal</TableCell>
-                          <TableCell>Entry Time</TableCell>
-                          <TableCell>Exit Time</TableCell>
-                          <TableCell align="right">PnL</TableCell>
-                          <TableCell align="right">Fees</TableCell>
-                          <TableCell align="right">Slippage</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {trades.map((trade) => (
-                          <TableRow
-                            key={trade.id}
-                            hover
-                            selected={trade.id === selectedTradeId}
-                            onClick={() => setSelectedTradeId(trade.id)}
-                            sx={{ cursor: 'pointer' }}
-                          >
-                            <TableCell>{trade.id}</TableCell>
-                            <TableCell>{trade.pair}</TableCell>
-                            <TableCell>{trade.signal}</TableCell>
-                            <TableCell>{formatDate(trade.entryTime)}</TableCell>
-                            <TableCell>{formatDate(trade.exitTime)}</TableCell>
-                            <TableCell align="right" sx={{ color: trade.pnl >= 0 ? 'success.main' : 'error.main' }}>
-                              {formatAmount(trade.pnl)}
-                            </TableCell>
-                            <TableCell align="right">{formatAmount(trade.feesActual)}</TableCell>
-                            <TableCell align="right">{formatAmount(trade.slippageActual)}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </Box>
+                {filteredTrades.length > 0 ? (
+                  <>
+                    <VirtualizedTradeTable
+                      rows={pagedTrades}
+                      selectedTradeId={selectedTradeId}
+                      sortField={sortField}
+                      sortDirection={sortDirection}
+                      onSortChange={changeSort}
+                      onRowSelect={(trade) => setSelectedTradeId(trade.id)}
+                    />
+
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 2 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Page {page} of {totalPages} | Timezone: {timezone}
+                      </Typography>
+                      <Pagination
+                        count={totalPages}
+                        page={page}
+                        onChange={(_, nextPage) => setPage(nextPage)}
+                        color="primary"
+                      />
+                    </Stack>
+                  </>
                 ) : null}
               </CardContent>
             </Card>
-
-            {selectedTrade ? (
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" sx={{ mb: 2 }}>Trade Detail #{selectedTrade.id}</Typography>
-                  <Grid container spacing={1}>
-                    <Grid size={{ xs: 12, md: 6 }}><Typography variant="body2">Pair: {selectedTrade.pair}</Typography></Grid>
-                    <Grid size={{ xs: 12, md: 6 }}><Typography variant="body2">Signal: {selectedTrade.signal}</Typography></Grid>
-                    <Grid size={{ xs: 12, md: 6 }}><Typography variant="body2">Entry Time: {formatDate(selectedTrade.entryTime)}</Typography></Grid>
-                    <Grid size={{ xs: 12, md: 6 }}><Typography variant="body2">Exit Time: {formatDate(selectedTrade.exitTime)}</Typography></Grid>
-                    <Grid size={{ xs: 6, md: 4 }}><Typography variant="body2">Entry Price: {selectedTrade.entryPrice.toFixed(4)}</Typography></Grid>
-                    <Grid size={{ xs: 6, md: 4 }}><Typography variant="body2">Exit Price: {selectedTrade.exitPrice?.toFixed(4) ?? '-'}</Typography></Grid>
-                    <Grid size={{ xs: 6, md: 4 }}><Typography variant="body2">Position Size: {selectedTrade.positionSize.toFixed(6)}</Typography></Grid>
-                    <Grid size={{ xs: 6, md: 4 }}><Typography variant="body2">Risk Amount: {formatAmount(selectedTrade.riskAmount)}</Typography></Grid>
-                    <Grid size={{ xs: 6, md: 4 }}><Typography variant="body2">PnL: {formatAmount(selectedTrade.pnl)}</Typography></Grid>
-                    <Grid size={{ xs: 6, md: 4 }}><Typography variant="body2">Stop Loss: {selectedTrade.stopLoss?.toFixed(4) ?? '-'}</Typography></Grid>
-                    <Grid size={{ xs: 12, md: 4 }}><Typography variant="body2">Take Profit: {selectedTrade.takeProfit?.toFixed(4) ?? '-'}</Typography></Grid>
-                  </Grid>
-                </CardContent>
-              </Card>
-            ) : null}
           </Grid>
         </Grid>
       </Box>
+
+      <TradeDetailsModal
+        trade={selectedTrade}
+        open={Boolean(selectedTrade)}
+        onClose={() => setSelectedTradeId(null)}
+      />
     </AppLayout>
   );
 }

@@ -1,4 +1,5 @@
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import {
   Alert,
   Box,
@@ -6,24 +7,40 @@ import {
   Card,
   CardContent,
   FormControl,
+  FormControlLabel,
   Grid,
   InputLabel,
   MenuItem,
   Select,
   Stack,
+  Switch,
+  Tab,
+  Tabs,
   TextField,
   Typography,
 } from '@mui/material';
 import { useMemo, useState } from 'react';
 
 import {
+  useGetExchangeBalanceQuery,
+  useGetExchangeConnectionStatusQuery,
+  useGetExchangeOrdersQuery,
+  useGetSystemInfoQuery,
+  useTestExchangeConnectionMutation,
+  useTriggerBackupMutation,
+} from './exchangeApi';
+import {
   resetSettings,
   selectCurrency,
+  selectNotificationSettings,
+  selectTextScale,
   selectTheme,
   selectTimezone,
   setCurrency,
+  setTextScale,
   setTheme,
   setTimezone,
+  updateNotificationSetting,
 } from './settingsSlice';
 
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
@@ -38,36 +55,18 @@ const defaultCommandList = [
   'cd /d C:\\Git\\algotradingbot\\frontend && npm run dev',
 ];
 
-const RESEARCH_DEFAULTS_KEY = 'research_defaults';
+type SettingsTab = 'api' | 'notifications' | 'display' | 'database' | 'exchange';
 
-interface ResearchDefaults {
-  initialBalance: string;
-  feesBps: string;
-  slippageBps: string;
-}
-
-const readResearchDefaults = (): ResearchDefaults => {
-  const fallback = {
-    initialBalance: '10000',
-    feesBps: '10',
-    slippageBps: '3',
-  };
-
-  const raw = localStorage.getItem(RESEARCH_DEFAULTS_KEY);
-  if (!raw) {
-    return fallback;
+const maskValue = (value: string): string => {
+  if (value.length <= 4) {
+    return '*'.repeat(value.length);
   }
+  return `${value.slice(0, 2)}${'*'.repeat(Math.max(0, value.length - 4))}${value.slice(-2)}`;
+};
 
-  try {
-    const parsed = JSON.parse(raw) as Partial<ResearchDefaults>;
-    return {
-      initialBalance: parsed.initialBalance ?? fallback.initialBalance,
-      feesBps: parsed.feesBps ?? fallback.feesBps,
-      slippageBps: parsed.slippageBps ?? fallback.slippageBps,
-    };
-  } catch {
-    return fallback;
-  }
+const initialApiConfig = {
+  apiKey: 'BINANCE-KEY-LOCAL',
+  secret: 'BINANCE-SECRET-LOCAL',
 };
 
 export default function SettingsPage() {
@@ -75,10 +74,33 @@ export default function SettingsPage() {
   const theme = useAppSelector(selectTheme);
   const currency = useAppSelector(selectCurrency);
   const timezone = useAppSelector(selectTimezone);
+  const textScale = useAppSelector(selectTextScale);
+  const notifications = useAppSelector(selectNotificationSettings);
   const environmentMode = useAppSelector(selectEnvironmentMode);
+  const userRole = useAppSelector((state) => state.auth.user?.role ?? 'trader');
+  const isAdmin = userRole === 'admin';
 
-  const [feedback, setFeedback] = useState<{ severity: 'success' | 'error'; message: string } | null>(null);
-  const [researchDefaults, setResearchDefaults] = useState<ResearchDefaults>(readResearchDefaults());
+  const [feedback, setFeedback] = useState<{ severity: 'success' | 'error' | 'warning'; message: string } | null>(
+    null
+  );
+  const [tab, setTab] = useState<SettingsTab>(isAdmin ? 'api' : 'display');
+  const [apiConfig] = useState(initialApiConfig);
+  const [revealApiKey, setRevealApiKey] = useState(false);
+  const [revealSecret, setRevealSecret] = useState(false);
+
+  const { data: systemInfo, isError: isSystemInfoError } = useGetSystemInfoQuery();
+  const { data: exchangeBalance, refetch: refetchBalance, isError: isExchangeBalanceError } =
+    useGetExchangeBalanceQuery(undefined, {
+      pollingInterval: environmentMode === 'live' ? 60000 : 0,
+      skipPollingIfUnfocused: true,
+    });
+  const { data: exchangeOrders = [] } = useGetExchangeOrdersQuery(undefined, {
+    pollingInterval: environmentMode === 'live' ? 60000 : 0,
+    skipPollingIfUnfocused: true,
+  });
+  const { data: connectionStatus, isError: isConnectionError } = useGetExchangeConnectionStatusQuery();
+  const [testConnection, { isLoading: isTestingConnection }] = useTestExchangeConnectionMutation();
+  const [triggerBackup, { isLoading: isBackingUp }] = useTriggerBackupMutation();
 
   const timezoneOptions = useMemo(() => {
     const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -95,27 +117,35 @@ export default function SettingsPage() {
     }
   };
 
-  const saveResearchDefaults = () => {
-    const initialBalance = Number(researchDefaults.initialBalance);
-    const fees = Number(researchDefaults.feesBps);
-    const slippage = Number(researchDefaults.slippageBps);
-
-    if (!Number.isFinite(initialBalance) || initialBalance < 100) {
-      setFeedback({ severity: 'error', message: 'Initial balance should be >= 100.' });
-      return;
+  const runConnectionTest = async () => {
+    try {
+      const result = await testConnection().unwrap();
+      setFeedback({
+        severity: 'success',
+        message: `Connection ${result.connected ? 'successful' : 'failed'} (${result.rateLimitUsage}).`,
+      });
+    } catch {
+      setFeedback({
+        severity: 'warning',
+        message: 'Connection test endpoint is unavailable locally. Verify backend support for /api/system/test-connection.',
+      });
     }
-    if (!Number.isFinite(fees) || fees < 0 || fees > 200) {
-      setFeedback({ severity: 'error', message: 'Fees should be between 0 and 200 bps.' });
-      return;
-    }
-    if (!Number.isFinite(slippage) || slippage < 0 || slippage > 200) {
-      setFeedback({ severity: 'error', message: 'Slippage should be between 0 and 200 bps.' });
-      return;
-    }
-
-    localStorage.setItem(RESEARCH_DEFAULTS_KEY, JSON.stringify(researchDefaults));
-    setFeedback({ severity: 'success', message: 'Research defaults saved.' });
   };
+
+  const runBackup = async () => {
+    try {
+      const result = await triggerBackup().unwrap();
+      setFeedback({ severity: 'success', message: `Backup triggered: ${result.path} (${result.size}).` });
+    } catch {
+      setFeedback({
+        severity: 'warning',
+        message: 'Backup endpoint unavailable locally. Verify backend support for /api/system/backup.',
+      });
+    }
+  };
+
+  const activeTab: SettingsTab =
+    !isAdmin && (tab === 'api' || tab === 'database') ? 'display' : tab;
 
   return (
     <AppLayout>
@@ -133,165 +163,390 @@ export default function SettingsPage() {
           </Alert>
         ) : null}
 
-        <Grid container spacing={2}>
-          <Grid size={{ xs: 12, lg: 6 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" sx={{ mb: 2 }}>User Preferences</Typography>
-                <Stack spacing={2}>
-                  <FormControl fullWidth>
-                    <InputLabel id="theme-label">Theme</InputLabel>
-                    <Select
-                      labelId="theme-label"
-                      value={theme}
-                      label="Theme"
-                      onChange={(event) => dispatch(setTheme(event.target.value))}
-                    >
-                      <MenuItem value="light">Light</MenuItem>
-                      <MenuItem value="dark">Dark</MenuItem>
-                    </Select>
-                  </FormControl>
+        <Card sx={{ mb: 2 }}>
+          <CardContent>
+            <Tabs
+              value={activeTab}
+              onChange={(_, value: SettingsTab) => setTab(value)}
+              variant="scrollable"
+              allowScrollButtonsMobile
+            >
+              {isAdmin ? <Tab value="api" label="API Config" /> : null}
+              <Tab value="notifications" label="Notifications" />
+              <Tab value="display" label="Display" />
+              {isAdmin ? <Tab value="database" label="Database" /> : null}
+              <Tab value="exchange" label="Exchange" />
+            </Tabs>
+          </CardContent>
+        </Card>
 
-                  <FormControl fullWidth>
-                    <InputLabel id="currency-label">Currency Display</InputLabel>
-                    <Select
-                      labelId="currency-label"
-                      value={currency}
-                      label="Currency Display"
-                      onChange={(event) => dispatch(setCurrency(event.target.value))}
-                    >
-                      <MenuItem value="USD">USD (fiat view)</MenuItem>
-                      <MenuItem value="BTC">BTC (crypto unit view)</MenuItem>
-                    </Select>
-                  </FormControl>
-
-                  <FormControl fullWidth>
-                    <InputLabel id="timezone-label">Timezone</InputLabel>
-                    <Select
-                      labelId="timezone-label"
-                      value={timezone}
-                      label="Timezone"
-                      onChange={(event) => dispatch(setTimezone(event.target.value))}
-                    >
-                      {timezoneOptions.map((option) => (
-                        <MenuItem key={option} value={option}>{option}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-
-                  <Button variant="outlined" color="warning" onClick={() => dispatch(resetSettings())}>
-                    Reset Preferences
-                  </Button>
-
-                  <Typography variant="caption" color="text.secondary">
-                    These values are stored in your browser localStorage and never sent to exchange APIs.
+        {activeTab === 'api' ? (
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, lg: 8 }}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" sx={{ mb: 2 }}>
+                    API Configuration
                   </Typography>
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid size={{ xs: 12, lg: 6 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" sx={{ mb: 2 }}>Environment Safety</Typography>
-                <Stack spacing={2}>
-                  <FormControl fullWidth>
-                    <InputLabel id="environment-label">Active Mode</InputLabel>
-                    <Select
-                      labelId="environment-label"
-                      value={environmentMode}
-                      label="Active Mode"
-                      onChange={(event) => dispatch(setEnvironmentMode(event.target.value))}
+                  <Stack spacing={2}>
+                    <TextField
+                      label="Exchange API Key"
+                      value={revealApiKey ? apiConfig.apiKey : maskValue(apiConfig.apiKey)}
+                      InputProps={{ readOnly: true }}
+                    />
+                    <Button variant="outlined" onClick={() => setRevealApiKey((prev) => !prev)}>
+                      {revealApiKey ? 'Hide API Key' : 'Reveal API Key'}
+                    </Button>
+                    <TextField
+                      label="Exchange API Secret"
+                      value={revealSecret ? apiConfig.secret : maskValue(apiConfig.secret)}
+                      InputProps={{ readOnly: true }}
+                    />
+                    <Button variant="outlined" onClick={() => setRevealSecret((prev) => !prev)}>
+                      {revealSecret ? 'Hide Secret' : 'Reveal Secret'}
+                    </Button>
+                    <Button
+                      variant="contained"
+                      onClick={() => void runConnectionTest()}
+                      disabled={isTestingConnection}
                     >
-                      <MenuItem value="test">Test / Paper (recommended)</MenuItem>
-                      <MenuItem value="live">Live data view</MenuItem>
-                    </Select>
-                  </FormControl>
-
-                  <Alert severity={environmentMode === 'test' ? 'success' : 'warning'}>
-                    {environmentMode === 'test'
-                      ? 'Safe mode is active. Strategy actions are intended for paper/test workflows.'
-                      : 'Live mode should be used carefully. Keep strict risk limits and operator approval.'}
-                  </Alert>
-
-                  <Typography variant="body2" color="text.secondary">
-                    Build/test commands should never depend on Docker DB. Runtime app (`bootRun`) should use PostgreSQL in Docker.
+                      Test Connection
+                    </Button>
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid size={{ xs: 12, lg: 4 }}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" sx={{ mb: 2 }}>
+                    Local Commands (CMD)
                   </Typography>
-                </Stack>
-              </CardContent>
-            </Card>
+                  <Stack spacing={1.5}>
+                    {defaultCommandList.map((command, index) => (
+                      <Box
+                        key={command}
+                        sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1.5 }}
+                      >
+                        <Typography variant="caption" color="text.secondary">
+                          Command {index + 1}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontFamily: 'monospace', wordBreak: 'break-all', mb: 1 }}
+                        >
+                          {command}
+                        </Typography>
+                        <Button
+                          size="small"
+                          startIcon={<ContentCopyIcon />}
+                          onClick={() => void copyCommand(command)}
+                        >
+                          Copy
+                        </Button>
+                      </Box>
+                    ))}
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Grid>
           </Grid>
+        ) : null}
 
-          <Grid size={{ xs: 12, lg: 6 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" sx={{ mb: 2 }}>Research Defaults</Typography>
-                <Stack spacing={2}>
-                  <TextField
-                    label="Default Initial Balance"
-                    type="number"
-                    value={researchDefaults.initialBalance}
-                    onChange={(event) => setResearchDefaults((prev) => ({ ...prev, initialBalance: event.target.value }))}
-                    helperText="Starting capital for local backtest experiments."
-                  />
-                  <TextField
-                    label="Default Fees (bps)"
-                    type="number"
-                    value={researchDefaults.feesBps}
-                    onChange={(event) => setResearchDefaults((prev) => ({ ...prev, feesBps: event.target.value }))}
-                    helperText="Transaction cost in basis points (10 bps = 0.10%)."
-                  />
-                  <TextField
-                    label="Default Slippage (bps)"
-                    type="number"
-                    value={researchDefaults.slippageBps}
-                    onChange={(event) => setResearchDefaults((prev) => ({ ...prev, slippageBps: event.target.value }))}
-                    helperText="Expected execution drift vs. signal price."
-                  />
+        {activeTab === 'notifications' ? (
+          <Card>
+            <CardContent>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                Notification Settings
+              </Typography>
+              <Stack spacing={2}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={notifications.emailAlerts}
+                      onChange={(event) =>
+                        dispatch(updateNotificationSetting({ key: 'emailAlerts', value: event.target.checked }))
+                      }
+                    />
+                  }
+                  label="Email Alerts"
+                />
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={notifications.telegramAlerts}
+                      onChange={(event) =>
+                        dispatch(updateNotificationSetting({ key: 'telegramAlerts', value: event.target.checked }))
+                      }
+                    />
+                  }
+                  label="Telegram Alerts"
+                />
+                <TextField
+                  label="Profit/Loss Threshold (%)"
+                  type="number"
+                  value={notifications.profitLossThreshold}
+                  onChange={(event) =>
+                    dispatch(
+                      updateNotificationSetting({
+                        key: 'profitLossThreshold',
+                        value: Number(event.target.value),
+                      })
+                    )
+                  }
+                />
+                <TextField
+                  label="Drawdown Threshold (%)"
+                  type="number"
+                  value={notifications.drawdownThreshold}
+                  onChange={(event) =>
+                    dispatch(
+                      updateNotificationSetting({
+                        key: 'drawdownThreshold',
+                        value: Number(event.target.value),
+                      })
+                    )
+                  }
+                />
+                <TextField
+                  label="Risk Threshold (%)"
+                  type="number"
+                  value={notifications.riskThreshold}
+                  onChange={(event) =>
+                    dispatch(
+                      updateNotificationSetting({
+                        key: 'riskThreshold',
+                        value: Number(event.target.value),
+                      })
+                    )
+                  }
+                />
+              </Stack>
+            </CardContent>
+          </Card>
+        ) : null}
 
-                  <Button variant="contained" onClick={saveResearchDefaults}>Save Research Defaults</Button>
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
+        {activeTab === 'display' ? (
+          <Card>
+            <CardContent>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                Display Preferences
+              </Typography>
+              <Stack spacing={2}>
+                <FormControl fullWidth>
+                  <InputLabel id="theme-label">Theme</InputLabel>
+                  <Select
+                    labelId="theme-label"
+                    value={theme}
+                    label="Theme"
+                    onChange={(event) => dispatch(setTheme(event.target.value))}
+                  >
+                    <MenuItem value="light">Light</MenuItem>
+                    <MenuItem value="dark">Dark</MenuItem>
+                  </Select>
+                </FormControl>
 
-          <Grid size={{ xs: 12, lg: 6 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" sx={{ mb: 2 }}>Local Commands (CMD)</Typography>
-                <Stack spacing={1.5}>
-                  {defaultCommandList.map((command, index) => (
-                    <Box key={command} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1.5 }}>
-                      <Typography variant="caption" color="text.secondary">Command {index + 1}</Typography>
-                      <Typography variant="body2" sx={{ fontFamily: 'monospace', wordBreak: 'break-all', mb: 1 }}>
-                        {command}
+                <FormControl fullWidth>
+                  <InputLabel id="currency-label">Currency Display</InputLabel>
+                  <Select
+                    labelId="currency-label"
+                    value={currency}
+                    label="Currency Display"
+                    onChange={(event) => dispatch(setCurrency(event.target.value))}
+                  >
+                    <MenuItem value="USD">USD (fiat view)</MenuItem>
+                    <MenuItem value="BTC">BTC (crypto unit view)</MenuItem>
+                  </Select>
+                </FormControl>
+
+                <FormControl fullWidth>
+                  <InputLabel id="timezone-label">Timezone</InputLabel>
+                  <Select
+                    labelId="timezone-label"
+                    value={timezone}
+                    label="Timezone"
+                    onChange={(event) => dispatch(setTimezone(event.target.value))}
+                  >
+                    {timezoneOptions.map((option) => (
+                      <MenuItem key={option} value={option}>
+                        {option}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <TextField
+                  label="Text Scale"
+                  type="number"
+                  value={textScale}
+                  inputProps={{ min: 1, max: 2, step: 0.1 }}
+                  onChange={(event) => dispatch(setTextScale(Number(event.target.value)))}
+                  helperText="Supports accessibility scaling up to 200%."
+                />
+
+                <FormControl fullWidth>
+                  <InputLabel id="environment-label">Active Mode</InputLabel>
+                  <Select
+                    labelId="environment-label"
+                    value={environmentMode}
+                    label="Active Mode"
+                    onChange={(event) =>
+                      dispatch(setEnvironmentMode(event.target.value))
+                    }
+                  >
+                    <MenuItem value="test">Test / Paper (recommended)</MenuItem>
+                    <MenuItem value="live">Live data view</MenuItem>
+                  </Select>
+                </FormControl>
+
+                <Button variant="outlined" color="warning" onClick={() => dispatch(resetSettings())}>
+                  Reset Preferences
+                </Button>
+              </Stack>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {activeTab === 'database' ? (
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, lg: 7 }}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" sx={{ mb: 2 }}>
+                    System Information
+                  </Typography>
+                  {isSystemInfoError ? (
+                    <Alert severity="warning">
+                      System info endpoint unavailable locally. Use command scripts and health endpoint as fallback.
+                    </Alert>
+                  ) : (
+                    <Stack spacing={1}>
+                      <Typography variant="body2">
+                        Version: {systemInfo?.applicationVersion ?? 'local-dev'}
                       </Typography>
-                      <Button size="small" startIcon={<ContentCopyIcon />} onClick={() => void copyCommand(command)}>
-                        Copy
-                      </Button>
-                    </Box>
-                  ))}
-                </Stack>
-              </CardContent>
-            </Card>
+                      <Typography variant="body2">
+                        Last Deployment: {systemInfo?.lastDeploymentDate ?? 'n/a'}
+                      </Typography>
+                      <Typography variant="body2">
+                        Database Status: {systemInfo?.databaseStatus ?? 'unknown'}
+                      </Typography>
+                      <Typography variant="body2">
+                        Kafka Status: {systemInfo?.kafkaStatus ?? 'optional in local run path'}
+                      </Typography>
+                    </Stack>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid size={{ xs: 12, lg: 5 }}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" sx={{ mb: 2 }}>
+                    Database Management
+                  </Typography>
+                  <Button variant="contained" onClick={() => void runBackup()} disabled={isBackingUp}>
+                    Trigger Backup
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
           </Grid>
+        ) : null}
 
-          <Grid size={{ xs: 12 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" sx={{ mb: 1 }}>Backtest Data Workflow</Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  Recommended local workflow for 2-3 year historical testing:
-                </Typography>
-                <Typography variant="body2">1. Import historical candles into PostgreSQL (manual SQL or future CSV uploader).</Typography>
-                <Typography variant="body2">2. Keep at least 2-3 years for each tested symbol/timeframe to reduce overfitting risk.</Typography>
-                <Typography variant="body2">3. Use realistic fees/slippage in every backtest run.</Typography>
-                <Typography variant="body2">4. Treat results as hypothesis evidence, not guaranteed profitability.</Typography>
-              </CardContent>
-            </Card>
+        {activeTab === 'exchange' ? (
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, lg: 6 }}>
+              <Card>
+                <CardContent>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                    <Typography variant="h6">Exchange Balance</Typography>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<RefreshIcon />}
+                      onClick={() => void refetchBalance()}
+                    >
+                      Refresh
+                    </Button>
+                  </Stack>
+                  {isExchangeBalanceError ? (
+                    <Alert severity="warning">
+                      Live exchange balance endpoint unavailable. Ensure backend supports live routing.
+                    </Alert>
+                  ) : (
+                    <Stack spacing={1}>
+                      <Typography variant="body2">
+                        Exchange: {exchangeBalance?.exchange ?? connectionStatus?.exchange ?? 'Live Exchange'}
+                      </Typography>
+                      <Typography variant="body2">Available: {exchangeBalance?.available ?? '-'}</Typography>
+                      <Typography variant="body2">Locked: {exchangeBalance?.locked ?? '-'}</Typography>
+                      <Typography variant="body2">Total: {exchangeBalance?.total ?? '-'}</Typography>
+                      <Typography variant="body2">Last Sync: {exchangeBalance?.lastSync ?? '-'}</Typography>
+                      {exchangeBalance?.assets?.slice(0, 6).map((asset) => (
+                        <Typography key={asset.symbol} variant="caption">
+                          {asset.symbol}: {asset.amount} ({asset.valueUSD} USD)
+                        </Typography>
+                      ))}
+                    </Stack>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid size={{ xs: 12, lg: 6 }}>
+              <Card sx={{ mb: 2 }}>
+                <CardContent>
+                  <Typography variant="h6" sx={{ mb: 2 }}>
+                    Connection Status
+                  </Typography>
+                  {isConnectionError ? (
+                    <Alert severity="warning">
+                      Connection status endpoint unavailable. Use test connection action to verify.
+                    </Alert>
+                  ) : (
+                    <Stack spacing={1}>
+                      <Typography variant="body2">
+                        Connected: {connectionStatus?.connected ? 'Yes' : 'No'}
+                      </Typography>
+                      <Typography variant="body2">Rate Limit: {connectionStatus?.rateLimitUsage ?? '-'}</Typography>
+                      <Typography variant="body2">Last Sync: {connectionStatus?.lastSync ?? '-'}</Typography>
+                      {connectionStatus?.error ? (
+                        <Alert severity="error">{connectionStatus.error}</Alert>
+                      ) : null}
+                    </Stack>
+                  )}
+                  <Button
+                    variant="outlined"
+                    sx={{ mt: 2 }}
+                    onClick={() => void runConnectionTest()}
+                    disabled={isTestingConnection}
+                  >
+                    Test Connection
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" sx={{ mb: 2 }}>
+                    Open Orders
+                  </Typography>
+                  <Stack spacing={0.5}>
+                    {exchangeOrders.length === 0 ? (
+                      <Typography variant="body2">No open orders reported.</Typography>
+                    ) : (
+                      exchangeOrders.slice(0, 10).map((order) => (
+                        <Typography key={order.id} variant="caption">
+                          #{order.id} {order.symbol} {order.side} @ {order.entryPrice} ({order.quantity}){' '}
+                          [{order.status}]
+                        </Typography>
+                      ))
+                    )}
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Grid>
           </Grid>
-        </Grid>
+        ) : null}
       </Box>
     </AppLayout>
   );

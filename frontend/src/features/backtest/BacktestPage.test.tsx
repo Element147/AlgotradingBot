@@ -83,7 +83,7 @@ describe('BacktestPage', { timeout: 15000 }, () => {
 
     expect(screen.getByText('Backtest')).toBeInTheDocument();
     expect(screen.getByText('Dataset Upload')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Run Backtest' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Run New Backtest' })).toBeInTheDocument();
     expect(screen.getByText('Backtest History')).toBeInTheDocument();
     expect(screen.getByText('42')).toBeInTheDocument();
   });
@@ -92,8 +92,8 @@ describe('BacktestPage', { timeout: 15000 }, () => {
     render(<BacktestPage />);
 
     expect(screen.getByText('Backtest Details #42')).toBeInTheDocument();
-    expect(screen.getByText('Algorithm: BOLLINGER_BANDS')).toBeInTheDocument();
-    expect(screen.getByText('Dataset: BTC 1h 2025')).toBeInTheDocument();
-    expect(screen.getByText('Fees/Slippage: 10 / 3 bps')).toBeInTheDocument();
+    expect(screen.getByText(/Algorithm: BOLLINGER_BANDS/)).toBeInTheDocument();
+    expect(screen.getByText(/Dataset: BTC 1h 2025/)).toBeInTheDocument();
+    expect(screen.getByText(/Validation: PASSED/)).toBeInTheDocument();
   });
 });

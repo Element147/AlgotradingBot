@@ -5,6 +5,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import App from './App';
 import authReducer from './features/auth/authSlice';
+import environmentReducer from './features/environment/environmentSlice';
 import settingsReducer from './features/settings/settingsSlice';
 
 // Mock the page components to avoid loading actual implementations
@@ -40,6 +41,7 @@ describe('App Routing', () => {
   const createMockStore = (isAuthenticated = false) => configureStore({
       reducer: {
         auth: authReducer,
+        environment: environmentReducer,
         settings: settingsReducer,
       },
       preloadedState: {
@@ -52,13 +54,26 @@ describe('App Routing', () => {
           isAuthenticated,
           loading: false,
           error: null,
-          sessionExpiry: null,
-          lastActivity: null,
+          sessionTimeout: null,
+          lastActivity: Date.now(),
+        },
+        environment: {
+          mode: 'test',
+          connectedExchange: null,
+          lastSyncTime: null,
         },
         settings: {
           theme: 'light',
           currency: 'USD',
           timezone: 'UTC',
+          textScale: 1,
+          notifications: {
+            emailAlerts: true,
+            telegramAlerts: false,
+            profitLossThreshold: 5,
+            drawdownThreshold: 15,
+            riskThreshold: 75,
+          },
         },
       },
     });

@@ -6,6 +6,7 @@ import type { RootState } from '../app/store';
 
 import { setToken, logout } from '@/features/auth/authSlice';
 import { getStoredRefreshToken, redirectToLogin } from '@/features/auth/authStorage';
+import { getOrCreateCsrfToken } from '@/utils/security';
 
 // Mutex to prevent multiple simultaneous refresh attempts
 const mutex = new Mutex();
@@ -20,8 +21,15 @@ const mutex = new Mutex();
  * - Error handling
  */
 const baseQuery = fetchBaseQuery({
-  baseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080',
-  prepareHeaders: (headers, { getState }) => {
+  baseUrl: (() => {
+    const configured = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+    if (import.meta.env.PROD && configured.startsWith('http://')) {
+      return configured.replace('http://', 'https://');
+    }
+    return configured;
+  })(),
+  prepareHeaders: (headers, context) => {
+    const { getState, arg } = context;
     const state = getState() as RootState;
     
     // Add authentication token if available
@@ -36,8 +44,20 @@ const baseQuery = fetchBaseQuery({
     const environment = state.environment?.mode ?? 'test';
     headers.set('X-Environment', environment);
     
+    const method =
+      typeof arg === 'string'
+        ? 'GET'
+        : (arg.method?.toUpperCase() ?? 'GET');
+    const body = typeof arg === 'string' ? undefined : arg.body;
+    const isMutationMethod = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+
+    if (isMutationMethod) {
+      headers.set('X-CSRF-Token', getOrCreateCsrfToken());
+      headers.set('X-Requested-With', 'XMLHttpRequest');
+    }
+
     // Add content type for JSON requests
-    if (!headers.has('Content-Type')) {
+    if (!headers.has('Content-Type') && !(body instanceof FormData)) {
       headers.set('Content-Type', 'application/json');
     }
     
@@ -182,8 +202,8 @@ export const baseQueryWithErrorHandling: BaseQueryFn<
   // Log errors in development
   if (result.error && import.meta.env.DEV) {
     console.error('API Error:', {
-      args,
-      error: result.error,
+      status: result.error.status,
+      endpoint: typeof args === 'string' ? args : args.url,
     });
   }
   

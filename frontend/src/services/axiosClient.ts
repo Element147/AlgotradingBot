@@ -3,6 +3,7 @@ import axios, { type AxiosInstance, type InternalAxiosRequestConfig, type AxiosR
 import { store } from '../app/store';
 import { setToken, logout } from '../features/auth/authSlice';
 import { getStoredRefreshToken, redirectToLogin } from '../features/auth/authStorage';
+import { getOrCreateCsrfToken } from '../utils/security';
 
 /**
  * Axios client instance with authentication and environment injection
@@ -15,9 +16,17 @@ import { getStoredRefreshToken, redirectToLogin } from '../features/auth/authSto
  * For standard CRUD operations, prefer RTK Query APIs (authApi, tradesApi, etc.)
  */
 
+const API_BASE_URL = (() => {
+  const configured = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+  if (import.meta.env.PROD && configured.startsWith('http://')) {
+    return configured.replace('http://', 'https://');
+  }
+  return configured;
+})();
+
 // Create Axios instance with base configuration
 const axiosClient: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080',
+  baseURL: API_BASE_URL,
   timeout: 30000, // 30 seconds
   headers: {
     'Content-Type': 'application/json',
@@ -63,6 +72,12 @@ axiosClient.interceptors.request.use(
     const environment = state.environment?.mode ?? 'test';
     if (config.headers) {
       config.headers['X-Environment'] = environment;
+    }
+
+    const method = config.method?.toUpperCase();
+    if (config.headers && method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+      config.headers['X-CSRF-Token'] = getOrCreateCsrfToken();
+      config.headers['X-Requested-With'] = 'XMLHttpRequest';
     }
     
     // Add request timestamp for debugging in development
@@ -115,7 +130,7 @@ axiosClient.interceptors.response.use(
         if (refreshToken) {
           // Attempt to refresh the token
           const response = await axios.post(
-            `${import.meta.env.VITE_API_BASE_URL}/api/auth/refresh`,
+            `${API_BASE_URL}/api/auth/refresh`,
             { refreshToken },
             {
               headers: {

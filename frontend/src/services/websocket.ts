@@ -287,7 +287,11 @@ let wsManager: WebSocketManager | null = null;
  */
 export const getWebSocketManager = (): WebSocketManager => {
   if (!wsManager) {
-    const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:8080/ws';
+    const configured = import.meta.env.VITE_WS_URL || 'ws://localhost:8080/ws';
+    const wsUrl =
+      import.meta.env.PROD && configured.startsWith('ws://')
+        ? configured.replace('ws://', 'wss://')
+        : configured;
     wsManager = new WebSocketManager(wsUrl);
   }
   return wsManager;

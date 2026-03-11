@@ -71,7 +71,7 @@ export const BalanceCard: React.FC = () => {
         </Box>
 
         {/* Total Balance */}
-        <Box mb={3}>
+        <Box mb={3} aria-live="polite">
           <Typography variant="body2" color="text.secondary">
             Total Balance
           </Typography>
@@ -129,7 +129,7 @@ export const BalanceCard: React.FC = () => {
         </Box>
 
         {/* Last Sync */}
-        <Box mt={2}>
+        <Box mt={2} aria-live="polite">
           <Typography variant="caption" color="text.secondary">
             Last updated: {new Date(balance.lastSync).toLocaleString()}
           </Typography>

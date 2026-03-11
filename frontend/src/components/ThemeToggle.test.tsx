@@ -17,6 +17,14 @@ const createMockStore = (theme: 'light' | 'dark' = 'light') => configureStore({
         theme,
         currency: 'USD',
         timezone: 'UTC',
+        textScale: 1,
+        notifications: {
+          emailAlerts: true,
+          telegramAlerts: false,
+          profitLossThreshold: 5,
+          drawdownThreshold: 15,
+          riskThreshold: 75,
+        },
       },
     },
   });

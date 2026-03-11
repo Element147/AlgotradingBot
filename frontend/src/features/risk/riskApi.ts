@@ -41,6 +41,7 @@ export const riskApi = createApi({
   reducerPath: 'riskApi',
   baseQuery: baseQueryWithEnvironment,
   tagTypes: ['Risk'],
+  keepUnusedDataFor: 300,
   endpoints: (builder) => ({
     getRiskStatus: builder.query<RiskStatus, void>({
       query: () => '/api/risk/status',

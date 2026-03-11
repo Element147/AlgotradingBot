@@ -1,12 +1,17 @@
-import { ThemeProvider, CssBaseline } from '@mui/material';
-import { lazy, Suspense, useMemo } from 'react';
-import { useSelector } from 'react-redux';
+import { ThemeProvider, CssBaseline, Box } from '@mui/material';
+import { lazy, Suspense, useEffect, useMemo } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
+import { useAppDispatch, useAppSelector } from './app/hooks';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingFallback from './components/LoadingFallback';
 import ProtectedRoute from './components/ProtectedRoute';
-import { selectTheme } from './features/settings/settingsSlice';
+import { accountApi } from './features/account/accountApi';
+import { backtestApi } from './features/backtest/backtestApi';
+import { riskApi } from './features/risk/riskApi';
+import { selectTextScale, selectTheme } from './features/settings/settingsSlice';
+import { strategiesApi } from './features/strategies/strategiesApi';
+import { tradesApi } from './features/trades/tradesApi';
 import { lightTheme, darkTheme } from './theme/theme';
 import './App.css';
 
@@ -21,7 +26,9 @@ const SettingsPage = lazy(() => import('./features/settings/SettingsPage'));
 
 function App() {
   // Get current theme from Redux state
-  const themeMode = useSelector(selectTheme);
+  const dispatch = useAppDispatch();
+  const themeMode = useAppSelector(selectTheme);
+  const textScale = useAppSelector(selectTextScale);
 
   // Memoize theme to avoid unnecessary recalculations
   const theme = useMemo(
@@ -29,14 +36,29 @@ function App() {
     [themeMode]
   );
 
+  useEffect(() => {
+    if (import.meta.env.MODE === 'test') {
+      return;
+    }
+    dispatch(accountApi.util.prefetch('getBalance', undefined, { force: false }));
+    dispatch(accountApi.util.prefetch('getPerformance', 'today', { force: false }));
+    dispatch(accountApi.util.prefetch('getOpenPositions', undefined, { force: false }));
+    dispatch(accountApi.util.prefetch('getRecentTrades', 10, { force: false }));
+    dispatch(strategiesApi.util.prefetch('getStrategies', undefined, { force: false }));
+    dispatch(tradesApi.util.prefetch('getTradeHistory', { limit: 200 }, { force: false }));
+    dispatch(backtestApi.util.prefetch('getBacktests', undefined, { force: false }));
+    dispatch(riskApi.util.prefetch('getRiskStatus', undefined, { force: false }));
+  }, [dispatch]);
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       {/* App-level error boundary catches all errors */}
       <ErrorBoundary>
         <BrowserRouter>
-          <Suspense fallback={<LoadingFallback />}>
-            <Routes>
+          <Box sx={{ fontSize: `${textScale}rem`, minHeight: '100vh' }}>
+            <Suspense fallback={<LoadingFallback />}>
+              <Routes>
               {/* Public route - Login */}
               <Route
                 path="/login"
@@ -112,8 +134,9 @@ function App() {
               {/* Default and catch-all routes */}
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
-          </Suspense>
+              </Routes>
+            </Suspense>
+          </Box>
         </BrowserRouter>
       </ErrorBoundary>
     </ThemeProvider>

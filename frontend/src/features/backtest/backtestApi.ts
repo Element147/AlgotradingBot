@@ -62,6 +62,7 @@ export const backtestApi = createApi({
   reducerPath: 'backtestApi',
   baseQuery: baseQueryWithEnvironment,
   tagTypes: ['Backtests', 'BacktestDatasets'],
+  keepUnusedDataFor: 600,
   endpoints: (builder) => ({
     getBacktests: builder.query<BacktestHistoryItem[], void>({
       query: () => '/api/backtests?limit=20',

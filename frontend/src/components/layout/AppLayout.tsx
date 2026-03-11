@@ -25,10 +25,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-      <Sidebar open={sidebarOpen} onClose={handleSidebarClose} />
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
+      <Box component="aside" aria-label="Primary navigation">
+        <Sidebar open={sidebarOpen} onClose={handleSidebarClose} />
+      </Box>
       
       <Box
-        component="main"
+        component="section"
         sx={{
           flexGrow: 1,
           display: 'flex',
@@ -40,9 +45,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           }),
         }}
       >
-        <Header onMenuClick={handleMenuClick} />
+        <Box component="header">
+          <Header onMenuClick={handleMenuClick} />
+        </Box>
         
         <Box
+          id="main-content"
+          component="main"
+          role="main"
           sx={{
             flexGrow: 1,
             p: { xs: 2, sm: 3 }, // Responsive padding

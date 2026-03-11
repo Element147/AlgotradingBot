@@ -81,7 +81,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
         <IconButton
           edge="start"
           color="inherit"
-          aria-label="menu"
+          aria-label="Toggle navigation menu"
           onClick={onMenuClick}
           sx={{ mr: 2 }}
         >
@@ -102,7 +102,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
         {/* Notifications */}
         <IconButton
           color="inherit"
-          aria-label="notifications"
+          aria-label="Open notifications"
           onClick={handleNotificationMenuOpen}
           sx={{ mr: 1 }}
         >
@@ -115,7 +115,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
         <IconButton
           edge="end"
           color="inherit"
-          aria-label="account"
+          aria-label="Open account menu"
           onClick={handleUserMenuOpen}
         >
           <Avatar
