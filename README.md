@@ -123,6 +123,7 @@ cd C:\Git\algotradingbot
 - `PROJECT_STATUS.md`
 - `ARCHITECTURE.md`
 - `TRADING_GUARDRAILS.md`
+- `docs/SMALL_ACCOUNT_STRATEGY_RESEARCH.md`
 - `docs/USER_WORKFLOW_GUIDE.md`
 - `VERIFICATION.md`
 - `docs/ROADMAP.md`
