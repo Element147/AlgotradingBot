@@ -1,123 +1,81 @@
-﻿# TRADING_GUARDRAILS.md
+# TRADING_GUARDRAILS.md
 
 ## Purpose
 
-These are repository-level safety rules for research, backtesting, paper trading, and any future live-trading work. They are stricter than feature convenience and should not be relaxed casually.
+Repository-level safety rules for research, backtesting, paper trading, and any future live-readiness work.
 
-## Non-Negotiable Rules
+These rules take precedence over convenience.
+
+## Non-Negotiables
 
 - No real-money trading by default.
 - No profitability claims without reproducible evidence.
-- No deployment of new strategy logic straight to live trading.
-- No mixing of test, paper, and live credentials or data stores.
-- No changes to risk limits without documenting why, how they were tested, and who approved them.
+- No direct promotion of backtest/paper results as live outcomes.
+- No weakening of environment separation, risk controls, or operator override safety.
 
-## Environment Separation
+## Environment Policy
 
-Treat these as distinct operating modes:
+Treat these as distinct modes:
 
-- `test`: local development, fixtures, mocks, synthetic data, and experiments
-- `paper`: real market data or exchange simulation without real order placement
-- `live`: real exchange credentials and real-money execution
+- `test`: local development, synthetic/research workflows
+- `paper`: simulated execution with no live order placement
+- `live`: real credentials/connectivity context (must be explicit)
 
-Required expectations:
+Required controls:
 
-- Separate configuration for each environment
-- Separate credentials and secrets
-- Clear UI and API indication of the active environment
+- Separate config and credentials by mode
+- Clear UI/API mode visibility
 - Safe default to `test`
-- Explicit user confirmation before entering `live`
+- Explicit confirmation before any `live` action
 
-## Paper Trading Before Live Trading
+## Risk Baseline Defaults
 
-Paper trading is mandatory before any live-trading consideration.
-
-Minimum expectations before live consideration:
-
-- Reproducible backtest results with realistic costs
-- Out-of-sample or walk-forward validation
-- Paper-trading soak test with stable behavior
-- Verified operator controls, alerts, and kill switch
-- Documented rollback path
-
-## Baseline Risk Limits
-
-These are the repository's default guardrail targets until explicitly changed and verified:
-
-- Max risk per trade: 2% of account equity
-- Max aggregate open risk: 6% of account equity
-- Max drawdown stop: 25%
-- Cash buffer target: 20% to 30%
+- Max risk per trade: `2%` of equity
+- Max aggregate open risk: `6%`
+- Max drawdown stop: `25%`
+- Cash buffer target: `20-30%`
 - No leverage by default
 
-If automation does not yet enforce one of these limits, treat it as a manual operating rule and document the gap.
+If any control is not fully automated yet, it remains a mandatory manual operating rule.
 
-## Daily Loss And Drawdown Stops
+## Small-Account Action Policy
 
-Minimum expected controls:
+Conservative interpretation for small-account operation:
 
-- Daily realized loss stop before more trades are opened
-- Drawdown stop that halts strategy execution or paper/live order creation
-- Circuit breaker that prevents repeated execution after degraded performance
-- Manual reset or override path with audit logging
+- Default bearish action: `SELL_TO_CASH` / flat exposure
+- Stock short exposure: optional `SHORT_PROXY` only when explicitly modeled (for example inverse ETF research)
+- Crypto direct short/margin/futures: not default behavior
 
-Repository policy target:
+## Circuit Breaker and Kill-Switch Expectations
 
-- Daily realized loss stop should be defined and enforced before paper-trading automation is considered complete
-
-## Circuit Breaker And Kill Switch Expectations
-
-The system should support:
+System should support:
 
 - Strategy-level stop
 - Account-level stop
 - Environment-level kill switch
-- Manual operator override with traceable audit record
-- Clear UI status for triggered guardrails
-
-No live trading should be considered until a kill switch can be exercised and verified locally.
+- Manual override with audit trail
+- Clear UI state of triggered guardrails
 
 ## Validation Requirements Before Any Live Consideration
 
-All of the following should exist and be reproducible:
+All should be reproducible:
 
 - Versioned strategy parameters
-- Historical backtest with fees and slippage
-- Out-of-sample evaluation
-- Walk-forward or regime-sensitivity analysis
-- Trade count high enough to support statistical interpretation
-- Paper-trading results with operational logs
-- Failure-mode testing for restarts, disconnects, and stale market data
+- Fees and slippage included in analysis
+- Out-of-sample or walk-forward validation
+- Sufficient trade count for interpretation
+- Paper-trading soak period with stable behavior
+- Failure-mode testing (disconnects/restarts/stale data)
+- Verified rollback path
 
-## Honest Strategy Evaluation Standards
+## Honest Reporting Standard
 
 Every strategy report should state:
 
-- Data period and instruments used
-- Fees and slippage assumptions
-- In-sample vs out-of-sample split
-- Trade count
-- Max drawdown
-- Profit factor, Sharpe, and win rate
-- Known failure regimes and limitations
+- data period and instruments
+- fees/slippage assumptions
+- in-sample vs out-of-sample split
+- trade count, drawdown, Sharpe, profit factor, win rate
+- known failure regimes and limitations
 
-Never present:
-
-- Hypothetical returns as guaranteed outcomes
-- Backtests as proof of future profitability
-- Paper-trading results as live results
-- Optimized parameters without disclosing validation method
-
-## Prohibited Claims
-
-Do not write or imply:
-
-- "This strategy is profitable"
-- "This bot will scale capital to a target amount"
-- "Expected monthly returns are X" unless backed by reproducible evidence and clearly labeled as historical or simulated
-
-Allowed wording:
-
-- "Current backtest shows X under these assumptions"
-- "Paper-trading results over Y days were Z"
-- "This remains a research hypothesis pending further validation"
+Never state or imply guaranteed returns.

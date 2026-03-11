@@ -1,93 +1,66 @@
 # AlgoTrading Bot
 
-Local-first full-stack algorithmic trading research platform for strategy management, backtesting, risk controls, and paper trading.
+Local-first full-stack algorithmic trading research platform for strategy research, backtesting, risk controls, and paper-trading workflows.
 
-This project is research-first and safety-first:
-- default behavior is `test`/`paper`
-- no live-money trading by default
-- no profitability claims without reproducible evidence
+## Safety First
+
+- Default behavior is `test`/`paper`.
+- Live-money trading is never enabled by default.
+- Backtests and paper results are research artifacts, not proof of future profitability.
+
+## Current Capability Snapshot (March 11, 2026)
+
+Implemented and usable end-to-end:
+
+- Strategy management APIs and UI workflows
+- Backtest execution, history, and details
+- Risk configuration and circuit-breaker controls
+- Paper-trading lifecycle and dashboard state
+- Small-account strategy catalog in backend backtest engine
+
+Backtest strategy catalog:
+
+- `BUY_AND_HOLD`
+- `DUAL_MOMENTUM_ROTATION`
+- `VOLATILITY_MANAGED_DONCHIAN_BREAKOUT`
+- `TREND_PULLBACK_CONTINUATION`
+- `REGIME_FILTERED_MEAN_REVERSION`
+- `TREND_FIRST_ADAPTIVE_ENSEMBLE`
+- `SMA_CROSSOVER`
+- `BOLLINGER_BANDS`
+
+## Backtest Execution Model
+
+- Strategies are isolated classes behind `BacktestStrategy` and discovered via `BacktestStrategyRegistry`.
+- Execution modes:
+  - `SINGLE_SYMBOL`
+  - `DATASET_UNIVERSE`
+- Action model is currently conservative (`long/rotate/sell-to-cash/hold`).
+- True shorting, margin, and leverage are not default behavior.
 
 ## Stack
 
-- Backend: Java 21, Spring Boot 4.0.3, Gradle Kotlin DSL (wrapper 9.4.0)
+- Backend: Java 21, Spring Boot 4.0.3, Gradle Kotlin DSL
 - Frontend: React 19, TypeScript, Vite, Redux Toolkit, RTK Query, React Router 7, MUI 7
-- Local infra: Docker Compose for PostgreSQL (`AlgotradingBot/compose.yaml`)
+- Runtime DB: PostgreSQL via Docker Compose (`AlgotradingBot/compose.yaml`)
+- Backend tests/build: H2 in-memory (`test` profile)
 
-## Database Mode Policy
+## Local Commands
 
-- Runtime backend (`bootRun` / app start) uses PostgreSQL (`jdbc:postgresql://localhost:5432/algotrading`) and expects Docker DB to be running.
-- Backend tests (`.\gradlew.bat test`, `.\gradlew.bat build`) run with Spring `test` profile on H2 in-memory database.
-- Build/test flow must not require Docker PostgreSQL.
-- Liquibase runs on runtime PostgreSQL startup and seeds default admin credentials (`admin` / `dogbert`) on first migration run.
-
-## Direct CMD Commands
-
-Use these directly from Windows `cmd`:
-
-```cmd
-cd /d C:\Git\algotradingbot\AlgotradingBot && docker compose -f compose.yaml up -d postgres
-cd /d C:\Git\algotradingbot\AlgotradingBot && gradlew.bat clean build
-cd /d C:\Git\algotradingbot\AlgotradingBot && gradlew.bat bootRun
-cd /d C:\Git\algotradingbot\frontend && npm run build
-cd /d C:\Git\algotradingbot\frontend && npm run dev
-```
-
-## MVP Status (March 10, 2026)
-
-Implemented and wired end-to-end:
-- Strategy Management MVP (backend endpoints + frontend working page)
-- Backtest MVP (run + history/details with fees/slippage metadata)
-- Risk Controls MVP (config + circuit breaker status/override safeguards)
-- Paper Trading MVP (minimal order lifecycle + dashboard paper state)
-
-No placeholder pages remain for:
-- Strategies (`/strategies`)
-- Backtest (`/backtest`)
-- Risk (`/risk`)
-
-## Local Start (Exact Commands)
-
-From repo root (`C:\Git\algotradingbot`):
+Fast local developer flow (recommended):
 
 ```powershell
 .\build.ps1
 .\run.ps1
-```
-
-These root wrappers orchestrate local development:
-- `.\build.ps1` -> full-stack build
-- `.\run.ps1` -> start PostgreSQL (Docker), backend (local), frontend (local)
-- `.\stop.ps1` -> stop backend + frontend local processes and PostgreSQL container
-
-Stop all services:
-
-```powershell
 .\stop.ps1
 ```
 
-## Local URLs
+Legacy full-stack wrappers are still available:
 
-- Frontend: http://localhost:5173
-- Backend Health: http://localhost:8080/actuator/health
-- Swagger UI: http://localhost:8080/swagger-ui.html
-
-## Local Backtest Workflow
-
-1. Open `http://localhost:5173/backtest`.
-2. In `Dataset Upload`, select your local CSV and upload it.
-3. In `Run Backtest`, choose:
-   - `Algorithm` from the full research catalog exposed by the backend
-   - uploaded `Dataset`
-   - market/date range/assumptions (fees + slippage)
-4. Strategy behavior depends on execution mode:
-   - `SINGLE_SYMBOL` strategies use one symbol from the dataset
-   - `DATASET_UNIVERSE` strategies automatically use all dataset symbols
-5. Click `Run Backtest` and monitor status/results in history/details.
-
-CSV format expected:
-
-```text
-timestamp,symbol,open,high,low,close,volume
+```powershell
+.\build-all.ps1
+.\run-all.ps1
+.\stop-all.ps1
 ```
 
 ## Verification Commands
@@ -109,29 +82,16 @@ cd AlgotradingBot
 .\gradlew.bat build
 ```
 
-Backend verification commands above do not require PostgreSQL Docker container.
-
-Cross-stack orchestration:
-
-```powershell
-cd C:\Git\algotradingbot
-.\stop.ps1
-.\build.ps1
-.\run.ps1
-```
-
-## Key Docs
+## Canonical Documentation
 
 - `AGENTS.md`
 - `PROJECT_STATUS.md`
 - `ARCHITECTURE.md`
 - `TRADING_GUARDRAILS.md`
-- `docs/BACKTEST_STRATEGY_REFACTOR.md`
-- `docs/GREENFIELD_STRATEGY_IMPLEMENTATION.md`
-- `docs/SPRING_MODERNIZATION_AUDIT.md`
+- `docs/ROADMAP.md`
+- `docs/ACCEPTANCE_CRITERIA.md`
 - `docs/GREENFIELD_SMALL_ACCOUNT_STRATEGY_BLUEPRINT.md`
 - `docs/SMALL_ACCOUNT_STRATEGY_RESEARCH.md`
 - `docs/USER_WORKFLOW_GUIDE.md`
-- `VERIFICATION.md`
-- `docs/ROADMAP.md`
-- `docs/ACCEPTANCE_CRITERIA.md`
+
+Repository policy: completed one-off implementation logs are removed after their key decisions are merged into the canonical docs above.

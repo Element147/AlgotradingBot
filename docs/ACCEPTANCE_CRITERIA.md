@@ -1,86 +1,62 @@
-﻿# ACCEPTANCE_CRITERIA
+# ACCEPTANCE_CRITERIA
 
-## Definition Of Done Template
+Status updated: March 11, 2026
 
-Every feature should meet all of these unless a task explicitly says otherwise:
+## Definition Of Done (Global)
 
-- The relevant spec or requirement is identified.
-- The implementation matches the current architecture or documents an intentional deviation.
-- Safety defaults remain conservative.
-- Tests or verification steps are run and recorded.
-- User-facing and developer-facing docs are updated if behavior changed.
-- Known gaps, assumptions, and follow-up work are listed.
+Every change is done only when all are true:
 
-## Backend Endpoint
+- Scope aligns with current architecture or documents an intentional deviation.
+- Safety defaults remain conservative (`test`/`paper` first).
+- Relevant verification commands are run and results are recorded.
+- Backend/frontend contract changes are reflected on both sides.
+- Canonical docs are updated when behavior or boundaries change.
+- Assumptions, gaps, and residual risks are called out explicitly.
 
-- Endpoint has request/response DTOs.
-- Service logic is separated from controller wiring.
-- Validation and error handling are explicit.
-- Auth and environment rules are enforced where relevant.
-- Tests cover success, validation failure, and auth/error behavior.
-- API contract is reflected in frontend usage or documented for future consumers.
+## Backend Change
 
-## Frontend Page Or Component
+- Controller/service/repository concerns remain separated.
+- Money/risk calculations use `BigDecimal`.
+- DTO boundaries are preserved (no JPA entity leakage to HTTP).
+- New strategy or execution logic includes risk checks and mode gating.
+- Tests cover success path plus meaningful failure/validation cases.
 
-- Uses typed props and typed API data.
-- Handles loading, empty, error, and success states.
-- Uses the established feature-based structure.
-- Reflects active environment clearly when relevant.
-- Tests cover core rendering and critical interactions.
-- Docs or status files are updated if the page materially changes project completion.
+## Frontend Change
 
-## WebSocket Or Event Flow
+- Feature-module boundaries are preserved.
+- Loading/empty/error/success states are handled.
+- Environment mode impact is visible and correct.
+- API contract adaptation is centralized (not scattered in components).
+- Tests cover key user interactions and regressions.
 
-- Event name and payload shape are documented.
-- Backend publisher and frontend consumer agree on payload fields.
-- Reconnection and stale-connection behavior are defined.
-- UI behavior under delayed or missing events is acceptable.
-- Tests cover at least one happy path and one failure or reconnect path.
+## Strategy/Backtest Change
 
-## Strategy Module
+- Inputs, assumptions, and parameters are explicit.
+- Fees/slippage are included.
+- Action model (`long/flat/short-proxy`) is explicit and mode-safe.
+- Metrics include at least return, drawdown, Sharpe, profit factor, win rate, trade count.
+- Claims are clearly labeled as simulated/paper unless proven otherwise.
 
-- Inputs, parameters, and assumptions are documented.
-- Entry, exit, stop-loss, and sizing behavior are explicit.
-- Fees and slippage assumptions are included in evaluation.
-- Risk checks are applied before simulated or paper/live execution.
-- Unit tests cover edge cases and numeric correctness.
-- Any performance statement is labeled as simulated unless proven otherwise.
+## Documentation Change
 
-## Backtesting Module
+- Update only canonical docs for durable decisions:
+  - `README.md`
+  - `PROJECT_STATUS.md`
+  - `ARCHITECTURE.md`
+  - `TRADING_GUARDRAILS.md`
+  - `docs/ROADMAP.md`
+  - `docs/ACCEPTANCE_CRITERIA.md`
+- One-off completion/progress logs should be removed after key findings are merged.
 
-- Input dataset and date range are explicit.
-- Fees and slippage are modeled.
-- Results are reproducible from the same inputs and parameters.
-- Metrics include at least trade count, drawdown, Sharpe, profit factor, and win rate.
-- Out-of-sample or walk-forward handling is documented when used.
-- Tests cover calculation correctness and representative scenarios.
+## Verification Baseline
 
-## Paper Trading Workflow
+Frontend (as needed):
 
-- Paper environment is clearly distinct from test and live.
-- No real-money credentials or order placement are used.
-- Order lifecycle, fills, balances, and logs are visible.
-- Operator can stop strategies and inspect recent activity.
-- At least one end-to-end verification path is documented and repeatable.
+- `npm run lint`
+- `npm run test -- --watch=false`
+- `npm run build`
 
-## Risk Control Feature
+Backend (as needed):
 
-- Guardrail threshold is documented.
-- Trigger condition, resulting action, and reset behavior are explicit.
-- UI and backend agree on current state representation.
-- Manual override behavior is audited and access-controlled.
-- Tests cover trigger and non-trigger behavior.
-
-## Required Testing Expectations
-
-- Financial calculations: strong unit coverage
-- API endpoints: controller/service tests where practical
-- Frontend critical flows: component or integration coverage
-- Cross-stack contract changes: verified on both sides or clearly documented as pending
-
-## Required Documentation Expectations
-
-- Update `PROJECT_STATUS.md` when completion or risk posture changes.
-- Update `ARCHITECTURE.md` when boundaries or module responsibilities change.
-- Update `TRADING_GUARDRAILS.md` when risk or environment rules change.
-- Update roadmap or spec references when priorities materially shift.
+- `.\gradlew.bat test`
+- `.\gradlew.bat build`

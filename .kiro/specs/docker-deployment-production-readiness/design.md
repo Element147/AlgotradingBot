@@ -30,7 +30,7 @@ The production deployment consists of four primary components:
 2. **Service Orchestration Layer (Docker Compose)**
    - PostgreSQL 16: Persistent data storage with health checks
    - Apache Kafka 7.6.0: Event streaming with KRaft mode (no Zookeeper)
-   - AlgotradingBot Application: Spring Boot 3.4.1 with graceful shutdown
+   - AlgotradingBot Application: Spring Boot 4.0.3 with graceful shutdown
    - Custom bridge network: Isolated inter-service communication
 
 3. **Validation Suite**

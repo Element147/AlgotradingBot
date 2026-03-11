@@ -1,38 +1,39 @@
-﻿# Product Overview
+# Product Overview
 
-Local-first cryptocurrency algorithmic trading research platform focused on safe iteration, reproducible validation, and gradual progression from backtesting to paper trading.
+Local-first algorithmic trading research platform for stock and crypto strategy experimentation.
 
-## Core Strategy
-Bollinger Bands Mean Reversion on BTC/USDT and ETH/USDT pairs using 1-hour candles. Entry on lower band bounce, exit at middle band or stop-loss.
+## Product Intent
+
+- Build reliable strategy research, backtesting, risk-control, and paper-trading workflows.
+- Keep default operating mode conservative (`test`/`paper`).
+- Treat every strategy as a hypothesis to validate, not a guaranteed edge.
+
+## Current Strategy Posture
+
+The backtest catalog is trend-first with benchmark and regime-diversification coverage:
+
+- Benchmark/baseline: `BUY_AND_HOLD`
+- Trend/rotation family: dual momentum, Donchian breakout, pullback continuation
+- Regime-aware layer: mean reversion and adaptive ensemble
+- Simple references: SMA crossover, Bollinger bands
 
 ## Risk Philosophy
-- Maximum 2% risk per trade (capital preservation first)
-- No leverage initially (1:1 only)
-- 20-30% cash buffer maintained
-- Circuit breakers and emergency stops required
-- Max drawdown limit: 25%
 
-## Validation Requirements
-Any future live-trading consideration must be backed by reproducible evidence. A strategy should pass all of these criteria before it is even considered for live evaluation:
-- Sharpe Ratio > 1.0
-- Profit Factor > 1.5:1
-- Win Rate 45-55%
-- Max Drawdown < 25%
-- Statistical significance (p-value < 0.05)
-- 2+ years backtest validation
-- Monte Carlo confidence ≥ 95%
+- Max risk per trade: `2%`
+- Max drawdown stop target: `25%`
+- Cash buffer: `20-30%`
+- No leverage by default
+- Operator kill-switch and override controls must remain available
 
-## Delivery Phases
-1. Phase 1: Solid local platform, auth, dashboard, and research foundations
-2. Phase 2: Strategy management, trade history, and backtesting workflows
-3. Phase 3: Paper trading, operator controls, and observability
-4. Phase 4: Optional future live-readiness evaluation after sufficient evidence
+## Delivery Focus
+
+1. Keep current MVP stable and verifiable.
+2. Improve reproducible research and analytics depth.
+3. Harden paper-trading and operator auditability.
+4. Evaluate any future live-readiness only after strict validation gates.
 
 ## Critical Constraints
-- Minimum position: $5-10
-- Maximum position: $50-100 per trade
-- Transaction costs: 0.1% taker fee + 3 bips slippage (always included)
-- Honest expectations: no returns should be implied without reproducible evidence
-- NO curve-fitting, over-optimization, or over-leveraging
 
-
+- No profitability claims without reproducible evidence.
+- No default live-money trading behavior.
+- No weakening of environment separation or risk guardrails.

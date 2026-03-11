@@ -9,7 +9,7 @@ This roadmap is optimized for a local research workflow:
 - keep tests/build Docker-independent via H2 in-memory
 - iterate safely in `test`/`paper` mode
 
-Primary goal: evaluate strategy hypotheses on 2-3 years of historical data with clear UX guidance for beginner users.
+Primary goal: evaluate strategy hypotheses on historical data with clear UX guidance for safe operation.
 
 ## Active Phase Structure (1-13)
 
@@ -33,20 +33,16 @@ Primary goal: evaluate strategy hypotheses on 2-3 years of historical data with 
 
 This optional phase is intentionally excluded from the current default execution path.
 
-## Progress Tracking
-
-- [Implementation Progress Log](./IMPLEMENTATION_PROGRESS.md)
-
 ## Success Criteria for Local-First Track
 
-- Core dashboard pages are implemented (no core placeholders).
-- FE/BE contracts are verified after each major refactor.
-- Beginner users can understand strategy intent, field meaning, and risk context directly in UI.
-- Backtest workflow supports realistic fees/slippage assumptions.
-- Build/test commands stay independent of Docker PostgreSQL.
+- Core dashboard pages are implemented and usable.
+- FE/BE contracts are verified after major changes.
+- Risk context is visible and understandable in UI.
+- Backtest workflows include realistic fee/slippage assumptions.
+- Build/test commands stay independent of runtime PostgreSQL Docker.
 
 ## Notes
 
 - Keep `test`/`paper` defaults conservative.
 - Treat backtest outputs as research artifacts, never guaranteed profitability.
-- Update docs when behavior changes.
+- Keep status and priorities synchronized with `PROJECT_STATUS.md` and `docs/ROADMAP.md`.

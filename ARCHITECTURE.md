@@ -1,122 +1,89 @@
-﻿# ARCHITECTURE.md
+# ARCHITECTURE.md
 
 ## Overview
 
-This repository is a monorepo with a Spring Boot backend in `AlgotradingBot/` and a React/Vite frontend in `frontend/`. The current architecture is suitable for a local laptop workflow, but several boundaries that matter for a serious algo-trading system are only partially implemented today.
+This monorepo has:
 
-## Backend
+- Backend: `AlgotradingBot/` (Spring Boot, Java 21)
+- Frontend: `frontend/` (React + TypeScript + Vite)
 
-### Current modules
+The architecture is optimized for local research and paper-trading workflows, not high-frequency execution.
 
-- `config/`: Spring security, OpenAPI, WebSocket
-- `controller/`: auth, dashboard/account, and strategy-related REST endpoints plus DTOs
-- `service/`: auth, account/dashboard, strategy lifecycle, and system/exchange integration service logic
-- `repository/`: Spring Data JPA repositories
-- `entity/`: `Account`, `Trade`, `Portfolio`, `BacktestResult`, `User`
-- `src/main/resources/db/changelog/`: Liquibase schema/data migrations (including runtime admin bootstrap)
-- `risk/`: position sizing, slippage, transaction costs, risk checks
-- `strategy/`: Bollinger Band indicator, strategy, trade signal model
-- `backtest/`: simulation engine, metrics, validator, Monte Carlo, walk-forward result types
-- `backtest/strategy/`: Spring-managed backtest strategies, registry, shared indicator helpers, selection-mode metadata, and strategy decision types
-- `websocket/`: handler and event publisher
-- `validation/` and `repair/`: local readiness validation and automated repair helpers
+## Backend Architecture
 
-### Current responsibilities
+Primary packages in `com.algotrader.bot`:
 
-- Controllers expose HTTP endpoints and map to DTOs.
-- Services hold business logic with DTO-safe boundaries and integration-test coverage on H2 profile.
-- Settings/exchange operations are exposed via `SystemController` (`/api/system/*`) and `ExchangeController` (`/api/exchange/*`), with connectivity checks isolated in `ExchangeIntegrationService`.
-- Entities and repositories provide persistence.
-- Liquibase owns bootstrap migration concerns (schema bootstrap for users + runtime admin seed).
-- Risk and backtest packages contain meaningful research logic and financial calculations.
-- Backtest algorithms are now separated behind a `BacktestStrategy` interface and discovered through `BacktestStrategyRegistry`, instead of being hard-coded inside one execution service.
-- `BacktestSimulationEngine` owns the execution loop, while `BacktestSimulationMetricsCalculator` owns result statistics.
-- The backtest stack now supports both:
-  - `SINGLE_SYMBOL` execution
-  - `DATASET_UNIVERSE` execution with one active rotating position
+- `controller`: HTTP endpoints and DTO boundaries
+- `service`: orchestration and business logic
+- `repository`: Spring Data JPA access
+- `entity`: persistence models
+- `backtest`: simulation engine, metrics, validators
+- `backtest/strategy`: strategy interface, implementations, registry, indicator helpers
+- `risk`: risk and execution-cost calculations
+- `security`: auth/token/security components
+- `config`, `websocket`, `validation`, `repair`: platform and operational support
 
-## Frontend
+### Backtest Design
 
-### Current modules
+- Strategy seam: each strategy is a separate Spring bean implementing `BacktestStrategy`.
+- Registry seam: `BacktestStrategyRegistry` resolves strategy metadata and execution routing.
+- Simulation seam: `BacktestSimulationEngine` runs execution loops and position transitions.
+- Metrics seam: `BacktestSimulationMetricsCalculator` computes performance statistics.
 
-- `src/app/`: store setup and shared hooks
-- `src/features/auth/`: login flow, auth slice, auth API
-- `src/features/environment/`: test/live mode state and switch UI
-- `src/features/account/`: dashboard account queries
-- `src/features/dashboard/`: layout consumer page, cards, system health, positions, recent trades
-- `src/features/websocket/`: connection state, middleware, hook
-- `src/features/settings/`: theme/settings slice plus placeholder page
-- `src/components/`: protected route, error handling, theme toggle, layout shell
-- `src/services/`: RTK Query base client, Axios client, WebSocket manager
+This avoids single-class "all-logic" backtesting and supports extension without rewriting orchestration.
 
-### Current responsibilities
+### Execution Modes
 
-- RTK Query handles API calls and caching.
-- Redux slices hold auth, environment, theme, and websocket state.
-- Dashboard components render the implemented Phase 2 surface.
-- Most pages after dashboard are still placeholders and should be treated as not yet product-complete.
+- `SINGLE_SYMBOL`: strategy evaluates one selected symbol.
+- `DATASET_UNIVERSE`: strategy can rank/rotate across symbols from the uploaded dataset.
 
-## Data Flow
+Current model supports one active position at a time with conservative action transitions.
 
-### REST flow
+## Frontend Architecture
 
-1. User interacts with a frontend component.
-2. The component calls an RTK Query endpoint.
-3. `baseQueryWithEnvironment` injects auth and environment headers.
-4. Spring controllers receive the request and delegate to services.
-5. Services read from repositories and domain modules, then return DTOs.
-6. The frontend renders RTK Query data.
+Feature modules under `frontend/src/features/`:
 
-### WebSocket flow
+- `auth`
+- `environment`
+- `dashboard`
+- `account`
+- `strategies`
+- `backtest`
+- `risk`
+- `trades`
+- `settings`
+- `websocket`
 
-1. Frontend `WebSocketManager` connects with token and environment query params.
-2. Backend WebSocket handler accepts the connection and subscriptions.
-3. Backend event publisher sends environment-scoped events.
-4. Frontend middleware invalidates affected RTK Query caches and updates websocket state.
+Shared infrastructure:
 
-### Trading and research flow
+- `src/app`: Redux store and hooks
+- `src/services`: API clients and transport helpers
+- `src/components`: shared UI/layout/error boundaries
 
-1. Strategy logic generates `TradeSignal` instances from market data.
-2. Risk modules calculate position size, fees, slippage, and guardrails.
-3. `BacktestSimulationEngine` asks the selected `BacktestStrategy` for a strategy decision (hold, buy, sell, rotate) and simulates execution.
-4. Validation modules evaluate results against quality gates.
-5. Today, the research/backtest stack is stronger than the live execution stack.
+Key frontend design rules:
 
-## Architectural Strengths
+- Keep API contract adaptation inside API/service layers where possible.
+- Keep environment mode visible and default-safe (`test`).
+- Keep feature boundaries explicit to support independent strategy workflows.
 
-- Clear monorepo split with local-first scripts
-- Reasonable backend package separation
-- Real financial calculation code uses `BigDecimal`
-- Backtesting, metrics, and validation modules already exist
-- Backtest strategy dispatch is now open for extension through separate Spring beans
-- Greenfield research strategies from the small-account blueprint are now available through the runtime catalog
-- Frontend uses typed state management and RTK Query
-- Safety-minded default environment behavior exists in the frontend
+## Runtime and Data Boundaries
 
-## Architectural Weaknesses
+- Runtime app: PostgreSQL (Docker) with Liquibase migrations.
+- Backend test/build: H2 in-memory via Spring `test` profile.
+- Keep runtime and test data concerns strictly separated.
 
-- Environment separation is not yet deeply enforced in persistence, execution, and operator workflows
-- Backend strategy lifecycle APIs are not yet backed by a robust execution engine
-- Frontend/backend API contracts are not centrally defined and can drift without schema generation
-- CI and automated cross-stack verification are still missing
-- Live exchange integration is still placeholder logic
-- Audit logging and operator safety controls are not yet complete enough for live-trading consideration
-- Multi-strategy composition now exists at the research level through the adaptive ensemble, but portfolio-level multi-position allocation is still future work
+## Current Architecture Decisions
 
-## Recommended Near-Term Improvements
+1. Use DTO boundaries for HTTP; do not expose JPA entities directly.
+2. Keep financial precision paths on `BigDecimal`.
+3. Prefer immutable DTOs as Java records where possible.
+4. Isolate exchange/live connectivity behind dedicated service boundaries.
+5. Keep risk/guardrail logic independent from UI concerns.
 
-1. Introduce explicit contract adapters or shared schemas for backend/frontend DTOs.
-2. Keep the passing verification baseline stable while expanding beyond dashboard placeholders.
-3. Add a first-class paper-trading service layer distinct from backtest and future live execution.
-4. Add risk config, circuit-breaker status, and environment control endpoints before implementing more operator UI.
-5. Add CI for backend tests, frontend tests, lint, and build checks.
-6. Add a documented market-data ingestion and fixture strategy for reproducible research.
-7. Standardize event payloads and DTO names across REST and WebSocket paths.
+## Near-Term Architecture Work
 
-## What Should Not Be Changed Casually
-
-- Do not replace React/Vite with Next.js without explicit approval and a written migration case.
-- Do not collapse backend risk, strategy, backtest, and controller concerns into one service layer.
-- Do not switch away from `BigDecimal` or loosen financial precision rules.
-- Do not add live-money defaults or blur `test`, `paper`, and `live` responsibilities.
-- Do not remove the local laptop workflow in favor of infrastructure-heavy orchestration unless there is a clear need.
+1. Finish remaining DTO record migration safely.
+2. Add stronger audit/event trails for critical operator actions.
+3. Improve strategy analytics persistence (equity curve, trade-level series).
+4. Add contract-drift protection (generated/shared API contracts).
+5. Add CI gates for cross-stack regression checks.

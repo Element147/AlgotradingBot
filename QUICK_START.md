@@ -3,50 +3,45 @@
 ## Prerequisites
 
 - Docker Desktop running
-- Node.js 18+ and npm
 - Java 21
+- Node.js 18+
 
-## Start Everything
+## Fast Local Run (Recommended)
+
+From repo root:
 
 ```powershell
-.\build-all.ps1
-.\run-all.ps1
+.\build.ps1
+.\run.ps1
+```
+
+Stop services:
+
+```powershell
+.\stop.ps1
 ```
 
 ## URLs
 
 - Frontend: http://localhost:5173
-- Backend API: http://localhost:8080
+- Backend health: http://localhost:8080/actuator/health
 - Swagger UI: http://localhost:8080/swagger-ui.html
-- Health: http://localhost:8080/actuator/health
 
-## Stop Everything
-
-```powershell
-.\stop-all.ps1
-```
-
-## If Something Fails
+## Verification
 
 ```powershell
-docker compose -f AlgotradingBot/compose.yaml logs postgres --tail=200
-```
+cd frontend
+npm run lint
+npm run test -- --watch=false
+npm run build
 
-Then verify:
-
-```powershell
-curl http://localhost:8080/actuator/health
+cd ..\AlgotradingBot
+.\gradlew.bat test
+.\gradlew.bat build
 ```
 
 ## Notes
 
-- Local development is the primary target.
-- `test` or `paper` behavior should remain the default.
-- Do not enable real-money live trading by default.
-- Runtime backend uses PostgreSQL from Docker (`AlgotradingBot/compose.yaml`).
-- Liquibase seeds the default admin account on first PostgreSQL migration run:
-  - username: `admin`
-  - password: `dogbert`
-- Backend test/build commands run on H2 in-memory and should not depend on Docker DB:
-  - `cd AlgotradingBot && .\gradlew.bat test`
-  - `cd AlgotradingBot && .\gradlew.bat build`
+- Runtime backend uses PostgreSQL (`AlgotradingBot/compose.yaml`).
+- Backend tests/build use H2 in-memory (`test` profile).
+- Default safety posture is `test`/`paper`; no live trading by default.

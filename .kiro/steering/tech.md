@@ -10,60 +10,68 @@ inclusion: always
 repository-root/
   AlgotradingBot/      Spring Boot backend
   frontend/            React TypeScript frontend
-  .kiro/               specs and steering
-  docs/                roadmap and acceptance criteria
+  .kiro/               steering and spec context
+  docs/                canonical roadmap/acceptance docs
 ```
 
-## Backend Stack (Source of Truth: `AlgotradingBot/build.gradle.kts`)
+## Backend Stack (Source: `AlgotradingBot/build.gradle.kts`)
 
-- Java 21 toolchain
-- Spring Boot 3.4.1
+- Java 21
+- Spring Boot 4.0.3
 - Gradle Kotlin DSL
-- PostgreSQL runtime driver
-- Apache Kafka integration
-- Resilience4j
-- Micrometer Prometheus registry
-- JUnit 5 and Mockito
+- Liquibase
+- PostgreSQL runtime
+- H2 for tests (`test` profile)
+- Kafka integration
+- Micrometer Prometheus
+- JUnit 5 + Mockito
 
-Use from `AlgotradingBot`:
+Typical backend commands:
 
 ```powershell
-.\gradlew.bat check
+cd AlgotradingBot
 .\gradlew.bat test
 .\gradlew.bat build
 ```
 
-## Frontend Stack (Source of Truth: `frontend/package.json`)
+## Frontend Stack (Source: `frontend/package.json`)
 
-- React 19.2.0
+- React 19
 - TypeScript strict mode
 - Vite 8 beta
-- Redux Toolkit and RTK Query
-- React Router 7.13.1
-- Material UI 7.3.9
-- Vitest and React Testing Library
-- ESLint and Prettier
+- Redux Toolkit + RTK Query
+- React Router 7
+- MUI 7
+- Vitest + React Testing Library
+- ESLint + Prettier
 
-Use from `frontend`:
+Typical frontend commands:
 
 ```powershell
+cd frontend
 npm run lint
-npm run test
+npm run test -- --watch=false
 npm run build
 ```
 
 ## Local Orchestration
 
-- Compose file: `AlgotradingBot/compose.yaml`
-- Root helper scripts:
-  - `build-all.ps1`
-  - `run-all.ps1`
-  - `stop-all.ps1`
+Preferred scripts from repo root:
 
-## Rules for Autonomous Work
+- `build.ps1`
+- `run.ps1`
+- `stop.ps1`
 
-- Preserve Spring Boot + React/Vite architecture.
-- Keep financial precision with `BigDecimal` on backend money/risk paths.
-- Keep environment behavior conservative (`test`/`paper` first).
+Compatibility wrappers still exist:
+
+- `build-all.ps1`
+- `run-all.ps1`
+- `stop-all.ps1`
+
+## Engineering Rules
+
+- Preserve Spring Boot + React/Vite architecture unless explicitly approved.
+- Keep financial precision on `BigDecimal` in backend money/risk paths.
+- Prefer immutable DTOs as records where safe.
+- Keep environment defaults conservative (`test`/`paper`).
 - Never claim profitability without reproducible evidence.
-- Do not enable real-money live trading by default.
