@@ -105,6 +105,7 @@ public class BacktestExecutionService {
         result.replaceTradeSeries(simulationResult.tradeSeries().stream().map(sample -> {
             BacktestTradeSeriesItem item = new BacktestTradeSeriesItem();
             item.setSymbol(sample.symbol());
+            item.setPositionSide(sample.side());
             item.setEntryTime(sample.entryTime());
             item.setExitTime(sample.exitTime());
             item.setEntryPrice(sample.entryPrice());

@@ -71,7 +71,9 @@ public class PaperOrder {
 
     public enum Side {
         BUY,
-        SELL
+        SELL,
+        SHORT,
+        COVER
     }
 
     public enum Status {

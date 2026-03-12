@@ -25,9 +25,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
-import { logout, selectUser } from '../../features/auth/authSlice';
+import { logout, selectIsAuthenticated, selectUser } from '../../features/auth/authSlice';
 import { selectEnvironmentMode } from '../../features/environment/environmentSlice';
-import { selectActiveExchangeConnection } from '../../features/settings/settingsSlice';
+import { useGetSavedExchangeConnectionsQuery } from '../../features/settings/exchangeApi';
 import ThemeToggle from '../ThemeToggle';
 
 interface HeaderProps {
@@ -40,8 +40,15 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const user = useAppSelector(selectUser);
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const environmentMode = useAppSelector(selectEnvironmentMode);
-  const activeExchangeConnection = useAppSelector(selectActiveExchangeConnection);
+  const { data: savedConnections } = useGetSavedExchangeConnectionsQuery(undefined, {
+    skip: !isAuthenticated,
+  });
+  const activeExchangeConnection =
+    savedConnections?.connections.find(
+      (connection) => connection.id === savedConnections.activeConnectionId
+    ) ?? null;
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);

@@ -39,17 +39,25 @@ public class SmaCrossoverBacktestStrategy implements BacktestStrategy {
         BigDecimal slowPrevious = indicatorCalculator.simpleMovingAverage(context.candles(), context.currentIndex() - 1, SLOW_PERIOD);
         BigDecimal fastCurrent = indicatorCalculator.simpleMovingAverage(context.candles(), context.currentIndex(), FAST_PERIOD);
         BigDecimal slowCurrent = indicatorCalculator.simpleMovingAverage(context.candles(), context.currentIndex(), SLOW_PERIOD);
+        boolean bullishCross = fastPrevious.compareTo(slowPrevious) <= 0
+            && fastCurrent.compareTo(slowCurrent) > 0;
+        boolean bearishCross = fastPrevious.compareTo(slowPrevious) >= 0
+            && fastCurrent.compareTo(slowCurrent) < 0;
 
-        if (!context.inPosition()
-            && fastPrevious.compareTo(slowPrevious) <= 0
-            && fastCurrent.compareTo(slowCurrent) > 0) {
+        if (!context.inPosition() && bullishCross) {
             return BacktestStrategyDecision.buy(context.primarySymbol(), BigDecimal.ONE, "Fast SMA crossed above slow SMA");
         }
 
-        if (context.inPosition()
-            && fastPrevious.compareTo(slowPrevious) >= 0
-            && fastCurrent.compareTo(slowCurrent) < 0) {
+        if (!context.inPosition() && bearishCross) {
+            return BacktestStrategyDecision.shortSell(context.primarySymbol(), BigDecimal.ONE, "Fast SMA crossed below slow SMA");
+        }
+
+        if (context.inLongPosition() && bearishCross) {
             return BacktestStrategyDecision.sell("Fast SMA crossed below slow SMA");
+        }
+
+        if (context.inShortPosition() && bullishCross) {
+            return BacktestStrategyDecision.cover("Fast SMA crossed above slow SMA");
         }
 
         return BacktestStrategyDecision.hold();

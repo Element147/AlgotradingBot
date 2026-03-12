@@ -58,6 +58,9 @@ export function TradeDetailsModal({ tradeId, accountId, open, onClose }: TradeDe
             <Typography variant="body2">Signal: {trade.signal}</Typography>
           </Grid>
           <Grid size={{ xs: 12, md: 6 }}>
+            <Typography variant="body2">Position Side: {trade.positionSide}</Typography>
+          </Grid>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Typography variant="body2">Entry Time: {trade.entryTime}</Typography>
           </Grid>
           <Grid size={{ xs: 12, md: 6 }}>

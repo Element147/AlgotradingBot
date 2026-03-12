@@ -5,7 +5,9 @@ package com.algotrader.bot.strategy;
  * 
  * Used by trading strategies to indicate the recommended action:
  * - BUY: Enter a long position
- * - SELL: Exit a position or enter a short position
+ * - SELL: Exit a long position
+ * - SHORT: Enter a short position
+ * - COVER: Exit a short position
  * - HOLD: No action recommended, maintain current position
  */
 public enum SignalType {
@@ -15,9 +17,19 @@ public enum SignalType {
     BUY,
     
     /**
-     * Signal to exit a position or enter a short position (sell the asset).
+     * Signal to exit a long position.
      */
     SELL,
+
+    /**
+     * Signal to enter a short position.
+     */
+    SHORT,
+
+    /**
+     * Signal to exit a short position.
+     */
+    COVER,
     
     /**
      * Signal to maintain current position (no action).

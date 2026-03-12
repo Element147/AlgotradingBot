@@ -72,6 +72,7 @@ Key frontend design rules:
 - Keep environment mode visible and default-safe (`test`).
 - Keep feature boundaries explicit to support independent strategy workflows.
 - Use strategy-profile metadata to keep parameter editing guidance typed and centralized instead of scattering heuristics across components.
+- Keep exchange-connection profile persistence in backend APIs/DB, while non-sensitive display preferences may remain browser-local.
 
 ## Runtime and Data Boundaries
 
@@ -94,6 +95,7 @@ Key frontend design rules:
 9. Backend compilation surfaces deprecated API usage with `-Xlint:deprecation` so modernization regressions are caught during normal builds.
 10. Paper-trading operator alerts are derived from recovery telemetry and surfaced through DTO/service boundaries rather than embedded in dashboard-only logic.
 11. Operator audit-event review uses a filterable summary+timeline API contract so dashboard and settings surfaces can share the same audit model.
+12. Saved exchange API connection profiles are stored per authenticated user in PostgreSQL and exposed through dedicated `/api/exchange/connections` endpoints rather than browser-only state.
 
 ## Near-Term Architecture Work
 

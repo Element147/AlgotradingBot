@@ -18,8 +18,10 @@ Implemented and usable end-to-end:
 - Dataset lifecycle inventory (`checksumSha256`, schema version, retention, archive/restore) plus dataset download endpoint
 - Persisted backtest equity/trade series with chart/export support in the UI
 - Strategy configuration version history plus typed preset guidance in API and UI
+- Paper/backtest short-selling enablement with saved strategy-level toggles and explicit `LONG`/`SHORT` state in dashboard and trade views
 - Risk configuration and circuit-breaker controls
 - Paper-trading lifecycle, recovery-aware dashboard state, and in-app incident alerts
+- Database-persisted exchange connection profiles with per-user active selection in the settings UI
 - Operator audit-event trail for critical actions (`/api/system/audit-events`)
 - System backup endpoint with real database dump artifacts
 - CI verification gates for backend and frontend (`.github/workflows/ci.yml`)
@@ -45,8 +47,8 @@ Backtest strategy catalog:
   - `SINGLE_SYMBOL`
   - `DATASET_UNIVERSE`
 - Repeatable experiment labels now group related runs into multi-run summaries while keeping per-run provenance intact.
-- Action model is currently conservative (`long/rotate/sell-to-cash/hold`).
-- True shorting, margin, and leverage are not default behavior.
+- Action model now records explicit `BUY` / `SELL` / `SHORT` / `COVER` actions plus `LONG` / `SHORT` exposure state.
+- Direct short exposure is available only in `test`/`paper` research flows when enabled per strategy; live shorting, margin, and leverage remain disabled.
 
 ## Stack
 
@@ -54,6 +56,7 @@ Backtest strategy catalog:
 - Frontend: React 19, TypeScript, Vite, Redux Toolkit, RTK Query, React Router 7, MUI 7
 - Runtime DB: PostgreSQL via Docker Compose (`AlgotradingBot/compose.yaml`)
 - Backend tests/build: H2 in-memory (`test` profile)
+- UI display/notification preferences remain browser-local; saved exchange API connections are persisted in PostgreSQL
 
 ## Local Commands
 

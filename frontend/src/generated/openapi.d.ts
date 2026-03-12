@@ -37,6 +37,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/exchange/connections/{connectionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update a saved exchange connection for the current user */
+        put: operations["updateConnection"];
+        post?: never;
+        /** Delete a saved exchange connection for the current user */
+        delete: operations["deleteConnection"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/system/test-connection": {
         parameters: {
             query?: never;
@@ -203,6 +221,41 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["cancelOrder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/exchange/connections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List saved exchange connections for the current user */
+        get: operations["listConnections"];
+        put?: never;
+        /** Create a saved exchange connection for the current user */
+        post: operations["createConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/exchange/connections/{connectionId}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Activate a saved exchange connection for the current user */
+        post: operations["activateConnection"];
         delete?: never;
         options?: never;
         head?: never;
@@ -817,6 +870,7 @@ export interface components {
             riskPerTrade: number;
             minPositionSize: number;
             maxPositionSize: number;
+            shortSellingEnabled: boolean;
         };
         StrategyDetailsResponse: {
             /** Format: int64 */
@@ -834,6 +888,7 @@ export interface components {
             tradeCount?: number;
             currentDrawdown?: number;
             paperMode?: boolean;
+            shortSellingEnabled?: boolean;
             /** Format: int32 */
             configVersion?: number;
             /** Format: date-time */
@@ -856,6 +911,24 @@ export interface components {
             correlationLimit?: number;
             circuitBreakerActive?: boolean;
             circuitBreakerReason?: string;
+        };
+        ExchangeConnectionProfileRequest: {
+            name: string;
+            exchange: string;
+            apiKey?: string;
+            apiSecret?: string;
+            testnet?: boolean;
+        };
+        ExchangeConnectionProfileResponse: {
+            id?: string;
+            name?: string;
+            exchange?: string;
+            apiKey?: string;
+            apiSecret?: string;
+            testnet?: boolean;
+            active?: boolean;
+            /** Format: date-time */
+            updatedAt?: string;
         };
         ExchangeConnectionTestRequest: {
             exchange?: string;
@@ -1105,7 +1178,13 @@ export interface components {
              * @example BUY
              * @enum {string}
              */
-            signal?: "BUY" | "SELL";
+            signal?: "BUY" | "SELL" | "SHORT" | "COVER" | "HOLD";
+            /**
+             * @description Position direction
+             * @example LONG
+             * @enum {string}
+             */
+            positionSide?: "LONG" | "SHORT";
             /**
              * @description Position size (quantity)
              * @example 0.01
@@ -1276,6 +1355,7 @@ export interface components {
             maxPositionSize?: number;
             status?: string;
             paperMode?: boolean;
+            shortSellingEnabled?: boolean;
             /** Format: date-time */
             changedAt?: string;
         };
@@ -1303,6 +1383,7 @@ export interface components {
             /** Format: int64 */
             id?: number;
             symbol?: string;
+            side?: string;
             entryPrice?: string;
             currentPrice?: string;
             positionSize?: string;
@@ -1342,6 +1423,10 @@ export interface components {
             recoveryMessage?: string;
             incidentSummary?: string;
             alerts?: components["schemas"]["PaperTradingAlertResponse"][];
+        };
+        ExchangeConnectionProfilesResponse: {
+            connections?: components["schemas"]["ExchangeConnectionProfileResponse"][];
+            activeConnectionId?: string;
         };
         BacktestHistoryItemResponse: {
             /** Format: int64 */
@@ -1410,6 +1495,7 @@ export interface components {
         };
         BacktestTradeSeriesItemResponse: {
             symbol?: string;
+            side?: string;
             /** Format: date-time */
             entryTime?: string;
             /** Format: date-time */
@@ -1685,6 +1771,52 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["RiskConfigResponse"];
                 };
+            };
+        };
+    };
+    updateConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                connectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExchangeConnectionProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ExchangeConnectionProfileResponse"];
+                };
+            };
+        };
+    };
+    deleteConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                connectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -1968,6 +2100,72 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PaperOrderResponse"];
+                };
+            };
+        };
+    };
+    listConnections: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ExchangeConnectionProfilesResponse"];
+                };
+            };
+        };
+    };
+    createConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExchangeConnectionProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ExchangeConnectionProfileResponse"];
+                };
+            };
+        };
+    };
+    activateConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                connectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ExchangeConnectionProfileResponse"];
                 };
             };
         };

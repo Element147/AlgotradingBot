@@ -1,6 +1,7 @@
 package com.algotrader.bot.backtest.strategy;
 
 import com.algotrader.bot.backtest.OHLCVData;
+import com.algotrader.bot.entity.PositionSide;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -72,6 +73,18 @@ public record BacktestStrategyContext(
 
     public String activeSymbol() {
         return inPosition() ? openPosition.symbol() : null;
+    }
+
+    public PositionSide positionSide() {
+        return inPosition() ? openPosition.side() : null;
+    }
+
+    public boolean inLongPosition() {
+        return inPosition() && openPosition.side() == PositionSide.LONG;
+    }
+
+    public boolean inShortPosition() {
+        return inPosition() && openPosition.side() == PositionSide.SHORT;
     }
 
     public int holdingBars() {

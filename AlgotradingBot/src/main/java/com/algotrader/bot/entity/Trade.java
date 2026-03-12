@@ -40,6 +40,11 @@ public class Trade {
     private SignalType signalType;
 
     @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private PositionSide positionSide = PositionSide.LONG;
+
+    @NotNull
     @Column(nullable = false)
     private LocalDateTime entryTime;
 
@@ -97,6 +102,8 @@ public class Trade {
     public enum SignalType {
         BUY,
         SELL,
+        SHORT,
+        COVER,
         HOLD
     }
 
@@ -119,9 +126,22 @@ public class Trade {
                  BigDecimal entryPrice, BigDecimal positionSize, BigDecimal riskAmount,
                  BigDecimal stopLoss, BigDecimal takeProfit, BigDecimal actualFees,
                  BigDecimal actualSlippage) {
+        this(accountId, symbol, signalType, PositionSide.LONG, entryTime, entryPrice, positionSize, riskAmount,
+            stopLoss, takeProfit, actualFees, actualSlippage);
+    }
+
+    public Trade(Long accountId,
+                 String symbol,
+                 SignalType signalType,
+                 PositionSide positionSide,
+                 LocalDateTime entryTime,
+                 BigDecimal entryPrice, BigDecimal positionSize, BigDecimal riskAmount,
+                 BigDecimal stopLoss, BigDecimal takeProfit, BigDecimal actualFees,
+                 BigDecimal actualSlippage) {
         this.accountId = accountId;
         this.symbol = symbol;
         this.signalType = signalType;
+        this.positionSide = positionSide;
         this.entryTime = entryTime;
         this.entryPrice = entryPrice;
         this.positionSize = positionSize;
@@ -163,6 +183,14 @@ public class Trade {
 
     public void setSignalType(SignalType signalType) {
         this.signalType = signalType;
+    }
+
+    public PositionSide getPositionSide() {
+        return positionSide;
+    }
+
+    public void setPositionSide(PositionSide positionSide) {
+        this.positionSide = positionSide;
     }
 
     public LocalDateTime getEntryTime() {
@@ -268,6 +296,7 @@ public class Trade {
                 ", accountId=" + accountId +
                 ", symbol='" + symbol + '\'' +
                 ", signalType=" + signalType +
+                ", positionSide=" + positionSide +
                 ", entryTime=" + entryTime +
                 ", exitTime=" + exitTime +
                 ", entryPrice=" + entryPrice +

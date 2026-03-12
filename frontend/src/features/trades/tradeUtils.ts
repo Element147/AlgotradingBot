@@ -3,6 +3,8 @@ import type { TradeHistoryItem } from './tradesApi';
 export type TradeSortField =
   | 'id'
   | 'pair'
+  | 'signal'
+  | 'positionSide'
   | 'entryTime'
   | 'exitTime'
   | 'entryPrice'
@@ -78,6 +80,10 @@ export const calculateRMultiple = (trade: TradeHistoryItem): number | null => {
     return null;
   }
 
+  if (trade.positionSide === 'SHORT') {
+    return (trade.entryPrice - trade.exitPrice) / (trade.stopLoss - trade.entryPrice);
+  }
+
   return (trade.exitPrice - trade.entryPrice) / (trade.entryPrice - trade.stopLoss);
 };
 
@@ -86,6 +92,7 @@ export const buildTradesCsv = (trades: TradeHistoryItem[]): string => {
     'id',
     'pair',
     'signal',
+    'positionSide',
     'entryTime',
     'exitTime',
     'entryPrice',
@@ -103,6 +110,7 @@ export const buildTradesCsv = (trades: TradeHistoryItem[]): string => {
     trade.id,
     trade.pair,
     trade.signal,
+    trade.positionSide,
     trade.entryTime,
     trade.exitTime,
     trade.entryPrice.toFixed(2),

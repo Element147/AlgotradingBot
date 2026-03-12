@@ -8,12 +8,14 @@
 /**
  * Position - An open trade that has not yet been closed
  */
+export type PositionSide = 'LONG' | 'SHORT';
+
 export interface Position {
   id: string;
   strategyId: string;
   strategyName: string;
   symbol: string;
-  side: 'BUY' | 'SELL';
+  side: PositionSide;
   entryPrice: string;
   currentPrice: string;
   quantity: string;
@@ -31,7 +33,7 @@ export interface Trade {
   strategyId: string;
   strategyName: string;
   symbol: string;
-  side: 'BUY' | 'SELL';
+  side: PositionSide;
   entryPrice: string;
   exitPrice: string;
   quantity: string;

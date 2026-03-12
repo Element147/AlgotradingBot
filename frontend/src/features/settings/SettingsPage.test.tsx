@@ -4,6 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SettingsPage from './SettingsPage';
 
 const mockDispatch = vi.fn();
+const mockCreateSavedConnection = vi.fn();
+const mockUpdateSavedConnection = vi.fn();
+const mockActivateSavedConnection = vi.fn();
+const mockDeleteSavedConnection = vi.fn();
+const mockRefetchSavedConnections = vi.fn();
 
 const mockState = {
   settings: {
@@ -18,17 +23,6 @@ const mockState = {
       drawdownThreshold: 15,
       riskThreshold: 75,
     },
-    exchangeConnections: [
-      {
-        id: 'binance-paper',
-        name: 'Binance Paper',
-        exchange: 'binance',
-        apiKey: '',
-        apiSecret: '',
-        testnet: true,
-      },
-    ],
-    activeExchangeConnectionId: 'binance-paper',
   },
   environment: {
     mode: 'test' as const,
@@ -50,6 +44,29 @@ vi.mock('./exchangeApi', () => ({
   }),
   useGetExchangeOrdersQuery: () => ({ data: [], isError: false, error: undefined }),
   useGetExchangeConnectionStatusQuery: () => ({ data: undefined, isError: true, error: undefined }),
+  useGetSavedExchangeConnectionsQuery: () => ({
+    data: {
+      activeConnectionId: 'binance-paper',
+      connections: [
+        {
+          id: 'binance-paper',
+          name: 'Binance Paper',
+          exchange: 'binance',
+          apiKey: '',
+          apiSecret: '',
+          testnet: true,
+          active: true,
+        },
+      ],
+    },
+    isError: false,
+    error: undefined,
+    refetch: mockRefetchSavedConnections,
+  }),
+  useCreateSavedExchangeConnectionMutation: () => [mockCreateSavedConnection, { isLoading: false }],
+  useUpdateSavedExchangeConnectionMutation: () => [mockUpdateSavedConnection, { isLoading: false }],
+  useActivateSavedExchangeConnectionMutation: () => [mockActivateSavedConnection, { isLoading: false }],
+  useDeleteSavedExchangeConnectionMutation: () => [mockDeleteSavedConnection, { isLoading: false }],
   useGetAuditEventsQuery: () => ({
     data: {
       summary: {
@@ -102,6 +119,11 @@ vi.mock('@/services/axiosClient', () => ({
 describe('SettingsPage', { timeout: 15000 }, () => {
   beforeEach(() => {
     mockDispatch.mockReset();
+    mockCreateSavedConnection.mockReset();
+    mockUpdateSavedConnection.mockReset();
+    mockActivateSavedConnection.mockReset();
+    mockDeleteSavedConnection.mockReset();
+    mockRefetchSavedConnections.mockReset();
   });
 
   it('renders tab navigation and api section', () => {
@@ -114,6 +136,9 @@ describe('SettingsPage', { timeout: 15000 }, () => {
     expect(screen.getByLabelText('Saved Connection')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Set Active' })).toBeInTheDocument();
     expect(screen.queryByText('Local Commands (CMD)')).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/saved profiles live in the database and the bot uses the currently active saved connection/i)
+    ).toBeInTheDocument();
   });
 
   it('switches to notifications tab', () => {
@@ -135,6 +160,7 @@ describe('SettingsPage', { timeout: 15000 }, () => {
 
   it('keeps display edits local until save is clicked', async () => {
     render(<SettingsPage />);
+    mockDispatch.mockClear();
 
     fireEvent.click(screen.getByRole('tab', { name: 'Display' }));
     fireEvent.change(screen.getByLabelText('Text Scale'), { target: { value: '1.5' } });
@@ -154,5 +180,17 @@ describe('SettingsPage', { timeout: 15000 }, () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Exchange' }));
 
     expect(screen.getByText('Live account reads are unavailable on this backend.')).toBeInTheDocument();
+  });
+
+  it('enters explicit new-connection mode from the api config tab', () => {
+    render(<SettingsPage />);
+
+    expect(screen.getByLabelText('Connection Name')).toHaveValue('Binance Paper');
+
+    fireEvent.click(screen.getByRole('button', { name: 'New Connection' }));
+
+    expect(screen.getByLabelText('Connection Name')).toHaveValue('');
+    expect(screen.getByLabelText('Exchange API Key')).toHaveValue('');
+    expect(screen.getByLabelText('Exchange API Secret')).toHaveValue('');
   });
 });

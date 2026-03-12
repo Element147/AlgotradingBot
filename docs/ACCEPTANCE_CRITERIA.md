@@ -35,7 +35,7 @@ Every change is done only when all are true:
 - Inputs, assumptions, and parameters are explicit.
 - Dataset identity is reproducible (version/metadata/checksum where applicable).
 - Fees/slippage are included.
-- Action model (`long/flat/short-proxy`) is explicit and mode-safe.
+- Action model (`long` / `short` / `flat` plus any explicit entry/exit actions) is explicit, reproducible, and mode-safe.
 - Metrics include at least return, drawdown, Sharpe, profit factor, win rate, trade count.
 - Replay/verification path exists for research claims.
 - Claims are clearly labeled as simulated/paper unless proven otherwise.

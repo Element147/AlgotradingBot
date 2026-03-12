@@ -54,6 +54,7 @@ const baseDetails = {
   tradeSeries: [
     {
       symbol: 'BTC/USDT',
+      side: 'LONG' as const,
       entryTime: '2025-01-01T00:00:00',
       exitTime: '2025-01-02T00:00:00',
       entryPrice: 100,

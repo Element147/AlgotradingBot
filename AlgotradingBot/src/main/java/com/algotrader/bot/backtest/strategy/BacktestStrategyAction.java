@@ -4,5 +4,7 @@ public enum BacktestStrategyAction {
     HOLD,
     BUY,
     SELL,
+    SHORT,
+    COVER,
     ROTATE
 }

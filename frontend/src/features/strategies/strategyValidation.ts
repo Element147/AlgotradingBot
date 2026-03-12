@@ -13,6 +13,7 @@ export const strategyConfigSchema = z.object({
   maxPositionSize: z
     .number({ error: 'Max position size must be a valid number' })
     .positive('Max position size must be positive'),
+  shortSellingEnabled: z.boolean(),
 });
 
 export type StrategyConfigInput = z.input<typeof strategyConfigSchema>;

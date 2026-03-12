@@ -23,6 +23,14 @@ public record BacktestStrategyDecision(
         return new BacktestStrategyDecision(BacktestStrategyAction.SELL, null, FULL_ALLOCATION, reason);
     }
 
+    public static BacktestStrategyDecision shortSell(String targetSymbol, BigDecimal allocationFraction, String reason) {
+        return new BacktestStrategyDecision(BacktestStrategyAction.SHORT, targetSymbol, allocationFraction, reason);
+    }
+
+    public static BacktestStrategyDecision cover(String reason) {
+        return new BacktestStrategyDecision(BacktestStrategyAction.COVER, null, FULL_ALLOCATION, reason);
+    }
+
     public static BacktestStrategyDecision rotate(String targetSymbol, BigDecimal allocationFraction, String reason) {
         return new BacktestStrategyDecision(BacktestStrategyAction.ROTATE, targetSymbol, allocationFraction, reason);
     }

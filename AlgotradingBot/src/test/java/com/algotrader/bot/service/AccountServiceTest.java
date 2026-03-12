@@ -3,6 +3,7 @@ package com.algotrader.bot.service;
 import com.algotrader.bot.controller.*;
 import com.algotrader.bot.entity.Account;
 import com.algotrader.bot.entity.Portfolio;
+import com.algotrader.bot.entity.PositionSide;
 import com.algotrader.bot.entity.Trade;
 import com.algotrader.bot.repository.AccountRepository;
 import com.algotrader.bot.repository.PortfolioRepository;
@@ -236,6 +237,43 @@ class AccountServiceTest {
     }
 
     @Test
+    void testGetOpenPositions_WithShortPosition() {
+        Portfolio shortPortfolio = new Portfolio(
+                1L,
+                "SOL/USDT",
+                new BigDecimal("2.00000000"),
+                new BigDecimal("100.00000000"),
+                new BigDecimal("90.00000000"),
+                PositionSide.SHORT
+        );
+        shortPortfolio.setId(3L);
+
+        when(portfolioRepository.findByAccountId(1L)).thenReturn(List.of(shortPortfolio));
+
+        List<OpenPositionResponse> positions = accountService.getOpenPositions("test", 1L);
+
+        assertEquals(1, positions.size());
+        assertEquals("SHORT", positions.get(0).side());
+        assertEquals("20.00000000", positions.get(0).unrealizedPnL());
+    }
+
+    @Test
+    void testGetRecentTrades_MapsShortSide() {
+        Trade shortTrade = createTrade(4L, "SOL/USDT", new BigDecimal("100"),
+                new BigDecimal("90"), new BigDecimal("2"),
+                new BigDecimal("20.00"));
+        shortTrade.setPositionSide(PositionSide.SHORT);
+
+        when(tradeRepository.findByAccountIdAndExitTimeNotNullOrderByExitTimeDesc(1L))
+                .thenReturn(List.of(shortTrade));
+
+        List<RecentTradeResponse> trades = accountService.getRecentTrades("test", 1L, 10);
+
+        assertEquals(1, trades.size());
+        assertEquals("SHORT", trades.get(0).side());
+    }
+
+    @Test
     void testGetBalance_AccountNotFound() {
         // Arrange
         when(accountRepository.findById(1L)).thenReturn(Optional.empty());
@@ -271,6 +309,7 @@ class AccountServiceTest {
         trade.setAccountId(1L);
         trade.setSymbol(symbol);
         trade.setSignalType(Trade.SignalType.BUY);
+        trade.setPositionSide(PositionSide.LONG);
         trade.setEntryPrice(entryPrice);
         trade.setExitPrice(exitPrice);
         trade.setPositionSize(positionSize);

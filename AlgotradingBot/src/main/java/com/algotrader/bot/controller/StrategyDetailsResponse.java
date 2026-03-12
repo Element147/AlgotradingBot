@@ -16,6 +16,7 @@ public record StrategyDetailsResponse(
     Integer tradeCount,
     BigDecimal currentDrawdown,
     Boolean paperMode,
+    Boolean shortSellingEnabled,
     Integer configVersion,
     java.time.LocalDateTime lastConfigChangedAt
 ) {}

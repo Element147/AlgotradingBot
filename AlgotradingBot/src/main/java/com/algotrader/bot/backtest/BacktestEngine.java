@@ -2,6 +2,7 @@ package com.algotrader.bot.backtest;
 
 import com.algotrader.bot.entity.Account;
 import com.algotrader.bot.entity.BacktestResult;
+import com.algotrader.bot.entity.PositionSide;
 import com.algotrader.bot.entity.Trade;
 import com.algotrader.bot.risk.PositionSizeResult;
 import com.algotrader.bot.risk.PositionSizer;
@@ -253,6 +254,7 @@ public class BacktestEngine {
                 null, // accountId - will be set by service layer
                 config.getSymbol(),
                 Trade.SignalType.BUY,
+                PositionSide.LONG,
                 candle.getTimestamp(),
                 entryCost.getEffectivePrice(),
                 positionSizeResult.getPositionSize(),

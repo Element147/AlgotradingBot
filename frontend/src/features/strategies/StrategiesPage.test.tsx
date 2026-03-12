@@ -25,6 +25,7 @@ vi.mock('./strategiesApi', () => ({
         tradeCount: 0,
         currentDrawdown: 0,
         paperMode: true,
+        shortSellingEnabled: true,
         configVersion: 1,
         lastConfigChangedAt: '2026-03-12T10:00:00',
       },

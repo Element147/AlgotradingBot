@@ -371,6 +371,7 @@ public class BacktestManagementService {
             result.getTradeSeries().stream()
                 .map(item -> new BacktestTradeSeriesItemResponse(
                     item.getSymbol(),
+                    item.getPositionSide().name(),
                     item.getEntryTime(),
                     item.getExitTime(),
                     item.getEntryPrice(),

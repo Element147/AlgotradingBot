@@ -6,7 +6,9 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
+  FormControlLabel,
   Stack,
+  Switch,
   TextField,
   Typography,
 } from '@mui/material';
@@ -28,6 +30,7 @@ interface ConfigDraft {
   riskPerTrade: string;
   minPositionSize: string;
   maxPositionSize: string;
+  shortSellingEnabled: boolean;
 }
 
 const createDraft = (strategy: Strategy): ConfigDraft => ({
@@ -36,6 +39,7 @@ const createDraft = (strategy: Strategy): ConfigDraft => ({
   riskPerTrade: String(strategy.riskPerTrade),
   minPositionSize: String(strategy.minPositionSize),
   maxPositionSize: String(strategy.maxPositionSize),
+  shortSellingEnabled: strategy.shortSellingEnabled,
 });
 
 export interface StrategyConfigModalProps {
@@ -64,6 +68,7 @@ export function StrategyConfigModal({
         riskPerTrade: Number(draft.riskPerTrade),
         minPositionSize: Number(draft.minPositionSize),
         maxPositionSize: Number(draft.maxPositionSize),
+        shortSellingEnabled: draft.shortSellingEnabled,
       }),
     [draft]
   );
@@ -202,6 +207,19 @@ export function StrategyConfigModal({
               fullWidth
             />
           </FieldTooltip>
+          <FieldTooltip title="Allows the strategy to open short exposure in research and paper mode. Live execution remains disabled.">
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={draft.shortSellingEnabled}
+                  onChange={(_, checked) =>
+                    setDraft((prev) => ({ ...prev, shortSellingEnabled: checked }))
+                  }
+                />
+              }
+              label={draft.shortSellingEnabled ? 'Short Selling Enabled' : 'Long Only'}
+            />
+          </FieldTooltip>
 
           {submitError ? <Alert severity="error">{submitError}</Alert> : null}
 
@@ -217,7 +235,7 @@ export function StrategyConfigModal({
                   v{entry.versionNumber}: {entry.changeReason}
                   <br />
                   {entry.symbol} ({entry.timeframe}) | Risk {(entry.riskPerTrade * 100).toFixed(2)}% | Size{' '}
-                  {entry.minPositionSize} - {entry.maxPositionSize}
+                  {entry.minPositionSize} - {entry.maxPositionSize} | {entry.shortSellingEnabled ? 'Short On' : 'Long Only'}
                 </Alert>
               ))
             ) : (

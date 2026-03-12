@@ -27,5 +27,19 @@ public record UpdateStrategyConfigRequest(
     BigDecimal minPositionSize,
     @NotNull(message = "Max position size is required")
     @Positive(message = "Max position size must be positive")
-    BigDecimal maxPositionSize
-) {}
+    BigDecimal maxPositionSize,
+    @NotNull(message = "Short-selling setting is required")
+    Boolean shortSellingEnabled
+) {
+    public UpdateStrategyConfigRequest {
+        shortSellingEnabled = shortSellingEnabled == null ? Boolean.TRUE : shortSellingEnabled;
+    }
+
+    public UpdateStrategyConfigRequest(String symbol,
+                                       String timeframe,
+                                       BigDecimal riskPerTrade,
+                                       BigDecimal minPositionSize,
+                                       BigDecimal maxPositionSize) {
+        this(symbol, timeframe, riskPerTrade, minPositionSize, maxPositionSize, Boolean.TRUE);
+    }
+}

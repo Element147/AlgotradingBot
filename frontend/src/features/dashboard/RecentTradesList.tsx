@@ -117,7 +117,7 @@ export const RecentTradesList: React.FC = () => {
                         <Chip
                           label={trade.side}
                           size="small"
-                          color={trade.side === 'BUY' ? 'success' : 'error'}
+                          color={trade.side === 'LONG' ? 'success' : 'warning'}
                           sx={{ minWidth: 60 }}
                         />
                       </TableCell>

@@ -133,4 +133,50 @@ class PaperTradingControllerIntegrationTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(0))));
     }
+
+    @Test
+    void shortOrder_andCover_updatesPaperState() throws Exception {
+        PaperOrderRequest shortRequest = new PaperOrderRequest(
+            "BTC/USDT",
+            "SHORT",
+            new BigDecimal("1"),
+            new BigDecimal("100"),
+            true
+        );
+
+        mockMvc.perform(post("/api/paper/orders")
+                .header("Authorization", "Bearer " + authToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(shortRequest)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("FILLED"))
+            .andExpect(jsonPath("$.side").value("SHORT"));
+
+        mockMvc.perform(get("/api/paper/state")
+                .header("Authorization", "Bearer " + authToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.positionCount").value(1));
+
+        PaperOrderRequest coverRequest = new PaperOrderRequest(
+            "BTC/USDT",
+            "COVER",
+            new BigDecimal("1"),
+            new BigDecimal("90"),
+            true
+        );
+
+        mockMvc.perform(post("/api/paper/orders")
+                .header("Authorization", "Bearer " + authToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(coverRequest)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("FILLED"))
+            .andExpect(jsonPath("$.side").value("COVER"));
+
+        mockMvc.perform(get("/api/paper/state")
+                .header("Authorization", "Bearer " + authToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.positionCount").value(0))
+            .andExpect(jsonPath("$.filledOrders").value(2));
+    }
 }

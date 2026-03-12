@@ -382,6 +382,20 @@ class TradeSignalTest {
             0.8, timestamp, "Sell signal"
         );
         assertEquals(SignalType.SELL, sellSignal.getSignalType());
+
+        TradeSignal shortSignal = new TradeSignal(
+            SignalType.SHORT, "BTC/USDT", new BigDecimal("50000"),
+            new BigDecimal("51000"), new BigDecimal("49000"),
+            0.8, timestamp, "Short signal"
+        );
+        assertEquals(SignalType.SHORT, shortSignal.getSignalType());
+
+        TradeSignal coverSignal = new TradeSignal(
+            SignalType.COVER, "BTC/USDT", new BigDecimal("50000"),
+            new BigDecimal("51000"), new BigDecimal("49000"),
+            0.8, timestamp, "Cover signal"
+        );
+        assertEquals(SignalType.COVER, coverSignal.getSignalType());
         
         TradeSignal holdSignal = new TradeSignal(
             SignalType.HOLD, "BTC/USDT", new BigDecimal("50000"),

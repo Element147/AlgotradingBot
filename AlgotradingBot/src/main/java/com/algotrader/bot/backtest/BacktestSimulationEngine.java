@@ -7,6 +7,7 @@ import com.algotrader.bot.backtest.strategy.BacktestStrategyContext;
 import com.algotrader.bot.backtest.strategy.BacktestStrategyDecision;
 import com.algotrader.bot.backtest.strategy.BacktestStrategyRegistry;
 import com.algotrader.bot.backtest.strategy.BacktestStrategySelectionMode;
+import com.algotrader.bot.entity.PositionSide;
 import com.algotrader.bot.service.BacktestAlgorithmType;
 import org.springframework.stereotype.Component;
 
@@ -55,6 +56,7 @@ public class BacktestSimulationEngine {
         BigDecimal entryPrice = BigDecimal.ZERO;
         BigDecimal allocationFraction = BigDecimal.ONE;
         String activeSymbol = null;
+        PositionSide activeSide = null;
         int entryTimelineIndex = -1;
         LocalDateTime entryTimestamp = null;
         int winningTrades = 0;
@@ -71,6 +73,7 @@ public class BacktestSimulationEngine {
                 ? null
                 : new BacktestOpenPosition(
                     activeSymbol,
+                    activeSide,
                     quantity,
                     entryPrice,
                     entryValue,
@@ -90,6 +93,7 @@ public class BacktestSimulationEngine {
             if (activeSymbol == null && decision.action() == BacktestStrategyAction.BUY) {
                 EntrySnapshot entry = enterPosition(
                     decision.targetSymbol(),
+                    PositionSide.LONG,
                     normalizeAllocation(decision.allocationFraction()),
                     context,
                     cash,
@@ -101,14 +105,35 @@ public class BacktestSimulationEngine {
                 entryPrice = entry.entryPrice();
                 allocationFraction = entry.allocationFraction();
                 activeSymbol = entry.symbol();
+                activeSide = PositionSide.LONG;
                 entryTimelineIndex = timelineIndex;
                 entryTimestamp = currentTimestamp;
-            } else if (activeSymbol != null && decision.action() == BacktestStrategyAction.SELL) {
-                ExitSnapshot exit = exitPosition(activeSymbol, quantity, entryValue, context, costRate);
+            } else if (activeSymbol == null && decision.action() == BacktestStrategyAction.SHORT) {
+                EntrySnapshot entry = enterPosition(
+                    decision.targetSymbol(),
+                    PositionSide.SHORT,
+                    normalizeAllocation(decision.allocationFraction()),
+                    context,
+                    cash,
+                    costRate
+                );
+                cash = entry.remainingCash();
+                quantity = entry.quantity();
+                entryValue = entry.entryValue();
+                entryPrice = entry.entryPrice();
+                allocationFraction = entry.allocationFraction();
+                activeSymbol = entry.symbol();
+                activeSide = PositionSide.SHORT;
+                entryTimelineIndex = timelineIndex;
+                entryTimestamp = currentTimestamp;
+            } else if (activeSymbol != null
+                && shouldExitPosition(activeSide, decision.action())) {
+                ExitSnapshot exit = exitPosition(activeSide, activeSymbol, quantity, entryValue, context, costRate);
                 cash = cash.add(exit.cashReleased(), MC);
                 tradeReturns.add(exit.tradeReturn());
                 tradeSamples.add(createTradeSample(
                     activeSymbol,
+                    activeSide,
                     entryTimestamp,
                     currentTimestamp,
                     entryPrice,
@@ -126,17 +151,20 @@ public class BacktestSimulationEngine {
                 entryPrice = BigDecimal.ZERO;
                 allocationFraction = BigDecimal.ONE;
                 activeSymbol = null;
+                activeSide = null;
                 entryTimelineIndex = -1;
                 entryTimestamp = null;
             } else if (activeSymbol != null
+                && activeSide == PositionSide.LONG
                 && decision.action() == BacktestStrategyAction.ROTATE
                 && decision.targetSymbol() != null
                 && !decision.targetSymbol().equalsIgnoreCase(activeSymbol)) {
-                ExitSnapshot exit = exitPosition(activeSymbol, quantity, entryValue, context, costRate);
+                ExitSnapshot exit = exitPosition(activeSide, activeSymbol, quantity, entryValue, context, costRate);
                 cash = cash.add(exit.cashReleased(), MC);
                 tradeReturns.add(exit.tradeReturn());
                 tradeSamples.add(createTradeSample(
                     activeSymbol,
+                    activeSide,
                     entryTimestamp,
                     currentTimestamp,
                     entryPrice,
@@ -152,6 +180,7 @@ public class BacktestSimulationEngine {
 
                 EntrySnapshot entry = enterPosition(
                     decision.targetSymbol(),
+                    PositionSide.LONG,
                     normalizeAllocation(decision.allocationFraction()),
                     context,
                     cash,
@@ -163,24 +192,26 @@ public class BacktestSimulationEngine {
                 entryPrice = entry.entryPrice();
                 allocationFraction = entry.allocationFraction();
                 activeSymbol = entry.symbol();
+                activeSide = PositionSide.LONG;
                 entryTimelineIndex = timelineIndex;
                 entryTimestamp = currentTimestamp;
             }
 
             BigDecimal equity = activeSymbol == null
                 ? cash
-                : cash.add(quantity.multiply(context.currentClose(activeSymbol), MC), MC);
+                : markToMarketEquity(activeSide, cash, quantity, entryPrice, entryValue, context.currentClose(activeSymbol));
             equitySamples.add(new BacktestEquityPointSample(currentTimestamp, equity, BigDecimal.ZERO));
         }
 
         if (activeSymbol != null) {
             Map<String, Integer> finalIndexMap = buildCurrentIndexMap(indexByTimestamp, timeline.get(timeline.size() - 1));
             BacktestStrategyContext finalContext = new BacktestStrategyContext(scopedCandles, finalIndexMap, primarySymbol, null);
-            ExitSnapshot exit = exitPosition(activeSymbol, quantity, entryValue, finalContext, costRate);
+            ExitSnapshot exit = exitPosition(activeSide, activeSymbol, quantity, entryValue, finalContext, costRate);
             cash = cash.add(exit.cashReleased(), MC);
             tradeReturns.add(exit.tradeReturn());
             tradeSamples.add(createTradeSample(
                 activeSymbol,
+                activeSide,
                 entryTimestamp,
                 timeline.get(timeline.size() - 1),
                 entryPrice,
@@ -333,33 +364,67 @@ public class BacktestSimulationEngine {
     }
 
     private EntrySnapshot enterPosition(String symbol,
+                                        PositionSide side,
                                         BigDecimal allocationFraction,
                                         BacktestStrategyContext context,
                                         BigDecimal availableCash,
                                         BigDecimal costRate) {
-        BigDecimal effectiveBuy = context.currentClose(symbol).multiply(BigDecimal.ONE.add(costRate), MC);
+        BigDecimal executionPrice = side == PositionSide.LONG
+            ? context.currentClose(symbol).multiply(BigDecimal.ONE.add(costRate), MC)
+            : context.currentClose(symbol).multiply(BigDecimal.ONE.subtract(costRate), MC);
         BigDecimal deployableCapital = availableCash.multiply(allocationFraction, MC);
-        BigDecimal quantity = deployableCapital.divide(effectiveBuy, POSITION_SCALE, RoundingMode.HALF_UP);
-        BigDecimal entryValue = quantity.multiply(effectiveBuy, MC);
+        BigDecimal quantity = deployableCapital.divide(executionPrice, POSITION_SCALE, RoundingMode.HALF_UP);
+        BigDecimal entryValue = quantity.multiply(executionPrice, MC);
         return new EntrySnapshot(
             symbol,
             quantity,
-            effectiveBuy,
+            executionPrice,
             entryValue,
             availableCash.subtract(entryValue, MC),
             allocationFraction
         );
     }
 
-    private ExitSnapshot exitPosition(String symbol,
+    private ExitSnapshot exitPosition(PositionSide side,
+                                      String symbol,
                                       BigDecimal quantity,
                                       BigDecimal entryValue,
                                       BacktestStrategyContext context,
                                       BigDecimal costRate) {
-        BigDecimal effectiveSell = context.currentClose(symbol).multiply(BigDecimal.ONE.subtract(costRate), MC);
-        BigDecimal exitValue = quantity.multiply(effectiveSell, MC);
+        if (side == PositionSide.LONG) {
+            BigDecimal effectiveSell = context.currentClose(symbol).multiply(BigDecimal.ONE.subtract(costRate), MC);
+            BigDecimal exitValue = quantity.multiply(effectiveSell, MC);
+            BigDecimal tradeReturn = exitValue.subtract(entryValue, MC).divide(entryValue, MC);
+            return new ExitSnapshot(exitValue, effectiveSell, tradeReturn);
+        }
+
+        BigDecimal effectiveCover = context.currentClose(symbol).multiply(BigDecimal.ONE.add(costRate), MC);
+        BigDecimal coverCost = quantity.multiply(effectiveCover, MC);
+        BigDecimal exitValue = entryValue.multiply(BigDecimal.valueOf(2), MC).subtract(coverCost, MC);
         BigDecimal tradeReturn = exitValue.subtract(entryValue, MC).divide(entryValue, MC);
-        return new ExitSnapshot(exitValue, effectiveSell, tradeReturn);
+        return new ExitSnapshot(exitValue, effectiveCover, tradeReturn);
+    }
+
+    private boolean shouldExitPosition(PositionSide activeSide, BacktestStrategyAction action) {
+        if (activeSide == null) {
+            return false;
+        }
+        return (activeSide == PositionSide.LONG && action == BacktestStrategyAction.SELL)
+            || (activeSide == PositionSide.SHORT && action == BacktestStrategyAction.COVER);
+    }
+
+    private BigDecimal markToMarketEquity(PositionSide side,
+                                          BigDecimal cash,
+                                          BigDecimal quantity,
+                                          BigDecimal entryPrice,
+                                          BigDecimal entryValue,
+                                          BigDecimal currentPrice) {
+        if (side == PositionSide.LONG) {
+            return cash.add(quantity.multiply(currentPrice, MC), MC);
+        }
+
+        BigDecimal unrealizedPnl = entryPrice.subtract(currentPrice, MC).multiply(quantity, MC);
+        return cash.add(entryValue, MC).add(unrealizedPnl, MC);
     }
 
     private List<BacktestEquityPointSample> applyDrawdownSeries(List<BacktestEquityPointSample> rawSeries) {
@@ -383,6 +448,7 @@ public class BacktestSimulationEngine {
     }
 
     private BacktestTradeSample createTradeSample(String symbol,
+                                                  PositionSide side,
                                                   LocalDateTime entryTimestamp,
                                                   LocalDateTime exitTimestamp,
                                                   BigDecimal entryPrice,
@@ -393,6 +459,7 @@ public class BacktestSimulationEngine {
                                                   BigDecimal tradeReturn) {
         return new BacktestTradeSample(
             symbol,
+            side,
             entryTimestamp,
             exitTimestamp,
             entryPrice.setScale(8, RoundingMode.HALF_UP),

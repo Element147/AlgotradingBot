@@ -19,8 +19,10 @@ public record TradeHistoryResponse(
     LocalDateTime exitTime,
     @Schema(description = "Exit price in USDT", example = "51000.00")
     BigDecimal exitPrice,
-    @Schema(description = "Trade signal type", example = "BUY", allowableValues = {"BUY", "SELL"})
+    @Schema(description = "Trade signal type", example = "BUY", allowableValues = {"BUY", "SELL", "SHORT", "COVER", "HOLD"})
     String signal,
+    @Schema(description = "Position direction", example = "LONG", allowableValues = {"LONG", "SHORT"})
+    String positionSide,
     @Schema(description = "Position size (quantity)", example = "0.01")
     BigDecimal positionSize,
     @Schema(description = "Risk amount in USDT", example = "20.00")

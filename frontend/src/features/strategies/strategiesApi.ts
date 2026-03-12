@@ -16,6 +16,7 @@ export interface Strategy {
   tradeCount: number;
   currentDrawdown: number;
   paperMode: boolean;
+  shortSellingEnabled: boolean;
   configVersion: number;
   lastConfigChangedAt: string | null;
 }
@@ -31,6 +32,7 @@ export interface StrategyConfigHistoryEntry {
   maxPositionSize: number;
   status: string;
   paperMode: boolean;
+  shortSellingEnabled: boolean;
   changedAt: string;
 }
 
@@ -41,6 +43,7 @@ export interface UpdateStrategyConfigPayload {
   riskPerTrade: number;
   minPositionSize: number;
   maxPositionSize: number;
+  shortSellingEnabled: boolean;
 }
 
 export const strategiesApi = createApi({
