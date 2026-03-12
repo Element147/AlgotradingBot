@@ -76,4 +76,18 @@ class ExchangeSystemControllerIntegrationTest {
             .andExpect(jsonPath("$.path").exists())
             .andExpect(jsonPath("$.size").exists());
     }
+
+    @Test
+    void listAuditEvents_returnsRecentEntries() throws Exception {
+        mockMvc.perform(post("/api/system/backup")
+                .header("Authorization", "Bearer " + authToken))
+            .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/system/audit-events")
+                .header("Authorization", "Bearer " + authToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$[0].action").exists())
+            .andExpect(jsonPath("$[0].actor").exists());
+    }
 }

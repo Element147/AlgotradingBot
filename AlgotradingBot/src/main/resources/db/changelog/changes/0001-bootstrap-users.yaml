@@ -127,3 +127,100 @@ databaseChangeLog:
                   ALTER TABLE backtest_datasets RENAME COLUMN csv_data_tmp TO csv_data;
                 END IF;
               END $$;
+
+  - changeSet:
+      id: 0004-add-backtest-dataset-reproducibility-columns
+      author: codex
+      dbms: postgresql
+      preConditions:
+        onFail: MARK_RAN
+        tableExists:
+          tableName: backtest_datasets
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              ALTER TABLE backtest_datasets ADD COLUMN IF NOT EXISTS checksum_sha256 VARCHAR(64);
+              ALTER TABLE backtest_datasets ADD COLUMN IF NOT EXISTS schema_version VARCHAR(32);
+              CREATE EXTENSION IF NOT EXISTS pgcrypto;
+              UPDATE backtest_datasets
+                 SET checksum_sha256 = COALESCE(checksum_sha256, encode(digest(csv_data, 'sha256'), 'hex')),
+                     schema_version = COALESCE(schema_version, 'ohlcv-v1')
+               WHERE checksum_sha256 IS NULL
+                  OR schema_version IS NULL;
+              ALTER TABLE backtest_datasets ALTER COLUMN checksum_sha256 SET NOT NULL;
+              ALTER TABLE backtest_datasets ALTER COLUMN schema_version SET NOT NULL;
+
+  - changeSet:
+      id: 0005-create-operator-audit-events
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          tableExists:
+            tableName: operator_audit_events
+      changes:
+        - createTable:
+            tableName: operator_audit_events
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: actor
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: action
+                  type: VARCHAR(80)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: environment
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: target_type
+                  type: VARCHAR(80)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: target_id
+                  type: VARCHAR(120)
+              - column:
+                  name: outcome
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: details
+                  type: VARCHAR(2000)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_operator_audit_created_at
+            tableName: operator_audit_events
+            columns:
+              - column:
+                  name: created_at
+        - createIndex:
+            indexName: idx_operator_audit_action
+            tableName: operator_audit_events
+            columns:
+              - column:
+                  name: action
+        - createIndex:
+            indexName: idx_operator_audit_environment
+            tableName: operator_audit_events
+            columns:
+              - column:
+                  name: environment

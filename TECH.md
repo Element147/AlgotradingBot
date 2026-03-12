@@ -47,6 +47,12 @@ npm run build
 .\stop.ps1
 ```
 
+### CI
+
+- GitHub Actions workflow: `.github/workflows/ci.yml`
+- Backend gate: Gradle `test` + `build`
+- Frontend gate: `lint` + `test` + `build`
+
 ## Engineering Standards
 
 1. Use `BigDecimal` for money/risk precision.

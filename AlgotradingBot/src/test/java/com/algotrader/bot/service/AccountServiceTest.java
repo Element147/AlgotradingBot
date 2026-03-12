@@ -107,11 +107,11 @@ class AccountServiceTest {
         // Assert
         assertNotNull(response);
         // Total = available (800) + portfolio1 (420) + portfolio2 (1050) = 2270
-        assertEquals("2270.00000000", response.getTotal());
-        assertEquals("800.00000000", response.getAvailable());
-        assertEquals("1470.00000000", response.getLocked()); // Portfolio value: 420 + 1050
-        assertEquals(3, response.getAssets().size()); // USDT + 2 positions
-        assertNotNull(response.getLastSync());
+        assertEquals("2270.00000000", response.total());
+        assertEquals("800.00000000", response.available());
+        assertEquals("1470.00000000", response.locked()); // Portfolio value: 420 + 1050
+        assertEquals(3, response.assets().size()); // USDT + 2 positions
+        assertNotNull(response.lastSync());
     }
 
     @Test
@@ -128,11 +128,11 @@ class AccountServiceTest {
         // Assert
         assertNotNull(response);
         // Total P&L: 10 - 25 + 10 = -5
-        assertEquals("-5.00000000", response.getTotalProfitLoss());
+        assertEquals("-5.00000000", response.totalProfitLoss());
         // Win rate: 2 wins out of 3 trades = 66.67%
-        assertNotNull(response.getWinRate());
-        assertEquals(3, response.getTradeCount());
-        assertNotNull(response.getCashRatio());
+        assertNotNull(response.winRate());
+        assertEquals(3, response.tradeCount());
+        assertNotNull(response.cashRatio());
     }
 
     @Test
@@ -148,9 +148,9 @@ class AccountServiceTest {
 
         // Assert
         assertNotNull(response);
-        assertEquals("10.00000000", response.getTotalProfitLoss());
-        assertEquals("100.00000000", response.getWinRate()); // 1 win out of 1 trade
-        assertEquals(1, response.getTradeCount());
+        assertEquals("10.00000000", response.totalProfitLoss());
+        assertEquals("100.00000000", response.winRate()); // 1 win out of 1 trade
+        assertEquals(1, response.tradeCount());
     }
 
     @Test
@@ -166,10 +166,10 @@ class AccountServiceTest {
         assertEquals(2, positions.size());
         
         OpenPositionResponse pos1 = positions.get(0);
-        assertEquals("BTC/USDT", pos1.getSymbol());
-        assertEquals("40000.00000000", pos1.getEntryPrice());
-        assertEquals("42000.00000000", pos1.getCurrentPrice());
-        assertEquals("20.00000000", pos1.getUnrealizedPnL()); // (42000 - 40000) * 0.01
+        assertEquals("BTC/USDT", pos1.symbol());
+        assertEquals("40000.00000000", pos1.entryPrice());
+        assertEquals("42000.00000000", pos1.currentPrice());
+        assertEquals("20.00000000", pos1.unrealizedPnL()); // (42000 - 40000) * 0.01
     }
 
     @Test
@@ -186,10 +186,10 @@ class AccountServiceTest {
         assertEquals(3, trades.size());
         
         RecentTradeResponse trade1 = trades.get(0);
-        assertEquals("BTC/USDT", trade1.getSymbol());
-        assertEquals("40000.00000000", trade1.getEntryPrice());
-        assertEquals("41000.00000000", trade1.getExitPrice());
-        assertEquals("10.00000000", trade1.getProfitLoss());
+        assertEquals("BTC/USDT", trade1.symbol());
+        assertEquals("40000.00000000", trade1.entryPrice());
+        assertEquals("41000.00000000", trade1.exitPrice());
+        assertEquals("10.00000000", trade1.profitLoss());
     }
 
     @Test
@@ -230,9 +230,9 @@ class AccountServiceTest {
 
         // Assert
         assertNotNull(response);
-        assertEquals("0.00000000", response.getTotalProfitLoss());
-        assertEquals("0.00000000", response.getWinRate());
-        assertEquals(0, response.getTradeCount());
+        assertEquals("0.00000000", response.totalProfitLoss());
+        assertEquals("0.00000000", response.winRate());
+        assertEquals(0, response.tradeCount());
     }
 
     private Trade createTrade(Long id, String symbol, BigDecimal entryPrice, 

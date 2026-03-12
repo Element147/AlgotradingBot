@@ -18,6 +18,8 @@ export interface BacktestDataset {
   dataStart: string;
   dataEnd: string;
   uploadedAt: string;
+  checksumSha256: string;
+  schemaVersion: string;
 }
 
 export interface BacktestHistoryItem {
@@ -45,6 +47,34 @@ export interface BacktestDetails extends BacktestHistoryItem {
   startDate: string;
   endDate: string;
   errorMessage: string | null;
+}
+
+export interface BacktestComparisonItem {
+  id: number;
+  strategyId: string;
+  datasetName: string | null;
+  symbol: string;
+  timeframe: string;
+  executionStatus: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+  validationStatus: 'PENDING' | 'PASSED' | 'FAILED' | 'PRODUCTION_READY';
+  feesBps: number;
+  slippageBps: number;
+  timestamp: string;
+  initialBalance: number;
+  finalBalance: number;
+  totalReturnPercent: number;
+  sharpeRatio: number;
+  profitFactor: number;
+  winRate: number;
+  maxDrawdown: number;
+  totalTrades: number;
+  finalBalanceDelta: number;
+  totalReturnDeltaPercent: number;
+}
+
+export interface BacktestComparisonResponse {
+  baselineBacktestId: number;
+  items: BacktestComparisonItem[];
 }
 
 export interface RunBacktestPayload {
@@ -104,6 +134,19 @@ export const backtestApi = createApi({
       }),
       invalidatesTags: ['Backtests'],
     }),
+    replayBacktest: builder.mutation<{ id: number; status: string; timestamp: string }, number>({
+      query: (backtestId) => ({
+        url: `/api/backtests/${backtestId}/replay`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Backtests'],
+    }),
+    compareBacktests: builder.query<BacktestComparisonResponse, number[]>({
+      query: (ids) => {
+        const params = ids.map((id) => `ids=${encodeURIComponent(String(id))}`).join('&');
+        return `/api/backtests/compare?${params}`;
+      },
+    }),
   }),
 });
 
@@ -114,4 +157,6 @@ export const {
   useGetBacktestDatasetsQuery,
   useUploadBacktestDatasetMutation,
   useRunBacktestMutation,
+  useReplayBacktestMutation,
+  useCompareBacktestsQuery,
 } = backtestApi;

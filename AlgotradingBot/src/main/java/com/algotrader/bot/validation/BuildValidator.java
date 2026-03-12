@@ -51,7 +51,8 @@ public class BuildValidator {
     public ValidationResult validateJarBuild() {
         logger.info("Validating JAR build");
         try {
-            ProcessBuilder pb = new ProcessBuilder("./gradlew", "clean", "bootJar");
+            // Avoid `clean` here: nested Gradle invocations during test runs can wipe active task outputs.
+            ProcessBuilder pb = new ProcessBuilder("./gradlew", "--no-daemon", "bootJar");
             pb.directory(Paths.get(".").toFile());
             pb.redirectErrorStream(true);
             

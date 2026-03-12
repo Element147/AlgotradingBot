@@ -10,5 +10,7 @@ public record BacktestDatasetResponse(
     String symbolsCsv,
     LocalDateTime dataStart,
     LocalDateTime dataEnd,
-    LocalDateTime uploadedAt
+    LocalDateTime uploadedAt,
+    String checksumSha256,
+    String schemaVersion
 ) {}

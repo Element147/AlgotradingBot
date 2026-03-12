@@ -10,7 +10,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -22,11 +25,14 @@ public class BacktestDatasetService {
 
     private final BacktestDatasetRepository backtestDatasetRepository;
     private final HistoricalDataCsvParser historicalDataCsvParser;
+    private final OperatorAuditService operatorAuditService;
 
     public BacktestDatasetService(BacktestDatasetRepository backtestDatasetRepository,
-                                  HistoricalDataCsvParser historicalDataCsvParser) {
+                                  HistoricalDataCsvParser historicalDataCsvParser,
+                                  OperatorAuditService operatorAuditService) {
         this.backtestDatasetRepository = backtestDatasetRepository;
         this.historicalDataCsvParser = historicalDataCsvParser;
+        this.operatorAuditService = operatorAuditService;
     }
 
     @Transactional
@@ -79,8 +85,17 @@ public class BacktestDatasetService {
         dataset.setSymbolsCsv(String.join(",", symbols));
         dataset.setDataStart(start);
         dataset.setDataEnd(end);
+        dataset.setChecksumSha256(sha256Hex(csvData));
+        dataset.setSchemaVersion("ohlcv-v1");
 
         BacktestDataset saved = backtestDatasetRepository.save(dataset);
+        operatorAuditService.recordSuccess(
+            "BACKTEST_DATASET_UPLOADED",
+            "test",
+            "BACKTEST_DATASET",
+            String.valueOf(saved.getId()),
+            "name=" + saved.getName() + ", rows=" + saved.getRowCount()
+        );
         return toResponse(saved);
     }
 
@@ -106,7 +121,18 @@ public class BacktestDatasetService {
             dataset.getSymbolsCsv(),
             dataset.getDataStart(),
             dataset.getDataEnd(),
-            dataset.getUploadedAt()
+            dataset.getUploadedAt(),
+            dataset.getChecksumSha256(),
+            dataset.getSchemaVersion()
         );
+    }
+
+    private String sha256Hex(byte[] payload) {
+        try {
+            MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+            return HexFormat.of().formatHex(messageDigest.digest(payload));
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 not available", exception);
+        }
     }
 }

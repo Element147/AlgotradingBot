@@ -23,11 +23,14 @@ public class StrategyManagementService {
 
     private final StrategyConfigRepository strategyConfigRepository;
     private final WebSocketEventPublisher webSocketEventPublisher;
+    private final OperatorAuditService operatorAuditService;
 
     public StrategyManagementService(StrategyConfigRepository strategyConfigRepository,
-                                     WebSocketEventPublisher webSocketEventPublisher) {
+                                     WebSocketEventPublisher webSocketEventPublisher,
+                                     OperatorAuditService operatorAuditService) {
         this.strategyConfigRepository = strategyConfigRepository;
         this.webSocketEventPublisher = webSocketEventPublisher;
+        this.operatorAuditService = operatorAuditService;
     }
 
     @Transactional
@@ -54,6 +57,14 @@ public class StrategyManagementService {
             "Strategy started"
         );
 
+        operatorAuditService.recordSuccess(
+            "STRATEGY_STARTED",
+            "paper",
+            "STRATEGY",
+            String.valueOf(strategy.getId()),
+            strategy.getName()
+        );
+
         return new StrategyActionResponse(strategy.getId(), strategy.getStatus().name(), "Strategy started in paper mode");
     }
 
@@ -70,6 +81,14 @@ public class StrategyManagementService {
             String.valueOf(strategy.getId()),
             strategy.getStatus().name(),
             "Strategy stopped"
+        );
+
+        operatorAuditService.recordSuccess(
+            "STRATEGY_STOPPED",
+            "paper",
+            "STRATEGY",
+            String.valueOf(strategy.getId()),
+            strategy.getName()
         );
 
         return new StrategyActionResponse(strategy.getId(), strategy.getStatus().name(), "Strategy stopped");
@@ -101,6 +120,14 @@ public class StrategyManagementService {
             String.valueOf(saved.getId()),
             saved.getStatus().name(),
             "Strategy configuration updated"
+        );
+
+        operatorAuditService.recordSuccess(
+            "STRATEGY_CONFIG_UPDATED",
+            "paper",
+            "STRATEGY",
+            String.valueOf(saved.getId()),
+            "symbol=" + saved.getSymbol() + ", timeframe=" + saved.getTimeframe()
         );
 
         return mapToResponse(saved);

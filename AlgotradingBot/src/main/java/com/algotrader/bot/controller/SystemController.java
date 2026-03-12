@@ -1,6 +1,7 @@
 package com.algotrader.bot.controller;
 
 import com.algotrader.bot.service.ExchangeIntegrationService;
+import com.algotrader.bot.service.OperatorAuditService;
 import com.algotrader.bot.service.SystemOperationsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -21,13 +22,16 @@ public class SystemController {
 
     private final SystemOperationsService systemOperationsService;
     private final ExchangeIntegrationService exchangeIntegrationService;
+    private final OperatorAuditService operatorAuditService;
 
     public SystemController(
         SystemOperationsService systemOperationsService,
-        ExchangeIntegrationService exchangeIntegrationService
+        ExchangeIntegrationService exchangeIntegrationService,
+        OperatorAuditService operatorAuditService
     ) {
         this.systemOperationsService = systemOperationsService;
         this.exchangeIntegrationService = exchangeIntegrationService;
+        this.operatorAuditService = operatorAuditService;
     }
 
     @GetMapping("/info")
@@ -51,5 +55,14 @@ public class SystemController {
     @Operation(summary = "Trigger a local backup placeholder file")
     public ResponseEntity<BackupResponse> triggerBackup() {
         return ResponseEntity.ok(systemOperationsService.triggerBackup());
+    }
+
+    @GetMapping("/audit-events")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "List recent operator audit events")
+    public ResponseEntity<java.util.List<OperatorAuditEventResponse>> listAuditEvents(
+        @org.springframework.web.bind.annotation.RequestParam(defaultValue = "100") int limit
+    ) {
+        return ResponseEntity.ok(operatorAuditService.listEvents(limit));
     }
 }

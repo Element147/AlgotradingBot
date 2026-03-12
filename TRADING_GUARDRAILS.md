@@ -53,7 +53,7 @@ System should support:
 - Strategy-level stop
 - Account-level stop
 - Environment-level kill switch
-- Manual override with audit trail
+- Manual override with durable audit trail
 - Clear UI state of triggered guardrails
 
 ## Validation Requirements Before Any Live Consideration
@@ -61,12 +61,14 @@ System should support:
 All should be reproducible:
 
 - Versioned strategy parameters
+- Versioned/identifiable datasets (checksum and schema metadata)
 - Fees and slippage included in analysis
 - Out-of-sample or walk-forward validation
 - Sufficient trade count for interpretation
 - Paper-trading soak period with stable behavior
 - Failure-mode testing (disconnects/restarts/stale data)
 - Verified rollback path
+- Replay path for prior backtest configuration and dataset
 
 ## Honest Reporting Standard
 

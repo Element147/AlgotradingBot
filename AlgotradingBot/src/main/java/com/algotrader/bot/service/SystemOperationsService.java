@@ -34,18 +34,21 @@ public class SystemOperationsService {
     private final BuildProperties buildProperties;
     private final String kafkaBootstrapServers;
     private final Path backupDirectory;
+    private final OperatorAuditService operatorAuditService;
     private final LocalDateTime appStartTime = LocalDateTime.now();
 
     public SystemOperationsService(
         Optional<DataSource> dataSource,
         Optional<BuildProperties> buildProperties,
         @Value("${spring.kafka.bootstrap-servers:}") String kafkaBootstrapServers,
-        @Value("${algotrading.system.backup-dir:backups}") String backupDirectory
+        @Value("${algotrading.system.backup-dir:backups}") String backupDirectory,
+        OperatorAuditService operatorAuditService
     ) {
         this.dataSource = dataSource.orElse(null);
         this.buildProperties = buildProperties.orElse(null);
         this.kafkaBootstrapServers = kafkaBootstrapServers;
         this.backupDirectory = Paths.get(backupDirectory);
+        this.operatorAuditService = operatorAuditService;
     }
 
     public SystemInfoResponse getSystemInfo() {
@@ -74,9 +77,23 @@ public class SystemOperationsService {
                 + "-- note=Use pg_dump for full PostgreSQL logical backup in runtime environments.\n";
             Files.writeString(backupFile, content, StandardCharsets.UTF_8);
             long sizeBytes = Files.size(backupFile);
+            operatorAuditService.recordSuccess(
+                "SYSTEM_BACKUP_TRIGGERED",
+                "test",
+                "SYSTEM_BACKUP",
+                backupFile.toAbsolutePath().toString(),
+                "sizeBytes=" + sizeBytes
+            );
             return new BackupResponse(backupFile.toAbsolutePath().toString(), sizeBytes + " bytes");
         } catch (IOException ex) {
             logger.error("Failed to create backup file", ex);
+            operatorAuditService.recordFailure(
+                "SYSTEM_BACKUP_TRIGGERED",
+                "test",
+                "SYSTEM_BACKUP",
+                null,
+                ex.getMessage()
+            );
             throw new IllegalStateException("Unable to create backup file", ex);
         }
     }

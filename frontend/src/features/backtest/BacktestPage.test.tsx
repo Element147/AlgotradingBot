@@ -21,6 +21,8 @@ vi.mock('./backtestApi', () => ({
         dataStart: '2025-01-01T00:00:00',
         dataEnd: '2025-01-05T00:00:00',
         uploadedAt: '2026-03-10T10:00:00',
+        checksumSha256: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        schemaVersion: 'ohlcv-v1',
       },
     ],
   }),

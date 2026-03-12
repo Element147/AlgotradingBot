@@ -30,6 +30,7 @@ public class ExchangeIntegrationService {
     private static final String BINANCE_TESTNET_URL = "https://testnet.binance.vision";
     private static final String BINANCE_USED_WEIGHT_HEADER = "X-MBX-USED-WEIGHT-1M";
 
+    private final OperatorAuditService operatorAuditService;
     private final HttpClient httpClient = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(5))
         .build();
@@ -43,6 +44,10 @@ public class ExchangeIntegrationService {
             "Credentials not tested yet."
         )
     );
+
+    public ExchangeIntegrationService(OperatorAuditService operatorAuditService) {
+        this.operatorAuditService = operatorAuditService;
+    }
 
     public ExchangeConnectionStatusResponse getConnectionStatus() {
         return lastStatus.get();
@@ -60,6 +65,13 @@ public class ExchangeIntegrationService {
                 "Only Binance connectivity test is currently supported."
             );
             lastStatus.set(unsupported);
+            operatorAuditService.recordFailure(
+                "EXCHANGE_CONNECTION_TEST",
+                "test",
+                "EXCHANGE",
+                exchange,
+                unsupported.error()
+            );
             return unsupported;
         }
 
@@ -81,12 +93,36 @@ public class ExchangeIntegrationService {
                 "Missing API credentials. Provide API key/secret in request or BINANCE_API_KEY/BINANCE_API_SECRET."
             );
             lastStatus.set(missingCredentials);
+            operatorAuditService.recordFailure(
+                "EXCHANGE_CONNECTION_TEST",
+                "test",
+                "EXCHANGE",
+                exchange,
+                missingCredentials.error()
+            );
             return missingCredentials;
         }
 
         boolean testnet = request != null && Boolean.TRUE.equals(request.testnet());
         ExchangeConnectionStatusResponse status = performBinanceConnectivityTest(apiKey, apiSecret, testnet);
         lastStatus.set(status);
+        if (status.connected()) {
+            operatorAuditService.recordSuccess(
+                "EXCHANGE_CONNECTION_TEST",
+                testnet ? "test" : "live",
+                "EXCHANGE",
+                DEFAULT_EXCHANGE,
+                status.rateLimitUsage()
+            );
+        } else {
+            operatorAuditService.recordFailure(
+                "EXCHANGE_CONNECTION_TEST",
+                testnet ? "test" : "live",
+                "EXCHANGE",
+                DEFAULT_EXCHANGE,
+                status.error()
+            );
+        }
         return status;
     }
 

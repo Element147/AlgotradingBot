@@ -1,6 +1,8 @@
 package com.algotrader.bot.service;
 
 import com.algotrader.bot.backtest.strategy.BacktestStrategyRegistry;
+import com.algotrader.bot.controller.BacktestComparisonItemResponse;
+import com.algotrader.bot.controller.BacktestComparisonResponse;
 import com.algotrader.bot.controller.BacktestDetailsResponse;
 import com.algotrader.bot.controller.BacktestHistoryItemResponse;
 import com.algotrader.bot.controller.BacktestRunResponse;
@@ -15,8 +17,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class BacktestManagementService {
@@ -28,15 +35,18 @@ public class BacktestManagementService {
     private final BacktestExecutionService backtestExecutionService;
     private final BacktestDatasetService backtestDatasetService;
     private final BacktestStrategyRegistry backtestStrategyRegistry;
+    private final OperatorAuditService operatorAuditService;
 
     public BacktestManagementService(BacktestResultRepository backtestResultRepository,
                                      BacktestExecutionService backtestExecutionService,
                                      BacktestDatasetService backtestDatasetService,
-                                     BacktestStrategyRegistry backtestStrategyRegistry) {
+                                     BacktestStrategyRegistry backtestStrategyRegistry,
+                                     OperatorAuditService operatorAuditService) {
         this.backtestResultRepository = backtestResultRepository;
         this.backtestExecutionService = backtestExecutionService;
         this.backtestDatasetService = backtestDatasetService;
         this.backtestStrategyRegistry = backtestStrategyRegistry;
+        this.operatorAuditService = operatorAuditService;
     }
 
     @Transactional(readOnly = true)
@@ -106,8 +116,128 @@ public class BacktestManagementService {
         BacktestResult saved = backtestResultRepository.save(pending);
 
         backtestExecutionService.executeAsync(saved.getId());
+        operatorAuditService.recordSuccess(
+            "BACKTEST_RUN_STARTED",
+            "test",
+            "BACKTEST",
+            String.valueOf(saved.getId()),
+            "strategy=" + saved.getStrategyId() + ", datasetId=" + saved.getDatasetId()
+        );
 
         return new BacktestRunResponse(saved.getId(), saved.getExecutionStatus().name(), saved.getTimestamp());
+    }
+
+    @Transactional
+    public BacktestRunResponse replayBacktest(Long backtestId) {
+        BacktestResult existing = backtestResultRepository.findById(backtestId)
+            .orElseThrow(() -> new EntityNotFoundException("Backtest not found: " + backtestId));
+
+        if (existing.getDatasetId() == null) {
+            throw new IllegalArgumentException("Replay requires a dataset-backed backtest");
+        }
+
+        BacktestDataset dataset = backtestDatasetService.getDataset(existing.getDatasetId());
+
+        BacktestResult pending = new BacktestResult(
+            existing.getStrategyId(),
+            existing.getSymbol(),
+            existing.getStartDate(),
+            existing.getEndDate(),
+            existing.getInitialBalance(),
+            existing.getInitialBalance(),
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            0,
+            BacktestResult.ValidationStatus.PENDING
+        );
+
+        pending.setDatasetId(dataset.getId());
+        pending.setDatasetName(dataset.getName());
+        pending.setTimeframe(existing.getTimeframe());
+        pending.setExecutionStatus(BacktestResult.ExecutionStatus.PENDING);
+        pending.setFeesBps(existing.getFeesBps());
+        pending.setSlippageBps(existing.getSlippageBps());
+        pending.setTimestamp(LocalDateTime.now());
+
+        BacktestResult saved = backtestResultRepository.save(pending);
+        backtestExecutionService.executeAsync(saved.getId());
+        operatorAuditService.recordSuccess(
+            "BACKTEST_REPLAY_STARTED",
+            "test",
+            "BACKTEST",
+            String.valueOf(saved.getId()),
+            "sourceBacktestId=" + backtestId + ", datasetId=" + dataset.getId()
+        );
+
+        return new BacktestRunResponse(saved.getId(), saved.getExecutionStatus().name(), saved.getTimestamp());
+    }
+
+    @Transactional(readOnly = true)
+    public BacktestComparisonResponse compareBacktests(List<Long> requestedIds) {
+        if (requestedIds == null || requestedIds.size() < 2) {
+            throw new IllegalArgumentException("At least two backtest IDs are required for comparison");
+        }
+
+        List<Long> orderedIds = requestedIds.stream()
+            .filter(id -> id != null && id > 0)
+            .collect(Collectors.collectingAndThen(Collectors.toCollection(LinkedHashSet::new), List::copyOf));
+
+        if (orderedIds.size() < 2) {
+            throw new IllegalArgumentException("At least two unique valid backtest IDs are required for comparison");
+        }
+        if (orderedIds.size() > 10) {
+            throw new IllegalArgumentException("Comparison supports up to 10 backtests at once");
+        }
+
+        List<BacktestResult> fetched = backtestResultRepository.findAllById(orderedIds);
+        Map<Long, BacktestResult> resultById = fetched.stream()
+            .collect(Collectors.toMap(BacktestResult::getId, Function.identity()));
+
+        List<Long> missingIds = orderedIds.stream()
+            .filter(id -> !resultById.containsKey(id))
+            .toList();
+        if (!missingIds.isEmpty()) {
+            throw new EntityNotFoundException("Backtests not found: " + missingIds);
+        }
+
+        List<BacktestResult> orderedResults = orderedIds.stream()
+            .map(resultById::get)
+            .toList();
+
+        BacktestResult baseline = orderedResults.get(0);
+        BigDecimal baselineReturnPercent = totalReturnPercent(baseline);
+
+        List<BacktestComparisonItemResponse> items = orderedResults.stream()
+            .map(result -> {
+                BigDecimal returnPercent = totalReturnPercent(result);
+                return new BacktestComparisonItemResponse(
+                    result.getId(),
+                    result.getStrategyId(),
+                    result.getDatasetName(),
+                    result.getSymbol(),
+                    result.getTimeframe(),
+                    result.getExecutionStatus().name(),
+                    result.getValidationStatus().name(),
+                    result.getFeesBps(),
+                    result.getSlippageBps(),
+                    result.getTimestamp(),
+                    result.getInitialBalance(),
+                    result.getFinalBalance(),
+                    returnPercent,
+                    result.getSharpeRatio(),
+                    result.getProfitFactor(),
+                    result.getWinRate(),
+                    result.getMaxDrawdown(),
+                    result.getTotalTrades(),
+                    result.getFinalBalance().subtract(baseline.getFinalBalance()),
+                    returnPercent.subtract(baselineReturnPercent)
+                );
+            })
+            .toList();
+
+        return new BacktestComparisonResponse(baseline.getId(), items);
     }
 
     private String resolveRequestedSymbol(String requestedSymbol,
@@ -177,5 +307,19 @@ public class BacktestManagementService {
             result.getTimestamp(),
             result.getErrorMessage()
         );
+    }
+
+    private BigDecimal totalReturnPercent(BacktestResult result) {
+        if (result.getInitialBalance() == null
+            || result.getFinalBalance() == null
+            || result.getInitialBalance().compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO;
+        }
+
+        return result.getFinalBalance()
+            .subtract(result.getInitialBalance())
+            .divide(result.getInitialBalance(), 8, RoundingMode.HALF_UP)
+            .multiply(BigDecimal.valueOf(100))
+            .setScale(4, RoundingMode.HALF_UP);
     }
 }

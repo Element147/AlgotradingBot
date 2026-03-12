@@ -4,6 +4,7 @@
 
 ```text
 C:\Git\algotradingbot/
+  .github/workflows/  CI verification gates
   AlgotradingBot/   backend
   frontend/         frontend
   docs/             roadmap/acceptance and strategy research docs

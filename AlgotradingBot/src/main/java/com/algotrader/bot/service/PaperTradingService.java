@@ -30,15 +30,18 @@ public class PaperTradingService {
     private final AccountRepository accountRepository;
     private final PortfolioRepository portfolioRepository;
     private final TradeRepository tradeRepository;
+    private final OperatorAuditService operatorAuditService;
 
     public PaperTradingService(PaperOrderRepository paperOrderRepository,
                                AccountRepository accountRepository,
                                PortfolioRepository portfolioRepository,
-                               TradeRepository tradeRepository) {
+                               TradeRepository tradeRepository,
+                               OperatorAuditService operatorAuditService) {
         this.paperOrderRepository = paperOrderRepository;
         this.accountRepository = accountRepository;
         this.portfolioRepository = portfolioRepository;
         this.tradeRepository = tradeRepository;
+        this.operatorAuditService = operatorAuditService;
     }
 
     @Transactional
@@ -59,12 +62,28 @@ public class PaperTradingService {
             saved = fillOrderInternal(saved.getId());
         }
 
+        operatorAuditService.recordSuccess(
+            "PAPER_ORDER_PLACED",
+            "paper",
+            "PAPER_ORDER",
+            String.valueOf(saved.getId()),
+            "symbol=" + saved.getSymbol() + ", side=" + saved.getSide().name() + ", status=" + saved.getStatus().name()
+        );
+
         return mapToResponse(saved);
     }
 
     @Transactional
     public PaperOrderResponse fillOrder(Long orderId) {
-        return mapToResponse(fillOrderInternal(orderId));
+        PaperOrder filled = fillOrderInternal(orderId);
+        operatorAuditService.recordSuccess(
+            "PAPER_ORDER_FILLED",
+            "paper",
+            "PAPER_ORDER",
+            String.valueOf(filled.getId()),
+            "symbol=" + filled.getSymbol() + ", side=" + filled.getSide().name()
+        );
+        return mapToResponse(filled);
     }
 
     private PaperOrder fillOrderInternal(Long orderId) {
@@ -147,7 +166,15 @@ public class PaperTradingService {
 
         order.setStatus(PaperOrder.Status.CANCELLED);
         order.setCancelledAt(LocalDateTime.now());
-        return mapToResponse(paperOrderRepository.save(order));
+        PaperOrder saved = paperOrderRepository.save(order);
+        operatorAuditService.recordSuccess(
+            "PAPER_ORDER_CANCELLED",
+            "paper",
+            "PAPER_ORDER",
+            String.valueOf(saved.getId()),
+            "symbol=" + saved.getSymbol() + ", side=" + saved.getSide().name()
+        );
+        return mapToResponse(saved);
     }
 
     @Transactional(readOnly = true)
