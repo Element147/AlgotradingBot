@@ -6,6 +6,7 @@ plugins {
 }
 
 import org.gradle.api.tasks.testing.Test
+import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
 
 group = "com.algotrader"
@@ -139,4 +140,8 @@ tasks.register<Test>("exportOpenApiContract") {
     filter {
         includeTestsMatching("com.algotrader.bot.controller.OpenApiContractExportTest")
     }
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    options.compilerArgs.add("-Xlint:deprecation")
 }

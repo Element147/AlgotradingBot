@@ -241,6 +241,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/backtests/datasets/{datasetId}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["restoreDataset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/backtests/datasets/{datasetId}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["archiveDataset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/backtests/datasets/upload": {
         parameters: {
             query?: never;
@@ -448,6 +480,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/strategies/{strategyId}/config-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List strategy config history */
+        get: operations["configHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/risk/status": {
         parameters: {
             query?: never;
@@ -613,6 +662,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/backtests/datasets/retention-report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["retentionReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/backtests/compare": {
         parameters: {
             query?: never;
@@ -753,6 +818,10 @@ export interface components {
             tradeCount?: number;
             currentDrawdown?: number;
             paperMode?: boolean;
+            /** Format: int32 */
+            configVersion?: number;
+            /** Format: date-time */
+            lastConfigChangedAt?: string;
         };
         UpdateRiskConfigRequest: {
             maxRiskPerTrade: number;
@@ -955,6 +1024,21 @@ export interface components {
             uploadedAt?: string;
             checksumSha256?: string;
             schemaVersion?: string;
+            archived?: boolean;
+            /** Format: date-time */
+            archivedAt?: string;
+            archiveReason?: string;
+            /** Format: int64 */
+            usageCount?: number;
+            /** Format: date-time */
+            lastUsedAt?: string;
+            usedByBacktests?: boolean;
+            /** Format: int32 */
+            duplicateCount?: number;
+            retentionStatus?: string;
+        };
+        BacktestDatasetArchiveRequest: {
+            reason?: string;
         };
         RefreshTokenRequest: {
             refreshToken: string;
@@ -1136,6 +1220,22 @@ export interface components {
              */
             status?: "ACTIVE" | "STOPPED" | "CIRCUIT_BREAKER_TRIGGERED";
         };
+        StrategyConfigHistoryResponse: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: int32 */
+            versionNumber?: number;
+            changeReason?: string;
+            symbol?: string;
+            timeframe?: string;
+            riskPerTrade?: number;
+            minPositionSize?: number;
+            maxPositionSize?: number;
+            status?: string;
+            paperMode?: boolean;
+            /** Format: date-time */
+            changedAt?: string;
+        };
         RiskStatusResponse: {
             currentDrawdown?: number;
             maxDrawdownLimit?: number;
@@ -1183,6 +1283,14 @@ export interface components {
             cancelledOrders?: number;
             /** Format: date-time */
             lastOrderAt?: string;
+            /** Format: date-time */
+            lastPositionUpdateAt?: string;
+            /** Format: int64 */
+            staleOpenOrderCount?: number;
+            /** Format: int64 */
+            stalePositionCount?: number;
+            recoveryStatus?: string;
+            recoveryMessage?: string;
         };
         BacktestHistoryItemResponse: {
             /** Format: int64 */
@@ -1209,6 +1317,11 @@ export interface components {
             /** Format: int64 */
             datasetId?: number;
             datasetName?: string;
+            datasetChecksumSha256?: string;
+            datasetSchemaVersion?: string;
+            /** Format: date-time */
+            datasetUploadedAt?: string;
+            datasetArchived?: boolean;
             symbol?: string;
             timeframe?: string;
             executionStatus?: string;
@@ -1254,11 +1367,34 @@ export interface components {
             exitValue?: number;
             returnPct?: number;
         };
+        BacktestDatasetRetentionReportResponse: {
+            /** Format: int64 */
+            totalDatasets?: number;
+            /** Format: int64 */
+            activeDatasets?: number;
+            /** Format: int64 */
+            archivedDatasets?: number;
+            /** Format: int64 */
+            archiveCandidateDatasets?: number;
+            /** Format: int64 */
+            duplicateDatasetCount?: number;
+            /** Format: int64 */
+            referencedDatasetCount?: number;
+            /** Format: date-time */
+            oldestActiveUploadedAt?: string;
+            /** Format: date-time */
+            newestUploadedAt?: string;
+        };
         BacktestComparisonItemResponse: {
             /** Format: int64 */
             id?: number;
             strategyId?: string;
             datasetName?: string;
+            datasetChecksumSha256?: string;
+            datasetSchemaVersion?: string;
+            /** Format: date-time */
+            datasetUploadedAt?: string;
+            datasetArchived?: boolean;
             symbol?: string;
             timeframe?: string;
             executionStatus?: string;
@@ -1809,6 +1945,54 @@ export interface operations {
             };
         };
     };
+    restoreDataset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                datasetId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BacktestDatasetResponse"];
+                };
+            };
+        };
+    };
+    archiveDataset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                datasetId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["BacktestDatasetArchiveRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BacktestDatasetResponse"];
+                };
+            };
+        };
+    };
     uploadDataset: {
         parameters: {
             query?: {
@@ -2185,6 +2369,28 @@ export interface operations {
             };
         };
     };
+    configHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                strategyId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StrategyConfigHistoryResponse"][];
+                };
+            };
+        };
+    };
     status: {
         parameters: {
             query?: never;
@@ -2395,6 +2601,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": string;
+                };
+            };
+        };
+    };
+    retentionReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BacktestDatasetRetentionReportResponse"];
                 };
             };
         };

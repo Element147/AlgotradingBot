@@ -11,5 +11,10 @@ public record PaperTradingStateResponse(
     Long openOrders,
     Long filledOrders,
     Long cancelledOrders,
-    LocalDateTime lastOrderAt
+    LocalDateTime lastOrderAt,
+    LocalDateTime lastPositionUpdateAt,
+    Long staleOpenOrderCount,
+    Long stalePositionCount,
+    String recoveryStatus,
+    String recoveryMessage
 ) {}

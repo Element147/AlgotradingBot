@@ -8,20 +8,20 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class ProductionReadinessReport {
     private static final Logger logger = LoggerFactory.getLogger(ProductionReadinessReport.class);
     
-    private Map<String, ValidationResult> requirementResults;
+    private final Map<String, ValidationResult> requirementResults;
     private ResourceMetrics resourceMetrics;
     private StabilityMetrics stabilityMetrics;
-    private LocalDateTime timestamp;
+    private final LocalDateTime timestamp;
     private String environment;
 
     public ProductionReadinessReport() {
-        this.requirementResults = new HashMap<>();
+        this.requirementResults = new LinkedHashMap<>();
         this.timestamp = LocalDateTime.now();
     }
 
@@ -73,7 +73,7 @@ public class ProductionReadinessReport {
         appendRequirementResults(report, "REQ-14");
         
         report.append("\n");
-        report.append("OVERALL STATUS: ").append(isProductionReady() ? "✅ PRODUCTION READY" : "❌ NOT READY").append("\n\n");
+        report.append("OVERALL STATUS: ").append(isProductionReady() ? "[PASS] PRODUCTION READY" : "[FAIL] NOT READY").append("\n\n");
         
         long passed = requirementResults.values().stream().filter(ValidationResult::isPassed).count();
         long total = requirementResults.size();
@@ -93,7 +93,7 @@ public class ProductionReadinessReport {
             .filter(e -> e.getKey().startsWith(reqPrefix))
             .forEach(e -> {
                 ValidationResult result = e.getValue();
-                String icon = result.isPassed() ? "✅" : "❌";
+                String icon = result.isPassed() ? "[PASS]" : "[FAIL]";
                 report.append("  ").append(icon).append(" ")
                       .append(result.getRequirementName()).append(": ")
                       .append(result.getMessage()).append("\n");

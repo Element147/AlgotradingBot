@@ -11,6 +11,11 @@ export interface PaperTradingState {
   filledOrders: number;
   cancelledOrders: number;
   lastOrderAt: string | null;
+  lastPositionUpdateAt: string | null;
+  staleOpenOrderCount: number;
+  stalePositionCount: number;
+  recoveryStatus: 'HEALTHY' | 'IDLE' | 'ATTENTION';
+  recoveryMessage: string;
 }
 
 export const paperApi = createApi({

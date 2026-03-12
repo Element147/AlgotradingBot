@@ -25,6 +25,8 @@ public class PaperTradingService {
 
     private static final BigDecimal FEE_RATE = new BigDecimal("0.001");
     private static final BigDecimal SLIPPAGE_RATE = new BigDecimal("0.0003");
+    private static final long STALE_OPEN_ORDER_MINUTES = 15L;
+    private static final long STALE_POSITION_HOURS = 6L;
 
     private final PaperOrderRepository paperOrderRepository;
     private final AccountRepository accountRepository;
@@ -189,23 +191,40 @@ public class PaperTradingService {
     public PaperTradingStateResponse getState() {
         Account account = resolveAccount();
         List<PaperOrder> orders = paperOrderRepository.findByAccountIdOrderByCreatedAtDesc(account.getId());
+        List<Portfolio> positions = portfolioRepository.findByAccountId(account.getId());
 
         Long total = (long) orders.size();
         Long open = paperOrderRepository.countByAccountIdAndStatus(account.getId(), PaperOrder.Status.NEW);
         Long filled = paperOrderRepository.countByAccountIdAndStatus(account.getId(), PaperOrder.Status.FILLED);
         Long cancelled = paperOrderRepository.countByAccountIdAndStatus(account.getId(), PaperOrder.Status.CANCELLED);
-        int positions = portfolioRepository.findByAccountId(account.getId()).size();
         LocalDateTime lastOrder = orders.isEmpty() ? null : orders.get(0).getCreatedAt();
+        LocalDateTime lastPositionUpdate = positions.stream()
+            .map(Portfolio::getLastUpdated)
+            .max(LocalDateTime::compareTo)
+            .orElse(null);
+        long staleOpenOrderCount = orders.stream()
+            .filter(order -> PaperOrder.Status.NEW.equals(order.getStatus()))
+            .filter(order -> order.getCreatedAt().isBefore(LocalDateTime.now().minusMinutes(STALE_OPEN_ORDER_MINUTES)))
+            .count();
+        long stalePositionCount = positions.stream()
+            .filter(position -> position.getLastUpdated().isBefore(LocalDateTime.now().minusHours(STALE_POSITION_HOURS)))
+            .count();
+        RecoveryState recoveryState = resolveRecoveryState(staleOpenOrderCount, stalePositionCount, total, positions.size());
 
         return new PaperTradingStateResponse(
             true,
             account.getCurrentBalance(),
-            positions,
+            positions.size(),
             total,
             open,
             filled,
             cancelled,
-            lastOrder
+            lastOrder,
+            lastPositionUpdate,
+            staleOpenOrderCount,
+            stalePositionCount,
+            recoveryState.status(),
+            recoveryState.message()
         );
     }
 
@@ -278,5 +297,25 @@ public class PaperTradingService {
                 new BigDecimal("0.02"),
                 new BigDecimal("0.25")
             )));
+    }
+
+    private RecoveryState resolveRecoveryState(long staleOpenOrderCount,
+                                               long stalePositionCount,
+                                               long totalOrders,
+                                               int positionCount) {
+        if (staleOpenOrderCount > 0 || stalePositionCount > 0) {
+            return new RecoveryState(
+                "ATTENTION",
+                "Review paper-trading recovery state: " + staleOpenOrderCount + " stale open orders and "
+                    + stalePositionCount + " stale positions detected."
+            );
+        }
+        if (totalOrders == 0 && positionCount == 0) {
+            return new RecoveryState("IDLE", "Paper trading is idle with no orders or open positions.");
+        }
+        return new RecoveryState("HEALTHY", "No stale paper-trading state detected after the latest activity.");
+    }
+
+    private record RecoveryState(String status, String message) {
     }
 }

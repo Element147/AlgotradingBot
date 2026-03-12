@@ -19,7 +19,10 @@ Implemented product slices:
 3. Risk controls plus circuit-breaker override safeguards
 4. Paper-trading account/order state
 5. Operator audit-event trail for critical actions (`/api/system/audit-events`)
-6. Dataset reproducibility metadata (`checksumSha256`, schema version) and dataset download API
+6. Dataset lifecycle and reproducibility controls (`checksumSha256`, schema version, retention inventory, archive/restore, download)
+7. Strategy configuration version history and versioned defaults
+8. Paper-trading recovery status visibility for stale-order/stale-position detection
+9. Provenance-guarded backtest reporting and comparison exports
 
 ## Active Design Decisions (Source of Truth)
 
@@ -49,11 +52,17 @@ Implemented product slices:
 13. Added a dedicated trade-details endpoint and switched the frontend modal off the 1000-row client-side lookup path.
 14. Normalized frontend/backend environment routing onto `X-Environment` overrides, with shared resolver use on account/risk paths and explicit request-level header support in the frontend transport.
 15. Replaced repair/orchestration placeholders with workspace-aware automation aligned to `run.ps1`, `stop.ps1`, repo-local Compose paths, and managed PID/port cleanup.
+16. Added dataset lifecycle inventory, retention reporting, and archive/restore controls with backend enforcement that archived datasets cannot be used for new runs.
+17. Added persisted strategy configuration history, surfaced version metadata in strategy management, and exposed a dedicated config-history API/UI.
+18. Added paper-trading recovery telemetry (`staleOpenOrderCount`, `stalePositionCount`, recovery status/message) to the backend and dashboard.
+19. Extended backtest detail/comparison responses with dataset provenance and blocked report/comparison exports when checksum/schema/timestamp provenance is incomplete.
+20. Eliminated the audited deprecated/legacy API usage set and enabled backend `-Xlint:deprecation` compilation so regressions surface during normal verification.
 
 ## Remaining Work (Current Priorities)
 
 1. No blocking items remain in the March 12, 2026 current-priority technical-debt set.
-2. Next priorities move to dataset lifecycle tooling, strategy parameter/version history, and paper-trading recovery/alerting hardening.
+2. The March 12, 2026 research-quality and migration-hardening set is complete end to end.
+3. Next priorities move to repeatable experiment structure, operator alert delivery, and deeper validation automation on top of the now-hardened research workflow.
 
 ## Risk Elimination Migration Strategy
 
@@ -79,12 +88,18 @@ Phase 4 (implemented now):
 1. Align repair/orchestration automation with repo-local scripts and Compose topology instead of ad-hoc global Docker commands.
 2. Replace stubbed port-conflict handling with managed stop/cleanup actions and fail-closed reporting when conflicts remain.
 
+Phase 5 (implemented now):
+
+1. Add dataset lifecycle inventory/retention controls and block archived datasets from new research runs.
+2. Add versioned strategy configuration history and surface it in the operator UI.
+3. Add paper-trading recovery telemetry and provenance-guarded research exports.
+4. Remove remaining audited deprecated APIs and enable compiler-level deprecation visibility.
+
 ## Known Risks and Constraints
 
 - Strategy outcomes are simulation artifacts and must not be presented as guaranteed returns.
 - Current strategy action model is primarily `long/flat/rotate`; direct short/margin/leverage paths are intentionally constrained.
 - Strict auth is the default; local override remains explicit via `ALGOTRADING_RELAXED_AUTH=true`.
-- Some legacy code style remains in non-critical areas; modernization is incremental to avoid regressions.
 
 ## Verification Baseline
 

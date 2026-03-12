@@ -12,5 +12,13 @@ public record BacktestDatasetResponse(
     LocalDateTime dataEnd,
     LocalDateTime uploadedAt,
     String checksumSha256,
-    String schemaVersion
+    String schemaVersion,
+    Boolean archived,
+    LocalDateTime archivedAt,
+    String archiveReason,
+    Long usageCount,
+    LocalDateTime lastUsedAt,
+    Boolean usedByBacktests,
+    Integer duplicateCount,
+    String retentionStatus
 ) {}

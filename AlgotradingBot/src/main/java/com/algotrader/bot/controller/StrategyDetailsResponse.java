@@ -15,5 +15,7 @@ public record StrategyDetailsResponse(
     BigDecimal profitLoss,
     Integer tradeCount,
     BigDecimal currentDrawdown,
-    Boolean paperMode
+    Boolean paperMode,
+    Integer configVersion,
+    java.time.LocalDateTime lastConfigChangedAt
 ) {}

@@ -1,7 +1,9 @@
 import AddIcon from '@mui/icons-material/Add';
+import ArchiveOutlinedIcon from '@mui/icons-material/ArchiveOutlined';
 import DownloadIcon from '@mui/icons-material/Download';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import ReplayIcon from '@mui/icons-material/Replay';
+import RestoreFromTrashIcon from '@mui/icons-material/RestoreFromTrash';
 import {
   Alert,
   Box,
@@ -9,6 +11,7 @@ import {
   Card,
   CardContent,
   Checkbox,
+  Chip,
   Divider,
   Grid,
   Stack,
@@ -24,14 +27,18 @@ import {
 import { useMemo, useState } from 'react';
 
 import {
+  useArchiveBacktestDatasetMutation,
   useGetBacktestAlgorithmsQuery,
+  useGetBacktestDatasetRetentionReportQuery,
   useGetBacktestDatasetsQuery,
   useGetBacktestDetailsQuery,
   useGetBacktestsQuery,
   useLazyCompareBacktestsQuery,
   useReplayBacktestMutation,
+  useRestoreBacktestDatasetMutation,
   useRunBacktestMutation,
   useUploadBacktestDatasetMutation,
+  type BacktestDataset,
   type RunBacktestPayload,
 } from './backtestApi';
 import { BacktestComparisonPanel } from './BacktestComparisonPanel';
@@ -94,6 +101,35 @@ const validationColor = (value: string): 'success.main' | 'error.main' | 'warnin
   return 'warning.main';
 };
 
+const retentionChipColor = (
+  status: BacktestDataset['retentionStatus']
+): 'success' | 'warning' | 'default' => {
+  if (status === 'ACTIVE') {
+    return 'success';
+  }
+  if (status === 'ACTIVE_DUPLICATE_RETAINED' || status === 'ACTIVE_STALE_RETAINED') {
+    return 'default';
+  }
+  return 'warning';
+};
+
+const retentionLabel = (status: BacktestDataset['retentionStatus']): string => {
+  switch (status) {
+    case 'ACTIVE_DUPLICATE_RETAINED':
+      return 'Duplicate retained';
+    case 'ACTIVE_STALE_RETAINED':
+      return 'Stale retained';
+    case 'ARCHIVE_CANDIDATE_DUPLICATE':
+      return 'Archive candidate: duplicate';
+    case 'ARCHIVE_CANDIDATE_UNUSED':
+      return 'Archive candidate: unused';
+    case 'ARCHIVED':
+      return 'Archived';
+    default:
+      return 'Active';
+  }
+};
+
 interface HeaderCellProps {
   label: string;
   description: string;
@@ -124,13 +160,23 @@ export default function BacktestPage() {
 
   const { data: algorithms = [] } = useGetBacktestAlgorithmsQuery();
   const { data: datasets = [] } = useGetBacktestDatasetsQuery();
+  const { data: retentionReport } = useGetBacktestDatasetRetentionReportQuery();
   const { data: history = [], isLoading, isError } = useGetBacktestsQuery(undefined, {
     pollingInterval: 5000,
     skipPollingIfUnfocused: true,
   });
-  const resolvedForm = useMemo(() => resolveFormState(form, datasets, algorithms), [algorithms, datasets, form]);
+  const activeDatasets = useMemo(
+    () => datasets.filter((dataset) => !dataset.archived),
+    [datasets]
+  );
+  const resolvedForm = useMemo(
+    () => resolveFormState(form, activeDatasets, algorithms),
+    [activeDatasets, algorithms, form]
+  );
 
   const [uploadDataset, { isLoading: isUploading }] = useUploadBacktestDatasetMutation();
+  const [archiveDataset, { isLoading: isArchivingDataset }] = useArchiveBacktestDatasetMutation();
+  const [restoreDataset, { isLoading: isRestoringDataset }] = useRestoreBacktestDatasetMutation();
   const [runBacktest, { isLoading: isRunning }] = useRunBacktestMutation();
   const [replayBacktest, { isLoading: isReplaying }] = useReplayBacktestMutation();
   const [loadComparison, { data: comparison, isFetching: isComparing, error: comparisonError }] =
@@ -152,6 +198,7 @@ export default function BacktestPage() {
   });
   const comparisonIsStale =
     activeComparisonIds.length > 0 && activeComparisonIds.join(',') !== comparisonIds.join(',');
+  const datasetLifecycleBusy = isArchivingDataset || isRestoringDataset;
 
   const onUploadDataset = async () => {
     if (!datasetFile) {
@@ -173,10 +220,39 @@ export default function BacktestPage() {
       }));
       setFeedback({
         severity: 'success',
-        message: `Dataset '${uploaded.name}' uploaded (${uploaded.rowCount} rows).`,
+        message: `Dataset '${uploaded.name}' uploaded (${uploaded.rowCount} rows) and added to the active run catalog.`,
       });
       setDatasetFile(null);
       setDatasetName('');
+    } catch (error) {
+      setFeedback({ severity: 'error', message: getErrorMessage(error) });
+    }
+  };
+
+  const onArchiveDataset = async (dataset: BacktestDataset) => {
+    try {
+      await archiveDataset({
+        datasetId: dataset.id,
+        reason: dataset.usedByBacktests
+          ? 'Hidden from new-run selection while retained for replay reproducibility.'
+          : 'Archived from active inventory after lifecycle review.',
+      }).unwrap();
+      setFeedback({
+        severity: 'success',
+        message: `Archived dataset '${dataset.name}'. It remains available for download and replay-backed research.`,
+      });
+    } catch (error) {
+      setFeedback({ severity: 'error', message: getErrorMessage(error) });
+    }
+  };
+
+  const onRestoreDataset = async (datasetId: number) => {
+    try {
+      const restored = await restoreDataset(datasetId).unwrap();
+      setFeedback({
+        severity: 'success',
+        message: `Restored dataset '${restored.name}' to the active run catalog.`,
+      });
     } catch (error) {
       setFeedback({ severity: 'error', message: getErrorMessage(error) });
     }
@@ -283,6 +359,16 @@ export default function BacktestPage() {
                   Dataset Upload
                 </Typography>
                 <Stack spacing={2}>
+                  {retentionReport ? (
+                    <Alert
+                      severity={retentionReport.archiveCandidateDatasets > 0 ? 'warning' : 'info'}
+                    >
+                      Active: {retentionReport.activeDatasets} | Archived:{' '}
+                      {retentionReport.archivedDatasets} | Archive candidates:{' '}
+                      {retentionReport.archiveCandidateDatasets} | Referenced by backtests:{' '}
+                      {retentionReport.referencedDatasetCount}
+                    </Alert>
+                  ) : null}
                   <FieldTooltip title="Human-readable dataset label. Clear naming prevents running backtests on the wrong file.">
                     <TextField
                       label="Dataset Name (optional)"
@@ -313,6 +399,11 @@ export default function BacktestPage() {
                   <Typography variant="caption" color="text.secondary">
                     CSV format: timestamp,symbol,open,high,low,close,volume
                   </Typography>
+                  {activeDatasets.length === 0 ? (
+                    <Alert severity="warning">
+                      No active datasets are available for new runs. Restore an archived dataset or upload a new CSV.
+                    </Alert>
+                  ) : null}
                   {datasets.length > 0 ? (
                     <>
                       <Divider />
@@ -330,24 +421,67 @@ export default function BacktestPage() {
                               alignItems={{ xs: 'flex-start', sm: 'center' }}
                             >
                               <Box>
-                                <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                  {dataset.name}
-                                </Typography>
+                                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
+                                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                    {dataset.name}
+                                  </Typography>
+                                  <Chip
+                                    size="small"
+                                    color={retentionChipColor(dataset.retentionStatus)}
+                                    label={retentionLabel(dataset.retentionStatus)}
+                                  />
+                                </Stack>
                                 <Typography variant="caption" color="text.secondary" display="block">
                                   {dataset.originalFilename} | {dataset.rowCount} rows | {dataset.symbolsCsv}
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary" display="block">
                                   Schema: {dataset.schemaVersion} | Checksum: {dataset.checksumSha256}
                                 </Typography>
+                                <Typography variant="caption" color="text.secondary" display="block">
+                                  Used by backtests: {dataset.usageCount}
+                                  {dataset.lastUsedAt ? ` | Last used: ${dataset.lastUsedAt}` : ' | Never used'}
+                                  {dataset.duplicateCount > 1
+                                    ? ` | Duplicate uploads: ${dataset.duplicateCount}`
+                                    : ''}
+                                </Typography>
+                                {dataset.archived && dataset.archiveReason ? (
+                                  <Typography variant="caption" color="text.secondary" display="block">
+                                    Archive reason: {dataset.archiveReason}
+                                  </Typography>
+                                ) : null}
                               </Box>
-                              <Button
-                                variant="outlined"
-                                size="small"
-                                startIcon={<DownloadIcon />}
-                                onClick={() => void onDownloadDataset(dataset.id)}
-                              >
-                                Download
-                              </Button>
+                              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                                <Button
+                                  variant="outlined"
+                                  size="small"
+                                  startIcon={<DownloadIcon />}
+                                  onClick={() => void onDownloadDataset(dataset.id)}
+                                >
+                                  Download
+                                </Button>
+                                {dataset.archived ? (
+                                  <Button
+                                    variant="outlined"
+                                    size="small"
+                                    startIcon={<RestoreFromTrashIcon />}
+                                    disabled={datasetLifecycleBusy}
+                                    onClick={() => void onRestoreDataset(dataset.id)}
+                                  >
+                                    Restore
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    variant="outlined"
+                                    size="small"
+                                    color="warning"
+                                    startIcon={<ArchiveOutlinedIcon />}
+                                    disabled={datasetLifecycleBusy}
+                                    onClick={() => void onArchiveDataset(dataset)}
+                                  >
+                                    Archive
+                                  </Button>
+                                )}
+                              </Stack>
                             </Stack>
                           </Box>
                         ))}
@@ -372,11 +506,17 @@ export default function BacktestPage() {
                     {requiresDatasetUniverse ? ' Uses all symbols in the selected dataset.' : ''}
                   </Alert>
                 ) : null}
+                {activeDatasets.length === 0 ? (
+                  <Alert severity="warning" sx={{ mb: 2 }}>
+                    Upload or restore an active dataset before opening the backtest configuration dialog.
+                  </Alert>
+                ) : null}
                 <Button
                   variant="contained"
                   startIcon={<AddIcon />}
                   fullWidth
                   onClick={() => setConfigModalOpen(true)}
+                  disabled={activeDatasets.length === 0}
                 >
                   Run New Backtest
                 </Button>
@@ -540,7 +680,7 @@ export default function BacktestPage() {
         open={configModalOpen}
         form={resolvedForm}
         algorithms={algorithms}
-        datasets={datasets}
+        datasets={activeDatasets}
         busy={isRunning}
         onClose={() => setConfigModalOpen(false)}
         onChange={setForm}

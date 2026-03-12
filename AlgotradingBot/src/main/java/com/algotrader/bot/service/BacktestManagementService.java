@@ -12,6 +12,7 @@ import com.algotrader.bot.controller.BacktestTradeSeriesItemResponse;
 import com.algotrader.bot.controller.RunBacktestRequest;
 import com.algotrader.bot.entity.BacktestDataset;
 import com.algotrader.bot.entity.BacktestResult;
+import com.algotrader.bot.repository.BacktestDatasetRepository;
 import com.algotrader.bot.repository.BacktestResultRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.PageRequest;
@@ -34,17 +35,20 @@ public class BacktestManagementService {
     private static final int MAX_HISTORY_LIMIT = 500;
 
     private final BacktestResultRepository backtestResultRepository;
+    private final BacktestDatasetRepository backtestDatasetRepository;
     private final BacktestExecutionService backtestExecutionService;
     private final BacktestDatasetService backtestDatasetService;
     private final BacktestStrategyRegistry backtestStrategyRegistry;
     private final OperatorAuditService operatorAuditService;
 
     public BacktestManagementService(BacktestResultRepository backtestResultRepository,
+                                     BacktestDatasetRepository backtestDatasetRepository,
                                      BacktestExecutionService backtestExecutionService,
                                      BacktestDatasetService backtestDatasetService,
                                      BacktestStrategyRegistry backtestStrategyRegistry,
                                      OperatorAuditService operatorAuditService) {
         this.backtestResultRepository = backtestResultRepository;
+        this.backtestDatasetRepository = backtestDatasetRepository;
         this.backtestExecutionService = backtestExecutionService;
         this.backtestDatasetService = backtestDatasetService;
         this.backtestStrategyRegistry = backtestStrategyRegistry;
@@ -86,6 +90,7 @@ public class BacktestManagementService {
         if (request.initialBalance().compareTo(new BigDecimal("100.00")) <= 0) {
             throw new IllegalArgumentException("Initial balance must be greater than 100");
         }
+        backtestDatasetService.validateDatasetAvailableForNewRuns(request.datasetId());
         BacktestAlgorithmType algorithmType = BacktestAlgorithmType.from(request.algorithmType());
         var strategyDefinition = backtestStrategyRegistry.getStrategy(algorithmType).definition();
 
@@ -207,6 +212,13 @@ public class BacktestManagementService {
         List<BacktestResult> orderedResults = orderedIds.stream()
             .map(resultById::get)
             .toList();
+        Map<Long, BacktestDataset> datasetById = backtestDatasetRepository.findAllById(
+                orderedResults.stream()
+                    .map(BacktestResult::getDatasetId)
+                    .filter(id -> id != null && id > 0)
+                    .collect(Collectors.toCollection(LinkedHashSet::new))
+            ).stream()
+            .collect(Collectors.toMap(BacktestDataset::getId, Function.identity()));
 
         BacktestResult baseline = orderedResults.get(0);
         BigDecimal baselineReturnPercent = totalReturnPercent(baseline);
@@ -214,10 +226,15 @@ public class BacktestManagementService {
         List<BacktestComparisonItemResponse> items = orderedResults.stream()
             .map(result -> {
                 BigDecimal returnPercent = totalReturnPercent(result);
+                DatasetProvenance provenance = datasetProvenance(result, datasetById);
                 return new BacktestComparisonItemResponse(
                     result.getId(),
                     result.getStrategyId(),
                     result.getDatasetName(),
+                    provenance.checksumSha256(),
+                    provenance.schemaVersion(),
+                    provenance.uploadedAt(),
+                    provenance.archived(),
                     result.getSymbol(),
                     result.getTimeframe(),
                     result.getExecutionStatus().name(),
@@ -286,11 +303,16 @@ public class BacktestManagementService {
     }
 
     private BacktestDetailsResponse toDetails(BacktestResult result) {
+        DatasetProvenance provenance = datasetProvenance(result);
         return new BacktestDetailsResponse(
             result.getId(),
             result.getStrategyId(),
             result.getDatasetId(),
             result.getDatasetName(),
+            provenance.checksumSha256(),
+            provenance.schemaVersion(),
+            provenance.uploadedAt(),
+            provenance.archived(),
             result.getSymbol(),
             result.getTimeframe(),
             result.getExecutionStatus().name(),
@@ -343,5 +365,47 @@ public class BacktestManagementService {
             .divide(result.getInitialBalance(), 8, RoundingMode.HALF_UP)
             .multiply(BigDecimal.valueOf(100))
             .setScale(4, RoundingMode.HALF_UP);
+    }
+
+    private DatasetProvenance datasetProvenance(BacktestResult result) {
+        if (result.getDatasetId() == null) {
+            return DatasetProvenance.empty();
+        }
+
+        return backtestDatasetRepository.findById(result.getDatasetId())
+            .map(BacktestManagementService::toDatasetProvenance)
+            .orElseGet(DatasetProvenance::empty);
+    }
+
+    private DatasetProvenance datasetProvenance(BacktestResult result, Map<Long, BacktestDataset> datasetById) {
+        if (result.getDatasetId() == null) {
+            return DatasetProvenance.empty();
+        }
+
+        return toDatasetProvenance(datasetById.get(result.getDatasetId()));
+    }
+
+    private static DatasetProvenance toDatasetProvenance(BacktestDataset dataset) {
+        if (dataset == null) {
+            return DatasetProvenance.empty();
+        }
+
+        return new DatasetProvenance(
+            dataset.getChecksumSha256(),
+            dataset.getSchemaVersion(),
+            dataset.getUploadedAt(),
+            dataset.getArchived()
+        );
+    }
+
+    private record DatasetProvenance(
+        String checksumSha256,
+        String schemaVersion,
+        LocalDateTime uploadedAt,
+        Boolean archived
+    ) {
+        private static DatasetProvenance empty() {
+            return new DatasetProvenance(null, null, null, null);
+        }
     }
 }

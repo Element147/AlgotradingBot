@@ -6,6 +6,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -57,7 +58,7 @@ class RiskManagementIntegrationTest {
         
         // Verify position sizing
         assertTrue(positionResult.isValid(), "Position size should be valid");
-        assertEquals(new BigDecimal("2.00"), positionResult.getRiskAmount().setScale(2, BigDecimal.ROUND_HALF_UP),
+        assertEquals(new BigDecimal("2.00"), positionResult.getRiskAmount().setScale(2, RoundingMode.HALF_UP),
             "Risk amount should be $2.00 (2% of $100)");
         
         // Expected position size calculation:
@@ -72,7 +73,7 @@ class RiskManagementIntegrationTest {
         // STEP 2: Calculate transaction costs
         // Calculate position size from capped notional value
         BigDecimal actualPositionSize = positionResult.getNotionalValue().divide(
-            btcEntryPrice, 8, BigDecimal.ROUND_HALF_UP
+            btcEntryPrice, 8, RoundingMode.HALF_UP
         );
         
         TransactionCost buyCost = slippageCalculator.calculateRealCost(
@@ -109,7 +110,7 @@ class RiskManagementIntegrationTest {
         // Transaction costs (fees + slippage) should be a small percentage of notional value
         BigDecimal totalTransactionCosts = buyCost.getTotalFees().add(buyCost.getTotalSlippage());
         BigDecimal costPercentage = totalTransactionCosts
-            .divide(positionResult.getNotionalValue(), 4, BigDecimal.ROUND_HALF_UP)
+            .divide(positionResult.getNotionalValue(), 4, RoundingMode.HALF_UP)
             .multiply(new BigDecimal("100"));
         
         assertTrue(costPercentage.compareTo(new BigDecimal("0.20")) < 0,
@@ -249,7 +250,7 @@ class RiskManagementIntegrationTest {
         // Step 3: Calculate transaction costs
         // Calculate position size from capped notional value
         BigDecimal actualPositionSize = positionResult.getNotionalValue().divide(
-            entryPrice, 8, BigDecimal.ROUND_HALF_UP
+            entryPrice, 8, RoundingMode.HALF_UP
         );
         
         TransactionCost buyCost = slippageCalculator.calculateRealCost(

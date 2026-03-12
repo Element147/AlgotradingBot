@@ -2,6 +2,7 @@ package com.algotrader.bot.controller;
 
 import com.algotrader.bot.entity.StrategyConfig;
 import com.algotrader.bot.repository.StrategyConfigRepository;
+import com.algotrader.bot.repository.StrategyConfigVersionRepository;
 import com.algotrader.bot.security.JwtTokenProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +38,9 @@ class StrategyManagementControllerIntegrationTest {
     private StrategyConfigRepository strategyConfigRepository;
 
     @Autowired
+    private StrategyConfigVersionRepository strategyConfigVersionRepository;
+
+    @Autowired
     private JwtTokenProvider jwtTokenProvider;
 
     private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
@@ -48,6 +52,7 @@ class StrategyManagementControllerIntegrationTest {
     void setUp() {
         authToken = jwtTokenProvider.generateToken("testuser", "ROLE_USER");
         strategyConfigRepository.deleteAll();
+        strategyConfigVersionRepository.deleteAll();
 
         StrategyConfig strategy = new StrategyConfig(
             "Test Strategy",
@@ -68,7 +73,9 @@ class StrategyManagementControllerIntegrationTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(1))))
             .andExpect(jsonPath("$[0].name").exists())
-            .andExpect(jsonPath("$[0].status").exists());
+            .andExpect(jsonPath("$[0].status").exists())
+            .andExpect(jsonPath("$[0].configVersion").value(1))
+            .andExpect(jsonPath("$[0].lastConfigChangedAt").exists());
     }
 
     @Test
@@ -106,7 +113,8 @@ class StrategyManagementControllerIntegrationTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.symbol").value("ETH/USDT"))
             .andExpect(jsonPath("$.timeframe").value("4h"))
-            .andExpect(jsonPath("$.riskPerTrade").value(0.03));
+            .andExpect(jsonPath("$.riskPerTrade").value(0.03))
+            .andExpect(jsonPath("$.configVersion").value(2));
     }
 
     @Test
@@ -124,5 +132,32 @@ class StrategyManagementControllerIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void configHistory_returnsInitialAndUpdatedVersions() throws Exception {
+        UpdateStrategyConfigRequest request = new UpdateStrategyConfigRequest(
+            "ETH/USDT",
+            "4h",
+            new BigDecimal("0.03"),
+            new BigDecimal("20.00"),
+            new BigDecimal("120.00")
+        );
+
+        mockMvc.perform(put("/api/strategies/{strategyId}/config", strategyId)
+                .header("Authorization", "Bearer " + authToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/strategies/{strategyId}/config-history", strategyId)
+                .header("Authorization", "Bearer " + authToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$", hasSize(2)))
+            .andExpect(jsonPath("$[0].versionNumber").value(2))
+            .andExpect(jsonPath("$[0].changeReason").value("Updated symbol, timeframe, riskPerTrade, minPositionSize, maxPositionSize"))
+            .andExpect(jsonPath("$[0].symbol").value("ETH/USDT"))
+            .andExpect(jsonPath("$[1].versionNumber").value(1))
+            .andExpect(jsonPath("$[1].changeReason").exists());
     }
 }

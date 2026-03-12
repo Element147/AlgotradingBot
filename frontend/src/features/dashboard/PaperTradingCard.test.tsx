@@ -14,6 +14,11 @@ vi.mock('@/features/paperApi', () => ({
       filledOrders: 10,
       cancelledOrders: 1,
       lastOrderAt: '2026-03-10T10:00:00',
+      lastPositionUpdateAt: '2026-03-10T10:05:00',
+      staleOpenOrderCount: 0,
+      stalePositionCount: 0,
+      recoveryStatus: 'HEALTHY',
+      recoveryMessage: 'No stale paper-trading state detected after the latest activity.',
     },
     isLoading: false,
     isError: false,
@@ -28,5 +33,6 @@ describe('PaperTradingCard', () => {
     expect(screen.getByText('Paper mode active')).toBeInTheDocument();
     expect(screen.getByText('Cash Balance: 10000.00')).toBeInTheDocument();
     expect(screen.getByText('Open Positions: 2')).toBeInTheDocument();
+    expect(screen.getByText(/Recovery status: HEALTHY/)).toBeInTheDocument();
   });
 });

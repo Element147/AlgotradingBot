@@ -62,6 +62,17 @@ public class BacktestDataset {
     @Column(name = "schema_version", nullable = false, length = 32)
     private String schemaVersion;
 
+    @NotNull
+    @Column(nullable = false)
+    private Boolean archived;
+
+    @Column(name = "archived_at")
+    private LocalDateTime archivedAt;
+
+    @Size(max = 255)
+    @Column(name = "archive_reason", length = 255)
+    private String archiveReason;
+
     @PrePersist
     protected void onCreate() {
         if (uploadedAt == null) {
@@ -69,6 +80,9 @@ public class BacktestDataset {
         }
         if (schemaVersion == null || schemaVersion.isBlank()) {
             schemaVersion = "ohlcv-v1";
+        }
+        if (archived == null) {
+            archived = Boolean.FALSE;
         }
     }
 
@@ -154,5 +168,29 @@ public class BacktestDataset {
 
     public void setSchemaVersion(String schemaVersion) {
         this.schemaVersion = schemaVersion;
+    }
+
+    public Boolean getArchived() {
+        return archived;
+    }
+
+    public void setArchived(Boolean archived) {
+        this.archived = archived;
+    }
+
+    public LocalDateTime getArchivedAt() {
+        return archivedAt;
+    }
+
+    public void setArchivedAt(LocalDateTime archivedAt) {
+        this.archivedAt = archivedAt;
+    }
+
+    public String getArchiveReason() {
+        return archiveReason;
+    }
+
+    public void setArchiveReason(String archiveReason) {
+        this.archiveReason = archiveReason;
     }
 }

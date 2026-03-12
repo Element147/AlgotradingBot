@@ -38,11 +38,32 @@ public class BacktestManagementController {
         return ResponseEntity.ok(backtestDatasetService.listDatasets());
     }
 
+    @GetMapping("/datasets/retention-report")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<BacktestDatasetRetentionReportResponse> retentionReport() {
+        return ResponseEntity.ok(backtestDatasetService.getRetentionReport());
+    }
+
     @PostMapping(value = "/datasets/upload", consumes = "multipart/form-data")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<BacktestDatasetResponse> uploadDataset(@RequestParam(required = false) String name,
                                                                  @RequestPart("file") MultipartFile file) {
         return ResponseEntity.ok(backtestDatasetService.uploadDataset(name, file));
+    }
+
+    @PostMapping("/datasets/{datasetId}/archive")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<BacktestDatasetResponse> archiveDataset(
+        @PathVariable Long datasetId,
+        @RequestBody(required = false) BacktestDatasetArchiveRequest request
+    ) {
+        return ResponseEntity.ok(backtestDatasetService.archiveDataset(datasetId, request));
+    }
+
+    @PostMapping("/datasets/{datasetId}/restore")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<BacktestDatasetResponse> restoreDataset(@PathVariable Long datasetId) {
+        return ResponseEntity.ok(backtestDatasetService.restoreDataset(datasetId));
     }
 
     @GetMapping("/datasets/{datasetId}/download")

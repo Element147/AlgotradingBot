@@ -30,9 +30,10 @@ Primary packages in `com.algotrader.bot`:
 - Registry seam: `BacktestStrategyRegistry` resolves strategy metadata and execution routing.
 - Simulation seam: `BacktestSimulationEngine` runs execution loops and position transitions.
 - Metrics seam: `BacktestSimulationMetricsCalculator` computes performance statistics.
-- Reproducibility seam: dataset metadata includes checksum/schema version and supports download + replay flows.
+- Reproducibility seam: dataset metadata includes checksum/schema version, retention state, archive/restore controls, and supports download + replay flows.
 - Analytics persistence seam: backtest details include persisted equity-curve and trade-series records for reproducible UI charts/exports.
-- Comparison seam: dedicated compare API provides side-by-side metric deltas for selected backtests.
+- Comparison seam: dedicated compare API provides side-by-side metric deltas plus dataset provenance for selected backtests.
+- Reporting seam: frontend exports fail closed when dataset provenance is incomplete, so reports cannot be produced from ambiguous inputs.
 
 This avoids single-class "all-logic" backtesting and supports extension without rewriting orchestration.
 
@@ -88,9 +89,10 @@ Key frontend design rules:
 6. Persist critical operator actions with durable audit events for post-incident review.
 7. Account endpoints resolve environment from either `env` query params or `X-Environment` header and fail closed when live account reads are not implemented.
 8. Repair automation must align with the repo's real operator entrypoints and fail closed when managed cleanup cannot restore a healthy local runtime.
+9. Backend compilation surfaces deprecated API usage with `-Xlint:deprecation` so modernization regressions are caught during normal builds.
 
 ## Near-Term Architecture Work
 
-1. Expand dataset lifecycle tooling beyond upload/download.
-2. Add deeper strategy parameter lifecycle/versioning.
+1. Add repeatable experiment structure on top of dataset/config version history.
+2. Extend operator alerting on top of current recovery telemetry and audit signals.
 3. Extend operational recovery coverage beyond the current script/Compose-aligned repair set.

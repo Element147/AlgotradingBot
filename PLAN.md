@@ -25,6 +25,11 @@ Single slim implementation plan replacing legacy multi-file phase specs.
 15. Trade details now use a dedicated backend endpoint rather than client-side filtering of large history payloads.
 16. Environment routing now supports explicit `X-Environment` request overrides end to end for account/risk flows.
 17. Repair/orchestration automation now uses repo-aware workspace resolution and the same `run.ps1`/`stop.ps1`/Compose entrypoints as the operator workflow.
+18. Dataset lifecycle tooling now includes retention inventory, archive/restore controls, and archived-dataset run blocking.
+19. Strategy management now persists configuration history and exposes version metadata in the UI/API.
+20. Paper-trading dashboard state now includes restart-recovery telemetry for stale orders/positions.
+21. Backtest reports/comparisons now carry dataset provenance and block exports when provenance is incomplete.
+22. Backend compilation now runs with `-Xlint:deprecation`, and the audited deprecated API set has been removed.
 
 ## Current Work (Now)
 
@@ -32,23 +37,23 @@ Single slim implementation plan replacing legacy multi-file phase specs.
    - keep only root canonical docs current
    - remove stale one-off logs
 2. Research quality improvements
-   - dataset lifecycle tooling beyond upload/download
-   - richer comparison/reporting slices on top of persisted backtest series
+   - repeatable experiment structure on top of versioned datasets and config history
+   - richer multi-run research summaries beyond the current provenance-guarded exports
 3. Operational hardening
-   - paper-trading restart recovery checks and alerting
+   - operator alert delivery on top of paper-trading recovery signals
    - extend repair playbooks for additional runtime failure signatures
 
 ## Near Future
 
 1. Data reproducibility
-   - dataset lifecycle tooling (version inventory + retention)
-   - reproducibility checks in strategy reports
+   - repeatable experiment structure and naming conventions
+   - stronger research report packaging on top of current provenance checks
 2. Paper-trading hardening
-   - operational logs and restart recovery checks
-   - audit-event UX and alerting
+   - operator alert routing and incident summaries
+   - audit-event UX refinements
 3. Strategy lifecycle improvements
-   - typed per-strategy parameters
-   - versioned defaults and parameter history
+   - typed per-strategy parameter editing ergonomics
+   - higher-level experiment/change review flows
 4. Security hardening migration
    - strict-by-default auth posture and explicit local override runbook are implemented
    - keep rollout/rollback guidance current as auth workflows evolve

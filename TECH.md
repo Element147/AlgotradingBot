@@ -30,6 +30,8 @@ cd AlgotradingBot
 .\gradlew.bat build
 ```
 
+Backend compilation now enables `-Xlint:deprecation`, so deprecated API usage is surfaced during normal verification instead of being hidden in compiler summaries.
+
 ### Frontend
 
 ```powershell

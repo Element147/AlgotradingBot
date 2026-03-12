@@ -9,7 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-final class RepairWorkspaceSupport {
+public final class RepairWorkspaceSupport {
 
     private static final List<Integer> MANAGED_PORTS = List.of(5432, 8080, 5173, 9092);
 
@@ -25,7 +25,7 @@ final class RepairWorkspaceSupport {
         this.pidDirectory = repoRoot.resolve(".pids");
     }
 
-    static RepairWorkspaceSupport detect() {
+    public static RepairWorkspaceSupport detect() {
         Path current = Paths.get("").toAbsolutePath().normalize();
         Path cursor = current;
         while (cursor != null) {
@@ -38,19 +38,19 @@ final class RepairWorkspaceSupport {
         throw new IllegalStateException("Unable to locate repository root for repair automation from " + current);
     }
 
-    Path repoRoot() {
+    public Path repoRoot() {
         return repoRoot;
     }
 
-    Path backendDir() {
+    public Path backendDir() {
         return backendDir;
     }
 
-    Path pidFile(String name) {
+    public Path pidFile(String name) {
         return pidDirectory.resolve(name + ".pid");
     }
 
-    List<String> scriptCommand(String scriptName) {
+    public List<String> scriptCommand(String scriptName) {
         return List.of(
             "powershell",
             "-NoProfile",
@@ -61,7 +61,7 @@ final class RepairWorkspaceSupport {
         );
     }
 
-    List<String> dockerComposeCommand(String... args) {
+    public List<String> dockerComposeCommand(String... args) {
         List<String> command = new ArrayList<>();
         command.add("docker");
         command.add("compose");
@@ -71,18 +71,18 @@ final class RepairWorkspaceSupport {
         return command;
     }
 
-    List<String> dockerCommand(String... args) {
+    public List<String> dockerCommand(String... args) {
         List<String> command = new ArrayList<>();
         command.add("docker");
         command.addAll(List.of(args));
         return command;
     }
 
-    List<Integer> managedPorts() {
+    public List<Integer> managedPorts() {
         return MANAGED_PORTS;
     }
 
-    String containerNameFor(String serviceName) {
+    public String containerNameFor(String serviceName) {
         return switch (serviceName) {
             case "postgres" -> "algotrading-postgres";
             case "kafka" -> "algotrading-kafka";
@@ -91,7 +91,7 @@ final class RepairWorkspaceSupport {
         };
     }
 
-    Map<Integer, String> findListeningProcesses(List<Integer> ports) {
+    public Map<Integer, String> findListeningProcesses(List<Integer> ports) {
         Map<Integer, String> conflicts = new LinkedHashMap<>();
         try {
             ProcessBuilder processBuilder = new ProcessBuilder("cmd", "/c", "netstat -ano -p tcp");
@@ -127,7 +127,7 @@ final class RepairWorkspaceSupport {
         return conflicts;
     }
 
-    void stopPidIfPresent(Path pidFile) throws IOException, InterruptedException {
+    public void stopPidIfPresent(Path pidFile) throws IOException, InterruptedException {
         if (!Files.exists(pidFile)) {
             return;
         }

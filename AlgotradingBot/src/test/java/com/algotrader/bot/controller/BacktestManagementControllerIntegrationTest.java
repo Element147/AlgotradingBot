@@ -24,6 +24,7 @@ import java.time.LocalDateTime;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -177,6 +178,9 @@ class BacktestManagementControllerIntegrationTest {
             .andExpect(jsonPath("$.id").value(backtestId))
             .andExpect(jsonPath("$.strategyId").value("BOLLINGER_BANDS"))
             .andExpect(jsonPath("$.datasetName").value("sample-btc"))
+            .andExpect(jsonPath("$.datasetChecksumSha256").value("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+            .andExpect(jsonPath("$.datasetSchemaVersion").value("ohlcv-v1"))
+            .andExpect(jsonPath("$.datasetArchived").value(false))
             .andExpect(jsonPath("$.equityCurve[0].equity").value(1000))
             .andExpect(jsonPath("$.tradeSeries[0].returnPct").value(10.0000));
     }
@@ -222,7 +226,7 @@ class BacktestManagementControllerIntegrationTest {
                 .header("Authorization", "Bearer " + authToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isUnprocessableEntity());
+            .andExpect(status().isUnprocessableContent());
     }
 
     @Test
@@ -239,7 +243,17 @@ class BacktestManagementControllerIntegrationTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].name").value("sample-btc"))
             .andExpect(jsonPath("$[0].checksumSha256").isString())
-            .andExpect(jsonPath("$[0].schemaVersion").value("ohlcv-v1"));
+            .andExpect(jsonPath("$[0].schemaVersion").value("ohlcv-v1"))
+            .andExpect(jsonPath("$[0].archived").value(false))
+            .andExpect(jsonPath("$[0].usageCount").value(greaterThanOrEqualTo(1)))
+            .andExpect(jsonPath("$[0].retentionStatus").value("ACTIVE"));
+
+        mockMvc.perform(get("/api/backtests/datasets/retention-report")
+                .header("Authorization", "Bearer " + authToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.totalDatasets").value(1))
+            .andExpect(jsonPath("$.activeDatasets").value(1))
+            .andExpect(jsonPath("$.referencedDatasetCount").value(1));
     }
 
     @Test
@@ -262,6 +276,8 @@ class BacktestManagementControllerIntegrationTest {
             .andExpect(jsonPath("$.items", hasSize(2)))
             .andExpect(jsonPath("$.items[0].id").value(backtestId))
             .andExpect(jsonPath("$.items[1].id").value(comparisonBacktestId))
+            .andExpect(jsonPath("$.items[0].datasetChecksumSha256").value("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+            .andExpect(jsonPath("$.items[0].datasetSchemaVersion").value("ohlcv-v1"))
             .andExpect(jsonPath("$.items[1].totalReturnDeltaPercent").exists());
     }
 
@@ -273,5 +289,53 @@ class BacktestManagementControllerIntegrationTest {
             .andExpect(header().exists("X-Dataset-Checksum-Sha256"))
             .andExpect(header().string("X-Dataset-Schema-Version", "ohlcv-v1"))
             .andExpect(content().string(containsString("timestamp,symbol,open,high,low,close,volume")));
+    }
+
+    @Test
+    void archiveAndRestoreDataset_updatesLifecycleMetadata() throws Exception {
+        mockMvc.perform(post("/api/backtests/datasets/{datasetId}/archive", datasetId)
+                .header("Authorization", "Bearer " + authToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"reason\":\"Superseded by cleaned upload\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.archived").value(true))
+            .andExpect(jsonPath("$.archiveReason").value("Superseded by cleaned upload"))
+            .andExpect(jsonPath("$.archivedAt", notNullValue()))
+            .andExpect(jsonPath("$.retentionStatus").value("ARCHIVED"));
+
+        mockMvc.perform(post("/api/backtests/datasets/{datasetId}/restore", datasetId)
+                .header("Authorization", "Bearer " + authToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.archived").value(false))
+            .andExpect(jsonPath("$.archiveReason").isEmpty())
+            .andExpect(jsonPath("$.retentionStatus").value("ACTIVE"));
+    }
+
+    @Test
+    void runBacktest_rejectsArchivedDataset() throws Exception {
+        BacktestDataset dataset = backtestDatasetRepository.findById(datasetId).orElseThrow();
+        dataset.setArchived(Boolean.TRUE);
+        dataset.setArchivedAt(LocalDateTime.now());
+        dataset.setArchiveReason("Retired from active catalog");
+        backtestDatasetRepository.save(dataset);
+
+        RunBacktestRequest request = new RunBacktestRequest(
+            "SMA_CROSSOVER",
+            datasetId,
+            "BTC/USDT",
+            "1h",
+            java.time.LocalDate.parse("2025-01-01"),
+            java.time.LocalDate.parse("2025-01-02"),
+            new BigDecimal("2000"),
+            10,
+            3
+        );
+
+        mockMvc.perform(post("/api/backtests/run")
+                .header("Authorization", "Bearer " + authToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isUnprocessableContent())
+            .andExpect(jsonPath("$.message").value(containsString("Archived datasets cannot be used for new backtests")));
     }
 }

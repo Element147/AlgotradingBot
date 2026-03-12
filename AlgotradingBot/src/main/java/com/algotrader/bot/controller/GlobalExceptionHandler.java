@@ -107,7 +107,7 @@ public class GlobalExceptionHandler {
     }
     
     /**
-     * Handle business logic errors (422 Unprocessable Entity).
+     * Handle business logic errors (422 Unprocessable Content).
      * Triggered when business rules are violated.
      */
     @ExceptionHandler(IllegalArgumentException.class)
@@ -115,7 +115,7 @@ public class GlobalExceptionHandler {
             IllegalArgumentException ex, HttpServletRequest request) {
         
         logger.warn("Business logic error: {}", ex.getMessage());
-        return buildErrorResponse(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request);
+        return buildErrorResponse(HttpStatus.UNPROCESSABLE_CONTENT, ex.getMessage(), request);
     }
 
     @ExceptionHandler(LiveAccountReadUnavailableException.class)

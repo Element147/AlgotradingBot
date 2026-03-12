@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -111,7 +112,7 @@ public class Account {
             return BigDecimal.ZERO;
         }
         return initialBalance.subtract(currentBalance)
-                .divide(initialBalance, 4, BigDecimal.ROUND_HALF_UP)
+                .divide(initialBalance, 4, RoundingMode.HALF_UP)
                 .multiply(BigDecimal.valueOf(100));
     }
 
@@ -126,7 +127,7 @@ public class Account {
             return BigDecimal.ZERO;
         }
         return currentBalance.subtract(initialBalance)
-                .divide(initialBalance, 4, BigDecimal.ROUND_HALF_UP)
+                .divide(initialBalance, 4, RoundingMode.HALF_UP)
                 .multiply(BigDecimal.valueOf(100));
     }
 

@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 
 /**
@@ -112,7 +113,7 @@ public class Portfolio {
             return BigDecimal.ZERO;
         }
         return currentPrice.subtract(averageEntryPrice)
-                .divide(averageEntryPrice, 4, BigDecimal.ROUND_HALF_UP)
+                .divide(averageEntryPrice, 4, RoundingMode.HALF_UP)
                 .multiply(BigDecimal.valueOf(100));
     }
 

@@ -51,4 +51,11 @@ public class StrategyManagementController {
     ) {
         return ResponseEntity.ok(strategyManagementService.updateStrategyConfig(strategyId, request));
     }
+
+    @GetMapping("/{strategyId}/config-history")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "List strategy config history")
+    public ResponseEntity<List<StrategyConfigHistoryResponse>> configHistory(@PathVariable Long strategyId) {
+        return ResponseEntity.ok(strategyManagementService.getStrategyConfigHistory(strategyId));
+    }
 }

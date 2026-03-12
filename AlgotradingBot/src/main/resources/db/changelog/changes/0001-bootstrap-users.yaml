@@ -378,3 +378,127 @@ databaseChangeLog:
             columns:
               - column:
                   name: exit_time
+
+  - changeSet:
+      id: 0008-add-backtest-dataset-lifecycle-columns
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        tableExists:
+          tableName: backtest_datasets
+      changes:
+        - addColumn:
+            tableName: backtest_datasets
+            columns:
+              - column:
+                  name: archived
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+              - column:
+                  name: archived_at
+                  type: TIMESTAMP
+              - column:
+                  name: archive_reason
+                  type: VARCHAR(255)
+        - addNotNullConstraint:
+            tableName: backtest_datasets
+            columnName: archived
+            columnDataType: BOOLEAN
+
+  - changeSet:
+      id: 0009-create-strategy-config-versions
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          tableExists:
+            tableName: strategy_config_versions
+      changes:
+        - createTable:
+            tableName: strategy_config_versions
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: strategy_config_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version_number
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: change_reason
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: symbol
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: timeframe
+                  type: VARCHAR(10)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: risk_per_trade
+                  type: DECIMAL(6,4)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: min_position_size
+                  type: DECIMAL(20,8)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: max_position_size
+                  type: DECIMAL(20,8)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: paper_mode
+                  type: BOOLEAN
+                  constraints:
+                    nullable: false
+              - column:
+                  name: changed_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: strategy_config_versions
+            baseColumnNames: strategy_config_id
+            referencedTableName: strategy_configs
+            referencedColumnNames: id
+            constraintName: fk_strategy_cfg_version_strategy
+            onDelete: CASCADE
+        - addUniqueConstraint:
+            tableName: strategy_config_versions
+            columnNames: strategy_config_id, version_number
+            constraintName: uk_strategy_cfg_version_number
+        - createIndex:
+            indexName: idx_strategy_cfg_version_strategy
+            tableName: strategy_config_versions
+            columns:
+              - column:
+                  name: strategy_config_id
+        - createIndex:
+            indexName: idx_strategy_cfg_version_changed_at
+            tableName: strategy_config_versions
+            columns:
+              - column:
+                  name: changed_at

@@ -1,5 +1,6 @@
 package com.algotrader.bot.validation;
 
+import com.algotrader.bot.repair.RepairWorkspaceSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -7,7 +8,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.URL;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -16,6 +17,7 @@ public class DataPersistenceValidator {
     private static final Logger logger = LoggerFactory.getLogger(DataPersistenceValidator.class);
     private static final String BASE_URL = "http://localhost:8080";
     private static final int TIMEOUT_MS = 10000;
+    private final RepairWorkspaceSupport workspaceSupport = RepairWorkspaceSupport.detect();
     private String testTradeId;
 
     public ValidationResult validateDatabasePersistence() {
@@ -63,8 +65,7 @@ public class DataPersistenceValidator {
     public ValidationResult insertTestTradeData() {
         logger.info("Inserting test trade data");
         try {
-            URL url = new URL(BASE_URL + "/api/strategy/start");
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            HttpURLConnection conn = openConnection("/api/strategy/start", "POST");
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setConnectTimeout(TIMEOUT_MS);
@@ -111,7 +112,8 @@ public class DataPersistenceValidator {
     public ValidationResult restartPostgresContainer() {
         logger.info("Restarting PostgreSQL container");
         try {
-            ProcessBuilder pb = new ProcessBuilder("docker-compose", "restart", "postgres");
+            ProcessBuilder pb = new ProcessBuilder(workspaceSupport.dockerComposeCommand("restart", "postgres"));
+            pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
             Process process = pb.start();
             
@@ -159,8 +161,15 @@ public class DataPersistenceValidator {
         
         while (Duration.between(start, LocalDateTime.now()).compareTo(timeout) < 0) {
             try {
-                ProcessBuilder pb = new ProcessBuilder("docker", "inspect", 
-                    "--format", "{{.State.Health.Status}}", "algotrading-postgres");
+                ProcessBuilder pb = new ProcessBuilder(
+                    workspaceSupport.dockerCommand(
+                        "inspect",
+                        "--format",
+                        "{{.State.Health.Status}}",
+                        workspaceSupport.containerNameFor("postgres")
+                    )
+                );
+                pb.directory(workspaceSupport.repoRoot().toFile());
                 pb.redirectErrorStream(true);
                 Process process = pb.start();
                 
@@ -205,8 +214,7 @@ public class DataPersistenceValidator {
     public ValidationResult verifyTestDataExists() {
         logger.info("Verifying test data exists after restart");
         try {
-            URL url = new URL(BASE_URL + "/api/strategy/status");
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            HttpURLConnection conn = openConnection("/api/strategy/status", "GET");
             conn.setRequestMethod("GET");
             conn.setConnectTimeout(TIMEOUT_MS);
             conn.setReadTimeout(TIMEOUT_MS);
@@ -244,7 +252,8 @@ public class DataPersistenceValidator {
     public ValidationResult restartApplicationContainer() {
         logger.info("Restarting application container");
         try {
-            ProcessBuilder pb = new ProcessBuilder("docker-compose", "restart", "algotrading-app");
+            ProcessBuilder pb = new ProcessBuilder(workspaceSupport.dockerComposeCommand("restart", "algotrading-app"));
+            pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
             Process process = pb.start();
             
@@ -292,8 +301,15 @@ public class DataPersistenceValidator {
         
         while (Duration.between(start, LocalDateTime.now()).compareTo(timeout) < 0) {
             try {
-                ProcessBuilder pb = new ProcessBuilder("docker", "inspect", 
-                    "--format", "{{.State.Health.Status}}", "algotrading-app");
+                ProcessBuilder pb = new ProcessBuilder(
+                    workspaceSupport.dockerCommand(
+                        "inspect",
+                        "--format",
+                        "{{.State.Health.Status}}",
+                        workspaceSupport.containerNameFor("algotrading-app")
+                    )
+                );
+                pb.directory(workspaceSupport.repoRoot().toFile());
                 pb.redirectErrorStream(true);
                 Process process = pb.start();
                 
@@ -338,7 +354,10 @@ public class DataPersistenceValidator {
     public ValidationResult verifyApplicationReconnects() {
         logger.info("Verifying application reconnects to database");
         try {
-            ProcessBuilder pb = new ProcessBuilder("docker-compose", "logs", "--tail", "50", "algotrading-app");
+            ProcessBuilder pb = new ProcessBuilder(
+                workspaceSupport.dockerComposeCommand("logs", "--tail", "50", "algotrading-app")
+            );
+            pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
             Process process = pb.start();
             
@@ -388,8 +407,7 @@ public class DataPersistenceValidator {
     public ValidationResult verifyDataQueryable() {
         logger.info("Verifying data is queryable after restart");
         try {
-            URL url = new URL(BASE_URL + "/api/strategy/status");
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            HttpURLConnection conn = openConnection("/api/strategy/status", "GET");
             conn.setRequestMethod("GET");
             conn.setConnectTimeout(TIMEOUT_MS);
             conn.setReadTimeout(TIMEOUT_MS);
@@ -422,5 +440,13 @@ public class DataPersistenceValidator {
                 "Error querying data: " + e.getMessage()
             );
         }
+    }
+
+    private HttpURLConnection openConnection(String path, String method) throws Exception {
+        HttpURLConnection connection = (HttpURLConnection) URI.create(BASE_URL + path).toURL().openConnection();
+        connection.setRequestMethod(method);
+        connection.setConnectTimeout(TIMEOUT_MS);
+        connection.setReadTimeout(TIMEOUT_MS);
+        return connection;
     }
 }

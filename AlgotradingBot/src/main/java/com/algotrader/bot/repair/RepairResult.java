@@ -2,22 +2,25 @@ package com.algotrader.bot.repair;
 
 import com.algotrader.bot.validation.ValidationResult;
 
-public class RepairResult {
-    private boolean successful;
-    private String message;
-    private ValidationResult retryResult;
+public record RepairResult(boolean successful, String message, ValidationResult retryResult) {
 
     public RepairResult(boolean successful, String message) {
-        this.successful = successful;
-        this.message = message;
+        this(successful, message, null);
     }
 
-    public boolean isSuccessful() { return successful; }
-    public void setSuccessful(boolean successful) { this.successful = successful; }
-    
-    public String getMessage() { return message; }
-    public void setMessage(String message) { this.message = message; }
-    
-    public ValidationResult getRetryResult() { return retryResult; }
-    public void setRetryResult(ValidationResult retryResult) { this.retryResult = retryResult; }
+    public boolean isSuccessful() {
+        return successful;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public ValidationResult getRetryResult() {
+        return retryResult;
+    }
+
+    public RepairResult withRetryResult(ValidationResult retryResult) {
+        return new RepairResult(successful, message, retryResult);
+    }
 }

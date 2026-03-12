@@ -4,6 +4,12 @@ import { useGetPaperTradingStateQuery } from '@/features/paperApi';
 
 export const PaperTradingCard: React.FC = () => {
   const { data, isLoading, isError } = useGetPaperTradingStateQuery();
+  const recoverySeverity =
+    data?.recoveryStatus === 'ATTENTION'
+      ? 'warning'
+      : data?.recoveryStatus === 'HEALTHY'
+        ? 'success'
+        : 'info';
 
   return (
     <Card>
@@ -20,9 +26,14 @@ export const PaperTradingCard: React.FC = () => {
             <Alert severity={data.paperMode ? 'success' : 'warning'}>
               {data.paperMode ? 'Paper mode active' : 'Paper mode inactive'}
             </Alert>
+            <Alert severity={recoverySeverity}>{data.recoveryMessage}</Alert>
             <Typography variant="body2">Cash Balance: {data.cashBalance.toFixed(2)}</Typography>
             <Typography variant="body2">Open Positions: {data.positionCount}</Typography>
             <Typography variant="body2">Orders: {data.totalOrders} total / {data.openOrders} open / {data.filledOrders} filled</Typography>
+            <Typography variant="body2">
+              Recovery status: {data.recoveryStatus} | Stale open orders: {data.staleOpenOrderCount} | Stale positions:{' '}
+              {data.stalePositionCount}
+            </Typography>
           </Stack>
         ) : null}
       </CardContent>

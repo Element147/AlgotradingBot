@@ -3,6 +3,7 @@ package com.algotrader.bot.repository;
 import com.algotrader.bot.entity.BacktestResult;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -51,4 +52,12 @@ public interface BacktestResultRepository extends JpaRepository<BacktestResult, 
      */
     List<BacktestResult> findByStrategyIdAndSymbol(String strategyId, String symbol);
     List<BacktestResult> findByStrategyIdAndSymbolOrderByTimestampDesc(String strategyId, String symbol, Pageable pageable);
+
+    @Query("""
+        select r.datasetId as datasetId, count(r) as usageCount, max(r.timestamp) as lastUsedAt
+        from BacktestResult r
+        where r.datasetId is not null
+        group by r.datasetId
+        """)
+    List<BacktestDatasetUsageSummary> summarizeDatasetUsage();
 }

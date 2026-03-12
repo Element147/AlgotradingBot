@@ -1,5 +1,6 @@
 package com.algotrader.bot.validation;
 
+import com.algotrader.bot.repair.RepairWorkspaceSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,6 +12,7 @@ import java.time.LocalDateTime;
 public class StabilityValidator {
     private static final Logger logger = LoggerFactory.getLogger(StabilityValidator.class);
     private static final long CHECK_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+    private final RepairWorkspaceSupport workspaceSupport = RepairWorkspaceSupport.detect();
 
     public ValidationResult runStabilityTest(Duration duration) {
         logger.info("Starting stability test for {} minutes", duration.toMinutes());
@@ -68,8 +70,15 @@ public class StabilityValidator {
         String[] services = {"postgres", "kafka", "algotrading-app"};
         for (String service : services) {
             try {
-                ProcessBuilder pb = new ProcessBuilder("docker", "inspect", 
-                    "--format", "{{.State.Health.Status}}", "algotrading-" + service);
+                ProcessBuilder pb = new ProcessBuilder(
+                    workspaceSupport.dockerCommand(
+                        "inspect",
+                        "--format",
+                        "{{.State.Health.Status}}",
+                        workspaceSupport.containerNameFor(service)
+                    )
+                );
+                pb.directory(workspaceSupport.repoRoot().toFile());
                 pb.redirectErrorStream(true);
                 Process process = pb.start();
                 
@@ -90,8 +99,10 @@ public class StabilityValidator {
 
     private void collectResourceMetrics(StabilityMetrics metrics) {
         try {
-            ProcessBuilder pb = new ProcessBuilder("docker", "stats", "--no-stream", 
-                "--format", "{{.Name}},{{.MemUsage}},{{.CPUPerc}}");
+            ProcessBuilder pb = new ProcessBuilder(
+                workspaceSupport.dockerCommand("stats", "--no-stream", "--format", "{{.Name}},{{.MemUsage}},{{.CPUPerc}}")
+            );
+            pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
             Process process = pb.start();
             
@@ -134,8 +145,10 @@ public class StabilityValidator {
 
     private void checkContainerRestarts(StabilityMetrics metrics) {
         try {
-            ProcessBuilder pb = new ProcessBuilder("docker", "ps", "--filter", "name=algotrading", 
-                "--format", "{{.Names}},{{.Status}}");
+            ProcessBuilder pb = new ProcessBuilder(
+                workspaceSupport.dockerCommand("ps", "--filter", "name=algotrading", "--format", "{{.Names}},{{.Status}}")
+            );
+            pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
             Process process = pb.start();
             
@@ -159,7 +172,8 @@ public class StabilityValidator {
 
     private void scanErrorLogs(StabilityMetrics metrics) {
         try {
-            ProcessBuilder pb = new ProcessBuilder("docker-compose", "logs", "algotrading-app");
+            ProcessBuilder pb = new ProcessBuilder(workspaceSupport.dockerComposeCommand("logs", "algotrading-app"));
+            pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
             Process process = pb.start();
             
@@ -183,7 +197,10 @@ public class StabilityValidator {
 
     private void checkDatabaseConnection(StabilityMetrics metrics) {
         try {
-            ProcessBuilder pb = new ProcessBuilder("docker-compose", "logs", "--tail", "100", "algotrading-app");
+            ProcessBuilder pb = new ProcessBuilder(
+                workspaceSupport.dockerComposeCommand("logs", "--tail", "100", "algotrading-app")
+            );
+            pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
             Process process = pb.start();
             
@@ -210,7 +227,10 @@ public class StabilityValidator {
 
     private void checkKafkaConnection(StabilityMetrics metrics) {
         try {
-            ProcessBuilder pb = new ProcessBuilder("docker-compose", "logs", "--tail", "100", "algotrading-app");
+            ProcessBuilder pb = new ProcessBuilder(
+                workspaceSupport.dockerComposeCommand("logs", "--tail", "100", "algotrading-app")
+            );
+            pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
             Process process = pb.start();
             

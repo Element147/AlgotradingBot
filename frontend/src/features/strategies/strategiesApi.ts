@@ -16,6 +16,22 @@ export interface Strategy {
   tradeCount: number;
   currentDrawdown: number;
   paperMode: boolean;
+  configVersion: number;
+  lastConfigChangedAt: string | null;
+}
+
+export interface StrategyConfigHistoryEntry {
+  id: number;
+  versionNumber: number;
+  changeReason: string;
+  symbol: string;
+  timeframe: string;
+  riskPerTrade: number;
+  minPositionSize: number;
+  maxPositionSize: number;
+  status: string;
+  paperMode: boolean;
+  changedAt: string;
 }
 
 export interface UpdateStrategyConfigPayload {
@@ -89,6 +105,9 @@ export const strategiesApi = createApi({
       }),
       invalidatesTags: ['Strategies'],
     }),
+    getStrategyConfigHistory: builder.query<StrategyConfigHistoryEntry[], number>({
+      query: (strategyId) => `/api/strategies/${strategyId}/config-history`,
+    }),
   }),
 });
 
@@ -97,4 +116,5 @@ export const {
   useStartStrategyMutation,
   useStopStrategyMutation,
   useUpdateStrategyConfigMutation,
+  useGetStrategyConfigHistoryQuery,
 } = strategiesApi;

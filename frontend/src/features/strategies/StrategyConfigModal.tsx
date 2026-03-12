@@ -5,12 +5,14 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   Stack,
   TextField,
+  Typography,
 } from '@mui/material';
 import { useMemo, useState } from 'react';
 
-import type { Strategy } from './strategiesApi';
+import { useGetStrategyConfigHistoryQuery, type Strategy } from './strategiesApi';
 import {
   type StrategyConfigOutput,
   validateStrategyConfig,
@@ -48,6 +50,7 @@ export function StrategyConfigModal({
   onClose,
   onSave,
 }: StrategyConfigModalProps) {
+  const { data: history = [] } = useGetStrategyConfigHistoryQuery(strategy.id);
   const [draft, setDraft] = useState<ConfigDraft>(() => createDraft(strategy));
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -163,6 +166,28 @@ export function StrategyConfigModal({
           </FieldTooltip>
 
           {submitError ? <Alert severity="error">{submitError}</Alert> : null}
+
+          <Divider />
+          <Stack spacing={1}>
+            <Typography variant="subtitle2">Config Version History</Typography>
+            <Typography variant="caption" color="text.secondary">
+              Versioned snapshots make paper-trading and backtest changes traceable over time.
+            </Typography>
+            {history.length > 0 ? (
+              history.map((entry) => (
+                <Alert key={entry.id} severity={entry.versionNumber === strategy.configVersion ? 'info' : 'success'}>
+                  v{entry.versionNumber}: {entry.changeReason}
+                  <br />
+                  {entry.symbol} ({entry.timeframe}) | Risk {(entry.riskPerTrade * 100).toFixed(2)}% | Size{' '}
+                  {entry.minPositionSize} - {entry.maxPositionSize}
+                </Alert>
+              ))
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                No config history available yet.
+              </Typography>
+            )}
+          </Stack>
         </Stack>
       </DialogContent>
       <DialogActions>

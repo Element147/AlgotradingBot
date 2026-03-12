@@ -174,6 +174,8 @@ export const handlers = [
         tradeCount: 0,
         currentDrawdown: 0,
         paperMode: true,
+        configVersion: 1,
+        lastConfigChangedAt: '2026-03-10T10:00:00',
       },
     ])
   ),
@@ -203,15 +205,62 @@ export const handlers = [
       tradeCount: 0,
       currentDrawdown: 0,
       paperMode: true,
+      configVersion: 2,
+      lastConfigChangedAt: '2026-03-10T10:05:00',
     });
   }),
+  http.get(`${API_BASE_URL}/api/strategies/:strategyId/config-history`, ({ params }) =>
+    HttpResponse.json([
+      {
+        id: 20,
+        versionNumber: 2,
+        changeReason: 'Updated symbol, timeframe',
+        symbol: 'ETH/USDT',
+        timeframe: '4h',
+        riskPerTrade: 0.03,
+        minPositionSize: 20,
+        maxPositionSize: 120,
+        status: 'STOPPED',
+        paperMode: true,
+        changedAt: '2026-03-10T10:05:00',
+      },
+      {
+        id: 10,
+        versionNumber: 1,
+        changeReason: `Seeded configuration for strategy ${String(params.strategyId ?? 'unknown')}`,
+        symbol: 'BTC/USDT',
+        timeframe: '1h',
+        riskPerTrade: 0.02,
+        minPositionSize: 10,
+        maxPositionSize: 100,
+        status: 'STOPPED',
+        paperMode: true,
+        changedAt: '2026-03-10T10:00:00',
+      },
+    ])
+  ),
 
   // Backtest endpoints
   http.get(`${API_BASE_URL}/api/backtests/algorithms`, () =>
     HttpResponse.json([
-      { id: 'BOLLINGER_BANDS', label: 'Bollinger Bands', description: 'Mean-reversion bands strategy' },
-      { id: 'SMA_CROSSOVER', label: 'SMA Crossover', description: 'Fast/slow moving average crossover' },
-      { id: 'BUY_AND_HOLD', label: 'Buy and Hold', description: 'Baseline hold from first to last candle' },
+      {
+        id: 'BOLLINGER_BANDS',
+        label: 'Bollinger Bands',
+        description: 'Mean-reversion bands strategy',
+        selectionMode: 'SINGLE_SYMBOL',
+      },
+      {
+        id: 'SMA_CROSSOVER',
+        label: 'SMA Crossover',
+        description: 'Fast/slow moving average crossover',
+        selectionMode: 'SINGLE_SYMBOL',
+      },
+      {
+        id: 'BUY_AND_HOLD',
+        label: 'Buy and Hold',
+        description: 'Baseline hold from first to last candle',
+        selectionMode: 'SINGLE_SYMBOL',
+      },
     ])
   ),
   http.get(`${API_BASE_URL}/api/backtests/datasets`, () =>
@@ -227,8 +276,28 @@ export const handlers = [
         uploadedAt: '2026-03-10T10:00:00',
         checksumSha256: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         schemaVersion: 'ohlcv-v1',
+        archived: false,
+        archivedAt: null,
+        archiveReason: null,
+        usageCount: 1,
+        lastUsedAt: '2026-03-10T10:00:00',
+        usedByBacktests: true,
+        duplicateCount: 1,
+        retentionStatus: 'ACTIVE',
       },
     ])
+  ),
+  http.get(`${API_BASE_URL}/api/backtests/datasets/retention-report`, () =>
+    HttpResponse.json({
+      totalDatasets: 1,
+      activeDatasets: 1,
+      archivedDatasets: 0,
+      archiveCandidateDatasets: 0,
+      duplicateDatasetCount: 0,
+      referencedDatasetCount: 1,
+      oldestActiveUploadedAt: '2026-03-10T10:00:00',
+      newestUploadedAt: '2026-03-10T10:00:00',
+    })
   ),
   http.post(`${API_BASE_URL}/api/backtests/datasets/upload`, () =>
     HttpResponse.json({
@@ -242,6 +311,58 @@ export const handlers = [
       uploadedAt: '2026-03-10T10:01:00',
       checksumSha256: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
       schemaVersion: 'ohlcv-v1',
+      archived: false,
+      archivedAt: null,
+      archiveReason: null,
+      usageCount: 0,
+      lastUsedAt: null,
+      usedByBacktests: false,
+      duplicateCount: 1,
+      retentionStatus: 'ACTIVE',
+    })
+  ),
+  http.post(`${API_BASE_URL}/api/backtests/datasets/:datasetId/archive`, ({ params }) =>
+    HttpResponse.json({
+      id: Number(params.datasetId),
+      name: 'BTC 1h 2025',
+      originalFilename: 'btc_2025.csv',
+      rowCount: 1000,
+      symbolsCsv: 'BTC/USDT,ETH/USDT',
+      dataStart: '2025-01-01T00:00:00',
+      dataEnd: '2025-12-31T23:00:00',
+      uploadedAt: '2026-03-10T10:00:00',
+      checksumSha256: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      schemaVersion: 'ohlcv-v1',
+      archived: true,
+      archivedAt: '2026-03-12T10:00:00',
+      archiveReason: 'Archived from active inventory after lifecycle review.',
+      usageCount: 1,
+      lastUsedAt: '2026-03-10T10:00:00',
+      usedByBacktests: true,
+      duplicateCount: 1,
+      retentionStatus: 'ARCHIVED',
+    })
+  ),
+  http.post(`${API_BASE_URL}/api/backtests/datasets/:datasetId/restore`, ({ params }) =>
+    HttpResponse.json({
+      id: Number(params.datasetId),
+      name: 'BTC 1h 2025',
+      originalFilename: 'btc_2025.csv',
+      rowCount: 1000,
+      symbolsCsv: 'BTC/USDT,ETH/USDT',
+      dataStart: '2025-01-01T00:00:00',
+      dataEnd: '2025-12-31T23:00:00',
+      uploadedAt: '2026-03-10T10:00:00',
+      checksumSha256: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      schemaVersion: 'ohlcv-v1',
+      archived: false,
+      archivedAt: null,
+      archiveReason: null,
+      usageCount: 1,
+      lastUsedAt: '2026-03-10T10:00:00',
+      usedByBacktests: true,
+      duplicateCount: 1,
+      retentionStatus: 'ACTIVE',
     })
   ),
   http.get(`${API_BASE_URL}/api/backtests`, () =>
@@ -268,6 +389,10 @@ export const handlers = [
       strategyId: 'BOLLINGER_BANDS',
       datasetId: 7,
       datasetName: 'BTC 1h 2025',
+      datasetChecksumSha256: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      datasetSchemaVersion: 'ohlcv-v1',
+      datasetUploadedAt: '2026-03-10T10:00:00',
+      datasetArchived: false,
       symbol: 'BTC/USDT',
       timeframe: '1h',
       executionStatus: 'COMPLETED',
@@ -285,8 +410,87 @@ export const handlers = [
       startDate: '2025-01-01T00:00:00',
       endDate: '2025-12-31T00:00:00',
       errorMessage: null,
+      equityCurve: [
+        { timestamp: '2025-01-01T00:00:00', equity: 1000, drawdownPct: 0 },
+        { timestamp: '2025-01-02T00:00:00', equity: 1080, drawdownPct: 0 },
+      ],
+      tradeSeries: [
+        {
+          symbol: 'BTC/USDT',
+          entryTime: '2025-01-01T00:00:00',
+          exitTime: '2025-01-02T00:00:00',
+          entryPrice: 100,
+          exitPrice: 108,
+          quantity: 9.5,
+          entryValue: 950,
+          exitValue: 1026,
+          returnPct: 8,
+        },
+      ],
     })
   ),
+  http.get(`${API_BASE_URL}/api/backtests/compare`, ({ request }) => {
+    const url = new URL(request.url);
+    const ids = url.searchParams.getAll('ids').map((value) => Number(value));
+
+    return HttpResponse.json({
+      baselineBacktestId: ids[0] ?? 42,
+      items: [
+        {
+          id: ids[0] ?? 42,
+          strategyId: 'BOLLINGER_BANDS',
+          datasetName: 'BTC 1h 2025',
+          datasetChecksumSha256: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          datasetSchemaVersion: 'ohlcv-v1',
+          datasetUploadedAt: '2026-03-10T10:00:00',
+          datasetArchived: false,
+          symbol: 'BTC/USDT',
+          timeframe: '1h',
+          executionStatus: 'COMPLETED',
+          validationStatus: 'PASSED',
+          feesBps: 10,
+          slippageBps: 3,
+          timestamp: '2026-03-10T10:00:00',
+          initialBalance: 1000,
+          finalBalance: 1080,
+          totalReturnPercent: 8,
+          sharpeRatio: 1.2,
+          profitFactor: 1.6,
+          winRate: 52,
+          maxDrawdown: 18,
+          totalTrades: 80,
+          finalBalanceDelta: 0,
+          totalReturnDeltaPercent: 0,
+        },
+        {
+          id: ids[1] ?? 43,
+          strategyId: 'SMA_CROSSOVER',
+          datasetName: 'BTC 1h 2025',
+          datasetChecksumSha256: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          datasetSchemaVersion: 'ohlcv-v1',
+          datasetUploadedAt: '2026-03-10T10:00:00',
+          datasetArchived: false,
+          symbol: 'BTC/USDT',
+          timeframe: '1h',
+          executionStatus: 'COMPLETED',
+          validationStatus: 'FAILED',
+          feesBps: 10,
+          slippageBps: 3,
+          timestamp: '2026-03-11T10:00:00',
+          initialBalance: 1000,
+          finalBalance: 950,
+          totalReturnPercent: -5,
+          sharpeRatio: 0.8,
+          profitFactor: 1.1,
+          winRate: 45,
+          maxDrawdown: 22,
+          totalTrades: 48,
+          finalBalanceDelta: -130,
+          totalReturnDeltaPercent: -13,
+        },
+      ],
+    });
+  }),
   http.post(`${API_BASE_URL}/api/backtests/run`, () =>
     HttpResponse.json({
       id: 43,
@@ -340,6 +544,11 @@ export const handlers = [
       filledOrders: 10,
       cancelledOrders: 1,
       lastOrderAt: '2026-03-10T10:00:00',
+      lastPositionUpdateAt: '2026-03-10T10:05:00',
+      staleOpenOrderCount: 0,
+      stalePositionCount: 0,
+      recoveryStatus: 'HEALTHY',
+      recoveryMessage: 'No stale paper-trading state detected after the latest activity.',
     })
   ),
 ];

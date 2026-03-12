@@ -12,11 +12,19 @@ import java.util.List;
 
 @Schema(description = "Request to start a new trading strategy")
 public record StartStrategyRequest(
-    @Schema(description = "Initial account balance in USDT", example = "1000.00", required = true)
+    @Schema(
+        description = "Initial account balance in USDT",
+        example = "1000.00",
+        requiredMode = Schema.RequiredMode.REQUIRED
+    )
     @NotNull(message = "Initial balance is required")
     @Positive(message = "Initial balance must be positive")
     BigDecimal initialBalance,
-    @Schema(description = "List of trading pairs to trade", example = "[\"BTC/USDT\", \"ETH/USDT\"]", required = true)
+    @Schema(
+        description = "List of trading pairs to trade",
+        example = "[\"BTC/USDT\", \"ETH/USDT\"]",
+        requiredMode = Schema.RequiredMode.REQUIRED
+    )
     @NotNull(message = "Trading pairs are required")
     @Size(min = 1, message = "At least one trading pair is required")
     List<String> pairs,

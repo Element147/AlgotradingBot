@@ -7,7 +7,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.quality.Strictness;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -24,18 +26,19 @@ import static org.mockito.Mockito.*;
  * stop-loss/take-profit triggers, circuit breaker, and equity curve tracking.
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class BacktestEngineTest {
 
-    @Mock(lenient = true)
+    @Mock
     private PositionSizer positionSizer;
 
-    @Mock(lenient = true)
+    @Mock
     private RiskManager riskManager;
 
-    @Mock(lenient = true)
+    @Mock
     private SlippageCalculator slippageCalculator;
 
-    @Mock(lenient = true)
+    @Mock
     private BacktestMetrics backtestMetrics;
 
     private BacktestEngine backtestEngine;

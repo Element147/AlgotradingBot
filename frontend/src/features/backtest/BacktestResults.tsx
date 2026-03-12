@@ -1,6 +1,7 @@
 import DownloadIcon from '@mui/icons-material/Download';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {
+  Alert,
   Box,
   Button,
   Card,
@@ -18,7 +19,7 @@ import {
 } from '@mui/material';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 import type { BacktestDetails } from './backtestApi';
 import {
@@ -93,10 +94,17 @@ const metricDefinitions: Array<{ key: string; label: string; description: string
 
 export function BacktestResults({ details }: BacktestResultsProps) {
   const exportRef = useRef<HTMLDivElement | null>(null);
+  const [exportFeedback, setExportFeedback] = useState<string | null>(null);
   const equityCurve = useMemo(() => createEquityCurve(details), [details]);
   const drawdownCurve = useMemo(() => createDrawdownCurve(equityCurve), [equityCurve]);
   const monthlyReturns = useMemo(() => createMonthlyReturns(equityCurve), [equityCurve]);
   const tradeDistribution = useMemo(() => createTradeDistribution(details), [details]);
+  const hasCompleteProvenance = Boolean(
+    details.datasetId &&
+      details.datasetChecksumSha256 &&
+      details.datasetSchemaVersion &&
+      details.datasetUploadedAt
+  );
   const metricValues = [
     details.sharpeRatio.toFixed(2),
     details.profitFactor.toFixed(2),
@@ -109,19 +117,29 @@ export function BacktestResults({ details }: BacktestResultsProps) {
   ];
 
   const exportPdf = async () => {
+    if (!hasCompleteProvenance) {
+      setExportFeedback('Report export is blocked until dataset checksum, schema version, and upload timestamp are available.');
+      return;
+    }
+
+    setExportFeedback(null);
     const doc = new jsPDF('p', 'mm', 'a4');
     doc.setFontSize(14);
     doc.text(`Backtest ${details.id}`, 10, 12);
     doc.setFontSize(11);
     doc.text(`Algorithm: ${details.strategyId}`, 10, 20);
-    doc.text(`Validation: ${details.validationStatus}`, 10, 26);
-    doc.text(`Sharpe: ${details.sharpeRatio.toFixed(2)}`, 10, 32);
-    doc.text(`Profit Factor: ${details.profitFactor.toFixed(2)}`, 10, 38);
-    doc.text(`Win Rate: ${details.winRate.toFixed(2)}%`, 10, 44);
+    doc.text(`Dataset: ${details.datasetName ?? '-'} (#${details.datasetId ?? 'n/a'})`, 10, 26);
+    doc.text(`Schema: ${details.datasetSchemaVersion}`, 10, 32);
+    doc.text(`Checksum: ${details.datasetChecksumSha256}`, 10, 38);
+    doc.text(`Uploaded: ${formatDateTime(details.datasetUploadedAt ?? '')}`, 10, 44);
+    doc.text(`Validation: ${details.validationStatus}`, 10, 50);
+    doc.text(`Fees/Slippage: ${details.feesBps} bps / ${details.slippageBps} bps`, 10, 56);
+    doc.text(`Sharpe: ${details.sharpeRatio.toFixed(2)} | Profit Factor: ${details.profitFactor.toFixed(2)}`, 10, 62);
+    doc.text(`Win Rate: ${details.winRate.toFixed(2)}% | Max DD: ${details.maxDrawdown.toFixed(2)}%`, 10, 68);
 
     if (exportRef.current) {
       const dataUrl = await toPng(exportRef.current, { pixelRatio: 1.3, cacheBust: true });
-      doc.addImage(dataUrl, 'PNG', 10, 52, 190, 120);
+      doc.addImage(dataUrl, 'PNG', 10, 76, 190, 120);
     }
 
     doc.save(`backtest_${details.id}_${new Date().toISOString().slice(0, 10)}.pdf`);
@@ -148,11 +166,48 @@ export function BacktestResults({ details }: BacktestResultsProps) {
                 label={`Validation: ${details.validationStatus}`}
                 sx={{ color: validationColor(details.validationStatus) }}
               />
-              <Button variant="outlined" startIcon={<DownloadIcon />} onClick={() => void exportPdf()}>
+              <Button
+                variant="outlined"
+                startIcon={<DownloadIcon />}
+                onClick={() => void exportPdf()}
+                disabled={!hasCompleteProvenance}
+              >
                 Export PDF
               </Button>
             </Stack>
           </Stack>
+
+          {exportFeedback ? (
+            <Alert severity="warning" sx={{ mt: 2 }}>
+              {exportFeedback}
+            </Alert>
+          ) : null}
+
+          <Card variant="outlined" sx={{ mt: 2 }}>
+            <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Reproducibility Metadata
+              </Typography>
+              {hasCompleteProvenance ? (
+                <Stack spacing={0.5}>
+                  <Typography variant="body2" color="text.secondary">
+                    Dataset #{details.datasetId} | {details.datasetName ?? '-'} | Schema {details.datasetSchemaVersion}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Checksum: {details.datasetChecksumSha256}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Uploaded: {formatDateTime(details.datasetUploadedAt ?? '')}
+                    {details.datasetArchived ? ' | Archived from active catalog' : ' | Active in dataset catalog'}
+                  </Typography>
+                </Stack>
+              ) : (
+                <Alert severity="warning">
+                  This run is missing full dataset provenance. Charts remain visible, but report export is intentionally blocked.
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
 
           <Grid container spacing={1.5} sx={{ mt: 1 }}>
             {metricDefinitions.map((metric, index) => (

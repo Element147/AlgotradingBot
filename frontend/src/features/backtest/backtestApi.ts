@@ -20,6 +20,31 @@ export interface BacktestDataset {
   uploadedAt: string;
   checksumSha256: string;
   schemaVersion: string;
+  archived: boolean;
+  archivedAt: string | null;
+  archiveReason: string | null;
+  usageCount: number;
+  lastUsedAt: string | null;
+  usedByBacktests: boolean;
+  duplicateCount: number;
+  retentionStatus:
+    | 'ACTIVE'
+    | 'ACTIVE_DUPLICATE_RETAINED'
+    | 'ACTIVE_STALE_RETAINED'
+    | 'ARCHIVE_CANDIDATE_DUPLICATE'
+    | 'ARCHIVE_CANDIDATE_UNUSED'
+    | 'ARCHIVED';
+}
+
+export interface BacktestDatasetRetentionReport {
+  totalDatasets: number;
+  activeDatasets: number;
+  archivedDatasets: number;
+  archiveCandidateDatasets: number;
+  duplicateDatasetCount: number;
+  referencedDatasetCount: number;
+  oldestActiveUploadedAt: string | null;
+  newestUploadedAt: string | null;
 }
 
 export interface BacktestHistoryItem {
@@ -39,6 +64,10 @@ export interface BacktestHistoryItem {
 
 export interface BacktestDetails extends BacktestHistoryItem {
   datasetId: number | null;
+  datasetChecksumSha256: string | null;
+  datasetSchemaVersion: string | null;
+  datasetUploadedAt: string | null;
+  datasetArchived: boolean | null;
   sharpeRatio: number;
   profitFactor: number;
   winRate: number;
@@ -69,6 +98,10 @@ export interface BacktestComparisonItem {
   id: number;
   strategyId: string;
   datasetName: string | null;
+  datasetChecksumSha256: string | null;
+  datasetSchemaVersion: string | null;
+  datasetUploadedAt: string | null;
+  datasetArchived: boolean | null;
   symbol: string;
   timeframe: string;
   executionStatus: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
@@ -126,6 +159,10 @@ export const backtestApi = createApi({
       query: () => '/api/backtests/datasets',
       providesTags: ['BacktestDatasets'],
     }),
+    getBacktestDatasetRetentionReport: builder.query<BacktestDatasetRetentionReport, void>({
+      query: () => '/api/backtests/datasets/retention-report',
+      providesTags: ['BacktestDatasets'],
+    }),
     uploadBacktestDataset: builder.mutation<BacktestDataset, { file: File; name?: string }>({
       query: ({ file, name }) => {
         const formData = new FormData();
@@ -140,6 +177,24 @@ export const backtestApi = createApi({
           body: formData,
         };
       },
+      invalidatesTags: ['BacktestDatasets'],
+    }),
+    archiveBacktestDataset: builder.mutation<
+      BacktestDataset,
+      { datasetId: number; reason?: string }
+    >({
+      query: ({ datasetId, reason }) => ({
+        url: `/api/backtests/datasets/${datasetId}/archive`,
+        method: 'POST',
+        body: reason?.trim() ? { reason: reason.trim() } : {},
+      }),
+      invalidatesTags: ['BacktestDatasets'],
+    }),
+    restoreBacktestDataset: builder.mutation<BacktestDataset, number>({
+      query: (datasetId) => ({
+        url: `/api/backtests/datasets/${datasetId}/restore`,
+        method: 'POST',
+      }),
       invalidatesTags: ['BacktestDatasets'],
     }),
     runBacktest: builder.mutation<{ id: number; status: string }, RunBacktestPayload>({
@@ -171,7 +226,10 @@ export const {
   useGetBacktestDetailsQuery,
   useGetBacktestAlgorithmsQuery,
   useGetBacktestDatasetsQuery,
+  useGetBacktestDatasetRetentionReportQuery,
   useUploadBacktestDatasetMutation,
+  useArchiveBacktestDatasetMutation,
+  useRestoreBacktestDatasetMutation,
   useRunBacktestMutation,
   useReplayBacktestMutation,
   useCompareBacktestsQuery,

@@ -7,7 +7,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.URL;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -20,8 +20,7 @@ public class ApiValidator {
     public ValidationResult validateHealthEndpoint() {
         logger.info("Validating health endpoint");
         try {
-            URL url = new URL(BASE_URL + "/actuator/health");
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            HttpURLConnection conn = openConnection("/actuator/health", "GET");
             conn.setRequestMethod("GET");
             conn.setConnectTimeout(TIMEOUT_MS);
             conn.setReadTimeout(TIMEOUT_MS);
@@ -82,8 +81,7 @@ public class ApiValidator {
     public ValidationResult validateStrategyStatus() {
         logger.info("Validating strategy status endpoint");
         try {
-            URL url = new URL(BASE_URL + "/api/strategy/status");
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            HttpURLConnection conn = openConnection("/api/strategy/status", "GET");
             conn.setRequestMethod("GET");
             conn.setConnectTimeout(TIMEOUT_MS);
             conn.setReadTimeout(TIMEOUT_MS);
@@ -161,8 +159,7 @@ public class ApiValidator {
     public ValidationResult validateStrategyStart() {
         logger.info("Validating strategy start");
         try {
-            URL url = new URL(BASE_URL + "/api/strategy/start");
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            HttpURLConnection conn = openConnection("/api/strategy/start", "POST");
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setConnectTimeout(TIMEOUT_MS);
@@ -208,8 +205,7 @@ public class ApiValidator {
     public ValidationResult validateStrategyStop() {
         logger.info("Validating strategy stop");
         try {
-            URL url = new URL(BASE_URL + "/api/strategy/stop");
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            HttpURLConnection conn = openConnection("/api/strategy/stop", "POST");
             conn.setRequestMethod("POST");
             conn.setConnectTimeout(TIMEOUT_MS);
             conn.setReadTimeout(TIMEOUT_MS);
@@ -242,5 +238,13 @@ public class ApiValidator {
                 "Error stopping strategy: " + e.getMessage()
             );
         }
+    }
+
+    private HttpURLConnection openConnection(String path, String method) throws Exception {
+        HttpURLConnection connection = (HttpURLConnection) URI.create(BASE_URL + path).toURL().openConnection();
+        connection.setRequestMethod(method);
+        connection.setConnectTimeout(TIMEOUT_MS);
+        connection.setReadTimeout(TIMEOUT_MS);
+        return connection;
     }
 }

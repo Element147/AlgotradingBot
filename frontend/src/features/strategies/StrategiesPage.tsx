@@ -247,6 +247,12 @@ export default function StrategiesPage() {
                         description="Current decline from recent equity peak. Lower is generally safer."
                       />
                     </TableCell>
+                    <TableCell>
+                      <HeaderCellWithTooltip
+                        label="Config"
+                        description="Current configuration version. Open edit to review the full parameter history."
+                      />
+                    </TableCell>
                     <TableCell align="right">
                       <HeaderCellWithTooltip
                         label="Actions"
@@ -270,6 +276,14 @@ export default function StrategiesPage() {
                       <TableCell>{strategy.profitLoss.toFixed(2)}</TableCell>
                       <TableCell>{strategy.tradeCount}</TableCell>
                       <TableCell>{strategy.currentDrawdown.toFixed(2)}%</TableCell>
+                      <TableCell>
+                        v{strategy.configVersion}
+                        {strategy.lastConfigChangedAt ? (
+                          <Typography variant="caption" display="block" color="text.secondary">
+                            {strategy.lastConfigChangedAt}
+                          </Typography>
+                        ) : null}
+                      </TableCell>
                       <TableCell align="right">
                         <Stack direction="row" spacing={1} justifyContent="flex-end">
                           {strategy.status === 'RUNNING' ? (

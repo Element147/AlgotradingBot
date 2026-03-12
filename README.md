@@ -15,14 +15,16 @@ Implemented and usable end-to-end:
 - Strategy management APIs and UI workflows
 - Backtest execution, history, and details
 - Backtest replay and side-by-side comparison APIs
-- Dataset reproducibility metadata (`checksumSha256`, schema version) plus dataset download endpoint
+- Dataset lifecycle inventory (`checksumSha256`, schema version, retention, archive/restore) plus dataset download endpoint
 - Persisted backtest equity/trade series with chart/export support in the UI
+- Strategy configuration version history in API and UI
 - Risk configuration and circuit-breaker controls
-- Paper-trading lifecycle and dashboard state
+- Paper-trading lifecycle and recovery-aware dashboard state
 - Operator audit-event trail for critical actions (`/api/system/audit-events`)
 - System backup endpoint with real database dump artifacts
 - CI verification gates for backend and frontend (`.github/workflows/ci.yml`)
 - Generated OpenAPI contract export and frontend contract drift check
+- Provenance-guarded backtest PDF/CSV exports
 - Small-account strategy catalog in backend backtest engine
 
 Backtest strategy catalog:
