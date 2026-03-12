@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class ValidationSuite {
     private static final Logger logger = LoggerFactory.getLogger(ValidationSuite.class);
@@ -27,17 +28,43 @@ public class ValidationSuite {
     private final Path reportDirectory;
 
     public ValidationSuite() {
-        this(DEFAULT_REPORT_DIRECTORY);
+        this(
+            new BuildValidator(),
+            new OrchestrationValidator(),
+            new ApiValidator(),
+            new ResourceValidator(),
+            new DataPersistenceValidator(),
+            new RepairEngine(),
+            DEFAULT_REPORT_DIRECTORY
+        );
     }
 
     ValidationSuite(Path reportDirectory) {
-        this.buildValidator = new BuildValidator();
-        this.orchestrationValidator = new OrchestrationValidator();
-        this.apiValidator = new ApiValidator();
-        this.resourceValidator = new ResourceValidator();
-        this.dataPersistenceValidator = new DataPersistenceValidator();
-        this.repairEngine = new RepairEngine();
-        this.reportDirectory = reportDirectory;
+        this(
+            new BuildValidator(),
+            new OrchestrationValidator(),
+            new ApiValidator(),
+            new ResourceValidator(),
+            new DataPersistenceValidator(),
+            new RepairEngine(),
+            reportDirectory
+        );
+    }
+
+    ValidationSuite(BuildValidator buildValidator,
+                    OrchestrationValidator orchestrationValidator,
+                    ApiValidator apiValidator,
+                    ResourceValidator resourceValidator,
+                    DataPersistenceValidator dataPersistenceValidator,
+                    RepairEngine repairEngine,
+                    Path reportDirectory) {
+        this.buildValidator = Objects.requireNonNull(buildValidator);
+        this.orchestrationValidator = Objects.requireNonNull(orchestrationValidator);
+        this.apiValidator = Objects.requireNonNull(apiValidator);
+        this.resourceValidator = Objects.requireNonNull(resourceValidator);
+        this.dataPersistenceValidator = Objects.requireNonNull(dataPersistenceValidator);
+        this.repairEngine = Objects.requireNonNull(repairEngine);
+        this.reportDirectory = Objects.requireNonNull(reportDirectory);
     }
 
     public int runAllValidations() {
