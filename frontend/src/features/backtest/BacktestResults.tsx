@@ -266,6 +266,7 @@ export function BacktestResults({ details }: BacktestResultsProps) {
                   <TableHead>
                     <TableRow>
                       <TableCell>Symbol</TableCell>
+                      <TableCell>Side</TableCell>
                       <TableCell>Entry</TableCell>
                       <TableCell>Exit</TableCell>
                       <TableCell align="right">Quantity</TableCell>
@@ -280,6 +281,7 @@ export function BacktestResults({ details }: BacktestResultsProps) {
                     {details.tradeSeries.map((trade, index) => (
                       <TableRow key={`${trade.symbol}-${trade.entryTime}-${index}`}>
                         <TableCell>{trade.symbol}</TableCell>
+                        <TableCell>{trade.side}</TableCell>
                         <TableCell>{formatDateTime(trade.entryTime)}</TableCell>
                         <TableCell>{formatDateTime(trade.exitTime)}</TableCell>
                         <TableCell align="right">{formatNumber(trade.quantity, 4)}</TableCell>

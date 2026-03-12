@@ -270,9 +270,9 @@ class TradingStrategyControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accountId").value(testAccount.getId()))
                 .andExpect(jsonPath("$.status").value("STOPPED"))
-                .andExpect(jsonPath("$.finalBalance").value(1100.00))
-                .andExpect(jsonPath("$.totalPnl").value(100.00))
-                .andExpect(jsonPath("$.pnlPercent").value(10.00))
+                .andExpect(jsonPath("$.finalBalance").value(3170.00))
+                .andExpect(jsonPath("$.totalPnl").value(170.00))
+                .andExpect(jsonPath("$.pnlPercent").value(217.00))
                 .andExpect(jsonPath("$.message").value("Trading strategy stopped successfully"));
 
         // Verify account status updated

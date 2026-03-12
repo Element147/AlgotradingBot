@@ -7,6 +7,7 @@ import com.algotrader.bot.controller.PaperTradingStateResponse;
 import com.algotrader.bot.entity.Account;
 import com.algotrader.bot.entity.PaperOrder;
 import com.algotrader.bot.entity.Portfolio;
+import com.algotrader.bot.entity.PositionSide;
 import com.algotrader.bot.entity.Trade;
 import com.algotrader.bot.repository.AccountRepository;
 import com.algotrader.bot.repository.PaperOrderRepository;
@@ -104,50 +105,13 @@ public class PaperTradingService {
         BigDecimal notional = order.getPrice().multiply(order.getQuantity());
         BigDecimal fees = notional.multiply(FEE_RATE).setScale(8, RoundingMode.HALF_UP);
         BigDecimal slippage = notional.multiply(SLIPPAGE_RATE).setScale(8, RoundingMode.HALF_UP);
+        BigDecimal fillPrice = resolveFillPrice(order);
 
-        BigDecimal fillPrice;
-        if (order.getSide() == PaperOrder.Side.BUY) {
-            fillPrice = order.getPrice().multiply(BigDecimal.ONE.add(SLIPPAGE_RATE)).setScale(8, RoundingMode.HALF_UP);
-            BigDecimal totalCost = fillPrice.multiply(order.getQuantity()).add(fees);
-            if (account.getCurrentBalance().compareTo(totalCost) < 0) {
-                throw new IllegalArgumentException("Insufficient paper balance");
-            }
-
-            account.setCurrentBalance(account.getCurrentBalance().subtract(totalCost));
-            upsertPosition(account.getId(), order.getSymbol(), order.getQuantity(), fillPrice, true);
-            accountRepository.save(account);
-            createTradeRecord(account.getId(), order, fillPrice, fees, slippage, BigDecimal.ZERO);
-        } else {
-            fillPrice = order.getPrice().multiply(BigDecimal.ONE.subtract(SLIPPAGE_RATE)).setScale(8, RoundingMode.HALF_UP);
-            Portfolio position = portfolioRepository.findByAccountIdAndSymbol(account.getId(), order.getSymbol())
-                .orElseThrow(() -> new IllegalArgumentException("No open position to sell"));
-
-            if (position.getPositionSize().compareTo(order.getQuantity()) < 0) {
-                throw new IllegalArgumentException("Sell quantity exceeds open position size");
-            }
-
-            BigDecimal proceeds = fillPrice.multiply(order.getQuantity()).subtract(fees);
-            account.setCurrentBalance(account.getCurrentBalance().add(proceeds));
-
-            BigDecimal remaining = position.getPositionSize().subtract(order.getQuantity());
-            if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
-                portfolioRepository.delete(position);
-            } else {
-                position.setPositionSize(remaining);
-                position.setCurrentPrice(fillPrice);
-                portfolioRepository.save(position);
-            }
-
-            accountRepository.save(account);
-            BigDecimal pnl = fillPrice.subtract(position.getAverageEntryPrice())
-                .multiply(order.getQuantity())
-                .subtract(fees)
-                .subtract(slippage)
-                .setScale(8, RoundingMode.HALF_UP);
-            account.setTotalPnl(account.getTotalPnl().add(pnl));
-            accountRepository.save(account);
-
-            createTradeRecord(account.getId(), order, fillPrice, fees, slippage, pnl);
+        switch (order.getSide()) {
+            case BUY -> handleBuy(account, order, fillPrice, fees, slippage);
+            case SELL -> handleSell(account, order, fillPrice, fees, slippage);
+            case SHORT -> handleShort(account, order, fillPrice, fees, slippage);
+            case COVER -> handleCover(account, order, fillPrice, fees, slippage);
         }
 
         order.setStatus(PaperOrder.Status.FILLED);
@@ -157,6 +121,102 @@ public class PaperTradingService {
         order.setFilledAt(LocalDateTime.now());
 
         return paperOrderRepository.save(order);
+    }
+
+    private BigDecimal resolveFillPrice(PaperOrder order) {
+        return switch (order.getSide()) {
+            case BUY, COVER -> order.getPrice()
+                .multiply(BigDecimal.ONE.add(SLIPPAGE_RATE))
+                .setScale(8, RoundingMode.HALF_UP);
+            case SELL, SHORT -> order.getPrice()
+                .multiply(BigDecimal.ONE.subtract(SLIPPAGE_RATE))
+                .setScale(8, RoundingMode.HALF_UP);
+        };
+    }
+
+    private void handleBuy(Account account,
+                           PaperOrder order,
+                           BigDecimal fillPrice,
+                           BigDecimal fees,
+                           BigDecimal slippage) {
+        Portfolio existingPosition = portfolioRepository.findByAccountIdAndSymbol(account.getId(), order.getSymbol())
+            .orElse(null);
+        assertCompatiblePosition(existingPosition, PositionSide.LONG, "Use COVER before opening a long position");
+
+        BigDecimal totalCost = fillPrice.multiply(order.getQuantity()).add(fees);
+        if (account.getCurrentBalance().compareTo(totalCost) < 0) {
+            throw new IllegalArgumentException("Insufficient paper balance");
+        }
+
+        account.setCurrentBalance(account.getCurrentBalance().subtract(totalCost));
+        upsertPosition(account.getId(), order.getSymbol(), order.getQuantity(), fillPrice, PositionSide.LONG);
+        accountRepository.save(account);
+        createTradeRecord(account.getId(), order, fillPrice, fees, slippage, BigDecimal.ZERO, PositionSide.LONG, Trade.SignalType.BUY);
+    }
+
+    private void handleSell(Account account,
+                            PaperOrder order,
+                            BigDecimal fillPrice,
+                            BigDecimal fees,
+                            BigDecimal slippage) {
+        Portfolio position = loadPositionForSide(account.getId(), order.getSymbol(), PositionSide.LONG, "No open long position to sell");
+        ensureQuantityAvailable(position, order.getQuantity(), "Sell quantity exceeds open long position size");
+
+        BigDecimal proceeds = fillPrice.multiply(order.getQuantity()).subtract(fees);
+        account.setCurrentBalance(account.getCurrentBalance().add(proceeds));
+
+        BigDecimal pnl = fillPrice.subtract(position.getAverageEntryPrice())
+            .multiply(order.getQuantity())
+            .subtract(fees)
+            .subtract(slippage)
+            .setScale(8, RoundingMode.HALF_UP);
+        account.setTotalPnl(account.getTotalPnl().add(pnl));
+
+        reducePosition(position, order.getQuantity(), fillPrice);
+        accountRepository.save(account);
+        createTradeRecord(account.getId(), order, fillPrice, fees, slippage, pnl, PositionSide.LONG, Trade.SignalType.SELL);
+    }
+
+    private void handleShort(Account account,
+                             PaperOrder order,
+                             BigDecimal fillPrice,
+                             BigDecimal fees,
+                             BigDecimal slippage) {
+        Portfolio existingPosition = portfolioRepository.findByAccountIdAndSymbol(account.getId(), order.getSymbol())
+            .orElse(null);
+        assertCompatiblePosition(existingPosition, PositionSide.SHORT, "Use SELL before opening a short position");
+
+        BigDecimal collateral = fillPrice.multiply(order.getQuantity()).add(fees);
+        if (account.getCurrentBalance().compareTo(collateral) < 0) {
+            throw new IllegalArgumentException("Insufficient paper balance to reserve short collateral");
+        }
+
+        account.setCurrentBalance(account.getCurrentBalance().subtract(collateral));
+        upsertPosition(account.getId(), order.getSymbol(), order.getQuantity(), fillPrice, PositionSide.SHORT);
+        accountRepository.save(account);
+        createTradeRecord(account.getId(), order, fillPrice, fees, slippage, BigDecimal.ZERO, PositionSide.SHORT, Trade.SignalType.SHORT);
+    }
+
+    private void handleCover(Account account,
+                             PaperOrder order,
+                             BigDecimal fillPrice,
+                             BigDecimal fees,
+                             BigDecimal slippage) {
+        Portfolio position = loadPositionForSide(account.getId(), order.getSymbol(), PositionSide.SHORT, "No open short position to cover");
+        ensureQuantityAvailable(position, order.getQuantity(), "Cover quantity exceeds open short position size");
+
+        BigDecimal releasedCollateral = position.getAverageEntryPrice().multiply(order.getQuantity());
+        BigDecimal pnl = position.getAverageEntryPrice().subtract(fillPrice)
+            .multiply(order.getQuantity())
+            .subtract(fees)
+            .subtract(slippage)
+            .setScale(8, RoundingMode.HALF_UP);
+        account.setCurrentBalance(account.getCurrentBalance().add(releasedCollateral).add(pnl));
+        account.setTotalPnl(account.getTotalPnl().add(pnl));
+
+        reducePosition(position, order.getQuantity(), fillPrice);
+        accountRepository.save(account);
+        createTradeRecord(account.getId(), order, fillPrice, fees, slippage, pnl, PositionSide.SHORT, Trade.SignalType.COVER);
     }
 
     @Transactional
@@ -233,13 +293,19 @@ public class PaperTradingService {
         );
     }
 
-    private void upsertPosition(Long accountId, String symbol, BigDecimal quantity, BigDecimal fillPrice, boolean isBuy) {
-        if (!isBuy) {
-            return;
-        }
-
+    private void upsertPosition(Long accountId,
+                                String symbol,
+                                BigDecimal quantity,
+                                BigDecimal fillPrice,
+                                PositionSide positionSide) {
         Portfolio position = portfolioRepository.findByAccountIdAndSymbol(accountId, symbol)
-            .orElseGet(() -> new Portfolio(accountId, symbol, BigDecimal.ZERO, fillPrice, fillPrice));
+            .orElseGet(() -> new Portfolio(accountId, symbol, BigDecimal.ZERO, fillPrice, fillPrice, positionSide));
+
+        if (position.getPositionSize().compareTo(BigDecimal.ZERO) > 0
+            && position.getPositionSide() != null
+            && position.getPositionSide() != positionSide) {
+            throw new IllegalArgumentException("Opposing position already exists for " + symbol);
+        }
 
         BigDecimal newSize = position.getPositionSize().add(quantity);
         BigDecimal newAverage = BigDecimal.ZERO;
@@ -249,8 +315,9 @@ public class PaperTradingService {
                 .divide(newSize, 8, RoundingMode.HALF_UP);
         }
 
+        position.setPositionSide(positionSide);
         position.setPositionSize(newSize);
-        position.setAverageEntryPrice(newAverage.max(fillPrice));
+        position.setAverageEntryPrice(newAverage);
         position.setCurrentPrice(fillPrice);
         portfolioRepository.save(position);
     }
@@ -260,17 +327,26 @@ public class PaperTradingService {
                                    BigDecimal fillPrice,
                                    BigDecimal fees,
                                    BigDecimal slippage,
-                                   BigDecimal pnl) {
+                                   BigDecimal pnl,
+                                   PositionSide positionSide,
+                                   Trade.SignalType signalType) {
+        BigDecimal stopLoss = positionSide.isLong()
+            ? fillPrice.multiply(new BigDecimal("0.98"))
+            : fillPrice.multiply(new BigDecimal("1.02"));
+        BigDecimal takeProfit = positionSide.isLong()
+            ? fillPrice.multiply(new BigDecimal("1.02"))
+            : fillPrice.multiply(new BigDecimal("0.98"));
         Trade trade = new Trade(
             accountId,
             order.getSymbol(),
-            order.getSide() == PaperOrder.Side.BUY ? Trade.SignalType.BUY : Trade.SignalType.SELL,
+            signalType,
+            positionSide,
             LocalDateTime.now(),
             fillPrice,
             order.getQuantity(),
             fillPrice.multiply(order.getQuantity()).multiply(new BigDecimal("0.02")),
-            fillPrice.multiply(new BigDecimal("0.98")),
-            fillPrice.multiply(new BigDecimal("1.02")),
+            stopLoss,
+            takeProfit,
             fees,
             slippage
         );
@@ -278,6 +354,46 @@ public class PaperTradingService {
         trade.setExitPrice(fillPrice);
         trade.setPnl(pnl);
         tradeRepository.save(trade);
+    }
+
+    private Portfolio loadPositionForSide(Long accountId,
+                                          String symbol,
+                                          PositionSide expectedSide,
+                                          String missingMessage) {
+        Portfolio position = portfolioRepository.findByAccountIdAndSymbol(accountId, symbol)
+            .orElseThrow(() -> new IllegalArgumentException(missingMessage));
+        if (position.getPositionSide() != expectedSide) {
+            throw new IllegalArgumentException(missingMessage);
+        }
+        return position;
+    }
+
+    private void ensureQuantityAvailable(Portfolio position, BigDecimal quantity, String message) {
+        if (position.getPositionSize().compareTo(quantity) < 0) {
+            throw new IllegalArgumentException(message);
+        }
+    }
+
+    private void reducePosition(Portfolio position, BigDecimal quantity, BigDecimal fillPrice) {
+        BigDecimal remaining = position.getPositionSize().subtract(quantity);
+        if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
+            portfolioRepository.delete(position);
+            return;
+        }
+
+        position.setPositionSize(remaining);
+        position.setCurrentPrice(fillPrice);
+        portfolioRepository.save(position);
+    }
+
+    private void assertCompatiblePosition(Portfolio existingPosition,
+                                          PositionSide expectedSide,
+                                          String message) {
+        if (existingPosition != null
+            && existingPosition.getPositionSize().compareTo(BigDecimal.ZERO) > 0
+            && existingPosition.getPositionSide() != expectedSide) {
+            throw new IllegalArgumentException(message);
+        }
     }
 
     private PaperOrderResponse mapToResponse(PaperOrder order) {

@@ -6,10 +6,16 @@ import com.algotrader.bot.backtest.strategy.BollingerBandsBacktestStrategy;
 import com.algotrader.bot.backtest.strategy.BuyAndHoldBacktestStrategy;
 import com.algotrader.bot.backtest.strategy.DualMomentumRotationBacktestStrategy;
 import com.algotrader.bot.backtest.strategy.RegimeFilteredMeanReversionBacktestStrategy;
+import com.algotrader.bot.backtest.strategy.BacktestStrategy;
+import com.algotrader.bot.backtest.strategy.BacktestStrategyContext;
+import com.algotrader.bot.backtest.strategy.BacktestStrategyDecision;
+import com.algotrader.bot.backtest.strategy.BacktestStrategyDefinition;
+import com.algotrader.bot.backtest.strategy.BacktestStrategySelectionMode;
 import com.algotrader.bot.backtest.strategy.SmaCrossoverBacktestStrategy;
 import com.algotrader.bot.backtest.strategy.TrendFirstAdaptiveEnsembleBacktestStrategy;
 import com.algotrader.bot.backtest.strategy.TrendPullbackContinuationBacktestStrategy;
 import com.algotrader.bot.backtest.strategy.VolatilityManagedDonchianBreakoutBacktestStrategy;
+import com.algotrader.bot.entity.PositionSide;
 import com.algotrader.bot.service.BacktestAlgorithmType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -120,6 +126,47 @@ class BacktestSimulationEngineTest {
         assertEquals("Not enough candles for selected strategy. Need at least 31 rows.", exception.getMessage());
     }
 
+    @Test
+    void simulate_supportsShortTrades() {
+        BacktestStrategy shortStrategy = new BacktestStrategy() {
+            @Override
+            public BacktestStrategyDefinition definition() {
+                return new BacktestStrategyDefinition(
+                    BacktestAlgorithmType.BUY_AND_HOLD,
+                    "Short test strategy",
+                    "Verifies short entry and cover support in the simulation engine.",
+                    BacktestStrategySelectionMode.SINGLE_SYMBOL,
+                    3
+                );
+            }
+
+            @Override
+            public BacktestStrategyDecision evaluate(BacktestStrategyContext context) {
+                if (!context.inPosition() && context.currentIndex() == 2) {
+                    return BacktestStrategyDecision.shortSell(context.primarySymbol(), BigDecimal.ONE, "Enter short");
+                }
+                if (context.inShortPosition() && context.currentIndex() == context.candles().size() - 1) {
+                    return BacktestStrategyDecision.cover("Cover short");
+                }
+                return BacktestStrategyDecision.hold();
+            }
+        };
+
+        BacktestSimulationEngine shortEngine = new BacktestSimulationEngine(
+            new BacktestStrategyRegistry(List.of(shortStrategy)),
+            new BacktestSimulationMetricsCalculator()
+        );
+
+        BacktestSimulationResult result = shortEngine.simulate(
+            BacktestAlgorithmType.BUY_AND_HOLD,
+            request(createFallingCandles("BTC/USDT", 10, new BigDecimal("100")), "BTC/USDT")
+        );
+
+        assertEquals(1, result.tradeSeries().size());
+        assertEquals(PositionSide.SHORT, result.tradeSeries().get(0).side());
+        assertTrue(result.finalBalance().compareTo(new BigDecimal("1000")) > 0);
+    }
+
     private BacktestSimulationRequest request(List<OHLCVData> candles, String primarySymbol) {
         return new BacktestSimulationRequest(
             candles,
@@ -137,6 +184,18 @@ class BacktestSimulationEngineTest {
 
         for (int i = 0; i < count; i++) {
             BigDecimal close = startPrice.add(BigDecimal.valueOf(i));
+            candles.add(candle(start.plusHours(i), symbol, close));
+        }
+
+        return candles;
+    }
+
+    private List<OHLCVData> createFallingCandles(String symbol, int count, BigDecimal startPrice) {
+        List<OHLCVData> candles = new ArrayList<>();
+        LocalDateTime start = LocalDateTime.parse("2025-01-01T00:00:00");
+
+        for (int i = 0; i < count; i++) {
+            BigDecimal close = startPrice.subtract(BigDecimal.valueOf(i));
             candles.add(candle(start.plusHours(i), symbol, close));
         }
 

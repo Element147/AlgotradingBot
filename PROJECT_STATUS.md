@@ -9,6 +9,7 @@ The repository is in an operational local-first MVP state:
 - Backend and frontend are integrated for core research workflows.
 - Default operating posture remains `test`/`paper`.
 - Local runtime uses Docker PostgreSQL; backend tests/build run on H2 `test` profile.
+- Saved exchange connection profiles are now persisted per user in the runtime database instead of browser storage.
 - No default real-money execution path is enabled.
 - Cross-stack CI verification gates now exist in `.github/workflows/ci.yml`.
 
@@ -68,8 +69,10 @@ Implemented product slices:
 23. Added typed strategy preset guidance in strategy configuration UX.
 24. Extended repair action selection for port-conflict and orphan/network failure signatures.
 25. Added filterable operator audit summaries plus dashboard/settings audit review surfaces.
-26. Added a market-data downloader tab plus backend import jobs for free stock/crypto providers, automatic wait-and-retry handling, and direct dataset imports into the backtest catalog.
-27. Added encrypted database-backed provider credential management in Settings, including note storage and runtime fallback to environment variables.
+26. Added paper/backtest short-selling support with strategy-level enablement, explicit `LONG`/`SHORT` position state, and `BUY`/`SELL`/`SHORT`/`COVER` trade actions across backend and frontend.
+27. Moved saved exchange connection profiles from browser storage into database-backed per-user persistence with active-profile selection in the settings UI.
+28. Added a market-data downloader tab plus backend import jobs for free stock/crypto providers, automatic wait-and-retry handling, and direct dataset imports into the backtest catalog.
+29. Added encrypted database-backed provider credential management in Settings, including note storage and runtime fallback to environment variables.
 
 ## Remaining Work (Current Priorities)
 
@@ -112,7 +115,7 @@ Phase 5 (implemented now):
 ## Known Risks and Constraints
 
 - Strategy outcomes are simulation artifacts and must not be presented as guaranteed returns.
-- Current strategy action model is primarily `long/flat/rotate`; direct short/margin/leverage paths are intentionally constrained.
+- Short exposure is now supported only in `test`/`paper` research flows and remains disabled for live execution, leverage, and margin expansion.
 - Strict auth is the default; local override remains explicit via `ALGOTRADING_RELAXED_AUTH=true`.
 
 ## Verification Baseline

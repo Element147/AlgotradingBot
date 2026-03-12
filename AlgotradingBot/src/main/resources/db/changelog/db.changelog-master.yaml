@@ -1,3 +1,7 @@
 databaseChangeLog:
   - include:
       file: db/changelog/changes/0001-bootstrap-users.yaml
+  - include:
+      file: db/changelog/changes/0010-add-short-support.yaml
+  - include:
+      file: db/changelog/changes/0011-add-exchange-connection-profiles.yaml

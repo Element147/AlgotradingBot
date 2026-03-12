@@ -4,6 +4,9 @@ import com.algotrader.bot.controller.ExchangeConnectionStatusResponse;
 import com.algotrader.bot.controller.ExchangeConnectionTestRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Mac;
@@ -18,7 +21,8 @@ import java.time.LocalDateTime;
 import java.util.HexFormat;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 @Service
 public class ExchangeIntegrationService {
@@ -35,26 +39,19 @@ public class ExchangeIntegrationService {
         .connectTimeout(Duration.ofSeconds(5))
         .build();
 
-    private final AtomicReference<ExchangeConnectionStatusResponse> lastStatus = new AtomicReference<>(
-        new ExchangeConnectionStatusResponse(
-            false,
-            DEFAULT_EXCHANGE,
-            LocalDateTime.now(),
-            "n/a",
-            "Credentials not tested yet."
-        )
-    );
+    private final ConcurrentMap<String, ExchangeConnectionStatusResponse> lastStatusByActor =
+        new ConcurrentHashMap<>();
 
     public ExchangeIntegrationService(OperatorAuditService operatorAuditService) {
         this.operatorAuditService = operatorAuditService;
     }
 
     public ExchangeConnectionStatusResponse getConnectionStatus() {
-        return lastStatus.get();
+        return lastStatusByActor.getOrDefault(resolveActor(), defaultStatus());
     }
 
     public String getLiveAccountReadUnavailableReason() {
-        ExchangeConnectionStatusResponse status = lastStatus.get();
+        ExchangeConnectionStatusResponse status = getConnectionStatus();
         if (status.connected()) {
             return "Live account reads are unavailable on this backend. Exchange connectivity is verified, but /api/account/* is not wired to live exchange balances, positions, or trade history.";
         }
@@ -72,7 +69,7 @@ public class ExchangeIntegrationService {
                 "n/a",
                 "Only Binance connectivity test is currently supported."
             );
-            lastStatus.set(unsupported);
+            rememberStatus(unsupported);
             operatorAuditService.recordFailure(
                 "EXCHANGE_CONNECTION_TEST",
                 "test",
@@ -100,7 +97,7 @@ public class ExchangeIntegrationService {
                 "n/a",
                 "Missing API credentials. Provide API key/secret in request or BINANCE_API_KEY/BINANCE_API_SECRET."
             );
-            lastStatus.set(missingCredentials);
+            rememberStatus(missingCredentials);
             operatorAuditService.recordFailure(
                 "EXCHANGE_CONNECTION_TEST",
                 "test",
@@ -113,7 +110,7 @@ public class ExchangeIntegrationService {
 
         boolean testnet = request != null && Boolean.TRUE.equals(request.testnet());
         ExchangeConnectionStatusResponse status = performBinanceConnectivityTest(apiKey, apiSecret, testnet);
-        lastStatus.set(status);
+        rememberStatus(status);
         if (status.connected()) {
             operatorAuditService.recordSuccess(
                 "EXCHANGE_CONNECTION_TEST",
@@ -209,5 +206,31 @@ public class ExchangeIntegrationService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private ExchangeConnectionStatusResponse defaultStatus() {
+        return new ExchangeConnectionStatusResponse(
+            false,
+            DEFAULT_EXCHANGE,
+            LocalDateTime.now(),
+            "n/a",
+            "Credentials not tested yet."
+        );
+    }
+
+    private void rememberStatus(ExchangeConnectionStatusResponse status) {
+        lastStatusByActor.put(resolveActor(), status);
+    }
+
+    private String resolveActor() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || authentication instanceof AnonymousAuthenticationToken) {
+            return "system";
+        }
+        String name = authentication.getName();
+        if (name == null || name.isBlank()) {
+            return "system";
+        }
+        return name;
     }
 }

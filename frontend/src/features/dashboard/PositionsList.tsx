@@ -117,7 +117,7 @@ export const PositionsList: React.FC = () => {
                         <Chip
                           label={position.side}
                           size="small"
-                          color={position.side === 'BUY' ? 'success' : 'error'}
+                          color={position.side === 'LONG' ? 'success' : 'warning'}
                           sx={{ minWidth: 60 }}
                         />
                       </TableCell>

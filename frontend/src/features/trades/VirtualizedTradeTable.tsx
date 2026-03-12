@@ -24,6 +24,8 @@ const columns: Array<{
 }> = [
   { key: 'id', label: 'ID', width: '80px' },
   { key: 'pair', label: 'Pair', width: '120px' },
+  { key: 'positionSide', label: 'Side', width: '90px' },
+  { key: 'signal', label: 'Signal', width: '90px' },
   { key: 'entryTime', label: 'Entry Time', width: '170px' },
   { key: 'exitTime', label: 'Exit Time', width: '170px' },
   { key: 'entryPrice', label: 'Entry', width: '110px' },
@@ -158,6 +160,8 @@ export function VirtualizedTradeTable({
               >
                 <Typography variant="body2">{row.id}</Typography>
                 <Typography variant="body2">{row.pair}</Typography>
+                <Typography variant="body2">{row.positionSide}</Typography>
+                <Typography variant="body2">{row.signal}</Typography>
                 <Typography variant="body2">{row.entryTime}</Typography>
                 <Typography variant="body2">{row.exitTime ?? '-'}</Typography>
                 <Typography variant="body2">{formatters.entryPrice(row)}</Typography>

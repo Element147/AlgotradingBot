@@ -71,6 +71,10 @@ public class StrategyConfigVersion {
     private Boolean paperMode;
 
     @NotNull
+    @Column(name = "short_selling_enabled", nullable = false)
+    private Boolean shortSellingEnabled = Boolean.TRUE;
+
+    @NotNull
     @Column(name = "changed_at", nullable = false)
     private LocalDateTime changedAt;
 
@@ -86,6 +90,7 @@ public class StrategyConfigVersion {
         version.maxPositionSize = strategy.getMaxPositionSize();
         version.status = strategy.getStatus().name();
         version.paperMode = strategy.getPaperMode();
+        version.shortSellingEnabled = strategy.getShortSellingEnabled();
         version.changedAt = LocalDateTime.now();
         return version;
     }
@@ -132,6 +137,10 @@ public class StrategyConfigVersion {
 
     public Boolean getPaperMode() {
         return paperMode;
+    }
+
+    public Boolean getShortSellingEnabled() {
+        return shortSellingEnabled;
     }
 
     public LocalDateTime getChangedAt() {

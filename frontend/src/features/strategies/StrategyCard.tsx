@@ -45,6 +45,9 @@ export function StrategyCard({ strategy, busy, onStart, onStop, onConfigure }: S
           Market: {strategy.symbol} ({strategy.timeframe})
         </Typography>
         <Typography variant="body2" color="text.secondary">
+          Positioning: {strategy.shortSellingEnabled ? 'Long + Short' : 'Long Only'}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
           Risk/Trade: {(strategy.riskPerTrade * 100).toFixed(2)}%
         </Typography>
         <Typography variant="body2" color="text.secondary">

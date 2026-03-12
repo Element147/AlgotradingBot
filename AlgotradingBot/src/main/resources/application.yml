@@ -115,6 +115,7 @@ jwt:
 algotrading:
   security:
     relaxed-auth: ${ALGOTRADING_RELAXED_AUTH:false}
+    connection-encryption-key: ${EXCHANGE_CONNECTION_ENCRYPTION_KEY:${JWT_SECRET:mySecretKeyForJWTTokenGenerationThatIsAtLeast256BitsLongForHS256Algorithm}}
   risk:
     max-risk-per-trade: 0.02
     max-drawdown-limit: 0.25

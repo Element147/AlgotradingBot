@@ -28,6 +28,7 @@ C:\Git\algotradingbot/
 `frontend/src/`
 
 - `features/*`: feature-first modules (`auth`, `strategies`, `backtest`, `marketData`, `risk`, `trades`, `settings`, etc.)
+- `features/settings`: local UI preferences plus database-backed exchange connection management
 - `app`: store and app-level wiring
 - `components`: shared UI/layout primitives
 - `services`: API and transport helpers

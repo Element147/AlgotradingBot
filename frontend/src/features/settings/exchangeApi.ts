@@ -32,6 +32,30 @@ export interface ExchangeConnectionStatus {
   error?: string;
 }
 
+export interface ExchangeConnectionProfile {
+  id: string;
+  name: string;
+  exchange: string;
+  apiKey: string;
+  apiSecret: string;
+  testnet: boolean;
+  active: boolean;
+  updatedAt?: string | null;
+}
+
+export interface ExchangeConnectionsResponse {
+  connections: ExchangeConnectionProfile[];
+  activeConnectionId: string | null;
+}
+
+export interface ExchangeConnectionProfileRequest {
+  name: string;
+  exchange: string;
+  apiKey: string;
+  apiSecret: string;
+  testnet: boolean;
+}
+
 export interface ExchangeConnectionTestRequest {
   exchange?: string;
   apiKey?: string;
@@ -90,7 +114,7 @@ const asText = (value: unknown, fallback = ''): string =>
 export const exchangeApi = createApi({
   reducerPath: 'exchangeApi',
   baseQuery: baseQueryWithEnvironment,
-  tagTypes: ['Exchange', 'System', 'Audit'],
+  tagTypes: ['Exchange', 'ExchangeConnections', 'System', 'Audit'],
   keepUnusedDataFor: 300,
   endpoints: (builder) => ({
     getExchangeBalance: builder.query<ExchangeBalanceResponse, void>({
@@ -133,6 +157,57 @@ export const exchangeApi = createApi({
       query: () => '/api/exchange/connection-status',
       providesTags: ['Exchange'],
     }),
+    getSavedExchangeConnections: builder.query<ExchangeConnectionsResponse, void>({
+      query: () => '/api/exchange/connections',
+      transformResponse: (response: ExchangeConnectionsResponse) => ({
+        activeConnectionId: response.activeConnectionId ?? null,
+        connections: response.connections.map((connection) => ({
+          ...connection,
+          exchange: asText(connection.exchange).toLowerCase(),
+          apiKey: asText(connection.apiKey),
+          apiSecret: asText(connection.apiSecret),
+          active: Boolean(connection.active),
+          testnet: Boolean(connection.testnet),
+        })),
+      }),
+      providesTags: ['ExchangeConnections'],
+    }),
+    createSavedExchangeConnection: builder.mutation<
+      ExchangeConnectionProfile,
+      ExchangeConnectionProfileRequest
+    >({
+      query: (body) => ({
+        url: '/api/exchange/connections',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Exchange', 'ExchangeConnections'],
+    }),
+    updateSavedExchangeConnection: builder.mutation<
+      ExchangeConnectionProfile,
+      { id: string; body: ExchangeConnectionProfileRequest }
+    >({
+      query: ({ id, body }) => ({
+        url: `/api/exchange/connections/${id}`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: ['Exchange', 'ExchangeConnections'],
+    }),
+    activateSavedExchangeConnection: builder.mutation<ExchangeConnectionProfile, string>({
+      query: (id) => ({
+        url: `/api/exchange/connections/${id}/activate`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Exchange', 'ExchangeConnections'],
+    }),
+    deleteSavedExchangeConnection: builder.mutation<void, string>({
+      query: (id) => ({
+        url: `/api/exchange/connections/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Exchange', 'ExchangeConnections'],
+    }),
     getSystemInfo: builder.query<SystemInfo, void>({
       query: () => '/api/system/info',
       providesTags: ['System'],
@@ -167,6 +242,11 @@ export const {
   useGetExchangeOrdersQuery,
   useTestExchangeConnectionMutation,
   useGetExchangeConnectionStatusQuery,
+  useGetSavedExchangeConnectionsQuery,
+  useCreateSavedExchangeConnectionMutation,
+  useUpdateSavedExchangeConnectionMutation,
+  useActivateSavedExchangeConnectionMutation,
+  useDeleteSavedExchangeConnectionMutation,
   useGetSystemInfoQuery,
   useTriggerBackupMutation,
   useGetAuditEventsQuery,

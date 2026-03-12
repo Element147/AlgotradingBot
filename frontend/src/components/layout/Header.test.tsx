@@ -21,6 +21,25 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
+vi.mock('../../features/settings/exchangeApi', () => ({
+  useGetSavedExchangeConnectionsQuery: () => ({
+    data: {
+      activeConnectionId: 'binance-paper',
+      connections: [
+        {
+          id: 'binance-paper',
+          name: 'Binance Paper',
+          exchange: 'binance',
+          apiKey: '',
+          apiSecret: '',
+          testnet: true,
+          active: true,
+        },
+      ],
+    },
+  }),
+}));
+
 const createMockStore = (user = { id: '1', username: 'testuser', email: 'test@example.com', role: 'trader' as const }) => configureStore({
     reducer: {
       auth: authReducer,
@@ -55,17 +74,6 @@ const createMockStore = (user = { id: '1', username: 'testuser', email: 'test@ex
           drawdownThreshold: 15,
           riskThreshold: 75,
         },
-        exchangeConnections: [
-          {
-            id: 'binance-paper',
-            name: 'Binance Paper',
-            exchange: 'binance',
-            apiKey: '',
-            apiSecret: '',
-            testnet: true,
-          },
-        ],
-        activeExchangeConnectionId: 'binance-paper',
       },
     },
   });

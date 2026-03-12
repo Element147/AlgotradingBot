@@ -9,6 +9,7 @@ import com.algotrader.bot.controller.TradeHistoryResponse;
 import com.algotrader.bot.entity.Account;
 import com.algotrader.bot.entity.BacktestResult;
 import com.algotrader.bot.entity.Portfolio;
+import com.algotrader.bot.entity.PositionSide;
 import com.algotrader.bot.entity.Trade;
 import com.algotrader.bot.repository.AccountRepository;
 import com.algotrader.bot.repository.BacktestResultRepository;
@@ -101,6 +102,12 @@ public class TradingStrategyService {
             if (position.getPositionSize().compareTo(BigDecimal.ZERO) > 0) {
                 logger.info("Closing position for {}: size={}",
                     position.getSymbol(), position.getPositionSize());
+                BigDecimal realizedPnl = position.getUnrealizedPnl();
+                BigDecimal cashRelease = position.getPositionSide() == PositionSide.LONG
+                    ? position.getCurrentPrice().multiply(position.getPositionSize())
+                    : position.getEntryNotional().add(realizedPnl);
+                account.setCurrentBalance(account.getCurrentBalance().add(cashRelease));
+                account.setTotalPnl(account.getTotalPnl().add(realizedPnl));
                 portfolioRepository.delete(position);
             }
         }
@@ -135,10 +142,7 @@ public class TradingStrategyService {
         List<Trade> accountTrades = tradeRepository.findByAccountId(account.getId());
 
         int totalTrades = accountTrades.size();
-        int openPositions = (int) portfolioRepository.findByAccountId(account.getId())
-            .stream()
-            .filter(position -> position.getPositionSize().compareTo(BigDecimal.ZERO) > 0)
-            .count();
+        int openPositions = portfolioRepository.findByAccountId(account.getId()).size();
 
         BigDecimal winRate = calculateWinRate(accountTrades);
         BigDecimal profitFactor = calculateProfitFactor(accountTrades);
@@ -333,6 +337,7 @@ public class TradingStrategyService {
             trade.getExitTime(),
             trade.getExitPrice(),
             trade.getSignalType().name(),
+            trade.getPositionSide().name(),
             trade.getPositionSize(),
             trade.getRiskAmount(),
             trade.getPnl(),

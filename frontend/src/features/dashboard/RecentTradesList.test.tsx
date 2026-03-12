@@ -20,7 +20,7 @@ const mockTrades = [
     strategyId: 'strat-1',
     strategyName: 'Bollinger Bands',
     symbol: 'BTC/USDT',
-    side: 'BUY' as const,
+    side: 'LONG' as const,
     entryPrice: '50000.00',
     exitPrice: '51000.00',
     quantity: '0.01',
@@ -38,7 +38,7 @@ const mockTrades = [
     strategyId: 'strat-1',
     strategyName: 'Bollinger Bands',
     symbol: 'ETH/USDT',
-    side: 'SELL' as const,
+    side: 'SHORT' as const,
     entryPrice: '3000.00',
     exitPrice: '2950.00',
     quantity: '0.1',
@@ -154,14 +154,14 @@ describe('RecentTradesList', { timeout: 15000 }, () => {
 
     expect(screen.getByText('BTC/USDT')).toBeInTheDocument();
     expect(screen.getAllByText('Bollinger Bands')).toHaveLength(2);
-    expect(screen.getByText('BUY')).toBeInTheDocument();
+    expect(screen.getByText('LONG')).toBeInTheDocument();
     expect(screen.getByText('$50000.00')).toBeInTheDocument();
     expect(screen.getByText('$51000.00')).toBeInTheDocument();
     expect(screen.getByText('+$10.00')).toBeInTheDocument();
     expect(screen.getByText('(+2.00%)')).toBeInTheDocument();
 
     expect(screen.getByText('ETH/USDT')).toBeInTheDocument();
-    expect(screen.getByText('SELL')).toBeInTheDocument();
+    expect(screen.getByText('SHORT')).toBeInTheDocument();
     expect(screen.getByText('$3000.00')).toBeInTheDocument();
     expect(screen.getByText('$2950.00')).toBeInTheDocument();
     expect(screen.getByText('$-5.00')).toBeInTheDocument();

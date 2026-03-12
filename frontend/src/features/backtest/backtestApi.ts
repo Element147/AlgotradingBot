@@ -85,6 +85,7 @@ export interface BacktestDetails extends BacktestHistoryItem {
   }>;
   tradeSeries: Array<{
     symbol: string;
+    side: 'LONG' | 'SHORT';
     entryTime: string;
     exitTime: string;
     entryPrice: number;

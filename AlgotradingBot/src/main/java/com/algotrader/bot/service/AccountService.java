@@ -72,7 +72,7 @@ public class AccountService {
 
         // Calculate total portfolio value
         BigDecimal portfolioValue = portfolios.stream()
-                .map(Portfolio::getPositionValue)
+                .map(Portfolio::getEquityContribution)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal totalBalance = account.getCurrentBalance().add(portfolioValue);
@@ -92,9 +92,9 @@ public class AccountService {
         // Add portfolio positions
         for (Portfolio portfolio : portfolios) {
             assets.add(new BalanceResponse.AssetBalance(
-                    portfolio.getSymbol(),
+                    portfolio.getSymbol() + " (" + portfolio.getPositionSide().name() + ")",
                     formatDecimal(portfolio.getPositionSize()),
-                    formatDecimal(portfolio.getPositionValue())
+                    formatDecimal(portfolio.getEquityContribution())
             ));
         }
 
@@ -151,7 +151,7 @@ public class AccountService {
         // Calculate cash ratio
         List<Portfolio> portfolios = portfolioRepository.findByAccountId(resolvedAccountId);
         BigDecimal portfolioValue = portfolios.stream()
-                .map(Portfolio::getPositionValue)
+                .map(Portfolio::getEquityContribution)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal totalValue = account.getCurrentBalance().add(portfolioValue);
@@ -189,6 +189,7 @@ public class AccountService {
                 .map(p -> new OpenPositionResponse(
                         p.getId(),
                         p.getSymbol(),
+                        p.getPositionSide().name(),
                         formatDecimal(p.getAverageEntryPrice()),
                         formatDecimal(p.getCurrentPrice()),
                         formatDecimal(p.getPositionSize()),
@@ -228,7 +229,7 @@ public class AccountService {
                     return new RecentTradeResponse(
                             t.getId(),
                             t.getSymbol(),
-                            t.getSignalType().name(),
+                            t.getPositionSide().name(),
                             formatDecimal(t.getEntryPrice()),
                             formatDecimal(t.getExitPrice()),
                             formatDecimal(t.getPositionSize()),

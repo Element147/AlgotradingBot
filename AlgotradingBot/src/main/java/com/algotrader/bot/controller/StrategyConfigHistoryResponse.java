@@ -14,5 +14,6 @@ public record StrategyConfigHistoryResponse(
     BigDecimal maxPositionSize,
     String status,
     Boolean paperMode,
+    Boolean shortSellingEnabled,
     LocalDateTime changedAt
 ) {}

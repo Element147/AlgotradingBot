@@ -9,7 +9,8 @@ export interface TradeHistoryItem {
   entryPrice: number;
   exitTime: string | null;
   exitPrice: number | null;
-  signal: 'BUY' | 'SELL';
+  signal: 'BUY' | 'SELL' | 'SHORT' | 'COVER' | 'HOLD';
+  positionSide: 'LONG' | 'SHORT';
   positionSize: number;
   riskAmount: number;
   pnl: number;

@@ -70,15 +70,15 @@ interface RawRecentTrade {
  */
 export type PerformanceTimeframe = 'today' | 'week' | 'month' | 'all';
 
-const normalizeSide = (side?: string): Position['side'] =>
-  side?.toUpperCase() === 'SELL' ? 'SELL' : 'BUY';
+const normalizePositionSide = (side?: string): Position['side'] =>
+  side?.toUpperCase() === 'SHORT' ? 'SHORT' : 'LONG';
 
 const normalizePosition = (position: RawOpenPosition): Position => ({
   id: String(position.id),
   strategyId: position.strategyId ?? 'unknown',
   strategyName: position.strategyName ?? 'N/A',
   symbol: position.symbol,
-  side: normalizeSide(position.side),
+  side: normalizePositionSide(position.side),
   entryPrice: position.entryPrice,
   currentPrice: position.currentPrice ?? position.entryPrice,
   quantity: position.quantity ?? position.positionSize ?? '0',
@@ -96,7 +96,7 @@ const normalizeTrade = (trade: RawRecentTrade): Trade => ({
   strategyId: trade.strategyId ?? 'unknown',
   strategyName: trade.strategyName ?? 'N/A',
   symbol: trade.symbol,
-  side: normalizeSide(trade.side),
+  side: normalizePositionSide(trade.side),
   entryPrice: trade.entryPrice,
   exitPrice: trade.exitPrice,
   quantity: trade.quantity ?? trade.positionSize ?? '0',

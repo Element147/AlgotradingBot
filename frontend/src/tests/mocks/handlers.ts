@@ -143,6 +143,61 @@ export const handlers = [
     })
   ),
 
+  http.get(`${API_BASE_URL}/api/exchange/connections`, () =>
+    HttpResponse.json({
+      activeConnectionId: 'binance-paper',
+      connections: [
+        {
+          id: 'binance-paper',
+          name: 'Binance Paper',
+          exchange: 'binance',
+          apiKey: '',
+          apiSecret: '',
+          testnet: true,
+          active: true,
+          updatedAt: '2026-03-12T12:00:00',
+        },
+      ],
+    })
+  ),
+  http.post(`${API_BASE_URL}/api/exchange/connections`, async ({ request }) =>
+    {
+      const body = (await request.json()) as Record<string, unknown>;
+      return HttpResponse.json({
+        id: 'saved-connection',
+        active: false,
+        updatedAt: '2026-03-12T12:00:00',
+        ...body,
+      });
+    }
+  ),
+  http.put(`${API_BASE_URL}/api/exchange/connections/:connectionId`, async ({ request, params }) =>
+    {
+      const body = (await request.json()) as Record<string, unknown>;
+      return HttpResponse.json({
+        id: String(params.connectionId),
+        active: false,
+        updatedAt: '2026-03-12T12:00:00',
+        ...body,
+      });
+    }
+  ),
+  http.post(`${API_BASE_URL}/api/exchange/connections/:connectionId/activate`, ({ params }) =>
+    HttpResponse.json({
+      id: String(params.connectionId),
+      name: 'Activated Connection',
+      exchange: 'binance',
+      apiKey: '',
+      apiSecret: '',
+      testnet: true,
+      active: true,
+      updatedAt: '2026-03-12T12:00:00',
+    })
+  ),
+  http.delete(`${API_BASE_URL}/api/exchange/connections/:connectionId`, () =>
+    new HttpResponse(null, { status: 204 })
+  ),
+
   // Account performance endpoint
   http.get(`${API_BASE_URL}/api/account/performance`, ({ request }) => {
     const url = new URL(request.url);
@@ -174,6 +229,7 @@ export const handlers = [
         tradeCount: 0,
         currentDrawdown: 0,
         paperMode: true,
+        shortSellingEnabled: true,
         configVersion: 1,
         lastConfigChangedAt: '2026-03-10T10:00:00',
       },
@@ -205,6 +261,7 @@ export const handlers = [
       tradeCount: 0,
       currentDrawdown: 0,
       paperMode: true,
+      shortSellingEnabled: true,
       configVersion: 2,
       lastConfigChangedAt: '2026-03-10T10:05:00',
     });
@@ -222,6 +279,7 @@ export const handlers = [
         maxPositionSize: 120,
         status: 'STOPPED',
         paperMode: true,
+        shortSellingEnabled: true,
         changedAt: '2026-03-10T10:05:00',
       },
       {
@@ -235,6 +293,7 @@ export const handlers = [
         maxPositionSize: 100,
         status: 'STOPPED',
         paperMode: true,
+        shortSellingEnabled: true,
         changedAt: '2026-03-10T10:00:00',
       },
     ])
@@ -417,6 +476,7 @@ export const handlers = [
       tradeSeries: [
         {
           symbol: 'BTC/USDT',
+          side: 'LONG',
           entryTime: '2025-01-01T00:00:00',
           exitTime: '2025-01-02T00:00:00',
           entryPrice: 100,

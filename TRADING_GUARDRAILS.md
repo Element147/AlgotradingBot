@@ -44,8 +44,8 @@ If any control is not fully automated yet, it remains a mandatory manual operati
 Conservative interpretation for small-account operation:
 
 - Default bearish action: `SELL_TO_CASH` / flat exposure
-- Stock short exposure: optional `SHORT_PROXY` only when explicitly modeled (for example inverse ETF research)
-- Crypto direct short/margin/futures: not default behavior
+- Paper/backtest direct short exposure: optional only when explicitly enabled and audited in strategy configuration
+- Live direct short/margin/futures: not default behavior and still disabled in this repository
 
 ## Circuit Breaker and Kill-Switch Expectations
 

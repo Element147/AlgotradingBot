@@ -130,7 +130,7 @@ export default function StrategiesPage() {
           Strategy Management
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          All strategy execution is paper-mode only by default.
+          All strategy execution is paper-mode only by default, and short exposure remains limited to research and paper workflows.
         </Typography>
 
         <Card sx={{ mb: 2 }}>
@@ -271,6 +271,9 @@ export default function StrategiesPage() {
                       </TableCell>
                       <TableCell>
                         {strategy.symbol} ({strategy.timeframe})
+                        <Typography variant="caption" display="block" color="text.secondary">
+                          {strategy.shortSellingEnabled ? 'Long + short enabled' : 'Long only'}
+                        </Typography>
                       </TableCell>
                       <TableCell>{(strategy.riskPerTrade * 100).toFixed(2)}%</TableCell>
                       <TableCell>{strategy.profitLoss.toFixed(2)}</TableCell>

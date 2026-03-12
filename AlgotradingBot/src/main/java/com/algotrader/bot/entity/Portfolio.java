@@ -36,6 +36,11 @@ public class Portfolio {
     private String symbol;
 
     @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private PositionSide positionSide = PositionSide.LONG;
+
+    @NotNull
     @Positive
     @Column(nullable = false, precision = 20, scale = 8)
     private BigDecimal positionSize;
@@ -81,8 +86,18 @@ public class Portfolio {
 
     public Portfolio(Long accountId, String symbol, BigDecimal positionSize,
                      BigDecimal averageEntryPrice, BigDecimal currentPrice) {
+        this(accountId, symbol, positionSize, averageEntryPrice, currentPrice, PositionSide.LONG);
+    }
+
+    public Portfolio(Long accountId,
+                     String symbol,
+                     BigDecimal positionSize,
+                     BigDecimal averageEntryPrice,
+                     BigDecimal currentPrice,
+                     PositionSide positionSide) {
         this.accountId = accountId;
         this.symbol = symbol;
+        this.positionSide = positionSide;
         this.positionSize = positionSize;
         this.averageEntryPrice = averageEntryPrice;
         this.currentPrice = currentPrice;
@@ -99,7 +114,10 @@ public class Portfolio {
         if (currentPrice == null || averageEntryPrice == null || positionSize == null) {
             return BigDecimal.ZERO;
         }
-        return currentPrice.subtract(averageEntryPrice).multiply(positionSize);
+        if (positionSide == null || positionSide.isLong()) {
+            return currentPrice.subtract(averageEntryPrice).multiply(positionSize);
+        }
+        return averageEntryPrice.subtract(currentPrice).multiply(positionSize);
     }
 
     /**
@@ -112,22 +130,44 @@ public class Portfolio {
         if (currentPrice == null || averageEntryPrice == null || averageEntryPrice.compareTo(BigDecimal.ZERO) == 0) {
             return BigDecimal.ZERO;
         }
-        return currentPrice.subtract(averageEntryPrice)
+        BigDecimal priceChange = positionSide == null || positionSide.isLong()
+            ? currentPrice.subtract(averageEntryPrice)
+            : averageEntryPrice.subtract(currentPrice);
+        return priceChange
                 .divide(averageEntryPrice, 4, RoundingMode.HALF_UP)
                 .multiply(BigDecimal.valueOf(100));
     }
 
     /**
-     * Calculates current position value.
-     * Formula: currentPrice * positionSize
+     * Calculates the current equity contribution of this position.
+     * Long positions use current mark-to-market value. Short positions use
+     * reserved collateral plus unrealized PnL.
      *
      * @return current position value as BigDecimal
      */
     public BigDecimal getPositionValue() {
+        return getEquityContribution();
+    }
+
+    public BigDecimal getEntryNotional() {
+        if (averageEntryPrice == null || positionSize == null) {
+            return BigDecimal.ZERO;
+        }
+        return averageEntryPrice.multiply(positionSize);
+    }
+
+    public BigDecimal getMarketExposure() {
         if (currentPrice == null || positionSize == null) {
             return BigDecimal.ZERO;
         }
         return currentPrice.multiply(positionSize);
+    }
+
+    public BigDecimal getEquityContribution() {
+        if (positionSide == null || positionSide.isLong()) {
+            return getMarketExposure();
+        }
+        return getEntryNotional().add(getUnrealizedPnl());
     }
 
     // Getters and Setters
@@ -153,6 +193,14 @@ public class Portfolio {
 
     public void setSymbol(String symbol) {
         this.symbol = symbol;
+    }
+
+    public PositionSide getPositionSide() {
+        return positionSide;
+    }
+
+    public void setPositionSide(PositionSide positionSide) {
+        this.positionSide = positionSide;
     }
 
     public BigDecimal getPositionSize() {
@@ -201,6 +249,7 @@ public class Portfolio {
                 "id=" + id +
                 ", accountId=" + accountId +
                 ", symbol='" + symbol + '\'' +
+                ", positionSide=" + positionSide +
                 ", positionSize=" + positionSize +
                 ", averageEntryPrice=" + averageEntryPrice +
                 ", currentPrice=" + currentPrice +

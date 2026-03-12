@@ -28,30 +28,30 @@ import {
   useGetExchangeBalanceQuery,
   useGetExchangeConnectionStatusQuery,
   useGetExchangeOrdersQuery,
+  useGetSavedExchangeConnectionsQuery,
   useGetSystemInfoQuery,
+  useActivateSavedExchangeConnectionMutation,
+  useCreateSavedExchangeConnectionMutation,
+  useDeleteSavedExchangeConnectionMutation,
   useTestExchangeConnectionMutation,
   useTriggerBackupMutation,
+  useUpdateSavedExchangeConnectionMutation,
+  type ExchangeConnectionProfile,
+  type ExchangeConnectionProfileRequest,
 } from './exchangeApi';
 import { MarketDataCredentialsPanel } from './MarketDataCredentialsPanel';
 import { OperatorAuditPanel } from './OperatorAuditPanel';
 import {
-  deleteExchangeConnection,
-  selectActiveExchangeConnection,
-  selectActiveExchangeConnectionId,
   selectCurrency,
-  selectExchangeConnections,
   selectNotificationSettings,
   selectTextScale,
   selectTheme,
   selectTimezone,
-  setActiveExchangeConnection,
   setCurrency,
   setNotificationSettings,
   setTextScale,
   setTheme,
   setTimezone,
-  upsertExchangeConnection,
-  type ExchangeConnectionProfile,
   type NotificationSettings,
 } from './settingsSlice';
 
@@ -87,6 +87,7 @@ const EXCHANGE_OPTIONS = [
 ] as const;
 
 const NEW_CONNECTION_VALUE = '__new_connection__';
+const EMPTY_EXCHANGE_CONNECTIONS: ExchangeConnectionProfile[] = [];
 
 const createEmptyConnectionDraft = (preferredExchange = 'binance'): ExchangeConnectionProfile => ({
   id: '',
@@ -95,6 +96,7 @@ const createEmptyConnectionDraft = (preferredExchange = 'binance'): ExchangeConn
   apiKey: '',
   apiSecret: '',
   testnet: true,
+  active: false,
 });
 
 const parseNumberInput = (value: string, fallback: number) => {
@@ -105,14 +107,6 @@ const parseNumberInput = (value: string, fallback: number) => {
 const getExchangeLabel = (exchange: string) =>
   EXCHANGE_OPTIONS.find((option) => option.value === exchange)?.label ??
   exchange.charAt(0).toUpperCase() + exchange.slice(1);
-
-const createConnectionId = () => {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-
-  return `connection-${Date.now()}`;
-};
 
 const areNotificationsEqual = (left: NotificationSettings, right: NotificationSettings) =>
   left.emailAlerts === right.emailAlerts &&
@@ -141,9 +135,6 @@ export default function SettingsPage() {
   const timezone = useAppSelector(selectTimezone);
   const textScale = useAppSelector(selectTextScale);
   const notifications = useAppSelector(selectNotificationSettings);
-  const exchangeConnections = useAppSelector(selectExchangeConnections);
-  const activeExchangeConnectionId = useAppSelector(selectActiveExchangeConnectionId);
-  const activeExchangeConnection = useAppSelector(selectActiveExchangeConnection);
   const environmentMode = useAppSelector(selectEnvironmentMode);
   const userRole = useAppSelector((state) => state.auth.user?.role ?? 'trader');
   const isAdmin = userRole === 'admin';
@@ -152,7 +143,7 @@ export default function SettingsPage() {
     null
   );
   const [tab, setTab] = useState<SettingsTab>(isAdmin ? 'api' : 'display');
-  const [selectedConnectionId, setSelectedConnectionId] = useState(activeExchangeConnectionId ?? '');
+  const [selectedConnectionId, setSelectedConnectionId] = useState('');
   const [revealApiKey, setRevealApiKey] = useState(false);
   const [revealSecret, setRevealSecret] = useState(false);
   const [displayDraft, setDisplayDraft] = useState<DisplayDraft>({
@@ -164,7 +155,7 @@ export default function SettingsPage() {
   });
   const [notificationDraft, setNotificationDraft] = useState<NotificationSettings>(notifications);
   const [connectionDraft, setConnectionDraft] = useState<ExchangeConnectionProfile>(() =>
-    activeExchangeConnection ? { ...activeExchangeConnection } : createEmptyConnectionDraft()
+    createEmptyConnectionDraft()
   );
 
   const { data: systemInfo, isError: isSystemInfoError } = useGetSystemInfoQuery();
@@ -190,8 +181,27 @@ export default function SettingsPage() {
     isError: isConnectionError,
     error: connectionStatusError,
   } = useGetExchangeConnectionStatusQuery();
+  const {
+    data: savedConnectionsData,
+    isError: isSavedConnectionsError,
+    error: savedConnectionsError,
+    refetch: refetchSavedConnections,
+  } = useGetSavedExchangeConnectionsQuery();
+  const [createSavedConnection, { isLoading: isCreatingConnection }] =
+    useCreateSavedExchangeConnectionMutation();
+  const [updateSavedConnection, { isLoading: isUpdatingConnection }] =
+    useUpdateSavedExchangeConnectionMutation();
+  const [activateSavedConnection, { isLoading: isActivatingConnection }] =
+    useActivateSavedExchangeConnectionMutation();
+  const [deleteSavedConnection, { isLoading: isDeletingConnection }] =
+    useDeleteSavedExchangeConnectionMutation();
   const [testConnection, { isLoading: isTestingConnection }] = useTestExchangeConnectionMutation();
   const [triggerBackup, { isLoading: isBackingUp }] = useTriggerBackupMutation();
+
+  const exchangeConnections = savedConnectionsData?.connections ?? EMPTY_EXCHANGE_CONNECTIONS;
+  const activeExchangeConnectionId = savedConnectionsData?.activeConnectionId ?? null;
+  const activeExchangeConnection =
+    exchangeConnections.find((connection) => connection.id === activeExchangeConnectionId) ?? null;
 
   const timezoneOptions = useMemo(() => {
     const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -206,6 +216,7 @@ export default function SettingsPage() {
     () => createEmptyConnectionDraft(activeExchangeConnection?.exchange ?? 'binance'),
     [activeExchangeConnection?.exchange]
   );
+  const isSavingConnection = isCreatingConnection || isUpdatingConnection;
 
   useEffect(() => {
     setDisplayDraft({
@@ -222,8 +233,15 @@ export default function SettingsPage() {
   }, [notifications]);
 
   useEffect(() => {
+    dispatch(setConnectedExchange(activeExchangeConnection?.exchange ?? null));
+  }, [activeExchangeConnection?.exchange, dispatch]);
+
+  useEffect(() => {
+    const isCreatingNewConnection = selectedConnectionId === NEW_CONNECTION_VALUE;
     const nextSelectedConnectionId =
-      selectedConnectionId && exchangeConnections.some((connection) => connection.id === selectedConnectionId)
+      isCreatingNewConnection ||
+      (selectedConnectionId &&
+        exchangeConnections.some((connection) => connection.id === selectedConnectionId))
         ? selectedConnectionId
         : activeExchangeConnectionId ?? exchangeConnections[0]?.id ?? '';
 
@@ -232,11 +250,20 @@ export default function SettingsPage() {
       return;
     }
 
-    const nextConnectionDraft = exchangeConnections.find(
-      (connection) => connection.id === nextSelectedConnectionId
-    );
+    const nextConnectionDraft = isCreatingNewConnection
+      ? emptyConnectionDraft
+      : exchangeConnections.find((connection) => connection.id === nextSelectedConnectionId) ??
+        emptyConnectionDraft;
 
-    setConnectionDraft(nextConnectionDraft ? { ...nextConnectionDraft } : emptyConnectionDraft);
+    setConnectionDraft((current) => {
+      const draftChanged =
+        current.id !== nextConnectionDraft.id ||
+        current.active !== nextConnectionDraft.active ||
+        current.updatedAt !== nextConnectionDraft.updatedAt ||
+        !areConnectionsEqual(current, nextConnectionDraft);
+
+      return draftChanged ? { ...nextConnectionDraft } : current;
+    });
     setRevealApiKey(false);
     setRevealSecret(false);
   }, [
@@ -267,8 +294,7 @@ export default function SettingsPage() {
     connectionDraft.exchange !== emptyConnectionDraft.exchange ||
     connectionDraft.testnet !== emptyConnectionDraft.testnet;
 
-  const canDeleteSelectedConnection =
-    Boolean(selectedConnectionId) && !(exchangeConnections.length === 1 && selectedSavedConnection);
+  const canDeleteSelectedConnection = Boolean(selectedSavedConnection);
 
   const saveDisplaySettings = () => {
     dispatch(setTheme(displayDraft.theme));
@@ -284,10 +310,9 @@ export default function SettingsPage() {
     setFeedback({ severity: 'success', message: 'Notification settings saved.' });
   };
 
-  const saveConnectionProfile = () => {
+  const saveConnectionProfile = async () => {
     const normalizedExchange = connectionDraft.exchange.trim().toLowerCase() || 'binance';
-    const profile: ExchangeConnectionProfile = {
-      id: selectedSavedConnection?.id ?? createConnectionId(),
+    const request: ExchangeConnectionProfileRequest = {
       name:
         connectionDraft.name.trim() ||
         selectedSavedConnection?.name ||
@@ -298,20 +323,32 @@ export default function SettingsPage() {
       testnet: connectionDraft.testnet,
     };
 
-    dispatch(upsertExchangeConnection(profile));
-    setSelectedConnectionId(profile.id);
+    try {
+      const savedProfile = selectedSavedConnection
+        ? await updateSavedConnection({
+            id: selectedSavedConnection.id,
+            body: request,
+          }).unwrap()
+        : await createSavedConnection(request).unwrap();
 
-    if (activeExchangeConnectionId === profile.id) {
-      dispatch(setConnectedExchange(profile.exchange));
+      await refetchSavedConnections();
+      setSelectedConnectionId(savedProfile.id);
+      setConnectionDraft(savedProfile);
+      setRevealApiKey(false);
+      setRevealSecret(false);
+      setFeedback({
+        severity: 'success',
+        message: `${savedProfile.name} saved to the database. Use "Set Active" to switch the bot to this connection profile.`,
+      });
+    } catch (error) {
+      setFeedback({
+        severity: 'error',
+        message: getErrorMessage(error),
+      });
     }
-
-    setFeedback({
-      severity: 'success',
-      message: `${profile.name} saved. Use "Set Active" to switch the bot to this connection profile.`,
-    });
   };
 
-  const activateSelectedConnection = () => {
+  const activateSelectedConnection = async () => {
     if (!selectedSavedConnection) {
       setFeedback({
         severity: 'warning',
@@ -320,15 +357,23 @@ export default function SettingsPage() {
       return;
     }
 
-    dispatch(setActiveExchangeConnection(selectedSavedConnection.id));
-    dispatch(setConnectedExchange(selectedSavedConnection.exchange));
-    setFeedback({
-      severity: 'success',
-      message: `${selectedSavedConnection.name} is now the active bot connection.`,
-    });
+    try {
+      const activeProfile = await activateSavedConnection(selectedSavedConnection.id).unwrap();
+      await refetchSavedConnections();
+      setSelectedConnectionId(activeProfile.id);
+      setFeedback({
+        severity: 'success',
+        message: `${activeProfile.name} is now the active bot connection.`,
+      });
+    } catch (error) {
+      setFeedback({
+        severity: 'error',
+        message: getErrorMessage(error),
+      });
+    }
   };
 
-  const deleteSelectedConnection = () => {
+  const deleteSelectedConnection = async () => {
     if (!selectedSavedConnection) {
       setConnectionDraft(emptyConnectionDraft);
       setRevealApiKey(false);
@@ -336,17 +381,24 @@ export default function SettingsPage() {
       return;
     }
 
-    const nextConnection = exchangeConnections.find(
-      (connection) => connection.id !== selectedSavedConnection.id
-    );
-
-    dispatch(deleteExchangeConnection(selectedSavedConnection.id));
-    dispatch(setConnectedExchange(nextConnection?.exchange ?? null));
-    setSelectedConnectionId(nextConnection?.id ?? '');
-    setFeedback({
-      severity: 'warning',
-      message: `${selectedSavedConnection.name} was removed from saved connections.`,
-    });
+    try {
+      const deletedName = selectedSavedConnection.name;
+      await deleteSavedConnection(selectedSavedConnection.id).unwrap();
+      await refetchSavedConnections();
+      setSelectedConnectionId(NEW_CONNECTION_VALUE);
+      setConnectionDraft(emptyConnectionDraft);
+      setRevealApiKey(false);
+      setRevealSecret(false);
+      setFeedback({
+        severity: 'warning',
+        message: `${deletedName} was removed from saved connections.`,
+      });
+    } catch (error) {
+      setFeedback({
+        severity: 'error',
+        message: getErrorMessage(error),
+      });
+    }
   };
 
   const runConnectionTest = async (profile: ExchangeConnectionProfile) => {
@@ -393,7 +445,7 @@ export default function SettingsPage() {
           Settings
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Local-first configuration for paper trading, backtesting, and safe development workflow.
+          Save-first configuration for paper trading, backtesting, and safe development workflow.
         </Typography>
 
         {feedback ? (
@@ -431,10 +483,19 @@ export default function SettingsPage() {
                         API Configuration
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Connection edits stay in draft until you save them. The bot uses the currently active saved
-                        connection.
+                        Connection edits stay in draft until you save them. Saved profiles live in the database and the
+                        bot uses the currently active saved connection.
                       </Typography>
                     </Box>
+
+                    {isSavedConnectionsError ? (
+                      <Alert severity="warning">
+                        {getApiErrorMessage(
+                          savedConnectionsError,
+                          'Unable to load saved exchange connections from the database.'
+                        )}
+                      </Alert>
+                    ) : null}
 
                     <FieldTooltip title="Choose a saved connection profile or start a new one, similar to selecting a saved database connection.">
                       <FormControl fullWidth>
@@ -445,7 +506,7 @@ export default function SettingsPage() {
                           label="Saved Connection"
                           onChange={(event) => {
                             const nextValue = event.target.value;
-                            setSelectedConnectionId(nextValue === NEW_CONNECTION_VALUE ? '' : nextValue);
+                            setSelectedConnectionId(nextValue);
                           }}
                         >
                           {exchangeConnections.map((connection) => (
@@ -464,7 +525,7 @@ export default function SettingsPage() {
                         variant="outlined"
                         startIcon={<AddCircleOutlineIcon />}
                         onClick={() => {
-                          setSelectedConnectionId('');
+                          setSelectedConnectionId(NEW_CONNECTION_VALUE);
                           setConnectionDraft(emptyConnectionDraft);
                           setRevealApiKey(false);
                           setRevealSecret(false);
@@ -476,16 +537,20 @@ export default function SettingsPage() {
                         variant="outlined"
                         color="error"
                         startIcon={<DeleteOutlineIcon />}
-                        onClick={deleteSelectedConnection}
-                        disabled={!canDeleteSelectedConnection}
+                        onClick={() => void deleteSelectedConnection()}
+                        disabled={!canDeleteSelectedConnection || isDeletingConnection}
                       >
                         Delete
                       </Button>
                       <Button
                         variant="contained"
                         color="secondary"
-                        onClick={activateSelectedConnection}
-                        disabled={!selectedSavedConnection || selectedConnectionId === activeExchangeConnectionId}
+                        onClick={() => void activateSelectedConnection()}
+                        disabled={
+                          !selectedSavedConnection ||
+                          selectedConnectionId === activeExchangeConnectionId ||
+                          isActivatingConnection
+                        }
                       >
                         Set Active
                       </Button>
@@ -498,7 +563,7 @@ export default function SettingsPage() {
                         onChange={(event) =>
                           setConnectionDraft((prev) => ({ ...prev, name: event.target.value }))
                         }
-                        helperText="Saved locally, similar to a named SQL Developer connection."
+                        helperText="Saved in the database for your account, similar to a named SQL Developer connection."
                       />
                     </FieldTooltip>
 
@@ -533,7 +598,7 @@ export default function SettingsPage() {
                         onChange={(event) =>
                           setConnectionDraft((prev) => ({ ...prev, apiKey: event.target.value }))
                         }
-                        helperText="Stored locally in this browser profile until you edit or remove the connection."
+                        helperText="Stored in the database for this account until you edit or remove the connection."
                       />
                     </FieldTooltip>
                     <Button variant="outlined" onClick={() => setRevealApiKey((prev) => !prev)}>
@@ -548,7 +613,7 @@ export default function SettingsPage() {
                         onChange={(event) =>
                           setConnectionDraft((prev) => ({ ...prev, apiSecret: event.target.value }))
                         }
-                        helperText="Stored locally in this browser profile. Save changes before activating the profile."
+                        helperText="Stored in the database for this account. Save changes before activating the profile."
                       />
                     </FieldTooltip>
                     <Button variant="outlined" onClick={() => setRevealSecret((prev) => !prev)}>
@@ -576,8 +641,8 @@ export default function SettingsPage() {
                       <Button
                         variant="contained"
                         startIcon={<SaveOutlinedIcon />}
-                        onClick={saveConnectionProfile}
-                        disabled={!canSaveConnection || !hasConnectionChanges}
+                        onClick={() => void saveConnectionProfile()}
+                        disabled={!canSaveConnection || !hasConnectionChanges || isSavingConnection}
                       >
                         Save Connection
                       </Button>
@@ -639,8 +704,8 @@ export default function SettingsPage() {
                     </Typography>
                     <Typography variant="body2">Saved profiles: {exchangeConnections.length}</Typography>
                     <Typography variant="caption" color="text.secondary">
-                      The backend currently supports live connectivity testing for Binance only. Other exchanges can
-                      still be saved now and wired later.
+                      Saved profiles are loaded from the database on startup. The backend currently supports live
+                      connectivity testing for Binance only. Other exchanges can still be saved now and wired later.
                     </Typography>
                   </Stack>
                 </CardContent>

@@ -23,7 +23,8 @@ const tradeArbitrary = fc.record<TradeHistoryItem>({
   entryPrice: fc.double({ min: 1, max: 100000, noNaN: true }),
   exitTime: fc.option(isoTimestampArbitrary, { nil: null }),
   exitPrice: fc.option(fc.double({ min: 1, max: 100000, noNaN: true }), { nil: null }),
-  signal: fc.constantFrom('BUY', 'SELL'),
+  signal: fc.constantFrom('BUY', 'SELL', 'SHORT', 'COVER'),
+  positionSide: fc.constantFrom('LONG', 'SHORT'),
   positionSize: fc.double({ min: 0.0001, max: 10, noNaN: true }),
   riskAmount: fc.double({ min: 0.01, max: 1000, noNaN: true }),
   pnl: fc.double({ min: -1000, max: 1000, noNaN: true }),
@@ -53,11 +54,14 @@ describe('trade utils properties', () => {
           (trade) =>
             trade.exitPrice !== null &&
             trade.stopLoss !== null &&
-            trade.entryPrice !== trade.stopLoss
+            trade.entryPrice !== trade.stopLoss &&
+            (trade.positionSide === 'LONG' || trade.stopLoss > trade.entryPrice)
         ),
         (trade) => {
           const expected =
-            (trade.exitPrice! - trade.entryPrice) / (trade.entryPrice - trade.stopLoss!);
+            trade.positionSide === 'SHORT'
+              ? (trade.entryPrice - trade.exitPrice!) / (trade.stopLoss! - trade.entryPrice)
+              : (trade.exitPrice! - trade.entryPrice) / (trade.entryPrice - trade.stopLoss!);
           expect(calculateRMultiple(trade)).toBeCloseTo(expected, 10);
         }
       ),
@@ -86,9 +90,9 @@ describe('trade utils properties', () => {
 
         for (const line of lines) {
           const columns = line.split(',');
-          expect(moneyRegex.test(columns[9].replaceAll('"', ''))).toBe(true);
           expect(moneyRegex.test(columns[10].replaceAll('"', ''))).toBe(true);
           expect(moneyRegex.test(columns[11].replaceAll('"', ''))).toBe(true);
+          expect(moneyRegex.test(columns[12].replaceAll('"', ''))).toBe(true);
         }
       }),
       { numRuns: 120 }
@@ -102,8 +106,8 @@ describe('trade utils properties', () => {
         const lines = csv.split('\n').slice(1);
         for (const line of lines) {
           const columns = line.split(',');
-          const entry = columns[3].replaceAll('"', '');
-          const exit = columns[4].replaceAll('"', '');
+          const entry = columns[4].replaceAll('"', '');
+          const exit = columns[5].replaceAll('"', '');
           expect(isIsoTimestamp(entry)).toBe(true);
           if (exit) {
             expect(isIsoTimestamp(exit)).toBe(true);

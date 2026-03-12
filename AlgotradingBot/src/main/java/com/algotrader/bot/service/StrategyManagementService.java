@@ -124,6 +124,7 @@ public class StrategyManagementService {
         strategy.setRiskPerTrade(request.riskPerTrade());
         strategy.setMinPositionSize(request.minPositionSize());
         strategy.setMaxPositionSize(request.maxPositionSize());
+        strategy.setShortSellingEnabled(request.shortSellingEnabled());
 
         StrategyConfig saved = strategyConfigRepository.save(strategy);
         recordVersion(saved, changeReason);
@@ -163,6 +164,7 @@ public class StrategyManagementService {
                 version.getMaxPositionSize(),
                 version.getStatus(),
                 version.getPaperMode(),
+                version.getShortSellingEnabled(),
                 version.getChangedAt()
             ))
             .toList();
@@ -192,6 +194,7 @@ public class StrategyManagementService {
             strategy.getTradeCount(),
             strategy.getCurrentDrawdown(),
             strategy.getPaperMode(),
+            strategy.getShortSellingEnabled(),
             latestVersion == null ? 0 : latestVersion.getVersionNumber(),
             latestVersion == null ? null : latestVersion.getChangedAt()
         );
@@ -261,6 +264,9 @@ public class StrategyManagementService {
         }
         if (strategy.getMaxPositionSize().compareTo(request.maxPositionSize()) != 0) {
             changedFields.add("maxPositionSize");
+        }
+        if (!strategy.getShortSellingEnabled().equals(request.shortSellingEnabled())) {
+            changedFields.add("shortSellingEnabled");
         }
         if (changedFields.isEmpty()) {
             return "No parameter changes detected; configuration was re-saved.";
