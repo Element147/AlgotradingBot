@@ -28,7 +28,7 @@ mkdirSync(generatedDir, { recursive: true });
 if (process.platform === 'win32') {
   execCommand('cmd.exe', ['/c', 'gradlew.bat', 'exportOpenApiContract', '--no-daemon'], backendDir);
 } else {
-  execCommand('./gradlew', ['exportOpenApiContract', '--no-daemon'], backendDir);
+  execCommand('sh', ['./gradlew', 'exportOpenApiContract', '--no-daemon'], backendDir);
 }
 
 if (!existsSync(buildSpec)) {
