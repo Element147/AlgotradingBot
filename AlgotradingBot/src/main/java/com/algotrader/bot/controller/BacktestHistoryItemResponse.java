@@ -7,6 +7,7 @@ public record BacktestHistoryItemResponse(
     Long id,
     String strategyId,
     String datasetName,
+    String experimentName,
     String symbol,
     String timeframe,
     String executionStatus,

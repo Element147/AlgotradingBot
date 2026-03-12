@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -33,7 +34,9 @@ public record RunBacktestRequest(
     @NotNull(message = "Slippage assumption is required")
     @PositiveOrZero(message = "Slippage must be non-negative")
     @Max(value = 200, message = "Slippage must be <= 200 bps")
-    Integer slippageBps
+    Integer slippageBps,
+    @Size(max = 120, message = "Experiment name must be <= 120 characters")
+    String experimentName
 ) {
     public RunBacktestRequest {
         feesBps = feesBps == null ? 10 : feesBps;

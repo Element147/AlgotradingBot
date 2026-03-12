@@ -60,9 +60,13 @@ public class SystemController {
     @GetMapping("/audit-events")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "List recent operator audit events")
-    public ResponseEntity<java.util.List<OperatorAuditEventResponse>> listAuditEvents(
-        @org.springframework.web.bind.annotation.RequestParam(defaultValue = "100") int limit
+    public ResponseEntity<OperatorAuditEventListResponse> listAuditEvents(
+        @org.springframework.web.bind.annotation.RequestParam(defaultValue = "100") int limit,
+        @org.springframework.web.bind.annotation.RequestParam(required = false) String environment,
+        @org.springframework.web.bind.annotation.RequestParam(required = false) String outcome,
+        @org.springframework.web.bind.annotation.RequestParam(required = false) String targetType,
+        @org.springframework.web.bind.annotation.RequestParam(required = false) String search
     ) {
-        return ResponseEntity.ok(operatorAuditService.listEvents(limit));
+        return ResponseEntity.ok(operatorAuditService.listEvents(limit, environment, outcome, targetType, search));
     }
 }

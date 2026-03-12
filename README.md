@@ -13,13 +13,13 @@ Local-first full-stack algorithmic trading research platform for strategy resear
 Implemented and usable end-to-end:
 
 - Strategy management APIs and UI workflows
-- Backtest execution, history, and details
+- Backtest execution, experiment summaries, history, and details
 - Backtest replay and side-by-side comparison APIs
 - Dataset lifecycle inventory (`checksumSha256`, schema version, retention, archive/restore) plus dataset download endpoint
 - Persisted backtest equity/trade series with chart/export support in the UI
-- Strategy configuration version history in API and UI
+- Strategy configuration version history plus typed preset guidance in API and UI
 - Risk configuration and circuit-breaker controls
-- Paper-trading lifecycle and recovery-aware dashboard state
+- Paper-trading lifecycle, recovery-aware dashboard state, and in-app incident alerts
 - Operator audit-event trail for critical actions (`/api/system/audit-events`)
 - System backup endpoint with real database dump artifacts
 - CI verification gates for backend and frontend (`.github/workflows/ci.yml`)
@@ -44,6 +44,7 @@ Backtest strategy catalog:
 - Execution modes:
   - `SINGLE_SYMBOL`
   - `DATASET_UNIVERSE`
+- Repeatable experiment labels now group related runs into multi-run summaries while keeping per-run provenance intact.
 - Action model is currently conservative (`long/rotate/sell-to-cash/hold`).
 - True shorting, margin, and leverage are not default behavior.
 

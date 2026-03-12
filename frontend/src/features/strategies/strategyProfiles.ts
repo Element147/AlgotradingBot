@@ -6,6 +6,13 @@ export interface StrategyProfile {
   exitRule: string;
   bestFor: string;
   riskNotes: string;
+  timeframeOptions: string[];
+  configPreset: {
+    timeframe: string;
+    riskPerTrade: number;
+    minPositionSize: number;
+    maxPositionSize: number;
+  };
 }
 
 const PROFILES: StrategyProfile[] = [
@@ -18,6 +25,8 @@ const PROFILES: StrategyProfile[] = [
     exitRule: 'Single exit at the end of the selected period.',
     bestFor: 'Baseline comparison against active strategy logic.',
     riskNotes: 'No active reaction to volatility, drawdown, or changing market regime.',
+    timeframeOptions: ['1h', '4h', '1d'],
+    configPreset: { timeframe: '1d', riskPerTrade: 0.02, minPositionSize: 10, maxPositionSize: 100 },
   },
   {
     key: 'DUAL_MOMENTUM_ROTATION',
@@ -28,6 +37,8 @@ const PROFILES: StrategyProfile[] = [
     exitRule: 'Rotate when leadership changes, or move to cash when absolute momentum turns negative.',
     bestFor: 'Small-account, lower-turnover trend allocation across a multi-symbol dataset.',
     riskNotes: 'Can suffer during sharp momentum crashes and fast trend reversals.',
+    timeframeOptions: ['4h', '1d'],
+    configPreset: { timeframe: '1d', riskPerTrade: 0.02, minPositionSize: 25, maxPositionSize: 150 },
   },
   {
     key: 'VOLATILITY_MANAGED_DONCHIAN_BREAKOUT',
@@ -38,6 +49,8 @@ const PROFILES: StrategyProfile[] = [
     exitRule: 'Exit on 20-bar breakdown, ATR stop failure, or regime deterioration.',
     bestFor: 'Directional trend phases with persistent continuation.',
     riskNotes: 'Can take repeated small losses in sideways markets.',
+    timeframeOptions: ['1h', '4h', '1d'],
+    configPreset: { timeframe: '4h', riskPerTrade: 0.02, minPositionSize: 20, maxPositionSize: 120 },
   },
   {
     key: 'TREND_PULLBACK_CONTINUATION',
@@ -48,6 +61,8 @@ const PROFILES: StrategyProfile[] = [
     exitRule: 'Exit when the continuation fails, the trend filter breaks, or ATR stop is breached.',
     bestFor: 'Trending markets where cleaner entries matter more than maximum trade count.',
     riskNotes: 'Repeated failed pullbacks can cluster near trend exhaustion.',
+    timeframeOptions: ['1h', '4h'],
+    configPreset: { timeframe: '4h', riskPerTrade: 0.02, minPositionSize: 15, maxPositionSize: 100 },
   },
   {
     key: 'REGIME_FILTERED_MEAN_REVERSION',
@@ -58,6 +73,8 @@ const PROFILES: StrategyProfile[] = [
     exitRule: 'Exit at the mean, on a fixed time stop, or after ATR stop failure.',
     bestFor: 'Sideways or choppy environments where trend systems tend to whipsaw.',
     riskNotes: 'Performs poorly if a real breakdown is mistaken for a range-bound dip.',
+    timeframeOptions: ['15m', '1h', '4h'],
+    configPreset: { timeframe: '1h', riskPerTrade: 0.015, minPositionSize: 10, maxPositionSize: 80 },
   },
   {
     key: 'TREND_FIRST_ADAPTIVE_ENSEMBLE',
@@ -68,6 +85,8 @@ const PROFILES: StrategyProfile[] = [
     exitRule: 'Exit when regime routing invalidates the active layer or a stronger asset takes over.',
     bestFor: 'Higher-potential multi-signal research once standalone strategies exist.',
     riskNotes: 'More complex and more vulnerable to false confidence if overfit.',
+    timeframeOptions: ['4h', '1d'],
+    configPreset: { timeframe: '4h', riskPerTrade: 0.015, minPositionSize: 20, maxPositionSize: 120 },
   },
   {
     key: 'SMA_CROSSOVER',
@@ -80,6 +99,8 @@ const PROFILES: StrategyProfile[] = [
       'Exit on opposite crossover or when portfolio/risk guardrails trigger.',
     bestFor: 'Directional trend phases with persistent momentum.',
     riskNotes: 'Can whipsaw and overtrade in choppy market with no clear trend.',
+    timeframeOptions: ['1h', '4h', '1d'],
+    configPreset: { timeframe: '4h', riskPerTrade: 0.02, minPositionSize: 15, maxPositionSize: 110 },
   },
   {
     key: 'BOLLINGER_BANDS',
@@ -92,6 +113,8 @@ const PROFILES: StrategyProfile[] = [
       'Exit on move back to middle band, or when risk controls/circuit breaker are hit.',
     bestFor: 'Range-bound or sideways market with repeated rebounds.',
     riskNotes: 'Can perform poorly in strong one-direction trend where price keeps drifting away.',
+    timeframeOptions: ['15m', '1h', '4h'],
+    configPreset: { timeframe: '1h', riskPerTrade: 0.015, minPositionSize: 10, maxPositionSize: 90 },
   },
 ];
 

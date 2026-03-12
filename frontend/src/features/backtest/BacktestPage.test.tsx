@@ -46,12 +46,33 @@ vi.mock('./backtestApi', () => ({
       newestUploadedAt: '2026-03-10T10:00:00',
     },
   }),
+  useGetBacktestExperimentSummariesQuery: () => ({
+    data: [
+      {
+        experimentKey: 'btc-mean-reversion-retest',
+        experimentName: 'BTC Mean Reversion Retest',
+        latestBacktestId: 42,
+        strategyId: 'BOLLINGER_BANDS',
+        datasetName: 'BTC 1h 2025',
+        symbol: 'BTC/USDT',
+        timeframe: '1h',
+        latestExecutionStatus: 'COMPLETED',
+        latestValidationStatus: 'PASSED',
+        runCount: 3,
+        latestRunAt: '2026-03-10T10:00:00',
+        averageReturnPercent: 6.5,
+        bestFinalBalance: 1120,
+        worstMaxDrawdown: 18,
+      },
+    ],
+  }),
   useGetBacktestsQuery: () => ({
     data: [
       {
         id: 42,
         strategyId: 'BOLLINGER_BANDS',
         datasetName: 'BTC 1h 2025',
+        experimentName: 'BTC Mean Reversion Retest',
         symbol: 'BTC/USDT',
         timeframe: '1h',
         executionStatus: 'COMPLETED',
@@ -72,6 +93,8 @@ vi.mock('./backtestApi', () => ({
       strategyId: 'BOLLINGER_BANDS',
       datasetId: 7,
       datasetName: 'BTC 1h 2025',
+      experimentName: 'BTC Mean Reversion Retest',
+      experimentKey: 'btc-mean-reversion-retest',
       symbol: 'BTC/USDT',
       timeframe: '1h',
       executionStatus: 'COMPLETED',
@@ -121,9 +144,20 @@ vi.mock('@/components/layout/AppLayout', () => ({
 }));
 
 vi.mock('./BacktestResults', () => ({
-  BacktestResults: ({ details }: { details: { id: number; strategyId: string; datasetName: string; validationStatus: string } }) => (
+  BacktestResults: ({
+    details,
+  }: {
+    details: {
+      id: number;
+      experimentName: string;
+      strategyId: string;
+      datasetName: string;
+      validationStatus: string;
+    };
+  }) => (
     <div>
       <div>{`Backtest Details #${details.id}`}</div>
+      <div>{`Experiment: ${details.experimentName}`}</div>
       <div>{`Algorithm: ${details.strategyId}`}</div>
       <div>{`Dataset: ${details.datasetName}`}</div>
       <div>{`Validation: ${details.validationStatus}`}</div>
@@ -150,6 +184,8 @@ describe('BacktestPage', { timeout: 15000 }, () => {
     expect(screen.getByText('Dataset Upload')).toBeInTheDocument();
     expect(screen.getByText('Dataset Inventory')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Run New Backtest' })).toBeInTheDocument();
+    expect(screen.getByText('Experiment Summaries')).toBeInTheDocument();
+    expect(screen.getAllByText('BTC Mean Reversion Retest').length).toBeGreaterThan(0);
     expect(screen.getByText('Backtest History')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Compare Selected/ })).toBeInTheDocument();
     expect(screen.getByText('42')).toBeInTheDocument();
@@ -159,8 +195,8 @@ describe('BacktestPage', { timeout: 15000 }, () => {
     render(<BacktestPage />);
 
     expect(screen.getByText('Backtest Details #42')).toBeInTheDocument();
-    expect(screen.getByText(/Algorithm: BOLLINGER_BANDS/)).toBeInTheDocument();
+    expect(screen.getByText(/Experiment: BTC Mean Reversion Retest/)).toBeInTheDocument();
     expect(screen.getByText(/Dataset: BTC 1h 2025/)).toBeInTheDocument();
-    expect(screen.getByText(/Validation: PASSED/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Validation: PASSED/).length).toBeGreaterThan(0);
   });
 });

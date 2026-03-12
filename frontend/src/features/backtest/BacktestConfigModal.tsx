@@ -19,6 +19,7 @@ import { sanitizeText } from '@/utils/security';
 export interface BacktestConfigFormState {
   algorithmType: string;
   datasetId: string;
+  experimentName: string;
   symbol: string;
   timeframe: string;
   startDate: string;
@@ -42,6 +43,7 @@ interface BacktestConfigModalProps {
 const normalizePayload = (form: BacktestConfigFormState): RunBacktestPayload => ({
   algorithmType: form.algorithmType,
   datasetId: Number(form.datasetId),
+  experimentName: form.experimentName.trim() || undefined,
   symbol: form.symbol,
   timeframe: form.timeframe,
   startDate: form.startDate,
@@ -153,6 +155,15 @@ export function BacktestConfigModal({
                 </MenuItem>
               ))}
             </TextField>
+          </FieldTooltip>
+
+          <FieldTooltip title="Experiment labels group related runs together so multi-run research stays reviewable and repeatable.">
+            <TextField
+              label="Experiment Name (optional)"
+              value={form.experimentName}
+              onChange={(event) => onChange({ ...form, experimentName: sanitizeText(event.target.value) })}
+              helperText="Examples: Q1 Trend Rotation Review, BTC Mean Reversion Retest"
+            />
           </FieldTooltip>
 
           <FieldTooltip title="Dataset controls what market history is replayed. Wrong dataset means misleading conclusions.">

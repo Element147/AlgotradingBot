@@ -16,6 +16,13 @@ export interface PaperTradingState {
   stalePositionCount: number;
   recoveryStatus: 'HEALTHY' | 'IDLE' | 'ATTENTION';
   recoveryMessage: string;
+  incidentSummary: string;
+  alerts: Array<{
+    severity: 'INFO' | 'WARNING';
+    code: string;
+    summary: string;
+    recommendedAction: string;
+  }>;
 }
 
 export const paperApi = createApi({

@@ -58,6 +58,32 @@ export interface OperatorAuditEvent {
   createdAt: string;
 }
 
+export interface OperatorAuditSummary {
+  visibleEventCount: number;
+  totalMatchingEvents: number;
+  successCount: number;
+  failedCount: number;
+  uniqueActors: number;
+  uniqueActions: number;
+  testEventCount: number;
+  paperEventCount: number;
+  liveEventCount: number;
+  latestEventAt: string | null;
+}
+
+export interface OperatorAuditEventListResponse {
+  summary: OperatorAuditSummary;
+  events: OperatorAuditEvent[];
+}
+
+export interface OperatorAuditQuery {
+  limit?: number;
+  environment?: string;
+  outcome?: string;
+  targetType?: string;
+  search?: string;
+}
+
 const asText = (value: unknown, fallback = ''): string =>
   typeof value === 'string' || typeof value === 'number' ? String(value) : fallback;
 
@@ -118,10 +144,18 @@ export const exchangeApi = createApi({
       }),
       invalidatesTags: ['System'],
     }),
-    getAuditEvents: builder.query<OperatorAuditEvent[], number | void>({
-      query: (limit) => ({
+    getAuditEvents: builder.query<OperatorAuditEventListResponse, OperatorAuditQuery | void>({
+      query: (queryArg) => ({
         url: '/api/system/audit-events',
-        params: limit ? { limit } : undefined,
+        params: queryArg
+          ? {
+              limit: queryArg.limit,
+              environment: queryArg.environment || undefined,
+              outcome: queryArg.outcome || undefined,
+              targetType: queryArg.targetType || undefined,
+              search: queryArg.search || undefined,
+            }
+          : undefined,
       }),
       providesTags: ['Audit'],
     }),

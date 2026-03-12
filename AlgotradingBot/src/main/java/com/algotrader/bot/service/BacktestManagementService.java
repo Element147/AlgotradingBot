@@ -4,6 +4,7 @@ import com.algotrader.bot.backtest.strategy.BacktestStrategyRegistry;
 import com.algotrader.bot.controller.BacktestComparisonItemResponse;
 import com.algotrader.bot.controller.BacktestComparisonResponse;
 import com.algotrader.bot.controller.BacktestDetailsResponse;
+import com.algotrader.bot.controller.BacktestExperimentSummaryResponse;
 import com.algotrader.bot.controller.BacktestEquityPointResponse;
 import com.algotrader.bot.controller.BacktestHistoryItemResponse;
 import com.algotrader.bot.controller.BacktestRunResponse;
@@ -22,6 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -75,6 +78,19 @@ public class BacktestManagementService {
     }
 
     @Transactional(readOnly = true)
+    public List<BacktestExperimentSummaryResponse> getExperimentSummaries() {
+        Map<String, List<BacktestResult>> grouped = new LinkedHashMap<>();
+
+        backtestResultRepository.findAllByOrderByTimestampDesc().forEach(result -> grouped
+            .computeIfAbsent(resolveExperimentKey(result), ignored -> new ArrayList<>())
+            .add(result));
+
+        return grouped.entrySet().stream()
+            .map(entry -> toExperimentSummary(entry.getKey(), entry.getValue()))
+            .toList();
+    }
+
+    @Transactional(readOnly = true)
     public BacktestDetailsResponse getDetails(Long backtestId) {
         BacktestResult result = backtestResultRepository.findById(backtestId)
             .orElseThrow(() -> new EntityNotFoundException("Backtest not found: " + backtestId));
@@ -96,6 +112,14 @@ public class BacktestManagementService {
 
         BacktestDataset dataset = backtestDatasetService.getDataset(request.datasetId());
         String effectiveSymbol = resolveRequestedSymbol(request.symbol(), dataset.getSymbolsCsv(), strategyDefinition.selectionMode());
+        String experimentName = resolveRequestedExperimentName(
+            request.experimentName(),
+            algorithmType.name(),
+            dataset.getName(),
+            effectiveSymbol,
+            request.timeframe(),
+            strategyDefinition.selectionMode()
+        );
 
         BacktestResult pending = new BacktestResult(
             algorithmType.name(),
@@ -114,6 +138,8 @@ public class BacktestManagementService {
 
         pending.setDatasetId(dataset.getId());
         pending.setDatasetName(dataset.getName());
+        pending.setExperimentName(experimentName);
+        pending.setExperimentKey(normalizeExperimentKey(experimentName));
         pending.setTimeframe(request.timeframe());
         pending.setExecutionStatus(BacktestResult.ExecutionStatus.PENDING);
         pending.setFeesBps(request.feesBps());
@@ -162,6 +188,8 @@ public class BacktestManagementService {
 
         pending.setDatasetId(dataset.getId());
         pending.setDatasetName(dataset.getName());
+        pending.setExperimentName(resolveExperimentName(existing));
+        pending.setExperimentKey(resolveExperimentKey(existing));
         pending.setTimeframe(existing.getTimeframe());
         pending.setExecutionStatus(BacktestResult.ExecutionStatus.PENDING);
         pending.setFeesBps(existing.getFeesBps());
@@ -283,6 +311,7 @@ public class BacktestManagementService {
             result.getId(),
             result.getStrategyId(),
             result.getDatasetName(),
+            resolveExperimentName(result),
             result.getSymbol(),
             result.getTimeframe(),
             result.getExecutionStatus().name(),
@@ -309,6 +338,8 @@ public class BacktestManagementService {
             result.getStrategyId(),
             result.getDatasetId(),
             result.getDatasetName(),
+            resolveExperimentName(result),
+            resolveExperimentKey(result),
             provenance.checksumSha256(),
             provenance.schemaVersion(),
             provenance.uploadedAt(),
@@ -353,6 +384,41 @@ public class BacktestManagementService {
         );
     }
 
+    private BacktestExperimentSummaryResponse toExperimentSummary(String experimentKey, List<BacktestResult> runs) {
+        BacktestResult latest = runs.get(0);
+        BigDecimal averageReturnPercent = runs.stream()
+            .map(this::totalReturnPercent)
+            .reduce(BigDecimal.ZERO, BigDecimal::add)
+            .divide(BigDecimal.valueOf(runs.size()), 4, RoundingMode.HALF_UP);
+        BigDecimal bestFinalBalance = runs.stream()
+            .map(BacktestResult::getFinalBalance)
+            .filter(balance -> balance != null)
+            .max(BigDecimal::compareTo)
+            .orElse(BigDecimal.ZERO);
+        BigDecimal worstMaxDrawdown = runs.stream()
+            .map(BacktestResult::getMaxDrawdown)
+            .filter(drawdown -> drawdown != null)
+            .max(BigDecimal::compareTo)
+            .orElse(BigDecimal.ZERO);
+
+        return new BacktestExperimentSummaryResponse(
+            experimentKey,
+            resolveExperimentName(latest),
+            latest.getId(),
+            latest.getStrategyId(),
+            latest.getDatasetName(),
+            latest.getSymbol(),
+            latest.getTimeframe(),
+            latest.getExecutionStatus().name(),
+            latest.getValidationStatus().name(),
+            runs.size(),
+            latest.getTimestamp(),
+            averageReturnPercent,
+            bestFinalBalance,
+            worstMaxDrawdown
+        );
+    }
+
     private BigDecimal totalReturnPercent(BacktestResult result) {
         if (result.getInitialBalance() == null
             || result.getFinalBalance() == null
@@ -365,6 +431,48 @@ public class BacktestManagementService {
             .divide(result.getInitialBalance(), 8, RoundingMode.HALF_UP)
             .multiply(BigDecimal.valueOf(100))
             .setScale(4, RoundingMode.HALF_UP);
+    }
+
+    private String resolveRequestedExperimentName(String requestedExperimentName,
+                                                 String strategyId,
+                                                 String datasetName,
+                                                 String effectiveSymbol,
+                                                 String timeframe,
+                                                 com.algotrader.bot.backtest.strategy.BacktestStrategySelectionMode selectionMode) {
+        if (requestedExperimentName != null && !requestedExperimentName.isBlank()) {
+            return requestedExperimentName.trim();
+        }
+
+        String marketLabel = selectionMode == com.algotrader.bot.backtest.strategy.BacktestStrategySelectionMode.DATASET_UNIVERSE
+            ? "DATASET_UNIVERSE"
+            : effectiveSymbol;
+        return strategyId + " | " + datasetName + " | " + marketLabel + " | " + timeframe;
+    }
+
+    private String resolveExperimentName(BacktestResult result) {
+        if (result.getExperimentName() != null && !result.getExperimentName().isBlank()) {
+            return result.getExperimentName();
+        }
+
+        String datasetLabel = result.getDatasetName() == null || result.getDatasetName().isBlank()
+            ? "dataset-" + (result.getDatasetId() == null ? "unknown" : result.getDatasetId())
+            : result.getDatasetName();
+        return result.getStrategyId() + " | " + datasetLabel + " | " + result.getSymbol() + " | " + result.getTimeframe();
+    }
+
+    private String resolveExperimentKey(BacktestResult result) {
+        if (result.getExperimentKey() != null && !result.getExperimentKey().isBlank()) {
+            return result.getExperimentKey();
+        }
+        return normalizeExperimentKey(resolveExperimentName(result));
+    }
+
+    private String normalizeExperimentKey(String experimentName) {
+        return experimentName
+            .trim()
+            .toLowerCase()
+            .replaceAll("[^a-z0-9]+", "-")
+            .replaceAll("(^-|-$)", "");
     }
 
     private DatasetProvenance datasetProvenance(BacktestResult result) {

@@ -16,5 +16,7 @@ public record PaperTradingStateResponse(
     Long staleOpenOrderCount,
     Long stalePositionCount,
     String recoveryStatus,
-    String recoveryMessage
+    String recoveryMessage,
+    String incidentSummary,
+    java.util.List<PaperTradingAlertResponse> alerts
 ) {}

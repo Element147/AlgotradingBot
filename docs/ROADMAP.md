@@ -26,19 +26,22 @@ Status updated: March 12, 2026
 
 1. Research reproducibility infrastructure
    - completed: dataset lifecycle tooling beyond upload/download (inventory, retention)
-   - next: repeatable experiment structure
+   - completed: repeatable experiment structure
 2. Backtest analytics depth
    - completed: persist equity/trade series
    - completed: strategy comparison views/exports with provenance guards in frontend
+   - completed: experiment-level multi-run summaries and experiment-aware report packaging
 3. Strategy parameter lifecycle
    - completed: versioned defaults and changelog
-   - next: typed parameter editing ergonomics
+   - completed: typed parameter editing ergonomics
 
 ## Later (2+ months)
 
 1. Paper-trading hardening
-   - next: stronger operator alert delivery
-   - next: deeper restart/recovery playbooks
+   - completed: stronger operator alert delivery in dashboard/API
+   - completed: deeper restart/recovery playbooks for port/orphan/network signatures
+   - completed: audit-event UX refinement with shared dashboard/settings review surfaces
+   - next: multi-channel notification routing
 2. Contract stability
    - completed: generated/shared frontend-backend API contracts
 3. Optional live-readiness evaluation

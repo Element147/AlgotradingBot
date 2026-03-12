@@ -13,6 +13,7 @@ import {
 import { useMemo, useState } from 'react';
 
 import { useGetStrategyConfigHistoryQuery, type Strategy } from './strategiesApi';
+import { getStrategyProfile } from './strategyProfiles';
 import {
   type StrategyConfigOutput,
   validateStrategyConfig,
@@ -53,6 +54,7 @@ export function StrategyConfigModal({
   const { data: history = [] } = useGetStrategyConfigHistoryQuery(strategy.id);
   const [draft, setDraft] = useState<ConfigDraft>(() => createDraft(strategy));
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const profile = useMemo(() => getStrategyProfile(strategy.type), [strategy.type]);
 
   const validation = useMemo(
     () =>
@@ -79,11 +81,47 @@ export function StrategyConfigModal({
     }
   };
 
+  const applyRecommendedSettings = () => {
+    if (!profile) {
+      return;
+    }
+
+    setDraft((prev) => ({
+      ...prev,
+      timeframe: profile.configPreset.timeframe,
+      riskPerTrade: String(profile.configPreset.riskPerTrade),
+      minPositionSize: String(profile.configPreset.minPositionSize),
+      maxPositionSize: String(profile.configPreset.maxPositionSize),
+    }));
+  };
+
   return (
     <Dialog open onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>Update Strategy Configuration</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
+          {profile ? (
+            <Alert severity="info">
+              <strong>{profile.title}</strong>: {profile.bestFor} Recommended timeframes:{' '}
+              {profile.timeframeOptions.join(', ')}. Risk note: {profile.riskNotes}
+            </Alert>
+          ) : null}
+          {profile ? (
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+              <Button variant="outlined" onClick={applyRecommendedSettings}>
+                Apply Strategy Defaults
+              </Button>
+              {profile.timeframeOptions.map((timeframe) => (
+                <Button
+                  key={timeframe}
+                  variant={draft.timeframe === timeframe ? 'contained' : 'text'}
+                  onClick={() => setDraft((prev) => ({ ...prev, timeframe }))}
+                >
+                  {timeframe}
+                </Button>
+              ))}
+            </Stack>
+          ) : null}
           <FieldTooltip title="Trading pair for this strategy. Wrong symbol can invalidate assumptions and risk settings.">
             <TextField
               label="Symbol"

@@ -27,6 +27,7 @@ export const PaperTradingCard: React.FC = () => {
               {data.paperMode ? 'Paper mode active' : 'Paper mode inactive'}
             </Alert>
             <Alert severity={recoverySeverity}>{data.recoveryMessage}</Alert>
+            <Typography variant="body2">{data.incidentSummary}</Typography>
             <Typography variant="body2">Cash Balance: {data.cashBalance.toFixed(2)}</Typography>
             <Typography variant="body2">Open Positions: {data.positionCount}</Typography>
             <Typography variant="body2">Orders: {data.totalOrders} total / {data.openOrders} open / {data.filledOrders} filled</Typography>
@@ -34,6 +35,15 @@ export const PaperTradingCard: React.FC = () => {
               Recovery status: {data.recoveryStatus} | Stale open orders: {data.staleOpenOrderCount} | Stale positions:{' '}
               {data.stalePositionCount}
             </Typography>
+            {data.alerts.map((alert) => (
+              <Alert
+                key={alert.code}
+                severity={alert.severity === 'WARNING' ? 'warning' : 'info'}
+                sx={{ mt: 0.5 }}
+              >
+                {alert.summary} {alert.recommendedAction}
+              </Alert>
+            ))}
           </Stack>
         ) : null}
       </CardContent>

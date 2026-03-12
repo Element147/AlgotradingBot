@@ -62,4 +62,30 @@ class RepairEngineTest {
         RepairAction action = engine.selectRepairAction(failure);
         assertEquals(RepairAction.RESTART_SERVICES, action);
     }
+
+    @Test
+    void testSelectRepairActionForPortConflict() {
+        ValidationResult failure = new ValidationResult(
+            "REQ-8.2",
+            "Port Conflict",
+            ValidationStatus.FAILED,
+            "Port 8080 is already in use"
+        );
+
+        RepairAction action = engine.selectRepairAction(failure);
+        assertEquals(RepairAction.RESOLVE_PORT_CONFLICTS, action);
+    }
+
+    @Test
+    void testSelectRepairActionForNetworkOrphanFailure() {
+        ValidationResult failure = new ValidationResult(
+            "REQ-8.3",
+            "Docker Network",
+            ValidationStatus.FAILED,
+            "Orphan containers detected on managed network"
+        );
+
+        RepairAction action = engine.selectRepairAction(failure);
+        assertEquals(RepairAction.CLEANUP_ORPHANED_CONTAINERS, action);
+    }
 }

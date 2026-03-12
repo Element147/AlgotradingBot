@@ -32,6 +32,7 @@ import {
   useGetBacktestDatasetRetentionReportQuery,
   useGetBacktestDatasetsQuery,
   useGetBacktestDetailsQuery,
+  useGetBacktestExperimentSummariesQuery,
   useGetBacktestsQuery,
   useLazyCompareBacktestsQuery,
   useReplayBacktestMutation,
@@ -54,6 +55,7 @@ import { sanitizeText } from '@/utils/security';
 const initialForm: BacktestConfigFormState = {
   algorithmType: 'BUY_AND_HOLD',
   datasetId: '',
+  experimentName: '',
   symbol: '',
   timeframe: '1h',
   startDate: '2025-01-01',
@@ -161,6 +163,7 @@ export default function BacktestPage() {
   const { data: algorithms = [] } = useGetBacktestAlgorithmsQuery();
   const { data: datasets = [] } = useGetBacktestDatasetsQuery();
   const { data: retentionReport } = useGetBacktestDatasetRetentionReportQuery();
+  const { data: experimentSummaries = [] } = useGetBacktestExperimentSummariesQuery();
   const { data: history = [], isLoading, isError } = useGetBacktestsQuery(undefined, {
     pollingInterval: 5000,
     skipPollingIfUnfocused: true,
@@ -528,6 +531,62 @@ export default function BacktestPage() {
             <Card>
               <CardContent>
                 <Typography variant="h6" sx={{ mb: 2 }}>
+                  Experiment Summaries
+                </Typography>
+                {experimentSummaries.length === 0 ? (
+                  <Alert severity="info">
+                    Named experiment groups will appear here once runs are recorded.
+                  </Alert>
+                ) : (
+                  <Stack spacing={1.25}>
+                    {experimentSummaries.slice(0, 6).map((summary) => (
+                      <Box
+                        key={summary.experimentKey}
+                        sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1.25 }}
+                      >
+                        <Stack
+                          direction={{ xs: 'column', md: 'row' }}
+                          spacing={1}
+                          justifyContent="space-between"
+                          alignItems={{ xs: 'flex-start', md: 'center' }}
+                        >
+                          <Box>
+                            <Typography variant="subtitle2">{summary.experimentName}</Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              Latest run #{summary.latestBacktestId} | {summary.strategyId} |{' '}
+                              {summary.datasetName ?? '-'} | {summary.symbol} ({summary.timeframe})
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              Runs: {summary.runCount} | Avg return: {summary.averageReturnPercent.toFixed(2)}% |
+                              Best balance: {summary.bestFinalBalance.toFixed(2)} | Worst drawdown:{' '}
+                              {summary.worstMaxDrawdown.toFixed(2)}%
+                            </Typography>
+                          </Box>
+                          <Stack direction="row" spacing={1}>
+                            <Chip
+                              size="small"
+                              label={`Exec: ${summary.latestExecutionStatus}`}
+                              color={summary.latestExecutionStatus === 'COMPLETED' ? 'success' : 'default'}
+                            />
+                            <Chip
+                              size="small"
+                              label={`Validation: ${summary.latestValidationStatus}`}
+                              sx={{ color: validationColor(summary.latestValidationStatus) }}
+                            />
+                          </Stack>
+                        </Stack>
+                      </Box>
+                    ))}
+                  </Stack>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid size={{ xs: 12 }}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" sx={{ mb: 2 }}>
                   Backtest History
                 </Typography>
                 <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mb: 2 }}>
@@ -592,6 +651,12 @@ export default function BacktestPage() {
                         </TableCell>
                         <TableCell>
                           <HeaderCellWithTooltip
+                            label="Experiment"
+                            description="Repeatable research group label for related runs."
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <HeaderCellWithTooltip
                             label="Market"
                             description="Symbol and timeframe tested in the simulation."
                           />
@@ -641,6 +706,7 @@ export default function BacktestPage() {
                           <TableCell>{item.id}</TableCell>
                           <TableCell>{item.strategyId}</TableCell>
                           <TableCell>{item.datasetName ?? '-'}</TableCell>
+                          <TableCell>{item.experimentName}</TableCell>
                           <TableCell>
                             {item.symbol} ({item.timeframe})
                           </TableCell>

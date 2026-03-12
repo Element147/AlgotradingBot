@@ -2,6 +2,7 @@ package com.algotrader.bot.service;
 
 import com.algotrader.bot.controller.PaperOrderRequest;
 import com.algotrader.bot.controller.PaperOrderResponse;
+import com.algotrader.bot.controller.PaperTradingAlertResponse;
 import com.algotrader.bot.controller.PaperTradingStateResponse;
 import com.algotrader.bot.entity.Account;
 import com.algotrader.bot.entity.PaperOrder;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -210,6 +212,7 @@ public class PaperTradingService {
             .filter(position -> position.getLastUpdated().isBefore(LocalDateTime.now().minusHours(STALE_POSITION_HOURS)))
             .count();
         RecoveryState recoveryState = resolveRecoveryState(staleOpenOrderCount, stalePositionCount, total, positions.size());
+        List<PaperTradingAlertResponse> alerts = buildAlerts(staleOpenOrderCount, stalePositionCount, total, positions.size());
 
         return new PaperTradingStateResponse(
             true,
@@ -224,7 +227,9 @@ public class PaperTradingService {
             staleOpenOrderCount,
             stalePositionCount,
             recoveryState.status(),
-            recoveryState.message()
+            recoveryState.message(),
+            buildIncidentSummary(staleOpenOrderCount, stalePositionCount, total, positions.size()),
+            alerts
         );
     }
 
@@ -314,6 +319,60 @@ public class PaperTradingService {
             return new RecoveryState("IDLE", "Paper trading is idle with no orders or open positions.");
         }
         return new RecoveryState("HEALTHY", "No stale paper-trading state detected after the latest activity.");
+    }
+
+    private String buildIncidentSummary(long staleOpenOrderCount,
+                                        long stalePositionCount,
+                                        long totalOrders,
+                                        int positionCount) {
+        if (staleOpenOrderCount > 0 || stalePositionCount > 0) {
+            return "Operator attention required: stale paper-trading state is blocking a clean restart picture.";
+        }
+        if (totalOrders == 0 && positionCount == 0) {
+            return "Paper trading is idle. No incident follow-up is currently required.";
+        }
+        return "Paper trading is active with no current incident signals.";
+    }
+
+    private List<PaperTradingAlertResponse> buildAlerts(long staleOpenOrderCount,
+                                                        long stalePositionCount,
+                                                        long totalOrders,
+                                                        int positionCount) {
+        List<PaperTradingAlertResponse> alerts = new ArrayList<>();
+        if (staleOpenOrderCount > 0) {
+            alerts.add(new PaperTradingAlertResponse(
+                "WARNING",
+                "STALE_OPEN_ORDERS",
+                staleOpenOrderCount + " open paper order(s) are older than " + STALE_OPEN_ORDER_MINUTES + " minutes.",
+                "Review each stale order and either fill or cancel it before relying on restart recovery."
+            ));
+        }
+        if (stalePositionCount > 0) {
+            alerts.add(new PaperTradingAlertResponse(
+                "WARNING",
+                "STALE_POSITIONS",
+                stalePositionCount + " paper position(s) have not updated in over " + STALE_POSITION_HOURS + " hours.",
+                "Reconcile stale positions, then verify that strategy recovery telemetry returns to HEALTHY."
+            ));
+        }
+        if (alerts.isEmpty()) {
+            if (totalOrders == 0 && positionCount == 0) {
+                alerts.add(new PaperTradingAlertResponse(
+                    "INFO",
+                    "PAPER_IDLE",
+                    "Paper trading is idle with no pending recovery actions.",
+                    "No action required until the next paper-trading exercise."
+                ));
+            } else {
+                alerts.add(new PaperTradingAlertResponse(
+                    "INFO",
+                    "PAPER_HEALTHY",
+                    "Paper-trading recovery telemetry is currently healthy.",
+                    "Continue monitoring for stale orders or stale positions during the next restart cycle."
+                ));
+            }
+        }
+        return List.copyOf(alerts);
     }
 
     private record RecoveryState(String status, String message) {

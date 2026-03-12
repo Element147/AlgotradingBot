@@ -127,19 +127,20 @@ export function BacktestResults({ details }: BacktestResultsProps) {
     doc.setFontSize(14);
     doc.text(`Backtest ${details.id}`, 10, 12);
     doc.setFontSize(11);
-    doc.text(`Algorithm: ${details.strategyId}`, 10, 20);
-    doc.text(`Dataset: ${details.datasetName ?? '-'} (#${details.datasetId ?? 'n/a'})`, 10, 26);
-    doc.text(`Schema: ${details.datasetSchemaVersion}`, 10, 32);
-    doc.text(`Checksum: ${details.datasetChecksumSha256}`, 10, 38);
-    doc.text(`Uploaded: ${formatDateTime(details.datasetUploadedAt ?? '')}`, 10, 44);
-    doc.text(`Validation: ${details.validationStatus}`, 10, 50);
-    doc.text(`Fees/Slippage: ${details.feesBps} bps / ${details.slippageBps} bps`, 10, 56);
-    doc.text(`Sharpe: ${details.sharpeRatio.toFixed(2)} | Profit Factor: ${details.profitFactor.toFixed(2)}`, 10, 62);
-    doc.text(`Win Rate: ${details.winRate.toFixed(2)}% | Max DD: ${details.maxDrawdown.toFixed(2)}%`, 10, 68);
+    doc.text(`Experiment: ${details.experimentName}`, 10, 20);
+    doc.text(`Algorithm: ${details.strategyId}`, 10, 26);
+    doc.text(`Dataset: ${details.datasetName ?? '-'} (#${details.datasetId ?? 'n/a'})`, 10, 32);
+    doc.text(`Schema: ${details.datasetSchemaVersion}`, 10, 38);
+    doc.text(`Checksum: ${details.datasetChecksumSha256}`, 10, 44);
+    doc.text(`Uploaded: ${formatDateTime(details.datasetUploadedAt ?? '')}`, 10, 50);
+    doc.text(`Validation: ${details.validationStatus}`, 10, 56);
+    doc.text(`Fees/Slippage: ${details.feesBps} bps / ${details.slippageBps} bps`, 10, 62);
+    doc.text(`Sharpe: ${details.sharpeRatio.toFixed(2)} | Profit Factor: ${details.profitFactor.toFixed(2)}`, 10, 68);
+    doc.text(`Win Rate: ${details.winRate.toFixed(2)}% | Max DD: ${details.maxDrawdown.toFixed(2)}%`, 10, 74);
 
     if (exportRef.current) {
       const dataUrl = await toPng(exportRef.current, { pixelRatio: 1.3, cacheBust: true });
-      doc.addImage(dataUrl, 'PNG', 10, 76, 190, 120);
+      doc.addImage(dataUrl, 'PNG', 10, 82, 190, 114);
     }
 
     doc.save(`backtest_${details.id}_${new Date().toISOString().slice(0, 10)}.pdf`);
@@ -153,8 +154,10 @@ export function BacktestResults({ details }: BacktestResultsProps) {
             <Box>
               <Typography variant="h6">Backtest Details #{details.id}</Typography>
               <Typography variant="body2" color="text.secondary">
-                Algorithm: {details.strategyId} | Dataset: {details.datasetName ?? '-'} | Market: {details.symbol} (
-                {details.timeframe})
+                Experiment: {details.experimentName} | Algorithm: {details.strategyId}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Dataset: {details.datasetName ?? '-'} | Market: {details.symbol} ({details.timeframe})
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Equity points: {details.equityCurve.length} | Recorded trades: {details.tradeSeries.length}
@@ -192,6 +195,9 @@ export function BacktestResults({ details }: BacktestResultsProps) {
                 <Stack spacing={0.5}>
                   <Typography variant="body2" color="text.secondary">
                     Dataset #{details.datasetId} | {details.datasetName ?? '-'} | Schema {details.datasetSchemaVersion}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Experiment key: {details.experimentKey}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Checksum: {details.datasetChecksumSha256}

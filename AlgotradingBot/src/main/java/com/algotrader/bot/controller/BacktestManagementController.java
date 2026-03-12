@@ -88,6 +88,12 @@ public class BacktestManagementController {
         return ResponseEntity.ok(backtestManagementService.getHistory(limit));
     }
 
+    @GetMapping("/experiments")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<BacktestExperimentSummaryResponse>> experiments() {
+        return ResponseEntity.ok(backtestManagementService.getExperimentSummaries());
+    }
+
     @GetMapping("/{backtestId}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<BacktestDetailsResponse> details(@PathVariable Long backtestId) {

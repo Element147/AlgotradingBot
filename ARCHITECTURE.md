@@ -31,9 +31,10 @@ Primary packages in `com.algotrader.bot`:
 - Simulation seam: `BacktestSimulationEngine` runs execution loops and position transitions.
 - Metrics seam: `BacktestSimulationMetricsCalculator` computes performance statistics.
 - Reproducibility seam: dataset metadata includes checksum/schema version, retention state, archive/restore controls, and supports download + replay flows.
+- Experiment seam: backtest runs carry repeatable experiment labels/keys so related runs can be summarized without losing per-run provenance.
 - Analytics persistence seam: backtest details include persisted equity-curve and trade-series records for reproducible UI charts/exports.
 - Comparison seam: dedicated compare API provides side-by-side metric deltas plus dataset provenance for selected backtests.
-- Reporting seam: frontend exports fail closed when dataset provenance is incomplete, so reports cannot be produced from ambiguous inputs.
+- Reporting seam: frontend exports fail closed when dataset provenance is incomplete, and experiment labels flow into report packaging for clearer multi-run review.
 
 This avoids single-class "all-logic" backtesting and supports extension without rewriting orchestration.
 
@@ -70,6 +71,7 @@ Key frontend design rules:
 - Keep API contract adaptation inside API/service layers where possible.
 - Keep environment mode visible and default-safe (`test`).
 - Keep feature boundaries explicit to support independent strategy workflows.
+- Use strategy-profile metadata to keep parameter editing guidance typed and centralized instead of scattering heuristics across components.
 
 ## Runtime and Data Boundaries
 
@@ -90,9 +92,11 @@ Key frontend design rules:
 7. Account endpoints resolve environment from either `env` query params or `X-Environment` header and fail closed when live account reads are not implemented.
 8. Repair automation must align with the repo's real operator entrypoints and fail closed when managed cleanup cannot restore a healthy local runtime.
 9. Backend compilation surfaces deprecated API usage with `-Xlint:deprecation` so modernization regressions are caught during normal builds.
+10. Paper-trading operator alerts are derived from recovery telemetry and surfaced through DTO/service boundaries rather than embedded in dashboard-only logic.
+11. Operator audit-event review uses a filterable summary+timeline API contract so dashboard and settings surfaces can share the same audit model.
 
 ## Near-Term Architecture Work
 
-1. Add repeatable experiment structure on top of dataset/config version history.
-2. Extend operator alerting on top of current recovery telemetry and audit signals.
-3. Extend operational recovery coverage beyond the current script/Compose-aligned repair set.
+1. Extend operator alert delivery beyond in-app/dashboard surfacing into broader notification channels when justified.
+2. Extend experiment-review workflows on top of the new experiment summary seam.
+3. Continue expanding operational recovery coverage beyond the current port/network/script-aligned repair set.

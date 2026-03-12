@@ -51,6 +51,7 @@ export interface BacktestHistoryItem {
   id: number;
   strategyId: string;
   datasetName: string | null;
+  experimentName: string;
   symbol: string;
   timeframe: string;
   executionStatus: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
@@ -64,6 +65,7 @@ export interface BacktestHistoryItem {
 
 export interface BacktestDetails extends BacktestHistoryItem {
   datasetId: number | null;
+  experimentKey: string;
   datasetChecksumSha256: string | null;
   datasetSchemaVersion: string | null;
   datasetUploadedAt: string | null;
@@ -126,6 +128,23 @@ export interface BacktestComparisonResponse {
   items: BacktestComparisonItem[];
 }
 
+export interface BacktestExperimentSummary {
+  experimentKey: string;
+  experimentName: string;
+  latestBacktestId: number;
+  strategyId: string;
+  datasetName: string | null;
+  symbol: string;
+  timeframe: string;
+  latestExecutionStatus: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+  latestValidationStatus: 'PENDING' | 'PASSED' | 'FAILED' | 'PRODUCTION_READY';
+  runCount: number;
+  latestRunAt: string;
+  averageReturnPercent: number;
+  bestFinalBalance: number;
+  worstMaxDrawdown: number;
+}
+
 export interface RunBacktestPayload {
   algorithmType: string;
   datasetId: number;
@@ -136,6 +155,7 @@ export interface RunBacktestPayload {
   initialBalance: number;
   feesBps: number;
   slippageBps: number;
+  experimentName?: string;
 }
 
 export const backtestApi = createApi({
@@ -146,6 +166,10 @@ export const backtestApi = createApi({
   endpoints: (builder) => ({
     getBacktests: builder.query<BacktestHistoryItem[], void>({
       query: () => '/api/backtests?limit=20',
+      providesTags: ['Backtests'],
+    }),
+    getBacktestExperimentSummaries: builder.query<BacktestExperimentSummary[], void>({
+      query: () => '/api/backtests/experiments',
       providesTags: ['Backtests'],
     }),
     getBacktestDetails: builder.query<BacktestDetails, number>({
@@ -223,6 +247,7 @@ export const backtestApi = createApi({
 
 export const {
   useGetBacktestsQuery,
+  useGetBacktestExperimentSummariesQuery,
   useGetBacktestDetailsQuery,
   useGetBacktestAlgorithmsQuery,
   useGetBacktestDatasetsQuery,

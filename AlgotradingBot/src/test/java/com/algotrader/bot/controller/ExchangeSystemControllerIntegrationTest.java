@@ -105,8 +105,24 @@ class ExchangeSystemControllerIntegrationTest {
         mockMvc.perform(get("/api/system/audit-events")
                 .header("Authorization", "Bearer " + authToken))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$").isArray())
-            .andExpect(jsonPath("$[0].action").exists())
-            .andExpect(jsonPath("$[0].actor").exists());
+            .andExpect(jsonPath("$.summary.visibleEventCount").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)))
+            .andExpect(jsonPath("$.events").isArray())
+            .andExpect(jsonPath("$.events[0].action").exists())
+            .andExpect(jsonPath("$.events[0].actor").exists());
+    }
+
+    @Test
+    void listAuditEvents_supportsOutcomeFiltering() throws Exception {
+        mockMvc.perform(post("/api/system/test-connection")
+                .header("Authorization", "Bearer " + authToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+            .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/system/audit-events")
+                .header("Authorization", "Bearer " + authToken)
+                .param("outcome", "FAILED"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.events[0].outcome").value("FAILED"));
     }
 }

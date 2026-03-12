@@ -38,6 +38,14 @@ public class BacktestResult {
     @Column(length = 100)
     private String datasetName;
 
+    @Size(max = 120)
+    @Column(length = 120)
+    private String experimentName;
+
+    @Size(max = 120)
+    @Column(length = 120)
+    private String experimentKey;
+
     @NotNull
     @Size(min = 3, max = 20)
     @Column(nullable = false, length = 20)
@@ -229,6 +237,22 @@ public class BacktestResult {
         this.datasetName = datasetName;
     }
 
+    public String getExperimentName() {
+        return experimentName;
+    }
+
+    public void setExperimentName(String experimentName) {
+        this.experimentName = experimentName;
+    }
+
+    public String getExperimentKey() {
+        return experimentKey;
+    }
+
+    public void setExperimentKey(String experimentKey) {
+        this.experimentKey = experimentKey;
+    }
+
     public void setSymbol(String symbol) {
         this.symbol = symbol;
     }
@@ -410,6 +434,7 @@ public class BacktestResult {
                 ", strategyId='" + strategyId + '\'' +
                 ", datasetId=" + datasetId +
                 ", datasetName='" + datasetName + '\'' +
+                ", experimentName='" + experimentName + '\'' +
                 ", symbol='" + symbol + '\'' +
                 ", startDate=" + startDate +
                 ", endDate=" + endDate +

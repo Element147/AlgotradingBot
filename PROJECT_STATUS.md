@@ -23,6 +23,10 @@ Implemented product slices:
 7. Strategy configuration version history and versioned defaults
 8. Paper-trading recovery status visibility for stale-order/stale-position detection
 9. Provenance-guarded backtest reporting and comparison exports
+10. Repeatable experiment grouping and multi-run research summaries
+11. In-app paper-trading incident alerts and operator actions
+12. Typed strategy-configuration preset guidance
+13. Filterable operator audit summaries and review UX in dashboard/settings
 
 ## Active Design Decisions (Source of Truth)
 
@@ -57,12 +61,17 @@ Implemented product slices:
 18. Added paper-trading recovery telemetry (`staleOpenOrderCount`, `stalePositionCount`, recovery status/message) to the backend and dashboard.
 19. Extended backtest detail/comparison responses with dataset provenance and blocked report/comparison exports when checksum/schema/timestamp provenance is incomplete.
 20. Eliminated the audited deprecated/legacy API usage set and enabled backend `-Xlint:deprecation` compilation so regressions surface during normal verification.
+21. Added repeatable backtest experiment names/keys, grouped experiment summaries, and experiment-aware report/details UI.
+22. Added paper-trading incident summaries and in-app operator alerts on top of stale-order/stale-position telemetry.
+23. Added typed strategy preset guidance in strategy configuration UX.
+24. Extended repair action selection for port-conflict and orphan/network failure signatures.
+25. Added filterable operator audit summaries plus dashboard/settings audit review surfaces.
 
 ## Remaining Work (Current Priorities)
 
 1. No blocking items remain in the March 12, 2026 current-priority technical-debt set.
-2. The March 12, 2026 research-quality and migration-hardening set is complete end to end.
-3. Next priorities move to repeatable experiment structure, operator alert delivery, and deeper validation automation on top of the now-hardened research workflow.
+2. The March 12, 2026 research-quality, operator-alerting, audit-review, and migration-hardening set is complete end to end.
+3. Next priorities move to multi-channel alert delivery plus deeper experiment governance/review automation on top of the now-hardened research workflow.
 
 ## Risk Elimination Migration Strategy
 
@@ -105,8 +114,9 @@ Phase 5 (implemented now):
 
 Last verified baseline (local):
 
-- Frontend: `lint`, `test`, and `build` pass
+- Frontend: targeted `test` pass, `build` pass, `lint` pass after fixing an existing duplicate-import issue in `BacktestResults.test.tsx`
 - Backend: `test` and `build` pass
+- Contract artifacts: `npm run contract:generate` refreshed `contracts/openapi.json` and `frontend/src/generated/openapi.d.ts`; `npm run contract:check` will remain non-zero until those generated diffs are committed
 - Local app startup path (`run.ps1`) is functional with health endpoint availability
 
 Use `README.md` commands as the standard verification/runbook.

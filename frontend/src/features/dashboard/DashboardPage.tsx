@@ -1,12 +1,14 @@
 import { Box, Container, Grid, Typography } from '@mui/material';
 
 import { BalanceCard } from './BalanceCard';
+import { OperatorAuditCard } from './OperatorAuditCard';
 import { PaperTradingCard } from './PaperTradingCard';
 import { PerformanceCard } from './PerformanceCard';
 import { PositionsList } from './PositionsList';
 import { RecentTradesList } from './RecentTradesList';
 import { SystemHealthIndicator } from './SystemHealthIndicator';
 
+import { useAppSelector } from '@/app/hooks';
 import { AppLayout } from '@/components/layout/AppLayout';
 
 /**
@@ -25,7 +27,10 @@ import { AppLayout } from '@/components/layout/AppLayout';
  * - Real-time updates via RTK Query polling and WebSocket
  * - Wrapped in AppLayout with sidebar and header
  */
-const DashboardPage: React.FC = () => (
+const DashboardPage: React.FC = () => {
+  const isAdmin = useAppSelector((state) => state.auth.user?.role === 'admin');
+
+  return (
     <AppLayout>
       <Container maxWidth="xl">
         <Box py={3}>
@@ -54,6 +59,13 @@ const DashboardPage: React.FC = () => (
               <PaperTradingCard />
             </Grid>
 
+            {/* Operator Audit Card */}
+            {isAdmin ? (
+              <Grid size={{ xs: 12, md: 6, lg: 4 }}>
+                <OperatorAuditCard />
+              </Grid>
+            ) : null}
+
             {/* Open Positions */}
             <Grid size={{ xs: 12 }}>
               <PositionsList />
@@ -68,5 +80,6 @@ const DashboardPage: React.FC = () => (
       </Container>
     </AppLayout>
   );
+};
 
 export default DashboardPage;

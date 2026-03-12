@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { vi } from 'vitest';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { BacktestResults } from './BacktestResults';
 
@@ -25,6 +24,8 @@ const baseDetails = {
   strategyId: 'BOLLINGER_BANDS',
   datasetId: 7,
   datasetName: 'BTC 1h 2025',
+  experimentName: 'BTC Mean Reversion Retest',
+  experimentKey: 'btc-mean-reversion-retest',
   datasetChecksumSha256: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
   datasetSchemaVersion: 'ohlcv-v1',
   datasetUploadedAt: '2026-03-10T10:00:00',

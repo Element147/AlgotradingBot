@@ -56,6 +56,7 @@ public class RepairEngine {
 
     public RepairAction selectRepairAction(ValidationResult failure) {
         String reqId = failure.getRequirementId();
+        String searchText = (failure.getRequirementName() + " " + failure.getMessage()).toLowerCase();
         
         if (reqId.startsWith("REQ-7")) {
             // Build failures
@@ -66,6 +67,12 @@ public class RepairEngine {
             }
         } else if (reqId.startsWith("REQ-8")) {
             // Orchestration failures
+            if (searchText.contains("port")) {
+                return RepairAction.RESOLVE_PORT_CONFLICTS;
+            }
+            if (searchText.contains("orphan") || searchText.contains("network")) {
+                return RepairAction.CLEANUP_ORPHANED_CONTAINERS;
+            }
             return RepairAction.RESTART_SERVICES;
         } else if (reqId.startsWith("REQ-9")) {
             // API failures
@@ -114,6 +121,22 @@ public class RepairEngine {
                     RepairResult startResult = orchestrationRepairActions.startAllServices();
                     success = startResult.isSuccessful();
                     message = startResult.getMessage();
+                    break;
+                case RESOLVE_PORT_CONFLICTS:
+                    RepairResult portResult = orchestrationRepairActions.resolvePortConflicts();
+                    success = portResult.isSuccessful();
+                    message = portResult.getMessage();
+                    break;
+                case CLEANUP_ORPHANED_CONTAINERS:
+                    RepairResult cleanupResult = orchestrationRepairActions.cleanupOrphanedContainers();
+                    if (!cleanupResult.isSuccessful()) {
+                        success = false;
+                        message = cleanupResult.getMessage();
+                        break;
+                    }
+                    RepairResult networkResult = orchestrationRepairActions.checkNetworkConflicts();
+                    success = networkResult.isSuccessful();
+                    message = cleanupResult.getMessage() + "; " + networkResult.getMessage();
                     break;
                 case RESTART_CONTAINER:
                     RepairResult restartResult = healthCheckRepairActions.restartContainer(resolveServiceName(failure));

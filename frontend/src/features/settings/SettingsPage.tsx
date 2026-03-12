@@ -6,7 +6,6 @@ import {
   Button,
   Card,
   CardContent,
-  Chip,
   FormControl,
   FormControlLabel,
   Grid,
@@ -16,11 +15,6 @@ import {
   Stack,
   Switch,
   Tab,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
   Tabs,
   TextField,
   Typography,
@@ -32,10 +26,10 @@ import {
   useGetExchangeConnectionStatusQuery,
   useGetExchangeOrdersQuery,
   useGetSystemInfoQuery,
-  useGetAuditEventsQuery,
   useTestExchangeConnectionMutation,
   useTriggerBackupMutation,
 } from './exchangeApi';
+import { OperatorAuditPanel } from './OperatorAuditPanel';
 import {
   resetSettings,
   selectCurrency,
@@ -56,7 +50,6 @@ import { FieldTooltip } from '@/components/ui/FieldTooltip';
 import { selectEnvironmentMode, setEnvironmentMode } from '@/features/environment/environmentSlice';
 import { getApiErrorMessage } from '@/services/api';
 import { getErrorMessage } from '@/services/axiosClient';
-import { formatDateTime, truncate } from '@/utils/formatters';
 
 const defaultCommandList = [
   'cd /d C:\\Git\\algotradingbot\\AlgotradingBot && docker compose -f compose.yaml up -d postgres',
@@ -118,12 +111,6 @@ export default function SettingsPage() {
     isError: isConnectionError,
     error: connectionStatusError,
   } = useGetExchangeConnectionStatusQuery();
-  const { data: auditEvents = [], isLoading: isAuditLoading, isError: isAuditError, refetch: refetchAudit } =
-    useGetAuditEventsQuery(100, {
-      skip: !isAdmin,
-      pollingInterval: isAdmin ? 30000 : 0,
-      skipPollingIfUnfocused: true,
-    });
   const [testConnection, { isLoading: isTestingConnection }] = useTestExchangeConnectionMutation();
   const [triggerBackup, { isLoading: isBackingUp }] = useTriggerBackupMutation();
 
@@ -653,73 +640,7 @@ export default function SettingsPage() {
         ) : null}
 
         {activeTab === 'audit' ? (
-          <Card>
-            <CardContent>
-              <Stack
-                direction={{ xs: 'column', md: 'row' }}
-                spacing={1}
-                justifyContent="space-between"
-                alignItems={{ xs: 'flex-start', md: 'center' }}
-                sx={{ mb: 2 }}
-              >
-                <Box>
-                  <Typography variant="h6">Operator Audit Trail</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Recent critical operator actions and system-side outcomes.
-                  </Typography>
-                </Box>
-                <Button variant="outlined" onClick={() => void refetchAudit()} disabled={isAuditLoading}>
-                  Refresh Audit Trail
-                </Button>
-              </Stack>
-
-              {isAuditError ? (
-                <Alert severity="error">Unable to load operator audit events.</Alert>
-              ) : null}
-
-              {!isAuditError && auditEvents.length === 0 ? (
-                <Alert severity="info">No operator audit events have been recorded yet.</Alert>
-              ) : null}
-
-              {!isAuditError && auditEvents.length > 0 ? (
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Time</TableCell>
-                      <TableCell>Actor</TableCell>
-                      <TableCell>Action</TableCell>
-                      <TableCell>Environment</TableCell>
-                      <TableCell>Target</TableCell>
-                      <TableCell>Outcome</TableCell>
-                      <TableCell>Details</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {auditEvents.map((event) => (
-                      <TableRow key={event.id}>
-                        <TableCell>{formatDateTime(event.createdAt)}</TableCell>
-                        <TableCell>{event.actor}</TableCell>
-                        <TableCell>{event.action}</TableCell>
-                        <TableCell>{event.environment}</TableCell>
-                        <TableCell>
-                          {event.targetType}
-                          {event.targetId ? `:${event.targetId}` : ''}
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            size="small"
-                            label={event.outcome}
-                            color={event.outcome === 'SUCCESS' ? 'success' : 'error'}
-                          />
-                        </TableCell>
-                        <TableCell title={event.details ?? ''}>{truncate(event.details ?? '-', 80)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : null}
-            </CardContent>
-          </Card>
+          <OperatorAuditPanel />
         ) : null}
       </Box>
     </AppLayout>

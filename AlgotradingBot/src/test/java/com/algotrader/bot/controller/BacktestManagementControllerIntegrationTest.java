@@ -119,6 +119,8 @@ class BacktestManagementControllerIntegrationTest {
         result.setTimeframe("1h");
         result.setDatasetId(datasetId);
         result.setDatasetName("sample-btc");
+        result.setExperimentName("BTC Mean Reversion Retest");
+        result.setExperimentKey("btc-mean-reversion-retest");
         BacktestEquityPoint equityPoint = new BacktestEquityPoint();
         equityPoint.setPointTimestamp(LocalDateTime.now().minusDays(2));
         equityPoint.setEquity(new BigDecimal("1000"));
@@ -155,6 +157,8 @@ class BacktestManagementControllerIntegrationTest {
         comparison.setTimeframe("1h");
         comparison.setDatasetId(datasetId);
         comparison.setDatasetName("sample-btc");
+        comparison.setExperimentName("BTC Mean Reversion Retest");
+        comparison.setExperimentKey("btc-mean-reversion-retest");
         comparisonBacktestId = backtestResultRepository.save(comparison).getId();
     }
 
@@ -166,6 +170,7 @@ class BacktestManagementControllerIntegrationTest {
             .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(1))))
             .andExpect(jsonPath("$[0].id").exists())
             .andExpect(jsonPath("$[0].datasetName").value("sample-btc"))
+            .andExpect(jsonPath("$[0].experimentName").value("BTC Mean Reversion Retest"))
             .andExpect(jsonPath("$[0].feesBps").value(10))
             .andExpect(jsonPath("$[0].slippageBps").value(3));
     }
@@ -178,6 +183,8 @@ class BacktestManagementControllerIntegrationTest {
             .andExpect(jsonPath("$.id").value(backtestId))
             .andExpect(jsonPath("$.strategyId").value("BOLLINGER_BANDS"))
             .andExpect(jsonPath("$.datasetName").value("sample-btc"))
+            .andExpect(jsonPath("$.experimentName").value("BTC Mean Reversion Retest"))
+            .andExpect(jsonPath("$.experimentKey").value("btc-mean-reversion-retest"))
             .andExpect(jsonPath("$.datasetChecksumSha256").value("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
             .andExpect(jsonPath("$.datasetSchemaVersion").value("ohlcv-v1"))
             .andExpect(jsonPath("$.datasetArchived").value(false))
@@ -196,7 +203,8 @@ class BacktestManagementControllerIntegrationTest {
             java.time.LocalDate.parse("2025-01-02"),
             new BigDecimal("2000"),
             10,
-            3
+            3,
+            null
         );
 
         mockMvc.perform(post("/api/backtests/run")
@@ -219,7 +227,8 @@ class BacktestManagementControllerIntegrationTest {
             java.time.LocalDate.parse("2025-01-01"),
             new BigDecimal("2000"),
             10,
-            3
+            3,
+            null
         );
 
         mockMvc.perform(post("/api/backtests/run")
@@ -263,6 +272,17 @@ class BacktestManagementControllerIntegrationTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").exists())
             .andExpect(jsonPath("$.status").value("PENDING"));
+    }
+
+    @Test
+    void experiments_returnsGroupedSummaries() throws Exception {
+        mockMvc.perform(get("/api/backtests/experiments")
+                .header("Authorization", "Bearer " + authToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$", hasSize(1)))
+            .andExpect(jsonPath("$[0].experimentName").value("BTC Mean Reversion Retest"))
+            .andExpect(jsonPath("$[0].runCount").value(2))
+            .andExpect(jsonPath("$[0].latestBacktestId").exists());
     }
 
     @Test
@@ -328,7 +348,8 @@ class BacktestManagementControllerIntegrationTest {
             java.time.LocalDate.parse("2025-01-02"),
             new BigDecimal("2000"),
             10,
-            3
+            3,
+            "Momentum Retest"
         );
 
         mockMvc.perform(post("/api/backtests/run")

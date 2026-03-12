@@ -630,6 +630,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/backtests/experiments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["experiments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/backtests/datasets": {
         parameters: {
             query?: never;
@@ -1007,6 +1023,7 @@ export interface components {
             feesBps: number;
             /** Format: int32 */
             slippageBps: number;
+            experimentName?: string;
         };
         BacktestDatasetResponse: {
             /** Format: int64 */
@@ -1146,6 +1163,10 @@ export interface components {
             databaseStatus?: string;
             kafkaStatus?: string;
         };
+        OperatorAuditEventListResponse: {
+            summary?: components["schemas"]["OperatorAuditSummaryResponse"];
+            events?: components["schemas"]["OperatorAuditEventResponse"][];
+        };
         OperatorAuditEventResponse: {
             /** Format: int64 */
             id?: number;
@@ -1158,6 +1179,28 @@ export interface components {
             details?: string;
             /** Format: date-time */
             createdAt?: string;
+        };
+        OperatorAuditSummaryResponse: {
+            /** Format: int32 */
+            visibleEventCount?: number;
+            /** Format: int64 */
+            totalMatchingEvents?: number;
+            /** Format: int32 */
+            successCount?: number;
+            /** Format: int32 */
+            failedCount?: number;
+            /** Format: int32 */
+            uniqueActors?: number;
+            /** Format: int32 */
+            uniqueActions?: number;
+            /** Format: int32 */
+            testEventCount?: number;
+            /** Format: int32 */
+            paperEventCount?: number;
+            /** Format: int32 */
+            liveEventCount?: number;
+            /** Format: date-time */
+            latestEventAt?: string;
         };
         /** @description Current status and performance metrics of a trading strategy */
         StrategyStatusResponse: {
@@ -1268,6 +1311,12 @@ export interface components {
             /** Format: date-time */
             entryTime?: string;
         };
+        PaperTradingAlertResponse: {
+            severity?: string;
+            code?: string;
+            summary?: string;
+            recommendedAction?: string;
+        };
         PaperTradingStateResponse: {
             paperMode?: boolean;
             cashBalance?: number;
@@ -1291,12 +1340,15 @@ export interface components {
             stalePositionCount?: number;
             recoveryStatus?: string;
             recoveryMessage?: string;
+            incidentSummary?: string;
+            alerts?: components["schemas"]["PaperTradingAlertResponse"][];
         };
         BacktestHistoryItemResponse: {
             /** Format: int64 */
             id?: number;
             strategyId?: string;
             datasetName?: string;
+            experimentName?: string;
             symbol?: string;
             timeframe?: string;
             executionStatus?: string;
@@ -1317,6 +1369,8 @@ export interface components {
             /** Format: int64 */
             datasetId?: number;
             datasetName?: string;
+            experimentName?: string;
+            experimentKey?: string;
             datasetChecksumSha256?: string;
             datasetSchemaVersion?: string;
             /** Format: date-time */
@@ -1366,6 +1420,25 @@ export interface components {
             entryValue?: number;
             exitValue?: number;
             returnPct?: number;
+        };
+        BacktestExperimentSummaryResponse: {
+            experimentKey?: string;
+            experimentName?: string;
+            /** Format: int64 */
+            latestBacktestId?: number;
+            strategyId?: string;
+            datasetName?: string;
+            symbol?: string;
+            timeframe?: string;
+            latestExecutionStatus?: string;
+            latestValidationStatus?: string;
+            /** Format: int32 */
+            runCount?: number;
+            /** Format: date-time */
+            latestRunAt?: string;
+            averageReturnPercent?: number;
+            bestFinalBalance?: number;
+            worstMaxDrawdown?: number;
         };
         BacktestDatasetRetentionReportResponse: {
             /** Format: int64 */
@@ -2296,6 +2369,10 @@ export interface operations {
         parameters: {
             query?: {
                 limit?: number;
+                environment?: string;
+                outcome?: string;
+                targetType?: string;
+                search?: string;
             };
             header?: never;
             path?: never;
@@ -2309,7 +2386,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["OperatorAuditEventResponse"][];
+                    "*/*": components["schemas"]["OperatorAuditEventListResponse"];
                 };
             };
         };
@@ -2559,6 +2636,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["BacktestDetailsResponse"];
+                };
+            };
+        };
+    };
+    experiments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BacktestExperimentSummaryResponse"][];
                 };
             };
         };

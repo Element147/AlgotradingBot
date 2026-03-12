@@ -121,7 +121,9 @@ class PaperTradingControllerIntegrationTest {
             .andExpect(jsonPath("$.totalOrders").exists())
             .andExpect(jsonPath("$.staleOpenOrderCount").value(0))
             .andExpect(jsonPath("$.stalePositionCount").value(0))
-            .andExpect(jsonPath("$.recoveryStatus").value("IDLE"));
+            .andExpect(jsonPath("$.recoveryStatus").value("IDLE"))
+            .andExpect(jsonPath("$.incidentSummary").value("Paper trading is idle. No incident follow-up is currently required."))
+            .andExpect(jsonPath("$.alerts[0].code").value("PAPER_IDLE"));
     }
 
     @Test

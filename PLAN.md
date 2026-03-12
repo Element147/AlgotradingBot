@@ -30,6 +30,10 @@ Single slim implementation plan replacing legacy multi-file phase specs.
 20. Paper-trading dashboard state now includes restart-recovery telemetry for stale orders/positions.
 21. Backtest reports/comparisons now carry dataset provenance and block exports when provenance is incomplete.
 22. Backend compilation now runs with `-Xlint:deprecation`, and the audited deprecated API set has been removed.
+23. Backtests now persist repeatable experiment names/keys and expose grouped experiment summaries in the API/UI.
+24. Paper-trading state now includes incident summaries plus in-app operator alerts derived from recovery telemetry.
+25. Strategy configuration modal now surfaces typed strategy presets and recommended timeframe/risk ergonomics.
+26. Repair selection now recognizes port-conflict and orphan/network failure signatures and routes to dedicated playbooks.
 
 ## Current Work (Now)
 
@@ -37,23 +41,23 @@ Single slim implementation plan replacing legacy multi-file phase specs.
    - keep only root canonical docs current
    - remove stale one-off logs
 2. Research quality improvements
-   - repeatable experiment structure on top of versioned datasets and config history
-   - richer multi-run research summaries beyond the current provenance-guarded exports
+   - completed: repeatable experiment structure on top of versioned datasets and config history
+   - completed: richer multi-run research summaries beyond the current provenance-guarded exports
 3. Operational hardening
-   - operator alert delivery on top of paper-trading recovery signals
-   - extend repair playbooks for additional runtime failure signatures
+   - completed: operator alert delivery on top of paper-trading recovery signals
+   - completed: extend repair playbooks for additional runtime failure signatures
 
 ## Near Future
 
 1. Data reproducibility
-   - repeatable experiment structure and naming conventions
-   - stronger research report packaging on top of current provenance checks
+   - completed: repeatable experiment structure and naming conventions
+   - completed: stronger research report packaging on top of current provenance checks
 2. Paper-trading hardening
-   - operator alert routing and incident summaries
-   - audit-event UX refinements
+   - completed: operator alert routing and incident summaries
+   - completed: audit-event UX refinements with filterable summaries and dashboard/settings review surfaces
 3. Strategy lifecycle improvements
-   - typed per-strategy parameter editing ergonomics
-   - higher-level experiment/change review flows
+   - completed: typed per-strategy parameter editing ergonomics
+   - completed: higher-level experiment/change review flows
 4. Security hardening migration
    - strict-by-default auth posture and explicit local override runbook are implemented
    - keep rollout/rollback guidance current as auth workflows evolve

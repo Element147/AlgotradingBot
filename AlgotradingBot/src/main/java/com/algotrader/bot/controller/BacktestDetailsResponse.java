@@ -9,6 +9,8 @@ public record BacktestDetailsResponse(
     String strategyId,
     Long datasetId,
     String datasetName,
+    String experimentName,
+    String experimentKey,
     String datasetChecksumSha256,
     String datasetSchemaVersion,
     LocalDateTime datasetUploadedAt,

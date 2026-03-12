@@ -19,6 +19,16 @@ vi.mock('@/features/paperApi', () => ({
       stalePositionCount: 0,
       recoveryStatus: 'HEALTHY',
       recoveryMessage: 'No stale paper-trading state detected after the latest activity.',
+      incidentSummary: 'Paper trading is active with no current incident signals.',
+      alerts: [
+        {
+          severity: 'INFO',
+          code: 'PAPER_HEALTHY',
+          summary: 'Paper-trading recovery telemetry is currently healthy.',
+          recommendedAction:
+            'Continue monitoring for stale orders or stale positions during the next restart cycle.',
+        },
+      ],
     },
     isLoading: false,
     isError: false,
@@ -33,6 +43,7 @@ describe('PaperTradingCard', () => {
     expect(screen.getByText('Paper mode active')).toBeInTheDocument();
     expect(screen.getByText('Cash Balance: 10000.00')).toBeInTheDocument();
     expect(screen.getByText('Open Positions: 2')).toBeInTheDocument();
+    expect(screen.getByText('Paper trading is active with no current incident signals.')).toBeInTheDocument();
     expect(screen.getByText(/Recovery status: HEALTHY/)).toBeInTheDocument();
   });
 });

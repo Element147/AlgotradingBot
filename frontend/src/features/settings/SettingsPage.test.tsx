@@ -40,7 +40,38 @@ vi.mock('./exchangeApi', () => ({
   }),
   useGetExchangeOrdersQuery: () => ({ data: [], isError: false, error: undefined }),
   useGetExchangeConnectionStatusQuery: () => ({ data: undefined, isError: true, error: undefined }),
-  useGetAuditEventsQuery: () => ({ data: [], isLoading: false, isError: false, refetch: vi.fn() }),
+  useGetAuditEventsQuery: () => ({
+    data: {
+      summary: {
+        visibleEventCount: 1,
+        totalMatchingEvents: 1,
+        successCount: 1,
+        failedCount: 0,
+        uniqueActors: 1,
+        uniqueActions: 1,
+        testEventCount: 0,
+        paperEventCount: 1,
+        liveEventCount: 0,
+        latestEventAt: '2026-03-12T10:00:00',
+      },
+      events: [
+        {
+          id: 1,
+          actor: 'admin',
+          action: 'BACKTEST_RUN_STARTED',
+          environment: 'paper',
+          targetType: 'BACKTEST',
+          targetId: '42',
+          outcome: 'SUCCESS',
+          details: 'strategy=BOLLINGER_BANDS, datasetId=7',
+          createdAt: '2026-03-12T10:00:00',
+        },
+      ],
+    },
+    isLoading: false,
+    isError: false,
+    refetch: vi.fn(),
+  }),
   useTestExchangeConnectionMutation: () => [vi.fn(), { isLoading: false }],
   useTriggerBackupMutation: () => [vi.fn(), { isLoading: false }],
 }));
@@ -85,6 +116,16 @@ describe('SettingsPage', { timeout: 15000 }, () => {
 
     fireEvent.click(screen.getByRole('tab', { name: 'Notifications' }));
     expect(screen.getByText('Notification Settings')).toBeInTheDocument();
+  });
+
+  it('renders enriched audit trail panel', () => {
+    render(<SettingsPage />);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Audit Trail' }));
+
+    expect(screen.getByText('Current Audit Window')).toBeInTheDocument();
+    expect(screen.getByText('Backtest Run Started')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Clear Filters' })).toBeInTheDocument();
   });
 
   it('copies command to clipboard', async () => {

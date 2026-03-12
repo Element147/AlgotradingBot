@@ -64,6 +64,7 @@ describe('StrategyConfigModal', () => {
     );
 
     expect(screen.getByText('Config Version History')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Apply Strategy Defaults' })).toBeInTheDocument();
     expect(screen.getByText(/v2: Updated symbol, timeframe/)).toBeInTheDocument();
     expect(screen.getByText(/ETH\/USDT \(4h\) \| Risk 3.00% \| Size 20 - 120/)).toBeInTheDocument();
   });
