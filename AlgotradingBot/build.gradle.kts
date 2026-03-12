@@ -5,6 +5,9 @@ plugins {
     id("io.spring.dependency-management") version "1.1.7"
 }
 
+import org.gradle.api.tasks.testing.Test
+import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
+
 group = "com.algotrader"
 version = "0.0.1-SNAPSHOT"
 
@@ -69,10 +72,21 @@ dependencies {
     testRuntimeOnly("com.h2database:h2")
 }
 
-tasks.withType<Test> {
+tasks.withType<Test>().configureEach {
+    val jacocoExecFile = layout.buildDirectory.file("jacoco/${name}.exec")
+
     useJUnitPlatform()
     // Enforce H2-backed test profile for all unit/integration tests
     systemProperty("spring.profiles.active", "test")
+
+    extensions.configure(JacocoTaskExtension::class) {
+        destinationFile = jacocoExecFile.get().asFile
+    }
+
+    doFirst {
+        binaryResultsDirectory.get().asFile.mkdirs()
+        jacocoExecFile.get().asFile.parentFile.mkdirs()
+    }
 }
 
 tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
