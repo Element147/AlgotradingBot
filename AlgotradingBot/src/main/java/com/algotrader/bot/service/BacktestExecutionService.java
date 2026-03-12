@@ -1,11 +1,13 @@
 package com.algotrader.bot.service;
 
 import com.algotrader.bot.backtest.BacktestSimulationEngine;
+import com.algotrader.bot.entity.BacktestEquityPoint;
 import com.algotrader.bot.backtest.BacktestSimulationRequest;
 import com.algotrader.bot.backtest.BacktestSimulationResult;
 import com.algotrader.bot.backtest.OHLCVData;
 import com.algotrader.bot.entity.BacktestDataset;
 import com.algotrader.bot.entity.BacktestResult;
+import com.algotrader.bot.entity.BacktestTradeSeriesItem;
 import com.algotrader.bot.repository.BacktestResultRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,6 +95,26 @@ public class BacktestExecutionService {
             : BacktestResult.ValidationStatus.FAILED);
         result.setExecutionStatus(BacktestResult.ExecutionStatus.COMPLETED);
         result.setErrorMessage(null);
+        result.replaceEquityPoints(simulationResult.equitySeries().stream().map(sample -> {
+            BacktestEquityPoint point = new BacktestEquityPoint();
+            point.setPointTimestamp(sample.timestamp());
+            point.setEquity(sample.equity());
+            point.setDrawdownPct(sample.drawdownPct());
+            return point;
+        }).toList());
+        result.replaceTradeSeries(simulationResult.tradeSeries().stream().map(sample -> {
+            BacktestTradeSeriesItem item = new BacktestTradeSeriesItem();
+            item.setSymbol(sample.symbol());
+            item.setEntryTime(sample.entryTime());
+            item.setExitTime(sample.exitTime());
+            item.setEntryPrice(sample.entryPrice());
+            item.setExitPrice(sample.exitPrice());
+            item.setQuantity(sample.quantity());
+            item.setEntryValue(sample.entryValue());
+            item.setExitValue(sample.exitValue());
+            item.setReturnPct(sample.returnPct());
+            return item;
+        }).toList());
     }
 
     private boolean isPassed(BacktestSimulationResult simulationResult) {

@@ -53,6 +53,14 @@ public class ExchangeIntegrationService {
         return lastStatus.get();
     }
 
+    public String getLiveAccountReadUnavailableReason() {
+        ExchangeConnectionStatusResponse status = lastStatus.get();
+        if (status.connected()) {
+            return "Live account reads are unavailable on this backend. Exchange connectivity is verified, but /api/account/* is not wired to live exchange balances, positions, or trade history.";
+        }
+        return "Live account reads are unavailable on this backend. The exchange integration currently supports connectivity testing only and will not fall back to paper-trading data.";
+    }
+
     public ExchangeConnectionStatusResponse testConnection(ExchangeConnectionTestRequest request) {
         String exchange = normalizeExchange(request);
 

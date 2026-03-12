@@ -224,3 +224,157 @@ databaseChangeLog:
             columns:
               - column:
                   name: environment
+
+  - changeSet:
+      id: 0006-create-backtest-analytics-series
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          tableExists:
+            tableName: backtest_equity_points
+      changes:
+        - createTable:
+            tableName: backtest_equity_points
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: backtest_result_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: point_timestamp
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: equity
+                  type: DECIMAL(20,8)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: drawdown_pct
+                  type: DECIMAL(10,4)
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: backtest_equity_points
+            baseColumnNames: backtest_result_id
+            referencedTableName: backtest_results
+            referencedColumnNames: id
+            constraintName: fk_backtest_equity_result
+            onDelete: CASCADE
+        - createIndex:
+            indexName: idx_backtest_equity_backtest
+            tableName: backtest_equity_points
+            columns:
+              - column:
+                  name: backtest_result_id
+        - createIndex:
+            indexName: idx_backtest_equity_timestamp
+            tableName: backtest_equity_points
+            columns:
+              - column:
+                  name: point_timestamp
+
+  - changeSet:
+      id: 0007-create-backtest-trade-series
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          tableExists:
+            tableName: backtest_trade_series
+      changes:
+        - createTable:
+            tableName: backtest_trade_series
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: backtest_result_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: symbol
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: entry_time
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: exit_time
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: entry_price
+                  type: DECIMAL(20,8)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: exit_price
+                  type: DECIMAL(20,8)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: quantity
+                  type: DECIMAL(20,8)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: entry_value
+                  type: DECIMAL(20,8)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: exit_value
+                  type: DECIMAL(20,8)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: return_pct
+                  type: DECIMAL(10,4)
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: backtest_trade_series
+            baseColumnNames: backtest_result_id
+            referencedTableName: backtest_results
+            referencedColumnNames: id
+            constraintName: fk_backtest_trade_series_result
+            onDelete: CASCADE
+        - createIndex:
+            indexName: idx_backtest_trade_series_backtest
+            tableName: backtest_trade_series
+            columns:
+              - column:
+                  name: backtest_result_id
+        - createIndex:
+            indexName: idx_backtest_trade_series_entry_time
+            tableName: backtest_trade_series
+            columns:
+              - column:
+                  name: entry_time
+        - createIndex:
+            indexName: idx_backtest_trade_series_exit_time
+            tableName: backtest_trade_series
+            columns:
+              - column:
+                  name: exit_time

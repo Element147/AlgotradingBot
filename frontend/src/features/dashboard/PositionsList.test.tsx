@@ -109,7 +109,7 @@ describe('PositionsList', () => {
       </Provider>
     );
 
-    expect(screen.getByText(/Failed to load positions/i)).toBeInTheDocument();
+    expect(screen.getByText('Server error')).toBeInTheDocument();
   });
 
   it('should render empty state when no positions', () => {

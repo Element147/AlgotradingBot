@@ -1,7 +1,9 @@
 package com.algotrader.bot.controller;
 
 import com.algotrader.bot.entity.BacktestDataset;
+import com.algotrader.bot.entity.BacktestEquityPoint;
 import com.algotrader.bot.entity.BacktestResult;
+import com.algotrader.bot.entity.BacktestTradeSeriesItem;
 import com.algotrader.bot.repository.BacktestDatasetRepository;
 import com.algotrader.bot.repository.BacktestResultRepository;
 import com.algotrader.bot.security.JwtTokenProvider;
@@ -116,6 +118,22 @@ class BacktestManagementControllerIntegrationTest {
         result.setTimeframe("1h");
         result.setDatasetId(datasetId);
         result.setDatasetName("sample-btc");
+        BacktestEquityPoint equityPoint = new BacktestEquityPoint();
+        equityPoint.setPointTimestamp(LocalDateTime.now().minusDays(2));
+        equityPoint.setEquity(new BigDecimal("1000"));
+        equityPoint.setDrawdownPct(BigDecimal.ZERO);
+        result.addEquityPoint(equityPoint);
+        BacktestTradeSeriesItem tradeSeriesItem = new BacktestTradeSeriesItem();
+        tradeSeriesItem.setSymbol("BTC/USDT");
+        tradeSeriesItem.setEntryTime(LocalDateTime.now().minusDays(3));
+        tradeSeriesItem.setExitTime(LocalDateTime.now().minusDays(2));
+        tradeSeriesItem.setEntryPrice(new BigDecimal("100"));
+        tradeSeriesItem.setExitPrice(new BigDecimal("110"));
+        tradeSeriesItem.setQuantity(new BigDecimal("5"));
+        tradeSeriesItem.setEntryValue(new BigDecimal("500"));
+        tradeSeriesItem.setExitValue(new BigDecimal("550"));
+        tradeSeriesItem.setReturnPct(new BigDecimal("10.0000"));
+        result.addTradeSeriesItem(tradeSeriesItem);
         backtestId = backtestResultRepository.save(result).getId();
 
         BacktestResult comparison = new BacktestResult(
@@ -158,7 +176,9 @@ class BacktestManagementControllerIntegrationTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value(backtestId))
             .andExpect(jsonPath("$.strategyId").value("BOLLINGER_BANDS"))
-            .andExpect(jsonPath("$.datasetName").value("sample-btc"));
+            .andExpect(jsonPath("$.datasetName").value("sample-btc"))
+            .andExpect(jsonPath("$.equityCurve[0].equity").value(1000))
+            .andExpect(jsonPath("$.tradeSeries[0].returnPct").value(10.0000));
     }
 
     @Test

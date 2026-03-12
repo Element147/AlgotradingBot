@@ -16,6 +16,7 @@ import {
 import React from 'react';
 
 import { useGetOpenPositionsQuery } from '@/features/account/accountApi';
+import { getApiErrorMessage } from '@/services/api';
 import { formatCurrency, formatPercentage } from '@/utils/formatters';
 
 /**
@@ -57,9 +58,7 @@ export const PositionsList: React.FC = () => {
           <Typography variant="h6" gutterBottom>
             Open Positions
           </Typography>
-          <Alert severity="error">
-            Failed to load positions. Please try again.
-          </Alert>
+          <Alert severity="error">{getApiErrorMessage(error, 'Failed to load positions. Please try again.')}</Alert>
         </CardContent>
       </Card>
     );

@@ -12,6 +12,15 @@ import java.nio.file.Paths;
 
 public class BuildRepairActions {
     private static final Logger logger = LoggerFactory.getLogger(BuildRepairActions.class);
+    private final RepairWorkspaceSupport workspaceSupport;
+
+    public BuildRepairActions() {
+        this(RepairWorkspaceSupport.detect());
+    }
+
+    BuildRepairActions(RepairWorkspaceSupport workspaceSupport) {
+        this.workspaceSupport = workspaceSupport;
+    }
 
     public RepairResult cleanGradleCache() {
         logger.info("Cleaning Gradle cache");
@@ -34,8 +43,8 @@ public class BuildRepairActions {
     public RepairResult cleanBuildDirectory() {
         logger.info("Cleaning build directory");
         try {
-            ProcessBuilder pb = new ProcessBuilder("./gradlew", "clean");
-            pb.directory(new File("."));
+            ProcessBuilder pb = new ProcessBuilder("cmd", "/c", "gradlew.bat clean");
+            pb.directory(workspaceSupport.backendDir().toFile());
             pb.redirectErrorStream(true);
             
             Process process = pb.start();
@@ -66,8 +75,8 @@ public class BuildRepairActions {
     public RepairResult rebuildJar() {
         logger.info("Rebuilding JAR");
         try {
-            ProcessBuilder pb = new ProcessBuilder("./gradlew", "bootJar");
-            pb.directory(new File("."));
+            ProcessBuilder pb = new ProcessBuilder("cmd", "/c", "gradlew.bat bootJar");
+            pb.directory(workspaceSupport.backendDir().toFile());
             pb.redirectErrorStream(true);
             
             Process process = pb.start();
@@ -98,7 +107,7 @@ public class BuildRepairActions {
     public RepairResult checkDiskSpace() {
         logger.info("Checking disk space");
         try {
-            File root = new File("/");
+            File root = workspaceSupport.repoRoot().toFile();
             long freeSpace = root.getFreeSpace();
             long freeSpaceGB = freeSpace / (1024 * 1024 * 1024);
             
@@ -150,7 +159,7 @@ public class BuildRepairActions {
         logger.info("Rebuilding Docker image");
         try {
             ProcessBuilder pb = new ProcessBuilder("docker", "build", "-t", "algotrading-bot:latest", ".");
-            pb.directory(new File("."));
+            pb.directory(workspaceSupport.backendDir().toFile());
             pb.redirectErrorStream(true);
             
             Process process = pb.start();

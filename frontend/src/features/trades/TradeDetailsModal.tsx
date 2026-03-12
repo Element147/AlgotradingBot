@@ -1,4 +1,7 @@
 import {
+  Alert,
+  Box,
+  CircularProgress,
   Dialog,
   DialogContent,
   DialogTitle,
@@ -6,29 +9,48 @@ import {
   Typography,
 } from '@mui/material';
 
-import type { TradeHistoryItem } from './tradesApi';
+import { useGetTradeDetailsQuery } from './tradesApi';
 import { calculateRMultiple } from './tradeUtils';
 
 import { formatCurrency } from '@/utils/formatters';
 
 interface TradeDetailsModalProps {
-  trade: TradeHistoryItem | null;
+  tradeId: number | null;
+  accountId?: number;
   open: boolean;
   onClose: () => void;
 }
 
-export function TradeDetailsModal({ trade, open, onClose }: TradeDetailsModalProps) {
-  if (!trade) {
+export function TradeDetailsModal({ tradeId, accountId, open, onClose }: TradeDetailsModalProps) {
+  const { data: trade, isFetching, isError } = useGetTradeDetailsQuery(
+    { id: tradeId ?? 0, accountId },
+    { skip: !open || tradeId === null }
+  );
+
+  if (!open || tradeId === null) {
     return null;
   }
 
-  const rMultiple = calculateRMultiple(trade);
+  const rMultiple = trade ? calculateRMultiple(trade) : null;
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>Trade Detail #{trade.id}</DialogTitle>
+      <DialogTitle>Trade Detail #{tradeId}</DialogTitle>
       <DialogContent>
-        <Grid container spacing={1}>
+        {isFetching ? (
+          <Box display="flex" justifyContent="center" py={4}>
+            <CircularProgress />
+          </Box>
+        ) : null}
+
+        {isError ? <Alert severity="error">Failed to load trade details.</Alert> : null}
+
+        {!isFetching && !isError && !trade ? (
+          <Alert severity="warning">Trade details are unavailable.</Alert>
+        ) : null}
+
+        {!isFetching && !isError && trade ? (
+          <Grid container spacing={1}>
           <Grid size={{ xs: 12, md: 6 }}>
             <Typography variant="body2">Pair: {trade.pair}</Typography>
           </Grid>
@@ -73,7 +95,8 @@ export function TradeDetailsModal({ trade, open, onClose }: TradeDetailsModalPro
               R-Multiple: {rMultiple === null ? '-' : rMultiple.toFixed(2)}
             </Typography>
           </Grid>
-        </Grid>
+          </Grid>
+        ) : null}
       </DialogContent>
     </Dialog>
   );

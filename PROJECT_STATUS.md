@@ -1,6 +1,6 @@
 # PROJECT_STATUS.md
 
-Status updated: March 11, 2026
+Status updated: March 12, 2026
 
 ## Current State
 
@@ -39,13 +39,21 @@ Implemented product slices:
 3. Added reproducibility features for backtest datasets (checksum + schema version + download).
 4. Added backtest replay endpoint and side-by-side comparison endpoint.
 5. Completed a controller-DTO modernization wave (mutable DTO classes converted to records where safe).
+6. Surfaced audit-event history plus replay/compare and dataset download workflows in the frontend.
+7. Persisted real backtest equity/trade series and switched results charts/exports from synthetic data to stored execution analytics.
+8. Added generated OpenAPI contract export/check flow and wired it into frontend CI verification.
+9. Published strict-auth operator runbook plus explicit dev-only override guidance in canonical docs and login UX.
+10. Replaced live-mode account fallback behavior with explicit capability gating; `/api/account/*` now honors query/header environment routing and returns a 409 error instead of paper data when live reads are unavailable.
+11. Replaced the backup metadata placeholder with real database backup artifacts (`SCRIPT` on H2 tests, `pg_dump` with Docker fallback on PostgreSQL runtime).
+12. Rewired the dashboard system-health card to real `systemInfo` and `riskStatus` APIs, including database/Kafka and circuit-breaker status.
+13. Added a dedicated trade-details endpoint and switched the frontend modal off the 1000-row client-side lookup path.
+14. Normalized frontend/backend environment routing onto `X-Environment` overrides, with shared resolver use on account/risk paths and explicit request-level header support in the frontend transport.
+15. Replaced repair/orchestration placeholders with workspace-aware automation aligned to `run.ps1`, `stop.ps1`, repo-local Compose paths, and managed PID/port cleanup.
 
 ## Remaining Work (Current Priorities)
 
-1. Frontend surfacing for new backend capabilities (audit-event views, replay/compare workflows).
-2. Strategy analytics persistence depth (equity/trade-series storage and exports).
-3. Contract drift hardening (shared/generated API contracts).
-4. Security UX hardening (operator-friendly auth runbooks and explicit dev override playbook).
+1. No blocking items remain in the March 12, 2026 current-priority technical-debt set.
+2. Next priorities move to dataset lifecycle tooling, strategy parameter/version history, and paper-trading recovery/alerting hardening.
 
 ## Risk Elimination Migration Strategy
 
@@ -58,13 +66,18 @@ Phase 1 (implemented now):
 Phase 2 (implemented now):
 
 1. Strict-default auth posture is enabled (`relaxed-auth=false` unless explicitly overridden).
-2. Next migration item: dev-only override guidance and onboarding docs.
+2. Dev-only override guidance and onboarding docs are published.
 
-Phase 3 (after hardening):
+Phase 3 (implemented now):
 
 1. Surface audit/reproducibility signals in the frontend so operators can verify actions quickly.
 2. Persist richer analytics (equity/trade series) for reproducible comparisons.
 3. Add contract generation/checks to reduce frontend/backend drift risk.
+
+Phase 4 (implemented now):
+
+1. Align repair/orchestration automation with repo-local scripts and Compose topology instead of ad-hoc global Docker commands.
+2. Replace stubbed port-conflict handling with managed stop/cleanup actions and fail-closed reporting when conflicts remain.
 
 ## Known Risks and Constraints
 

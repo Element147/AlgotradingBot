@@ -5,14 +5,27 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
 
 public class OrchestrationRepairActions {
     private static final Logger logger = LoggerFactory.getLogger(OrchestrationRepairActions.class);
+    private final RepairWorkspaceSupport workspaceSupport;
+
+    public OrchestrationRepairActions() {
+        this(RepairWorkspaceSupport.detect());
+    }
+
+    OrchestrationRepairActions(RepairWorkspaceSupport workspaceSupport) {
+        this.workspaceSupport = workspaceSupport;
+    }
 
     public RepairResult stopAllServices() {
         logger.info("Stopping all services");
         try {
-            ProcessBuilder pb = new ProcessBuilder("docker-compose", "down");
+            ProcessBuilder pb = new ProcessBuilder(workspaceSupport.scriptCommand("stop.ps1"));
+            pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
             Process process = pb.start();
             
@@ -41,7 +54,8 @@ public class OrchestrationRepairActions {
     public RepairResult startAllServices() {
         logger.info("Starting all services");
         try {
-            ProcessBuilder pb = new ProcessBuilder("docker-compose", "up", "-d");
+            ProcessBuilder pb = new ProcessBuilder(workspaceSupport.scriptCommand("run.ps1"));
+            pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
             Process process = pb.start();
             
@@ -69,52 +83,49 @@ public class OrchestrationRepairActions {
 
     public RepairResult checkPortConflicts() {
         logger.info("Checking for port conflicts");
-        int[] ports = {5432, 8080, 9092};
-        StringBuilder conflicts = new StringBuilder();
-        boolean hasConflict = false;
-        
-        for (int port : ports) {
-            try {
-                ProcessBuilder pb = new ProcessBuilder("netstat", "-ano");
-                pb.redirectErrorStream(true);
-                Process process = pb.start();
-                
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        if (line.contains(":" + port) && line.contains("LISTENING")) {
-                            conflicts.append("Port ").append(port).append(" in use; ");
-                            hasConflict = true;
-                            break;
-                        }
-                    }
-                }
-                
-                process.waitFor();
-            } catch (Exception e) {
-                logger.error("Error checking port {}", port, e);
-            }
-        }
-        
-        if (hasConflict) {
-            logger.warn("Port conflicts detected: {}", conflicts);
-            return new RepairResult(false, "Port conflicts: " + conflicts);
-        } else {
+        Map<Integer, String> conflicts = workspaceSupport.findListeningProcesses(workspaceSupport.managedPorts());
+
+        if (conflicts.isEmpty()) {
             logger.info("No port conflicts detected");
             return new RepairResult(true, "No port conflicts");
         }
+
+        logger.warn("Port conflicts detected: {}", conflicts);
+        return new RepairResult(false, "Port conflicts detected: " + conflicts);
     }
 
     public RepairResult resolvePortConflicts() {
         logger.info("Attempting to resolve port conflicts");
-        // This is a placeholder - actual implementation would need to identify and stop conflicting processes
-        return new RepairResult(true, "Port conflict resolution attempted");
+        Map<Integer, String> conflicts = workspaceSupport.findListeningProcesses(workspaceSupport.managedPorts());
+        if (conflicts.isEmpty()) {
+            return new RepairResult(true, "No port conflicts detected");
+        }
+
+        RepairResult stopResult = stopAllServices();
+        if (!stopResult.isSuccessful()) {
+            return new RepairResult(false, "Unable to resolve ports because stop.ps1 failed: " + stopResult.getMessage());
+        }
+
+        try {
+            stopPidFromFile("backend");
+            stopPidFromFile("frontend");
+        } catch (Exception ex) {
+            logger.warn("Unable to stop PID file processes during port resolution: {}", ex.getMessage());
+        }
+
+        Map<Integer, String> remainingConflicts = workspaceSupport.findListeningProcesses(workspaceSupport.managedPorts());
+        if (remainingConflicts.isEmpty()) {
+            return new RepairResult(true, "Port conflicts resolved via stop.ps1 and managed PID cleanup");
+        }
+
+        return new RepairResult(false, "Port conflicts remain after automated cleanup: " + remainingConflicts);
     }
 
     public RepairResult checkNetworkConflicts() {
         logger.info("Checking for network conflicts");
         try {
-            ProcessBuilder pb = new ProcessBuilder("docker", "network", "ls", "--filter", "name=algotrading");
+            ProcessBuilder pb = new ProcessBuilder(workspaceSupport.dockerCommand("network", "inspect", "algotrading-network"));
+            pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
             Process process = pb.start();
             
@@ -130,11 +141,15 @@ public class OrchestrationRepairActions {
             
             if (exitCode == 0) {
                 logger.info("Network check completed");
-                return new RepairResult(true, "No network conflicts");
-            } else {
-                logger.error("Network check failed");
-                return new RepairResult(false, "Network check failed");
+                return new RepairResult(true, "Docker network is present and inspectable");
             }
+
+            if (output.toString().contains("No such network")) {
+                return new RepairResult(true, "No managed Docker network is currently allocated");
+            }
+
+            logger.error("Network check failed");
+            return new RepairResult(false, "Network check failed: " + output.toString().trim());
         } catch (Exception e) {
             logger.error("Error checking networks", e);
             return new RepairResult(false, "Error: " + e.getMessage());
@@ -144,7 +159,8 @@ public class OrchestrationRepairActions {
     public RepairResult cleanupOrphanedContainers() {
         logger.info("Cleaning up orphaned containers");
         try {
-            ProcessBuilder pb = new ProcessBuilder("docker", "container", "prune", "-f");
+            ProcessBuilder pb = new ProcessBuilder(workspaceSupport.dockerComposeCommand("down", "--remove-orphans"));
+            pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
             Process process = pb.start();
             
@@ -168,5 +184,13 @@ public class OrchestrationRepairActions {
             logger.error("Error cleaning containers", e);
             return new RepairResult(false, "Error: " + e.getMessage());
         }
+    }
+
+    private void stopPidFromFile(String name) throws Exception {
+        Path pidFile = workspaceSupport.pidFile(name);
+        if (!Files.exists(pidFile)) {
+            return;
+        }
+        workspaceSupport.stopPidIfPresent(pidFile);
     }
 }

@@ -22,7 +22,7 @@ Primary packages in `com.algotrader.bot`:
 - `backtest/strategy`: strategy interface, implementations, registry, indicator helpers
 - `risk`: risk and execution-cost calculations
 - `security`: auth/token/security components
-- `config`, `websocket`, `validation`, `repair`: platform and operational support
+- `config`, `websocket`, `validation`, `repair`: platform and operational support, including script-aligned local recovery actions
 
 ### Backtest Design
 
@@ -31,6 +31,7 @@ Primary packages in `com.algotrader.bot`:
 - Simulation seam: `BacktestSimulationEngine` runs execution loops and position transitions.
 - Metrics seam: `BacktestSimulationMetricsCalculator` computes performance statistics.
 - Reproducibility seam: dataset metadata includes checksum/schema version and supports download + replay flows.
+- Analytics persistence seam: backtest details include persisted equity-curve and trade-series records for reproducible UI charts/exports.
 - Comparison seam: dedicated compare API provides side-by-side metric deltas for selected backtests.
 
 This avoids single-class "all-logic" backtesting and supports extension without rewriting orchestration.
@@ -73,6 +74,8 @@ Key frontend design rules:
 
 - Runtime app: PostgreSQL (Docker) with Liquibase migrations.
 - Backend test/build: H2 in-memory via Spring `test` profile.
+- Backup path uses real database-native exports: H2 `SCRIPT` in tests and PostgreSQL `pg_dump` with Docker-container fallback in runtime.
+- Repair/orchestration automation resolves repo-local paths and uses `run.ps1`, `stop.ps1`, `.pids`, and `compose.yaml` rather than ad-hoc global Docker commands.
 - Keep runtime and test data concerns strictly separated.
 
 ## Current Architecture Decisions
@@ -83,10 +86,11 @@ Key frontend design rules:
 4. Isolate exchange/live connectivity behind dedicated service boundaries.
 5. Keep risk/guardrail logic independent from UI concerns.
 6. Persist critical operator actions with durable audit events for post-incident review.
+7. Account endpoints resolve environment from either `env` query params or `X-Environment` header and fail closed when live account reads are not implemented.
+8. Repair automation must align with the repo's real operator entrypoints and fail closed when managed cleanup cannot restore a healthy local runtime.
 
 ## Near-Term Architecture Work
 
-1. Surface audit/replay/compare capabilities in frontend feature modules.
-2. Improve strategy analytics persistence (equity curve, trade-level series).
-3. Add contract-drift protection (generated/shared API contracts).
-4. Harden auth defaults with explicit dev-profile overrides and rollout safeguards.
+1. Expand dataset lifecycle tooling beyond upload/download.
+2. Add deeper strategy parameter lifecycle/versioning.
+3. Extend operational recovery coverage beyond the current script/Compose-aligned repair set.

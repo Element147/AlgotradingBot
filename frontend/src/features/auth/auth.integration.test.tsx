@@ -1,6 +1,7 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
+import type { ReactNode } from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { authApi } from './authApi';
@@ -9,6 +10,10 @@ import LoginPage from './LoginPage';
 
 import { server } from '@/tests/mocks/server';
 import { renderWithProviders } from '@/tests/test-utils';
+
+vi.mock('@/components/ui/FieldTooltip', () => ({
+  FieldTooltip: ({ children }: { children: ReactNode }) => <>{children}</>,
+}));
 
 // Mock useNavigate at module level
 const mockNavigate = vi.fn();
@@ -58,6 +63,12 @@ describe('Authentication Flow Integration Tests', { timeout: 15000 }, () => {
       await user.clear(passwordInput);
       await user.type(usernameInput, 'testuser');
       await user.type(passwordInput, 'password123');
+
+      await waitFor(() => {
+        expect(usernameInput).toHaveValue('testuser');
+        expect(passwordInput).toHaveValue('password123');
+      });
+
       await user.click(submitButton);
 
       // Wait for login to complete
@@ -112,6 +123,12 @@ describe('Authentication Flow Integration Tests', { timeout: 15000 }, () => {
       await user.clear(passwordInput);
       await user.type(usernameInput, 'testuser');
       await user.type(passwordInput, 'password123');
+
+      await waitFor(() => {
+        expect(usernameInput).toHaveValue('testuser');
+        expect(passwordInput).toHaveValue('password123');
+      });
+
       await user.click(rememberMeCheckbox);
 
       // Ensure checkbox state is committed before submit to avoid timing flakes

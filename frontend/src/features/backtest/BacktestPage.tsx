@@ -1,11 +1,15 @@
 import AddIcon from '@mui/icons-material/Add';
+import DownloadIcon from '@mui/icons-material/Download';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import ReplayIcon from '@mui/icons-material/Replay';
 import {
   Alert,
   Box,
   Button,
   Card,
   CardContent,
+  Checkbox,
+  Divider,
   Grid,
   Stack,
   Table,
@@ -24,16 +28,20 @@ import {
   useGetBacktestDatasetsQuery,
   useGetBacktestDetailsQuery,
   useGetBacktestsQuery,
+  useLazyCompareBacktestsQuery,
+  useReplayBacktestMutation,
   useRunBacktestMutation,
   useUploadBacktestDatasetMutation,
   type RunBacktestPayload,
 } from './backtestApi';
+import { BacktestComparisonPanel } from './BacktestComparisonPanel';
 import { BacktestConfigModal, type BacktestConfigFormState } from './BacktestConfigModal';
 import { BacktestResults } from './BacktestResults';
 
 import { AppLayout } from '@/components/layout/AppLayout';
 import { FieldTooltip } from '@/components/ui/FieldTooltip';
 import { getStrategyProfile } from '@/features/strategies/strategyProfiles';
+import axiosClient, { getErrorMessage } from '@/services/axiosClient';
 import { sanitizeText } from '@/utils/security';
 
 const initialForm: BacktestConfigFormState = {
@@ -111,6 +119,8 @@ export default function BacktestPage() {
     null
   );
   const [configModalOpen, setConfigModalOpen] = useState(false);
+  const [comparisonIds, setComparisonIds] = useState<number[]>([]);
+  const [activeComparisonIds, setActiveComparisonIds] = useState<number[]>([]);
 
   const { data: algorithms = [] } = useGetBacktestAlgorithmsQuery();
   const { data: datasets = [] } = useGetBacktestDatasetsQuery();
@@ -122,6 +132,9 @@ export default function BacktestPage() {
 
   const [uploadDataset, { isLoading: isUploading }] = useUploadBacktestDatasetMutation();
   const [runBacktest, { isLoading: isRunning }] = useRunBacktestMutation();
+  const [replayBacktest, { isLoading: isReplaying }] = useReplayBacktestMutation();
+  const [loadComparison, { data: comparison, isFetching: isComparing, error: comparisonError }] =
+    useLazyCompareBacktestsQuery();
   const selectedAlgorithm = useMemo(
     () => algorithms.find((algorithm) => algorithm.id === resolvedForm.algorithmType) ?? null,
     [algorithms, resolvedForm.algorithmType]
@@ -137,6 +150,8 @@ export default function BacktestPage() {
     pollingInterval: 5000,
     skipPollingIfUnfocused: true,
   });
+  const comparisonIsStale =
+    activeComparisonIds.length > 0 && activeComparisonIds.join(',') !== comparisonIds.join(',');
 
   const onUploadDataset = async () => {
     if (!datasetFile) {
@@ -162,8 +177,8 @@ export default function BacktestPage() {
       });
       setDatasetFile(null);
       setDatasetName('');
-    } catch {
-      setFeedback({ severity: 'error', message: 'Dataset upload failed.' });
+    } catch (error) {
+      setFeedback({ severity: 'error', message: getErrorMessage(error) });
     }
   };
 
@@ -173,8 +188,74 @@ export default function BacktestPage() {
       setSelectedId(response.id);
       setFeedback({ severity: 'success', message: `Backtest ${response.id} submitted (${response.status}).` });
       setConfigModalOpen(false);
-    } catch {
-      setFeedback({ severity: 'error', message: 'Backtest run failed.' });
+    } catch (error) {
+      setFeedback({ severity: 'error', message: getErrorMessage(error) });
+    }
+  };
+
+  const toggleComparison = (backtestId: number) => {
+    setComparisonIds((prev) =>
+      prev.includes(backtestId) ? prev.filter((id) => id !== backtestId) : [...prev, backtestId]
+    );
+  };
+
+  const onReplayBacktest = async (backtestId: number) => {
+    try {
+      const replayed = await replayBacktest(backtestId).unwrap();
+      setSelectedId(replayed.id);
+      setFeedback({
+        severity: 'success',
+        message: `Replay started from run ${backtestId}. New run: ${replayed.id} (${replayed.status}).`,
+      });
+    } catch (error) {
+      setFeedback({ severity: 'error', message: getErrorMessage(error) });
+    }
+  };
+
+  const onCompareSelected = async () => {
+    if (comparisonIds.length < 2) {
+      setFeedback({ severity: 'error', message: 'Select at least two backtests to compare.' });
+      return;
+    }
+
+    try {
+      await loadComparison(comparisonIds).unwrap();
+      setActiveComparisonIds(comparisonIds);
+      setFeedback({
+        severity: 'success',
+        message: `Comparison loaded for runs ${comparisonIds.map((id) => `#${id}`).join(', ')}.`,
+      });
+    } catch (error) {
+      setFeedback({ severity: 'error', message: getErrorMessage(error) });
+    }
+  };
+
+  const onDownloadDataset = async (datasetId: number) => {
+    try {
+      const response = await axiosClient.get<Blob>(`/api/backtests/datasets/${datasetId}/download`, {
+        responseType: 'blob',
+      });
+      const dispositionHeader = response.headers['content-disposition'];
+      const disposition = typeof dispositionHeader === 'string' ? dispositionHeader : '';
+      const match = /filename="?([^"]+)"?/i.exec(disposition);
+      const filename = match?.[1] ?? `dataset-${datasetId}.csv`;
+      const objectUrl = URL.createObjectURL(response.data);
+      const anchor = document.createElement('a');
+      anchor.href = objectUrl;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(objectUrl);
+
+      const checksum = response.headers['x-dataset-checksum-sha256'];
+      const schemaVersion = response.headers['x-dataset-schema-version'];
+      setFeedback({
+        severity: 'success',
+        message: `Downloaded ${filename}${checksum ? ` (${schemaVersion}, checksum ${checksum.slice(0, 12)}...)` : ''}.`,
+      });
+    } catch (error) {
+      setFeedback({ severity: 'error', message: getErrorMessage(error) });
     }
   };
 
@@ -232,6 +313,47 @@ export default function BacktestPage() {
                   <Typography variant="caption" color="text.secondary">
                     CSV format: timestamp,symbol,open,high,low,close,volume
                   </Typography>
+                  {datasets.length > 0 ? (
+                    <>
+                      <Divider />
+                      <Stack spacing={1}>
+                        <Typography variant="subtitle2">Dataset Inventory</Typography>
+                        {datasets.map((dataset) => (
+                          <Box
+                            key={dataset.id}
+                            sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1.25 }}
+                          >
+                            <Stack
+                              direction={{ xs: 'column', sm: 'row' }}
+                              spacing={1}
+                              justifyContent="space-between"
+                              alignItems={{ xs: 'flex-start', sm: 'center' }}
+                            >
+                              <Box>
+                                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                  {dataset.name}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary" display="block">
+                                  {dataset.originalFilename} | {dataset.rowCount} rows | {dataset.symbolsCsv}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary" display="block">
+                                  Schema: {dataset.schemaVersion} | Checksum: {dataset.checksumSha256}
+                                </Typography>
+                              </Box>
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                startIcon={<DownloadIcon />}
+                                onClick={() => void onDownloadDataset(dataset.id)}
+                              >
+                                Download
+                              </Button>
+                            </Stack>
+                          </Box>
+                        ))}
+                      </Stack>
+                    </>
+                  ) : null}
                 </Stack>
               </CardContent>
             </Card>
@@ -268,6 +390,35 @@ export default function BacktestPage() {
                 <Typography variant="h6" sx={{ mb: 2 }}>
                   Backtest History
                 </Typography>
+                <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mb: 2 }}>
+                  <Button
+                    variant="outlined"
+                    onClick={() => void onCompareSelected()}
+                    disabled={comparisonIds.length < 2 || isComparing}
+                  >
+                    Compare Selected ({comparisonIds.length})
+                  </Button>
+                  <Button
+                    variant="text"
+                    onClick={() => {
+                      setComparisonIds([]);
+                      setActiveComparisonIds([]);
+                    }}
+                    disabled={comparisonIds.length === 0}
+                  >
+                    Clear Selection
+                  </Button>
+                </Stack>
+                {comparisonIsStale ? (
+                  <Alert severity="info" sx={{ mb: 2 }}>
+                    Comparison selection changed. Run compare again to refresh the analysis.
+                  </Alert>
+                ) : null}
+                {comparisonError ? (
+                  <Alert severity="error" sx={{ mb: 2 }}>
+                    {getErrorMessage(comparisonError)}
+                  </Alert>
+                ) : null}
                 {isLoading ? <Typography>Loading history...</Typography> : null}
                 {isError ? <Alert severity="error">Unable to load backtest history.</Alert> : null}
 
@@ -275,6 +426,12 @@ export default function BacktestPage() {
                   <Table size="small">
                     <TableHead>
                       <TableRow>
+                        <TableCell>
+                          <HeaderCellWithTooltip
+                            label="Compare"
+                            description="Select two or more completed runs to compare them side by side."
+                          />
+                        </TableCell>
                         <TableCell>
                           <HeaderCellWithTooltip
                             label="ID"
@@ -317,6 +474,12 @@ export default function BacktestPage() {
                             description="Trading cost assumptions applied in basis points (bps)."
                           />
                         </TableCell>
+                        <TableCell>
+                          <HeaderCellWithTooltip
+                            label="Actions"
+                            description="Replay a prior configuration to re-run the exact research setup."
+                          />
+                        </TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -328,6 +491,13 @@ export default function BacktestPage() {
                           sx={{ cursor: 'pointer' }}
                           selected={item.id === selectedId}
                         >
+                          <TableCell onClick={(event) => event.stopPropagation()}>
+                            <Checkbox
+                              checked={comparisonIds.includes(item.id)}
+                              onChange={() => toggleComparison(item.id)}
+                              inputProps={{ 'aria-label': `Select backtest ${item.id} for comparison` }}
+                            />
+                          </TableCell>
                           <TableCell>{item.id}</TableCell>
                           <TableCell>{item.strategyId}</TableCell>
                           <TableCell>{item.datasetName ?? '-'}</TableCell>
@@ -341,11 +511,23 @@ export default function BacktestPage() {
                           <TableCell>
                             {item.feesBps} bps / {item.slippageBps} bps
                           </TableCell>
+                          <TableCell onClick={(event) => event.stopPropagation()}>
+                            <Button
+                              size="small"
+                              startIcon={<ReplayIcon />}
+                              onClick={() => void onReplayBacktest(item.id)}
+                              disabled={isReplaying}
+                            >
+                              Replay
+                            </Button>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
                 ) : null}
+
+                {comparison ? <BacktestComparisonPanel comparison={comparison} /> : null}
               </CardContent>
             </Card>
           </Grid>

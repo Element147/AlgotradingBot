@@ -229,6 +229,40 @@ public class TradingStrategyController {
         
         return ResponseEntity.ok(response);
     }
+
+    @Operation(
+        summary = "Get one trade detail record",
+        description = "Retrieves one historical trade by ID, with optional account scoping for safer lookup flows."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Trade detail retrieved successfully",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = TradeHistoryResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Trade not found",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        )
+    })
+    @GetMapping("/trades/{tradeId}")
+    public ResponseEntity<TradeHistoryResponse> getTradeDetails(
+            @Parameter(description = "Trade ID", example = "1")
+            @PathVariable Long tradeId,
+            @Parameter(description = "Optional account scope for the trade lookup", example = "1")
+            @RequestParam(required = false) Long accountId) {
+
+        logger.info("Received request to get trade details: tradeId={}, accountId={}", tradeId, accountId);
+
+        return ResponseEntity.ok(tradingStrategyService.getTradeDetails(tradeId, accountId));
+    }
     
     /**
      * Get backtest results with optional filters.

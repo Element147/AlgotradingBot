@@ -27,6 +27,7 @@ Required controls:
 - Clear UI/API mode visibility
 - Safe default to `test`
 - Explicit confirmation before any `live` action
+- Dev-only auth override (`ALGOTRADING_RELAXED_AUTH=true`) is local debugging only and must be removed before standard verification
 
 ## Risk Baseline Defaults
 

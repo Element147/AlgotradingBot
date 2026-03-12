@@ -42,7 +42,7 @@ describe('BalanceCard', () => {
   it('should display error state when balance fetch fails', () => {
     setBalanceQueryResult({ error: { message: 'Network error' }, data: undefined });
     render(<BalanceCard />);
-    expect(screen.getByText(/Failed to load balance data/i)).toBeInTheDocument();
+    expect(screen.getByText('Network error')).toBeInTheDocument();
   });
 
   it('should display total balance correctly', () => {

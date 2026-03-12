@@ -46,19 +46,31 @@ export interface SystemInfo {
   kafkaStatus: string;
 }
 
+export interface OperatorAuditEvent {
+  id: number;
+  actor: string;
+  action: string;
+  environment: string;
+  targetType: string;
+  targetId: string | null;
+  outcome: string;
+  details: string | null;
+  createdAt: string;
+}
+
 const asText = (value: unknown, fallback = ''): string =>
   typeof value === 'string' || typeof value === 'number' ? String(value) : fallback;
 
 export const exchangeApi = createApi({
   reducerPath: 'exchangeApi',
   baseQuery: baseQueryWithEnvironment,
-  tagTypes: ['Exchange', 'System'],
+  tagTypes: ['Exchange', 'System', 'Audit'],
   keepUnusedDataFor: 300,
   endpoints: (builder) => ({
     getExchangeBalance: builder.query<ExchangeBalanceResponse, void>({
       query: () => ({
         url: '/api/account/balance',
-        params: { env: 'live' },
+        headers: { 'X-Environment': 'live' },
       }),
       transformResponse: (response: ExchangeBalanceResponse) => ({
         ...response,
@@ -69,7 +81,8 @@ export const exchangeApi = createApi({
     getExchangeOrders: builder.query<ExchangeOrder[], void>({
       query: () => ({
         url: '/api/trades/recent',
-        params: { env: 'live', limit: 20 },
+        headers: { 'X-Environment': 'live' },
+        params: { limit: 20 },
       }),
       transformResponse: (response: Array<Record<string, unknown>>) =>
         response.map((item) => ({
@@ -105,6 +118,13 @@ export const exchangeApi = createApi({
       }),
       invalidatesTags: ['System'],
     }),
+    getAuditEvents: builder.query<OperatorAuditEvent[], number | void>({
+      query: (limit) => ({
+        url: '/api/system/audit-events',
+        params: limit ? { limit } : undefined,
+      }),
+      providesTags: ['Audit'],
+    }),
   }),
 });
 
@@ -115,4 +135,5 @@ export const {
   useGetExchangeConnectionStatusQuery,
   useGetSystemInfoQuery,
   useTriggerBackupMutation,
+  useGetAuditEventsQuery,
 } = exchangeApi;

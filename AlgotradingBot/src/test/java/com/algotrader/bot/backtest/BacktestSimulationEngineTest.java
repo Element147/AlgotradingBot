@@ -53,6 +53,8 @@ class BacktestSimulationEngineTest {
 
         assertEquals(1, result.totalTrades());
         assertTrue(result.finalBalance().compareTo(new BigDecimal("1000")) > 0);
+        assertTrue(result.equitySeries().size() >= 2);
+        assertEquals(1, result.tradeSeries().size());
     }
 
     @Test
@@ -64,6 +66,7 @@ class BacktestSimulationEngineTest {
 
         assertTrue(result.totalTrades() >= 1);
         assertTrue(result.finalBalance().compareTo(new BigDecimal("1000")) > 0);
+        assertEquals(result.totalTrades(), result.tradeSeries().size());
     }
 
     @Test

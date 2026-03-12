@@ -3,6 +3,8 @@ import { Card, CardContent, Typography, Box, IconButton, CircularProgress, Alert
 
 import { useGetBalanceQuery } from '../account/accountApi';
 
+import { getApiErrorMessage } from '@/services/api';
+
 /**
  * BalanceCard Component
  * 
@@ -41,9 +43,7 @@ export const BalanceCard: React.FC = () => {
     return (
       <Card>
         <CardContent>
-          <Alert severity="error">
-            Failed to load balance data. Please try again.
-          </Alert>
+          <Alert severity="error">{getApiErrorMessage(error, 'Failed to load balance data. Please try again.')}</Alert>
         </CardContent>
       </Card>
     );

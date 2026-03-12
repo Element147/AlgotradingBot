@@ -56,14 +56,17 @@ public class BacktestSimulationEngine {
         BigDecimal allocationFraction = BigDecimal.ONE;
         String activeSymbol = null;
         int entryTimelineIndex = -1;
+        LocalDateTime entryTimestamp = null;
         int winningTrades = 0;
 
         List<BigDecimal> tradeReturns = new ArrayList<>();
-        List<BigDecimal> equityCurve = new ArrayList<>();
-        equityCurve.add(request.initialBalance());
+        List<BacktestEquityPointSample> equitySamples = new ArrayList<>();
+        List<BacktestTradeSample> tradeSamples = new ArrayList<>();
+        equitySamples.add(new BacktestEquityPointSample(timeline.get(0), request.initialBalance(), BigDecimal.ZERO));
 
         for (int timelineIndex = 0; timelineIndex < timeline.size(); timelineIndex++) {
-            Map<String, Integer> currentIndexBySymbol = buildCurrentIndexMap(indexByTimestamp, timeline.get(timelineIndex));
+            LocalDateTime currentTimestamp = timeline.get(timelineIndex);
+            Map<String, Integer> currentIndexBySymbol = buildCurrentIndexMap(indexByTimestamp, currentTimestamp);
             BacktestOpenPosition openPosition = activeSymbol == null
                 ? null
                 : new BacktestOpenPosition(
@@ -99,10 +102,22 @@ public class BacktestSimulationEngine {
                 allocationFraction = entry.allocationFraction();
                 activeSymbol = entry.symbol();
                 entryTimelineIndex = timelineIndex;
+                entryTimestamp = currentTimestamp;
             } else if (activeSymbol != null && decision.action() == BacktestStrategyAction.SELL) {
                 ExitSnapshot exit = exitPosition(activeSymbol, quantity, entryValue, context, costRate);
                 cash = cash.add(exit.cashReleased(), MC);
                 tradeReturns.add(exit.tradeReturn());
+                tradeSamples.add(createTradeSample(
+                    activeSymbol,
+                    entryTimestamp,
+                    currentTimestamp,
+                    entryPrice,
+                    exit.exitPrice(),
+                    quantity,
+                    entryValue,
+                    exit.cashReleased(),
+                    exit.tradeReturn()
+                ));
                 if (exit.tradeReturn().compareTo(BigDecimal.ZERO) > 0) {
                     winningTrades++;
                 }
@@ -112,6 +127,7 @@ public class BacktestSimulationEngine {
                 allocationFraction = BigDecimal.ONE;
                 activeSymbol = null;
                 entryTimelineIndex = -1;
+                entryTimestamp = null;
             } else if (activeSymbol != null
                 && decision.action() == BacktestStrategyAction.ROTATE
                 && decision.targetSymbol() != null
@@ -119,6 +135,17 @@ public class BacktestSimulationEngine {
                 ExitSnapshot exit = exitPosition(activeSymbol, quantity, entryValue, context, costRate);
                 cash = cash.add(exit.cashReleased(), MC);
                 tradeReturns.add(exit.tradeReturn());
+                tradeSamples.add(createTradeSample(
+                    activeSymbol,
+                    entryTimestamp,
+                    currentTimestamp,
+                    entryPrice,
+                    exit.exitPrice(),
+                    quantity,
+                    entryValue,
+                    exit.cashReleased(),
+                    exit.tradeReturn()
+                ));
                 if (exit.tradeReturn().compareTo(BigDecimal.ZERO) > 0) {
                     winningTrades++;
                 }
@@ -137,12 +164,13 @@ public class BacktestSimulationEngine {
                 allocationFraction = entry.allocationFraction();
                 activeSymbol = entry.symbol();
                 entryTimelineIndex = timelineIndex;
+                entryTimestamp = currentTimestamp;
             }
 
             BigDecimal equity = activeSymbol == null
                 ? cash
                 : cash.add(quantity.multiply(context.currentClose(activeSymbol), MC), MC);
-            equityCurve.add(equity);
+            equitySamples.add(new BacktestEquityPointSample(currentTimestamp, equity, BigDecimal.ZERO));
         }
 
         if (activeSymbol != null) {
@@ -151,13 +179,40 @@ public class BacktestSimulationEngine {
             ExitSnapshot exit = exitPosition(activeSymbol, quantity, entryValue, finalContext, costRate);
             cash = cash.add(exit.cashReleased(), MC);
             tradeReturns.add(exit.tradeReturn());
+            tradeSamples.add(createTradeSample(
+                activeSymbol,
+                entryTimestamp,
+                timeline.get(timeline.size() - 1),
+                entryPrice,
+                exit.exitPrice(),
+                quantity,
+                entryValue,
+                exit.cashReleased(),
+                exit.tradeReturn()
+            ));
             if (exit.tradeReturn().compareTo(BigDecimal.ZERO) > 0) {
                 winningTrades++;
             }
-            equityCurve.add(cash);
+            equitySamples.add(new BacktestEquityPointSample(timeline.get(timeline.size() - 1), cash, BigDecimal.ZERO));
         }
 
-        return metricsCalculator.calculate(cash.max(BigDecimal.ONE), tradeReturns, equityCurve, winningTrades);
+        List<BacktestEquityPointSample> equitySeries = applyDrawdownSeries(equitySamples);
+        BacktestSimulationResult metrics = metricsCalculator.calculate(
+            cash.max(BigDecimal.ONE),
+            tradeReturns,
+            equitySeries.stream().map(BacktestEquityPointSample::equity).toList(),
+            winningTrades
+        );
+        return new BacktestSimulationResult(
+            metrics.finalBalance(),
+            metrics.sharpeRatio(),
+            metrics.profitFactor(),
+            metrics.winRatePercent(),
+            metrics.maxDrawdownPercent(),
+            metrics.totalTrades(),
+            equitySeries,
+            tradeSamples
+        );
     }
 
     private Map<String, List<OHLCVData>> scopeCandles(BacktestStrategy strategy, BacktestSimulationRequest request) {
@@ -304,7 +359,49 @@ public class BacktestSimulationEngine {
         BigDecimal effectiveSell = context.currentClose(symbol).multiply(BigDecimal.ONE.subtract(costRate), MC);
         BigDecimal exitValue = quantity.multiply(effectiveSell, MC);
         BigDecimal tradeReturn = exitValue.subtract(entryValue, MC).divide(entryValue, MC);
-        return new ExitSnapshot(exitValue, tradeReturn);
+        return new ExitSnapshot(exitValue, effectiveSell, tradeReturn);
+    }
+
+    private List<BacktestEquityPointSample> applyDrawdownSeries(List<BacktestEquityPointSample> rawSeries) {
+        List<BacktestEquityPointSample> finalized = new ArrayList<>();
+        BigDecimal peak = rawSeries.get(0).equity();
+
+        for (BacktestEquityPointSample point : rawSeries) {
+            if (point.equity().compareTo(peak) > 0) {
+                peak = point.equity();
+            }
+            BigDecimal drawdownPct = peak.compareTo(BigDecimal.ZERO) == 0
+                ? BigDecimal.ZERO
+                : peak.subtract(point.equity(), MC)
+                    .divide(peak, MC)
+                    .multiply(BigDecimal.valueOf(100), MC)
+                    .setScale(4, RoundingMode.HALF_UP);
+            finalized.add(new BacktestEquityPointSample(point.timestamp(), point.equity(), drawdownPct));
+        }
+
+        return finalized;
+    }
+
+    private BacktestTradeSample createTradeSample(String symbol,
+                                                  LocalDateTime entryTimestamp,
+                                                  LocalDateTime exitTimestamp,
+                                                  BigDecimal entryPrice,
+                                                  BigDecimal exitPrice,
+                                                  BigDecimal quantity,
+                                                  BigDecimal entryValue,
+                                                  BigDecimal exitValue,
+                                                  BigDecimal tradeReturn) {
+        return new BacktestTradeSample(
+            symbol,
+            entryTimestamp,
+            exitTimestamp,
+            entryPrice.setScale(8, RoundingMode.HALF_UP),
+            exitPrice.setScale(8, RoundingMode.HALF_UP),
+            quantity.setScale(POSITION_SCALE, RoundingMode.HALF_UP),
+            entryValue.setScale(8, RoundingMode.HALF_UP),
+            exitValue.setScale(8, RoundingMode.HALF_UP),
+            tradeReturn.multiply(BigDecimal.valueOf(100), MC).setScale(4, RoundingMode.HALF_UP)
+        );
     }
 
     private record EntrySnapshot(
@@ -317,6 +414,6 @@ public class BacktestSimulationEngine {
     ) {
     }
 
-    private record ExitSnapshot(BigDecimal cashReleased, BigDecimal tradeReturn) {
+    private record ExitSnapshot(BigDecimal cashReleased, BigDecimal exitPrice, BigDecimal tradeReturn) {
     }
 }

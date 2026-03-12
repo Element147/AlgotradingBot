@@ -69,10 +69,29 @@ vi.mock('./backtestApi', () => ({
       startDate: '2025-01-01T00:00:00',
       endDate: '2025-12-31T00:00:00',
       errorMessage: null,
+      equityCurve: [
+        { timestamp: '2025-01-01T00:00:00', equity: 1000, drawdownPct: 0 },
+        { timestamp: '2025-01-02T00:00:00', equity: 1080, drawdownPct: 0 },
+      ],
+      tradeSeries: [
+        {
+          symbol: 'BTC/USDT',
+          entryTime: '2025-01-01T00:00:00',
+          exitTime: '2025-01-02T00:00:00',
+          entryPrice: 100,
+          exitPrice: 108,
+          quantity: 9.5,
+          entryValue: 950,
+          exitValue: 1026,
+          returnPct: 8,
+        },
+      ],
     },
   }),
   useUploadBacktestDatasetMutation: () => [vi.fn(), { isLoading: false }],
   useRunBacktestMutation: () => [vi.fn(), { isLoading: false }],
+  useReplayBacktestMutation: () => [vi.fn(), { isLoading: false }],
+  useLazyCompareBacktestsQuery: () => [vi.fn(), { data: undefined, isFetching: false, error: undefined }],
 }));
 
 vi.mock('@/components/layout/AppLayout', () => ({
@@ -90,14 +109,27 @@ vi.mock('./BacktestResults', () => ({
   ),
 }));
 
+vi.mock('./BacktestComparisonPanel', () => ({
+  BacktestComparisonPanel: () => <div>comparison panel</div>,
+}));
+
+vi.mock('@/services/axiosClient', () => ({
+  default: {
+    get: vi.fn(),
+  },
+  getErrorMessage: () => 'error',
+}));
+
 describe('BacktestPage', { timeout: 15000 }, () => {
   it('renders upload section and run form', () => {
     render(<BacktestPage />);
 
     expect(screen.getByText('Backtest')).toBeInTheDocument();
     expect(screen.getByText('Dataset Upload')).toBeInTheDocument();
+    expect(screen.getByText('Dataset Inventory')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Run New Backtest' })).toBeInTheDocument();
     expect(screen.getByText('Backtest History')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Compare Selected/ })).toBeInTheDocument();
     expect(screen.getByText('42')).toBeInTheDocument();
   });
 

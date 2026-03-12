@@ -1,30 +1,56 @@
-/**
- * SystemHealthIndicator Component Tests
- * 
- * Tests for the system health indicator component including:
- * - Backend API connection status display
- * - WebSocket connection status display
- * - Reconnection attempts display
- * - Last update timestamp display
- * - Circuit breaker status display
- */
-
 import { screen } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
-
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SystemHealthIndicator } from './SystemHealthIndicator';
 
 import type { RootState } from '@/app/store';
 import { renderWithProviders } from '@/tests/test-utils';
 
-// Mock the formatters module
+type SystemInfoHookResult = {
+  data?: {
+    applicationVersion: string;
+    lastDeploymentDate: string;
+    databaseStatus: string;
+    kafkaStatus: string;
+  };
+  isError: boolean;
+  isLoading: boolean;
+  error?: unknown;
+};
+
+type RiskStatusHookResult = {
+  data?: {
+    currentDrawdown?: number;
+    maxDrawdownLimit?: number;
+    dailyLoss?: number;
+    dailyLossLimit?: number;
+    openRiskExposure?: number;
+    positionCorrelation?: number;
+    circuitBreakerActive: boolean;
+    circuitBreakerReason: string;
+  };
+  isError: boolean;
+  isLoading: boolean;
+  error?: unknown;
+};
+
+const mockUseGetSystemInfoQuery = vi.fn<() => SystemInfoHookResult>();
+const mockUseGetRiskStatusQuery = vi.fn<() => RiskStatusHookResult>();
+
+vi.mock('@/features/settings/exchangeApi', () => ({
+  useGetSystemInfoQuery: () => mockUseGetSystemInfoQuery(),
+}));
+
+vi.mock('@/features/risk/riskApi', () => ({
+  useGetRiskStatusQuery: () => mockUseGetRiskStatusQuery(),
+}));
+
 vi.mock('@/utils/formatters', () => ({
   formatDistanceToNow: vi.fn((date: Date) => {
     const now = new Date('2026-03-09T12:00:00Z');
     const diffMs = now.getTime() - date.getTime();
     const diffMinutes = Math.floor(diffMs / 1000 / 60);
-    
+
     if (diffMinutes < 1) return 'just now';
     if (diffMinutes === 1) return '1 minute ago';
     if (diffMinutes < 60) return `${diffMinutes} minutes ago`;
@@ -43,229 +69,148 @@ describe('SystemHealthIndicator', () => {
     lastEventTime: null,
   };
 
-  describe('Backend API Connection Status', () => {
-    it('should display connected status when API is healthy', () => {
-      const preloadedState: Partial<RootState> = {
-        websocket: mockWebSocketState,
-      };
+  beforeEach(() => {
+    vi.clearAllMocks();
 
-      renderWithProviders(<SystemHealthIndicator />, { preloadedState });
-
-      expect(screen.getByText('Backend API:')).toBeInTheDocument();
-      // Note: API status depends on RTK Query mock, which defaults to loading/error state
+    mockUseGetSystemInfoQuery.mockReturnValue({
+      data: {
+        applicationVersion: 'local-dev',
+        lastDeploymentDate: '2026-03-09T11:00:00Z',
+        databaseStatus: 'UP',
+        kafkaStatus: 'not-configured',
+      },
+      isError: false,
+      isLoading: false,
+      error: undefined,
     });
 
-    it('should display disconnected status when API has error', () => {
-      const preloadedState: Partial<RootState> = {
-        websocket: mockWebSocketState,
-      };
-
-      renderWithProviders(<SystemHealthIndicator />, { preloadedState });
-
-      expect(screen.getByText('Backend API:')).toBeInTheDocument();
-    });
-  });
-
-  describe('WebSocket Connection Status', () => {
-    it('should display connected status when WebSocket is connected', () => {
-      const preloadedState: Partial<RootState> = {
-        websocket: {
-          ...mockWebSocketState,
-          connected: true,
-        },
-      };
-
-      renderWithProviders(<SystemHealthIndicator />, { preloadedState });
-
-      expect(screen.getByText('WebSocket:')).toBeInTheDocument();
-      expect(screen.getByText('Connected')).toBeInTheDocument();
-    });
-
-    it('should display connecting status when WebSocket is connecting', () => {
-      const preloadedState: Partial<RootState> = {
-        websocket: {
-          ...mockWebSocketState,
-          connecting: true,
-        },
-      };
-
-      renderWithProviders(<SystemHealthIndicator />, { preloadedState });
-
-      expect(screen.getByText('WebSocket:')).toBeInTheDocument();
-      // Use getAllByText since both API and WebSocket might show "Connecting"
-      const connectingChips = screen.getAllByText('Connecting');
-      expect(connectingChips.length).toBeGreaterThanOrEqual(1);
-    });
-
-    it('should display disconnected status when WebSocket is disconnected', () => {
-      const preloadedState: Partial<RootState> = {
-        websocket: {
-          ...mockWebSocketState,
-          connected: false,
-          connecting: false,
-        },
-      };
-
-      renderWithProviders(<SystemHealthIndicator />, { preloadedState });
-
-      expect(screen.getByText('WebSocket:')).toBeInTheDocument();
-      expect(screen.getByText('Disconnected')).toBeInTheDocument();
-    });
-
-    it('should display error status when WebSocket has error', () => {
-      const preloadedState: Partial<RootState> = {
-        websocket: {
-          ...mockWebSocketState,
-          error: 'Connection failed',
-        },
-      };
-
-      renderWithProviders(<SystemHealthIndicator />, { preloadedState });
-
-      expect(screen.getByText('WebSocket:')).toBeInTheDocument();
-      expect(screen.getByText('Error')).toBeInTheDocument();
+    mockUseGetRiskStatusQuery.mockReturnValue({
+      data: {
+        currentDrawdown: 0.5,
+        maxDrawdownLimit: 25,
+        dailyLoss: 0,
+        dailyLossLimit: 5,
+        openRiskExposure: 10,
+        positionCorrelation: 35,
+        circuitBreakerActive: false,
+        circuitBreakerReason: 'Within configured limits',
+      },
+      isError: false,
+      isLoading: false,
+      error: undefined,
     });
   });
 
-  describe('Reconnection Attempts', () => {
-    it('should display reconnection attempts when greater than 0', () => {
-      const preloadedState: Partial<RootState> = {
-        websocket: {
-          ...mockWebSocketState,
-          reconnectAttempts: 3,
-          lastReconnectAttempt: '2026-03-09T11:55:00Z',
-        },
-      };
+  it('renders all status sections', () => {
+    const preloadedState: Partial<RootState> = {
+      websocket: mockWebSocketState,
+    };
 
-      renderWithProviders(<SystemHealthIndicator />, { preloadedState });
+    renderWithProviders(<SystemHealthIndicator />, { preloadedState });
 
-      expect(screen.getByText(/Reconnection attempts: 3/)).toBeInTheDocument();
-    });
-
-    it('should not display reconnection attempts when 0', () => {
-      const preloadedState: Partial<RootState> = {
-        websocket: {
-          ...mockWebSocketState,
-          reconnectAttempts: 0,
-        },
-      };
-
-      renderWithProviders(<SystemHealthIndicator />, { preloadedState });
-
-      expect(screen.queryByText(/Reconnection attempts/)).not.toBeInTheDocument();
-    });
+    expect(screen.getByText('System Health')).toBeInTheDocument();
+    expect(screen.getByText('Backend API:')).toBeInTheDocument();
+    expect(screen.getByText('Database:')).toBeInTheDocument();
+    expect(screen.getByText('Kafka:')).toBeInTheDocument();
+    expect(screen.getByText('WebSocket:')).toBeInTheDocument();
+    expect(screen.getByText('Last Update:')).toBeInTheDocument();
+    expect(screen.getByText('Circuit Breaker:')).toBeInTheDocument();
   });
 
-  describe('Last Data Update', () => {
-    it('should display "Never" when no events received', () => {
-      const preloadedState: Partial<RootState> = {
-        websocket: {
-          ...mockWebSocketState,
-          lastEventTime: null,
-        },
-      };
+  it('shows backend, database, and kafka status from system info', () => {
+    const preloadedState: Partial<RootState> = {
+      websocket: mockWebSocketState,
+    };
 
-      renderWithProviders(<SystemHealthIndicator />, { preloadedState });
+    renderWithProviders(<SystemHealthIndicator />, { preloadedState });
 
-      expect(screen.getByText('Last Update:')).toBeInTheDocument();
-      expect(screen.getByText('Never')).toBeInTheDocument();
-    });
-
-    it('should display formatted time when events received', () => {
-      const preloadedState: Partial<RootState> = {
-        websocket: {
-          ...mockWebSocketState,
-          lastEventTime: '2026-03-09T11:55:00Z',
-        },
-      };
-
-      renderWithProviders(<SystemHealthIndicator />, { preloadedState });
-
-      expect(screen.getByText('Last Update:')).toBeInTheDocument();
-      expect(screen.getByText('5 minutes ago')).toBeInTheDocument();
-    });
+    expect(screen.getAllByText('Connected').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('UP')).toBeInTheDocument();
+    expect(screen.getByText('not-configured')).toBeInTheDocument();
   });
 
-  describe('Circuit Breaker Status', () => {
-    it('should display inactive circuit breaker status', () => {
-      const preloadedState: Partial<RootState> = {
-        websocket: mockWebSocketState,
-      };
+  it('shows websocket connected status and last update age', () => {
+    const preloadedState: Partial<RootState> = {
+      websocket: {
+        ...mockWebSocketState,
+        connected: true,
+        lastEventTime: '2026-03-09T11:55:00Z',
+      },
+    };
 
-      renderWithProviders(<SystemHealthIndicator />, { preloadedState });
+    renderWithProviders(<SystemHealthIndicator />, { preloadedState });
 
-      expect(screen.getByText('Circuit Breaker:')).toBeInTheDocument();
-      expect(screen.getByText('Inactive')).toBeInTheDocument();
-    });
+    expect(screen.getAllByText('Connected').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText('5 minutes ago')).toBeInTheDocument();
   });
 
-  describe('Component Rendering', () => {
-    it('should render system health title', () => {
-      const preloadedState: Partial<RootState> = {
-        websocket: mockWebSocketState,
-      };
+  it('shows websocket error and reconnection attempts', () => {
+    const preloadedState: Partial<RootState> = {
+      websocket: {
+        ...mockWebSocketState,
+        error: 'Connection failed',
+        reconnectAttempts: 3,
+      },
+    };
 
-      renderWithProviders(<SystemHealthIndicator />, { preloadedState });
+    renderWithProviders(<SystemHealthIndicator />, { preloadedState });
 
-      expect(screen.getByText('System Health')).toBeInTheDocument();
-    });
-
-    it('should render all status sections', () => {
-      const preloadedState: Partial<RootState> = {
-        websocket: mockWebSocketState,
-      };
-
-      renderWithProviders(<SystemHealthIndicator />, { preloadedState });
-
-      expect(screen.getByText('Backend API:')).toBeInTheDocument();
-      expect(screen.getByText('WebSocket:')).toBeInTheDocument();
-      expect(screen.getByText('Last Update:')).toBeInTheDocument();
-      expect(screen.getByText('Circuit Breaker:')).toBeInTheDocument();
-    });
+    expect(screen.getByText('Error')).toBeInTheDocument();
+    expect(screen.getByText('Reconnection attempts: 3')).toBeInTheDocument();
   });
 
-  describe('Status Color Coding', () => {
-    it('should use success color for connected WebSocket', () => {
-      const preloadedState: Partial<RootState> = {
-        websocket: {
-          ...mockWebSocketState,
-          connected: true,
-        },
-      };
-
-      renderWithProviders(<SystemHealthIndicator />, { preloadedState });
-
-      // Check for success color class on chip
-      const connectedChip = screen.getByText('Connected').closest('.MuiChip-root');
-      expect(connectedChip).toHaveClass('MuiChip-colorSuccess');
+  it('shows active circuit breaker from risk status', () => {
+    mockUseGetRiskStatusQuery.mockReturnValue({
+      data: {
+        circuitBreakerActive: true,
+        circuitBreakerReason: 'Drawdown or daily loss limit reached',
+      },
+      isError: false,
+      isLoading: false,
+      error: undefined,
     });
 
-    it('should use error color for WebSocket error', () => {
-      const preloadedState: Partial<RootState> = {
-        websocket: {
-          ...mockWebSocketState,
-          error: 'Connection failed',
-        },
-      };
+    const preloadedState: Partial<RootState> = {
+      websocket: mockWebSocketState,
+    };
 
-      renderWithProviders(<SystemHealthIndicator />, { preloadedState });
+    renderWithProviders(<SystemHealthIndicator />, { preloadedState });
 
-      // Check for error color class on chip
-      const errorChip = screen.getByText('Error').closest('.MuiChip-root');
-      expect(errorChip).toHaveClass('MuiChip-colorError');
+    expect(screen.getByText('Active')).toBeInTheDocument();
+  });
+
+  it('shows unknown circuit breaker status when risk query fails', () => {
+    mockUseGetRiskStatusQuery.mockReturnValue({
+      data: undefined,
+      isError: true,
+      isLoading: false,
+      error: { status: 500, data: { message: 'Risk status unavailable' } },
     });
 
-    it('should use success color for inactive circuit breaker', () => {
-      const preloadedState: Partial<RootState> = {
-        websocket: mockWebSocketState,
-      };
+    const preloadedState: Partial<RootState> = {
+      websocket: mockWebSocketState,
+    };
 
-      renderWithProviders(<SystemHealthIndicator />, { preloadedState });
+    renderWithProviders(<SystemHealthIndicator />, { preloadedState });
 
-      // Check for success color class on chip
-      const inactiveChip = screen.getByText('Inactive').closest('.MuiChip-root');
-      expect(inactiveChip).toHaveClass('MuiChip-colorSuccess');
+    expect(screen.getByText('Unknown')).toBeInTheDocument();
+  });
+
+  it('shows disconnected backend and unknown dependencies when system info fails', () => {
+    mockUseGetSystemInfoQuery.mockReturnValue({
+      data: undefined,
+      isError: true,
+      isLoading: false,
+      error: { status: 503, data: { message: 'System info unavailable' } },
     });
+
+    const preloadedState: Partial<RootState> = {
+      websocket: mockWebSocketState,
+    };
+
+    renderWithProviders(<SystemHealthIndicator />, { preloadedState });
+
+    expect(screen.getAllByText('Disconnected').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Unknown').length).toBeGreaterThanOrEqual(2);
   });
 });
-

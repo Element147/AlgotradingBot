@@ -95,21 +95,10 @@ export const tradesApi = createApi({
       providesTags: ['TradeHistory'],
     }),
     getTradeDetails: builder.query<TradeHistoryItem | null, { id: number; accountId?: number }>({
-      query: ({ accountId }) => ({
-        url: '/api/trades/history',
-        params: {
-          ...(accountId ? { accountId } : {}),
-          limit: 1000,
-        },
+      query: ({ id, accountId }) => ({
+        url: `/api/trades/${id}`,
+        params: accountId ? { accountId } : undefined,
       }),
-      transformResponse: (
-        response: TradeHistoryItem[] | TradeHistoryPagedResponse,
-        _meta,
-        arg
-      ) => {
-        const {items} = normalizeTradeHistory(response, { page: 1, pageSize: 1000 });
-        return items.find((trade) => trade.id === arg.id) ?? null;
-      },
       providesTags: (_result, _error, arg) => [{ type: 'TradeHistory', id: arg.id }],
     }),
   }),

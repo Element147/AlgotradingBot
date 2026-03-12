@@ -1,6 +1,7 @@
 package com.algotrader.bot.controller;
 
 import com.algotrader.bot.service.AccountService;
+import com.algotrader.bot.service.EnvironmentRequestResolver;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -26,9 +27,11 @@ public class AccountController {
 
     private static final Logger logger = LoggerFactory.getLogger(AccountController.class);
     private final AccountService accountService;
+    private final EnvironmentRequestResolver environmentRequestResolver;
 
-    public AccountController(AccountService accountService) {
+    public AccountController(AccountService accountService, EnvironmentRequestResolver environmentRequestResolver) {
         this.accountService = accountService;
+        this.environmentRequestResolver = environmentRequestResolver;
     }
 
     /**
@@ -47,13 +50,16 @@ public class AccountController {
     )
     public ResponseEntity<BalanceResponse> getBalance(
             @Parameter(description = "Environment mode: test or live")
-            @RequestParam(defaultValue = "test") String env,
+            @RequestParam(required = false) String env,
+            @Parameter(description = "Environment mode header: test or live")
+            @RequestHeader(name = "X-Environment", required = false) String headerEnvironment,
             @Parameter(description = "Account ID (optional, defaults to latest account)")
             @RequestParam(required = false) Long accountId) {
-        
-        logger.info("GET /api/account/balance - environment: {}, accountId: {}", env, accountId);
-        
-        BalanceResponse balance = accountService.getBalance(env, accountId);
+
+        String environment = environmentRequestResolver.resolve(env, headerEnvironment);
+        logger.info("GET /api/account/balance - environment: {}, accountId: {}", environment, accountId);
+
+        BalanceResponse balance = accountService.getBalance(environment, accountId);
         return ResponseEntity.ok(balance);
     }
 
@@ -73,16 +79,19 @@ public class AccountController {
     )
     public ResponseEntity<PerformanceResponse> getPerformance(
             @Parameter(description = "Environment mode: test or live")
-            @RequestParam(defaultValue = "test") String env,
+            @RequestParam(required = false) String env,
+            @Parameter(description = "Environment mode header: test or live")
+            @RequestHeader(name = "X-Environment", required = false) String headerEnvironment,
             @Parameter(description = "Timeframe: today, week, month, all-time")
             @RequestParam(defaultValue = "month") String timeframe,
             @Parameter(description = "Account ID (optional, defaults to latest account)")
             @RequestParam(required = false) Long accountId) {
-        
+
+        String environment = environmentRequestResolver.resolve(env, headerEnvironment);
         logger.info("GET /api/account/performance - environment: {}, timeframe: {}, accountId: {}",
-                env, timeframe, accountId);
-        
-        PerformanceResponse performance = accountService.getPerformance(env, accountId, timeframe);
+                environment, timeframe, accountId);
+
+        PerformanceResponse performance = accountService.getPerformance(environment, accountId, timeframe);
         return ResponseEntity.ok(performance);
     }
 
@@ -101,13 +110,16 @@ public class AccountController {
     )
     public ResponseEntity<List<OpenPositionResponse>> getOpenPositions(
             @Parameter(description = "Environment mode: test or live")
-            @RequestParam(defaultValue = "test") String env,
+            @RequestParam(required = false) String env,
+            @Parameter(description = "Environment mode header: test or live")
+            @RequestHeader(name = "X-Environment", required = false) String headerEnvironment,
             @Parameter(description = "Account ID (optional, defaults to latest account)")
             @RequestParam(required = false) Long accountId) {
-        
-        logger.info("GET /api/positions/open - environment: {}, accountId: {}", env, accountId);
-        
-        List<OpenPositionResponse> positions = accountService.getOpenPositions(env, accountId);
+
+        String environment = environmentRequestResolver.resolve(env, headerEnvironment);
+        logger.info("GET /api/positions/open - environment: {}, accountId: {}", environment, accountId);
+
+        List<OpenPositionResponse> positions = accountService.getOpenPositions(environment, accountId);
         return ResponseEntity.ok(positions);
     }
 
@@ -127,15 +139,18 @@ public class AccountController {
     )
     public ResponseEntity<List<RecentTradeResponse>> getRecentTrades(
             @Parameter(description = "Environment mode: test or live")
-            @RequestParam(defaultValue = "test") String env,
+            @RequestParam(required = false) String env,
+            @Parameter(description = "Environment mode header: test or live")
+            @RequestHeader(name = "X-Environment", required = false) String headerEnvironment,
             @Parameter(description = "Maximum number of trades to return")
             @RequestParam(defaultValue = "10") int limit,
             @Parameter(description = "Account ID (optional, defaults to latest account)")
             @RequestParam(required = false) Long accountId) {
-        
-        logger.info("GET /api/trades/recent - environment: {}, limit: {}, accountId: {}", env, limit, accountId);
-        
-        List<RecentTradeResponse> trades = accountService.getRecentTrades(env, accountId, limit);
+
+        String environment = environmentRequestResolver.resolve(env, headerEnvironment);
+        logger.info("GET /api/trades/recent - environment: {}, limit: {}, accountId: {}", environment, limit, accountId);
+
+        List<RecentTradeResponse> trades = accountService.getRecentTrades(environment, accountId, limit);
         return ResponseEntity.ok(trades);
     }
 }

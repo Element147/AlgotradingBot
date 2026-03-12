@@ -48,7 +48,7 @@ describe('PerformanceCard', { timeout: 15000 }, () => {
   it('should display error state when performance fetch fails', () => {
     setPerformanceQueryResult(mockPerformanceData, false, { message: 'Network error' });
     render(<PerformanceCard />);
-    expect(screen.getByText(/Failed to load performance data/i)).toBeInTheDocument();
+    expect(screen.getByText('Network error')).toBeInTheDocument();
   });
 
   it('should display card title', () => {

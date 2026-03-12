@@ -375,6 +375,36 @@ class TradingStrategyControllerIntegrationTest {
             .andExpect(jsonPath("$", hasSize(0)));
     }
 
+    @Test
+    void testGetTradeDetails_ReturnsRequestedTrade() throws Exception {
+        createTestTrades();
+        Trade trade = tradeRepository.findAll().stream()
+            .filter(existing -> "ETH/USDT".equals(existing.getSymbol()))
+            .findFirst()
+            .orElseThrow();
+
+        mockMvc.perform(get("/api/trades/{tradeId}", trade.getId())
+                .param("accountId", testAccount.getId().toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + authToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(trade.getId()))
+            .andExpect(jsonPath("$.pair").value("ETH/USDT"));
+    }
+
+    @Test
+    void testGetTradeDetails_WithWrongAccountScope_ReturnsNotFound() throws Exception {
+        createTestTrades();
+        Trade trade = tradeRepository.findAll().stream().findFirst().orElseThrow();
+
+        mockMvc.perform(get("/api/trades/{tradeId}", trade.getId())
+                .param("accountId", "99999")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + authToken))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.message", containsString("Trade not found")));
+    }
+
     private void createTestTrades() {
         // Create BTC trade
         Trade btcTrade = new Trade(

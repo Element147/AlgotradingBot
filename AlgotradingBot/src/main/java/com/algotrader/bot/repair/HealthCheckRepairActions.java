@@ -10,11 +10,21 @@ import java.time.LocalDateTime;
 
 public class HealthCheckRepairActions {
     private static final Logger logger = LoggerFactory.getLogger(HealthCheckRepairActions.class);
+    private final RepairWorkspaceSupport workspaceSupport;
+
+    public HealthCheckRepairActions() {
+        this(RepairWorkspaceSupport.detect());
+    }
+
+    HealthCheckRepairActions(RepairWorkspaceSupport workspaceSupport) {
+        this.workspaceSupport = workspaceSupport;
+    }
 
     public RepairResult restartContainer(String serviceName) {
         logger.info("Restarting container: {}", serviceName);
         try {
-            ProcessBuilder pb = new ProcessBuilder("docker-compose", "restart", serviceName);
+            ProcessBuilder pb = new ProcessBuilder(workspaceSupport.dockerComposeCommand("restart", serviceName));
+            pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
             Process process = pb.start();
             
@@ -43,7 +53,8 @@ public class HealthCheckRepairActions {
     public RepairResult checkServiceLogs(String serviceName) {
         logger.info("Checking logs for service: {}", serviceName);
         try {
-            ProcessBuilder pb = new ProcessBuilder("docker-compose", "logs", "--tail", "100", serviceName);
+            ProcessBuilder pb = new ProcessBuilder(workspaceSupport.dockerComposeCommand("logs", "--tail", "100", serviceName));
+            pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
             Process process = pb.start();
             
@@ -82,8 +93,15 @@ public class HealthCheckRepairActions {
         
         while (Duration.between(start, LocalDateTime.now()).compareTo(timeout) < 0) {
             try {
-                ProcessBuilder pb = new ProcessBuilder("docker", "inspect", 
-                    "--format", "{{.State.Health.Status}}", "algotrading-" + serviceName);
+                ProcessBuilder pb = new ProcessBuilder(
+                    workspaceSupport.dockerCommand(
+                        "inspect",
+                        "--format",
+                        "{{.State.Health.Status}}",
+                        workspaceSupport.containerNameFor(serviceName)
+                    )
+                );
+                pb.directory(workspaceSupport.repoRoot().toFile());
                 pb.redirectErrorStream(true);
                 Process process = pb.start();
                 

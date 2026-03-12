@@ -41,6 +41,9 @@ class AccountServiceTest {
     @Mock
     private TradeRepository tradeRepository;
 
+    @Mock
+    private ExchangeIntegrationService exchangeIntegrationService;
+
     @InjectMocks
     private AccountService accountService;
 
@@ -115,6 +118,19 @@ class AccountServiceTest {
     }
 
     @Test
+    void testGetBalance_LiveEnvironmentThrowsCapabilityError() {
+        when(exchangeIntegrationService.getLiveAccountReadUnavailableReason())
+            .thenReturn("Live account reads are unavailable on this backend.");
+
+        LiveAccountReadUnavailableException exception = assertThrows(
+            LiveAccountReadUnavailableException.class,
+            () -> accountService.getBalance("live", 1L)
+        );
+
+        assertEquals("Live account reads are unavailable on this backend.", exception.getMessage());
+    }
+
+    @Test
     void testGetPerformance_MonthTimeframe() {
         // Arrange
         when(accountRepository.findById(1L)).thenReturn(Optional.of(testAccount));
@@ -170,6 +186,19 @@ class AccountServiceTest {
         assertEquals("40000.00000000", pos1.entryPrice());
         assertEquals("42000.00000000", pos1.currentPrice());
         assertEquals("20.00000000", pos1.unrealizedPnL()); // (42000 - 40000) * 0.01
+    }
+
+    @Test
+    void testGetOpenPositions_LiveEnvironmentThrowsCapabilityError() {
+        when(exchangeIntegrationService.getLiveAccountReadUnavailableReason())
+            .thenReturn("Live account reads are unavailable on this backend.");
+
+        LiveAccountReadUnavailableException exception = assertThrows(
+            LiveAccountReadUnavailableException.class,
+            () -> accountService.getOpenPositions("live", 1L)
+        );
+
+        assertEquals("Live account reads are unavailable on this backend.", exception.getMessage());
     }
 
     @Test

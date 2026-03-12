@@ -109,6 +109,22 @@ class RiskControllerIntegrationTest {
     }
 
     @Test
+    void overrideCircuitBreaker_blocksLiveEnvironmentHeader() throws Exception {
+        CircuitBreakerOverrideRequest request = new CircuitBreakerOverrideRequest(
+            "OVERRIDE_PAPER_ONLY",
+            "manual override"
+        );
+
+        mockMvc.perform(post("/api/risk/circuit-breaker/override")
+                .header("Authorization", "Bearer " + authToken)
+                .header("X-Environment", "live")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isUnprocessableEntity())
+            .andExpect(jsonPath("$.message").value("Circuit breaker override is disabled for live environment"));
+    }
+
+    @Test
     void getAlerts_returnsList() throws Exception {
         mockMvc.perform(get("/api/risk/alerts")
                 .header("Authorization", "Bearer " + authToken))

@@ -3,6 +3,8 @@ import { useState } from 'react';
 
 import { useGetPerformanceQuery, type PerformanceTimeframe } from '../account/accountApi';
 
+import { getApiErrorMessage } from '@/services/api';
+
 /**
  * PerformanceCard Component
  * 
@@ -50,7 +52,7 @@ export const PerformanceCard: React.FC = () => {
       <Card>
         <CardContent>
           <Alert severity="error">
-            Failed to load performance data. Please try again.
+            {getApiErrorMessage(error, 'Failed to load performance data. Please try again.')}
           </Alert>
         </CardContent>
       </Card>

@@ -1,4 +1,5 @@
-﻿import { fetchBaseQuery } from '@reduxjs/toolkit/query';
+﻿import type { SerializedError } from '@reduxjs/toolkit';
+import { fetchBaseQuery } from '@reduxjs/toolkit/query';
 import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolkit/query';
 import { Mutex } from 'async-mutex';
 
@@ -41,7 +42,11 @@ const baseQuery = fetchBaseQuery({
     
     // Add environment mode header (test/live)
     // Note: environmentSlice will be implemented in task 2.3
-    const environment = state.environment?.mode ?? 'test';
+    const requestedEnvironment =
+      typeof arg === 'string'
+        ? null
+        : getHeaderValue(arg.headers, 'X-Environment');
+    const environment = requestedEnvironment ?? state.environment?.mode ?? 'test';
     headers.set('X-Environment', environment);
     
     const method =
@@ -66,6 +71,23 @@ const baseQuery = fetchBaseQuery({
   // Credentials for CORS
   credentials: 'include',
 });
+
+const getHeaderValue = (headers: FetchArgs['headers'], headerName: string): string | null => {
+  if (!headers) {
+    return null;
+  }
+
+  if (headers instanceof Headers) {
+    return headers.get(headerName) ?? headers.get(headerName.toLowerCase());
+  }
+
+  if (Array.isArray(headers)) {
+    const matchedHeader = headers.find(([name]) => name.toLowerCase() === headerName.toLowerCase());
+    return matchedHeader ? matchedHeader[1] : null;
+  }
+
+  return headers[headerName] ?? headers[headerName.toLowerCase()] ?? null;
+};
 
 /**
  * Base query with automatic retry logic
@@ -212,5 +234,49 @@ export const baseQueryWithErrorHandling: BaseQueryFn<
 
 // Export the configured base query for use in API slices
 export const baseQueryWithEnvironment = baseQueryWithErrorHandling;
+
+const extractErrorMessageFromPayload = (payload: unknown): string | null => {
+  if (typeof payload === 'string' && payload.trim().length > 0) {
+    return payload;
+  }
+
+  if (typeof payload !== 'object' || payload === null) {
+    return null;
+  }
+
+  const typedPayload = payload as { message?: unknown; error?: unknown };
+  if (typeof typedPayload.message === 'string' && typedPayload.message.trim().length > 0) {
+    return typedPayload.message;
+  }
+  if (typeof typedPayload.error === 'string' && typedPayload.error.trim().length > 0) {
+    return typedPayload.error;
+  }
+
+  return null;
+};
+
+export const getApiErrorMessage = (error: unknown, fallback = 'An unexpected error occurred'): string => {
+  if (!error) {
+    return fallback;
+  }
+
+  if (typeof error === 'object' && error !== null && 'status' in error) {
+    const queryError = error as FetchBaseQueryError;
+    const payloadMessage = extractErrorMessageFromPayload(queryError.data);
+    if (payloadMessage) {
+      return payloadMessage;
+    }
+    if (typeof queryError.status === 'string' && queryError.status.trim().length > 0) {
+      return queryError.status;
+    }
+  }
+
+  const serializedError = error as SerializedError;
+  if (typeof serializedError.message === 'string' && serializedError.message.trim().length > 0) {
+    return serializedError.message;
+  }
+
+  return fallback;
+};
 
 

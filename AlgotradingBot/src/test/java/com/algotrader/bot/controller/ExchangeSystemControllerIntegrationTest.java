@@ -9,6 +9,10 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.is;
@@ -69,12 +73,27 @@ class ExchangeSystemControllerIntegrationTest {
     }
 
     @Test
-    void triggerBackup_createsBackupFileMetadata() throws Exception {
-        mockMvc.perform(post("/api/system/backup")
+    void triggerBackup_createsDatabaseBackupArtifact() throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/system/backup")
                 .header("Authorization", "Bearer " + authToken))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.path").exists())
-            .andExpect(jsonPath("$.size").exists());
+            .andExpect(jsonPath("$.size").exists())
+            .andReturn();
+
+        String responseBody = result.getResponse().getContentAsString();
+        String pathValue = responseBody.replaceAll(".*\"path\":\"([^\"]+)\".*", "$1").replace("\\\\", "\\");
+        Path backupPath = Path.of(pathValue);
+
+        org.junit.jupiter.api.Assertions.assertTrue(Files.exists(backupPath));
+        String backupContent = Files.readString(backupPath);
+        org.junit.jupiter.api.Assertions.assertFalse(backupContent.contains("Local metadata backup"));
+        org.junit.jupiter.api.Assertions.assertTrue(
+            backupContent.contains("CREATE")
+                || backupContent.contains("INSERT")
+                || backupContent.contains("SET DB_CLOSE_DELAY"),
+            "Expected SQL backup content instead of placeholder metadata."
+        );
     }
 
     @Test

@@ -47,6 +47,22 @@ export interface BacktestDetails extends BacktestHistoryItem {
   startDate: string;
   endDate: string;
   errorMessage: string | null;
+  equityCurve: Array<{
+    timestamp: string;
+    equity: number;
+    drawdownPct: number;
+  }>;
+  tradeSeries: Array<{
+    symbol: string;
+    entryTime: string;
+    exitTime: string;
+    entryPrice: number;
+    exitPrice: number;
+    quantity: number;
+    entryValue: number;
+    exitValue: number;
+    returnPct: number;
+  }>;
 }
 
 export interface BacktestComparisonItem {
@@ -159,4 +175,5 @@ export const {
   useRunBacktestMutation,
   useReplayBacktestMutation,
   useCompareBacktestsQuery,
+  useLazyCompareBacktestsQuery,
 } = backtestApi;

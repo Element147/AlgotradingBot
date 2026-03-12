@@ -1,6 +1,7 @@
 package com.algotrader.bot.backtest;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public record BacktestSimulationResult(
     BigDecimal finalBalance,
@@ -8,6 +9,8 @@ public record BacktestSimulationResult(
     BigDecimal profitFactor,
     BigDecimal winRatePercent,
     BigDecimal maxDrawdownPercent,
-    int totalTrades
+    int totalTrades,
+    List<BacktestEquityPointSample> equitySeries,
+    List<BacktestTradeSample> tradeSeries
 ) {
 }

@@ -1,7 +1,6 @@
 import DownloadIcon from '@mui/icons-material/Download';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {
-  Alert,
   Box,
   Button,
   Card,
@@ -9,6 +8,11 @@ import {
   Chip,
   Grid,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -19,17 +23,16 @@ import { useMemo, useRef } from 'react';
 import type { BacktestDetails } from './backtestApi';
 import {
   createDrawdownCurve,
-  createMonteCarloProjection,
+  createEquityCurve,
   createMonthlyReturns,
-  createSyntheticEquityCurve,
   createTradeDistribution,
-  createWalkForwardProjection,
 } from './backtestVisualization';
 import { MonthlyReturnsHeatmap } from './MonthlyReturnsHeatmap';
 import { TradeDistributionHistogram } from './TradeDistributionHistogram';
 
 import { DrawdownChart } from '@/components/charts/DrawdownChart';
 import { EquityCurve } from '@/components/charts/EquityCurve';
+import { formatCurrency, formatDateTime, formatNumber, formatPercentage } from '@/utils/formatters';
 
 interface BacktestResultsProps {
   details: BacktestDetails;
@@ -90,12 +93,10 @@ const metricDefinitions: Array<{ key: string; label: string; description: string
 
 export function BacktestResults({ details }: BacktestResultsProps) {
   const exportRef = useRef<HTMLDivElement | null>(null);
-  const equityCurve = useMemo(() => createSyntheticEquityCurve(details), [details]);
+  const equityCurve = useMemo(() => createEquityCurve(details), [details]);
   const drawdownCurve = useMemo(() => createDrawdownCurve(equityCurve), [equityCurve]);
   const monthlyReturns = useMemo(() => createMonthlyReturns(equityCurve), [equityCurve]);
   const tradeDistribution = useMemo(() => createTradeDistribution(details), [details]);
-  const monteCarlo = useMemo(() => createMonteCarloProjection(details), [details]);
-  const walkForward = useMemo(() => createWalkForwardProjection(details), [details]);
   const metricValues = [
     details.sharpeRatio.toFixed(2),
     details.profitFactor.toFixed(2),
@@ -136,6 +137,9 @@ export function BacktestResults({ details }: BacktestResultsProps) {
               <Typography variant="body2" color="text.secondary">
                 Algorithm: {details.strategyId} | Dataset: {details.datasetName ?? '-'} | Market: {details.symbol} (
                 {details.timeframe})
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Equity points: {details.equityCurve.length} | Recorded trades: {details.tradeSeries.length}
               </Typography>
             </Box>
             <Stack direction="row" spacing={1} alignItems="center">
@@ -191,45 +195,52 @@ export function BacktestResults({ details }: BacktestResultsProps) {
           <Grid size={{ xs: 12 }}>
             <TradeDistributionHistogram bins={tradeDistribution} />
           </Grid>
+          <Grid size={{ xs: 12 }}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Recorded Trade Series
+                </Typography>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Symbol</TableCell>
+                      <TableCell>Entry</TableCell>
+                      <TableCell>Exit</TableCell>
+                      <TableCell align="right">Quantity</TableCell>
+                      <TableCell align="right">Entry Price</TableCell>
+                      <TableCell align="right">Exit Price</TableCell>
+                      <TableCell align="right">Entry Value</TableCell>
+                      <TableCell align="right">Exit Value</TableCell>
+                      <TableCell align="right">Return</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {details.tradeSeries.map((trade, index) => (
+                      <TableRow key={`${trade.symbol}-${trade.entryTime}-${index}`}>
+                        <TableCell>{trade.symbol}</TableCell>
+                        <TableCell>{formatDateTime(trade.entryTime)}</TableCell>
+                        <TableCell>{formatDateTime(trade.exitTime)}</TableCell>
+                        <TableCell align="right">{formatNumber(trade.quantity, 4)}</TableCell>
+                        <TableCell align="right">{formatCurrency(trade.entryPrice, 2)}</TableCell>
+                        <TableCell align="right">{formatCurrency(trade.exitPrice, 2)}</TableCell>
+                        <TableCell align="right">{formatCurrency(trade.entryValue, 2)}</TableCell>
+                        <TableCell align="right">{formatCurrency(trade.exitValue, 2)}</TableCell>
+                        <TableCell
+                          align="right"
+                          sx={{ color: trade.returnPct >= 0 ? 'success.main' : 'error.main' }}
+                        >
+                          {formatPercentage(trade.returnPct, 2)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
       </Box>
-
-      <Grid container spacing={2} sx={{ mt: 0.5 }}>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Alert
-            severity="info"
-            icon={
-              <Tooltip
-                title="Monte Carlo projection stress-tests robustness by randomizing trade paths, showing expected dispersion."
-                arrow
-              >
-                <InfoOutlinedIcon fontSize="small" sx={{ cursor: 'help' }} />
-              </Tooltip>
-            }
-          >
-            Monte Carlo 95% interval: {monteCarlo.confidence95Floor.toFixed(2)} -{' '}
-            {monteCarlo.confidence95Ceiling.toFixed(2)}. Worst-case projection:{' '}
-            {monteCarlo.worstCase.toFixed(2)}.
-          </Alert>
-        </Grid>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Alert
-            severity="warning"
-            icon={
-              <Tooltip
-                title="Walk-forward compares in-sample tuning vs out-of-sample behavior. Large degradation suggests overfitting risk."
-                arrow
-              >
-                <InfoOutlinedIcon fontSize="small" sx={{ cursor: 'help' }} />
-              </Tooltip>
-            }
-          >
-            Walk-forward: in-sample PF {walkForward.inSampleProfitFactor.toFixed(2)}, out-of-sample PF{' '}
-            {walkForward.outOfSampleProfitFactor.toFixed(2)} ({walkForward.degradationPct.toFixed(1)}%
-            degradation).
-          </Alert>
-        </Grid>
-      </Grid>
     </Box>
   );
 }

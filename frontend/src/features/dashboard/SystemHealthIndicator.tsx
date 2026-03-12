@@ -1,12 +1,13 @@
 /**
  * SystemHealthIndicator Component
- * 
+ *
  * Displays system health status including:
- * - Backend API connection status
+ * - Backend API/system info availability
+ * - Database and Kafka status from the system endpoint
  * - WebSocket connection status with reconnection attempts
  * - Last data update timestamp
- * - Circuit breaker status
- * 
+ * - Circuit breaker state from the risk status endpoint
+ *
  * Requirements: 2.14, 2.15, 2.16
  */
 
@@ -23,65 +24,88 @@ import {
   Box,
   Card,
   CardContent,
-  Typography,
   Chip,
+  CircularProgress,
   Stack,
   Tooltip,
-  CircularProgress,
+  Typography,
 } from '@mui/material';
 import React from 'react';
 import { useSelector } from 'react-redux';
 
-import { useGetBalanceQuery } from '../account/accountApi';
 import {
+  selectConnectionError,
   selectIsConnected,
   selectIsConnecting,
-  selectConnectionError,
-  selectReconnectAttempts,
   selectLastEventTime,
+  selectReconnectAttempts,
 } from '../websocket/websocketSlice';
 
+import { useGetRiskStatusQuery } from '@/features/risk/riskApi';
+import { useGetSystemInfoQuery } from '@/features/settings/exchangeApi';
+import { getApiErrorMessage } from '@/services/api';
 import { formatDistanceToNow } from '@/utils/formatters';
 
-/**
- * Circuit breaker status type
- * TODO: This will be fetched from backend API in future implementation
- */
-type CircuitBreakerStatus = 'ACTIVE' | 'INACTIVE' | 'UNKNOWN';
+type CircuitBreakerStatus = 'ACTIVE' | 'INACTIVE' | 'UNKNOWN' | 'CHECKING';
+
+const renderDependencyChip = (status: string) => {
+  const normalized = status.trim().toUpperCase();
+
+  if (normalized === 'UP') {
+    return <Chip icon={<CheckCircleIcon />} label={status} color="success" size="small" />;
+  }
+
+  if (normalized.startsWith('DOWN')) {
+    return <Chip icon={<ErrorIcon />} label={status} color="error" size="small" />;
+  }
+
+  return <Chip icon={<WarningIcon />} label={status} color="default" size="small" />;
+};
 
 export const SystemHealthIndicator: React.FC = () => {
-  // WebSocket connection state
   const wsConnected = useSelector(selectIsConnected);
   const wsConnecting = useSelector(selectIsConnecting);
   const wsError = useSelector(selectConnectionError);
   const reconnectAttempts = useSelector(selectReconnectAttempts);
   const lastEventTime = useSelector(selectLastEventTime);
 
-  // Backend API connection state (using balance query as health check)
-  const { isError: apiError, isLoading: apiLoading } = useGetBalanceQuery(undefined, {
-    pollingInterval: 60000, // Poll every 60 seconds
+  const {
+    data: systemInfo,
+    isError: systemInfoError,
+    isLoading: systemInfoLoading,
+    error: systemInfoQueryError,
+  } = useGetSystemInfoQuery(undefined, {
+    pollingInterval: 60000,
+    skipPollingIfUnfocused: true,
+  });
+  const {
+    data: riskStatus,
+    isError: riskStatusError,
+    isLoading: riskStatusLoading,
+    error: riskStatusQueryError,
+  } = useGetRiskStatusQuery(undefined, {
+    pollingInterval: 30000,
+    skipPollingIfUnfocused: true,
   });
 
-  // Circuit breaker status (placeholder - will be implemented with backend endpoint)
-  const circuitBreakerStatus: CircuitBreakerStatus = 'INACTIVE' as CircuitBreakerStatus;
-
-  // Determine API connection status
-  const apiConnected = !apiError && !apiLoading;
-  const apiStatus = apiConnected ? 'connected' : apiError ? 'disconnected' : 'connecting';
-
-  // Determine WebSocket connection status
+  const apiStatus = systemInfoLoading ? 'connecting' : systemInfoError ? 'disconnected' : 'connected';
   const wsStatus = wsConnected
     ? 'connected'
     : wsConnecting
-    ? 'connecting'
-    : wsError
-    ? 'error'
-    : 'disconnected';
+      ? 'connecting'
+      : wsError
+        ? 'error'
+        : 'disconnected';
 
-  // Format last update time
-  const lastUpdateText = lastEventTime
-    ? formatDistanceToNow(new Date(lastEventTime))
-    : 'Never';
+  const lastUpdateText = lastEventTime ? formatDistanceToNow(new Date(lastEventTime)) : 'Never';
+
+  const circuitBreakerStatus: CircuitBreakerStatus = riskStatusLoading
+    ? 'CHECKING'
+    : riskStatusError
+      ? 'UNKNOWN'
+      : riskStatus?.circuitBreakerActive
+        ? 'ACTIVE'
+        : 'INACTIVE';
 
   return (
     <Card sx={{ height: '100%' }}>
@@ -91,23 +115,17 @@ export const SystemHealthIndicator: React.FC = () => {
         </Typography>
 
         <Stack spacing={2}>
-          {/* Backend API Connection Status */}
           <Box>
             <Stack direction="row" spacing={1} alignItems="center">
               <Typography variant="body2" color="text.secondary" sx={{ minWidth: 120 }}>
                 Backend API:
               </Typography>
-              {apiStatus === 'connected' && (
-                <Tooltip title="Backend API is connected">
-                  <Chip
-                    icon={<CheckCircleIcon />}
-                    label="Connected"
-                    color="success"
-                    size="small"
-                  />
+              {apiStatus === 'connected' ? (
+                <Tooltip title="System info endpoint is responding">
+                  <Chip icon={<CheckCircleIcon />} label="Connected" color="success" size="small" />
                 </Tooltip>
-              )}
-              {apiStatus === 'connecting' && (
+              ) : null}
+              {apiStatus === 'connecting' ? (
                 <Tooltip title="Connecting to backend API">
                   <Chip
                     icon={<CircularProgress size={16} />}
@@ -116,37 +134,64 @@ export const SystemHealthIndicator: React.FC = () => {
                     size="small"
                   />
                 </Tooltip>
-              )}
-              {apiStatus === 'disconnected' && (
-                <Tooltip title="Backend API is disconnected">
-                  <Chip
-                    icon={<ErrorIcon />}
-                    label="Disconnected"
-                    color="error"
-                    size="small"
-                  />
+              ) : null}
+              {apiStatus === 'disconnected' ? (
+                <Tooltip title={getApiErrorMessage(systemInfoQueryError, 'Backend API is disconnected')}>
+                  <Chip icon={<ErrorIcon />} label="Disconnected" color="error" size="small" />
+                </Tooltip>
+              ) : null}
+            </Stack>
+          </Box>
+
+          <Box>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Typography variant="body2" color="text.secondary" sx={{ minWidth: 120 }}>
+                Database:
+              </Typography>
+              {systemInfoLoading ? (
+                <Chip icon={<CircularProgress size={16} />} label="Checking" color="default" size="small" />
+              ) : systemInfo ? (
+                <Tooltip title={`Database status: ${systemInfo.databaseStatus}`}>
+                  {renderDependencyChip(systemInfo.databaseStatus)}
+                </Tooltip>
+              ) : (
+                <Tooltip title={getApiErrorMessage(systemInfoQueryError, 'Database status is unavailable')}>
+                  <Chip icon={<WarningIcon />} label="Unknown" color="default" size="small" />
                 </Tooltip>
               )}
             </Stack>
           </Box>
 
-          {/* WebSocket Connection Status */}
+          <Box>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Typography variant="body2" color="text.secondary" sx={{ minWidth: 120 }}>
+                Kafka:
+              </Typography>
+              {systemInfoLoading ? (
+                <Chip icon={<CircularProgress size={16} />} label="Checking" color="default" size="small" />
+              ) : systemInfo ? (
+                <Tooltip title={`Kafka status: ${systemInfo.kafkaStatus}`}>
+                  {renderDependencyChip(systemInfo.kafkaStatus)}
+                </Tooltip>
+              ) : (
+                <Tooltip title={getApiErrorMessage(systemInfoQueryError, 'Kafka status is unavailable')}>
+                  <Chip icon={<WarningIcon />} label="Unknown" color="default" size="small" />
+                </Tooltip>
+              )}
+            </Stack>
+          </Box>
+
           <Box>
             <Stack direction="row" spacing={1} alignItems="center">
               <Typography variant="body2" color="text.secondary" sx={{ minWidth: 120 }}>
                 WebSocket:
               </Typography>
-              {wsStatus === 'connected' && (
+              {wsStatus === 'connected' ? (
                 <Tooltip title="WebSocket is connected">
-                  <Chip
-                    icon={<WifiIcon />}
-                    label="Connected"
-                    color="success"
-                    size="small"
-                  />
+                  <Chip icon={<WifiIcon />} label="Connected" color="success" size="small" />
                 </Tooltip>
-              )}
-              {wsStatus === 'connecting' && (
+              ) : null}
+              {wsStatus === 'connecting' ? (
                 <Tooltip title="Connecting to WebSocket">
                   <Chip
                     icon={<CircularProgress size={16} />}
@@ -155,90 +200,67 @@ export const SystemHealthIndicator: React.FC = () => {
                     size="small"
                   />
                 </Tooltip>
-              )}
-              {wsStatus === 'disconnected' && (
+              ) : null}
+              {wsStatus === 'disconnected' ? (
                 <Tooltip title="WebSocket is disconnected">
-                  <Chip
-                    icon={<WifiOffIcon />}
-                    label="Disconnected"
-                    color="default"
-                    size="small"
-                  />
+                  <Chip icon={<WifiOffIcon />} label="Disconnected" color="default" size="small" />
                 </Tooltip>
-              )}
-              {wsStatus === 'error' && (
+              ) : null}
+              {wsStatus === 'error' ? (
                 <Tooltip title={`WebSocket error: ${wsError || 'Unknown error'}`}>
-                  <Chip
-                    icon={<ErrorIcon />}
-                    label="Error"
-                    color="error"
-                    size="small"
-                  />
+                  <Chip icon={<ErrorIcon />} label="Error" color="error" size="small" />
                 </Tooltip>
-              )}
+              ) : null}
             </Stack>
 
-            {/* Show reconnection attempts if any */}
-            {reconnectAttempts > 0 && (
+            {reconnectAttempts > 0 ? (
               <Typography variant="caption" color="text.secondary" sx={{ ml: 15, display: 'block' }}>
                 Reconnection attempts: {reconnectAttempts}
               </Typography>
-            )}
+            ) : null}
           </Box>
 
-          {/* Last Data Update */}
           <Box>
             <Stack direction="row" spacing={1} alignItems="center">
               <Typography variant="body2" color="text.secondary" sx={{ minWidth: 120 }}>
                 Last Update:
               </Typography>
               <Tooltip title={lastEventTime ? new Date(lastEventTime).toLocaleString() : 'No updates received'}>
-                <Chip
-                  icon={<UpdateIcon />}
-                  label={lastUpdateText}
-                  size="small"
-                  variant="outlined"
-                />
+                <Chip icon={<UpdateIcon />} label={lastUpdateText} size="small" variant="outlined" />
               </Tooltip>
             </Stack>
           </Box>
 
-          {/* Circuit Breaker Status */}
           <Box>
             <Stack direction="row" spacing={1} alignItems="center">
               <Typography variant="body2" color="text.secondary" sx={{ minWidth: 120 }}>
                 Circuit Breaker:
               </Typography>
-              {circuitBreakerStatus === 'ACTIVE' && (
-                <Tooltip title="Circuit breaker is active - trading is paused">
-                  <Chip
-                    icon={<WarningIcon />}
-                    label="Active"
-                    color="error"
-                    size="small"
-                  />
+              {circuitBreakerStatus === 'ACTIVE' ? (
+                <Tooltip title={riskStatus?.circuitBreakerReason || 'Circuit breaker is active - trading is paused'}>
+                  <Chip icon={<WarningIcon />} label="Active" color="error" size="small" />
                 </Tooltip>
-              )}
-              {circuitBreakerStatus === 'INACTIVE' && (
-                <Tooltip title="Circuit breaker is inactive - trading is normal">
-                  <Chip
-                    icon={<ShieldIcon />}
-                    label="Inactive"
-                    color="success"
-                    size="small"
-                  />
+              ) : null}
+              {circuitBreakerStatus === 'INACTIVE' ? (
+                <Tooltip title={riskStatus?.circuitBreakerReason || 'Circuit breaker is inactive - trading is normal'}>
+                  <Chip icon={<ShieldIcon />} label="Inactive" color="success" size="small" />
                 </Tooltip>
-              )}
-              {circuitBreakerStatus === 'UNKNOWN' && (
-                <Tooltip title="Circuit breaker status is unknown">
+              ) : null}
+              {circuitBreakerStatus === 'CHECKING' ? (
+                <Tooltip title="Checking circuit breaker status">
                   <Chip
-                    icon={<WarningIcon />}
-                    label="Unknown"
+                    icon={<CircularProgress size={16} />}
+                    label="Checking"
                     color="default"
                     size="small"
                   />
                 </Tooltip>
-              )}
+              ) : null}
+              {circuitBreakerStatus === 'UNKNOWN' ? (
+                <Tooltip title={getApiErrorMessage(riskStatusQueryError, 'Circuit breaker status is unknown')}>
+                  <Chip icon={<WarningIcon />} label="Unknown" color="default" size="small" />
+                </Tooltip>
+              ) : null}
             </Stack>
           </Box>
         </Stack>

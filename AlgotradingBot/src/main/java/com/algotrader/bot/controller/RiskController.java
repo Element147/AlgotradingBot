@@ -1,5 +1,6 @@
 package com.algotrader.bot.controller;
 
+import com.algotrader.bot.service.EnvironmentRequestResolver;
 import com.algotrader.bot.service.RiskManagementService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -13,9 +14,14 @@ import java.util.List;
 public class RiskController {
 
     private final RiskManagementService riskManagementService;
+    private final EnvironmentRequestResolver environmentRequestResolver;
 
-    public RiskController(RiskManagementService riskManagementService) {
+    public RiskController(
+        RiskManagementService riskManagementService,
+        EnvironmentRequestResolver environmentRequestResolver
+    ) {
         this.riskManagementService = riskManagementService;
+        this.environmentRequestResolver = environmentRequestResolver;
     }
 
     @GetMapping("/status")
@@ -45,9 +51,11 @@ public class RiskController {
     @PostMapping("/circuit-breaker/override")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<RiskConfigResponse> overrideCircuitBreaker(
-        @RequestHeader(name = "X-Environment", required = false, defaultValue = "test") String environment,
+        @RequestParam(required = false) String env,
+        @RequestHeader(name = "X-Environment", required = false) String headerEnvironment,
         @Valid @RequestBody CircuitBreakerOverrideRequest request
     ) {
+        String environment = environmentRequestResolver.resolve(env, headerEnvironment);
         return ResponseEntity.ok(riskManagementService.overrideCircuitBreaker(environment, request));
     }
 

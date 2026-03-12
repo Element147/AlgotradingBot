@@ -36,7 +36,9 @@ public class BacktestSimulationMetricsCalculator {
             profitFactor,
             winRatePercent,
             maxDrawdownPercent,
-            totalTrades
+            totalTrades,
+            List.of(),
+            List.of()
         );
     }
 

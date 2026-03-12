@@ -52,7 +52,7 @@ public class SystemController {
 
     @PostMapping("/backup")
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "Trigger a local backup placeholder file")
+    @Operation(summary = "Trigger a database backup artifact")
     public ResponseEntity<BackupResponse> triggerBackup() {
         return ResponseEntity.ok(systemOperationsService.triggerBackup());
     }

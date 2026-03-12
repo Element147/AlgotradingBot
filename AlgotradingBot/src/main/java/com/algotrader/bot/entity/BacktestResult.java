@@ -7,6 +7,8 @@ import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * JPA entity representing backtest results for strategy validation.
@@ -114,6 +116,14 @@ public class BacktestResult {
 
     @Column
     private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "backtestResult", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("pointTimestamp ASC")
+    private List<BacktestEquityPoint> equityPoints = new ArrayList<>();
+
+    @OneToMany(mappedBy = "backtestResult", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("entryTime ASC")
+    private List<BacktestTradeSeriesItem> tradeSeries = new ArrayList<>();
 
     /**
      * Validation status enum for backtest results
@@ -357,6 +367,40 @@ public class BacktestResult {
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    public List<BacktestEquityPoint> getEquityPoints() {
+        return equityPoints;
+    }
+
+    public void replaceEquityPoints(List<BacktestEquityPoint> nextEquityPoints) {
+        equityPoints.clear();
+        if (nextEquityPoints == null) {
+            return;
+        }
+        nextEquityPoints.forEach(this::addEquityPoint);
+    }
+
+    public void addEquityPoint(BacktestEquityPoint equityPoint) {
+        equityPoint.setBacktestResult(this);
+        equityPoints.add(equityPoint);
+    }
+
+    public List<BacktestTradeSeriesItem> getTradeSeries() {
+        return tradeSeries;
+    }
+
+    public void replaceTradeSeries(List<BacktestTradeSeriesItem> nextTradeSeries) {
+        tradeSeries.clear();
+        if (nextTradeSeries == null) {
+            return;
+        }
+        nextTradeSeries.forEach(this::addTradeSeriesItem);
+    }
+
+    public void addTradeSeriesItem(BacktestTradeSeriesItem tradeSeriesItem) {
+        tradeSeriesItem.setBacktestResult(this);
+        tradeSeries.add(tradeSeriesItem);
     }
 
     @Override

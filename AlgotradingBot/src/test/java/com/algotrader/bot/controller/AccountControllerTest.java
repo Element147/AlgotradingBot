@@ -124,6 +124,27 @@ class AccountControllerTest {
     }
 
     @Test
+    void testGetBalance_UsesEnvironmentHeaderRouting() throws Exception {
+        mockMvc.perform(get("/api/account/balance")
+                        .header("Authorization", "Bearer " + authToken)
+                        .header("X-Environment", "live")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message", containsString("Live account reads are unavailable")));
+    }
+
+    @Test
+    void testGetBalance_QueryEnvironmentOverridesHeader() throws Exception {
+        mockMvc.perform(get("/api/account/balance")
+                        .param("env", "test")
+                        .header("Authorization", "Bearer " + authToken)
+                        .header("X-Environment", "live")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.available").value("900.00000000"));
+    }
+
+    @Test
     void testGetBalance_Unauthorized() throws Exception {
         mockMvc.perform(get("/api/account/balance")
                         .param("env", "test")
@@ -218,6 +239,16 @@ class AccountControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray());
+    }
+
+    @Test
+    void testGetRecentTrades_LiveEnvironmentReturnsCapabilityError() throws Exception {
+        mockMvc.perform(get("/api/trades/recent")
+                        .header("Authorization", "Bearer " + authToken)
+                        .header("X-Environment", "live")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message", containsString("Live account reads are unavailable")));
     }
 
     private Trade createTrade(String symbol, BigDecimal entryPrice, 

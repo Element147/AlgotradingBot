@@ -169,11 +169,6 @@ export default function TradesPage() {
     return filteredTrades.slice(start, start + pageSize);
   }, [filteredTrades, page]);
 
-  const selectedTrade = useMemo(
-    () => filteredTrades.find((trade) => trade.id === selectedTradeId) ?? null,
-    [filteredTrades, selectedTradeId]
-  );
-
   const symbols = useMemo(() => {
     const unique = new Set(trades.map((trade) => trade.pair));
     return Array.from(unique).sort((left, right) => left.localeCompare(right));
@@ -461,8 +456,9 @@ export default function TradesPage() {
       </Box>
 
       <TradeDetailsModal
-        trade={selectedTrade}
-        open={Boolean(selectedTrade)}
+        tradeId={selectedTradeId}
+        accountId={query.accountId}
+        open={selectedTradeId !== null}
         onClose={() => setSelectedTradeId(null)}
       />
     </AppLayout>

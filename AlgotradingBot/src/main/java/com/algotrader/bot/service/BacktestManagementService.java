@@ -4,9 +4,11 @@ import com.algotrader.bot.backtest.strategy.BacktestStrategyRegistry;
 import com.algotrader.bot.controller.BacktestComparisonItemResponse;
 import com.algotrader.bot.controller.BacktestComparisonResponse;
 import com.algotrader.bot.controller.BacktestDetailsResponse;
+import com.algotrader.bot.controller.BacktestEquityPointResponse;
 import com.algotrader.bot.controller.BacktestHistoryItemResponse;
 import com.algotrader.bot.controller.BacktestRunResponse;
 import com.algotrader.bot.controller.BacktestAlgorithmResponse;
+import com.algotrader.bot.controller.BacktestTradeSeriesItemResponse;
 import com.algotrader.bot.controller.RunBacktestRequest;
 import com.algotrader.bot.entity.BacktestDataset;
 import com.algotrader.bot.entity.BacktestResult;
@@ -305,7 +307,27 @@ public class BacktestManagementService {
             result.getStartDate(),
             result.getEndDate(),
             result.getTimestamp(),
-            result.getErrorMessage()
+            result.getErrorMessage(),
+            result.getEquityPoints().stream()
+                .map(point -> new BacktestEquityPointResponse(
+                    point.getPointTimestamp(),
+                    point.getEquity(),
+                    point.getDrawdownPct()
+                ))
+                .toList(),
+            result.getTradeSeries().stream()
+                .map(item -> new BacktestTradeSeriesItemResponse(
+                    item.getSymbol(),
+                    item.getEntryTime(),
+                    item.getExitTime(),
+                    item.getEntryPrice(),
+                    item.getExitPrice(),
+                    item.getQuantity(),
+                    item.getEntryValue(),
+                    item.getExitValue(),
+                    item.getReturnPct()
+                ))
+                .toList()
         );
     }
 

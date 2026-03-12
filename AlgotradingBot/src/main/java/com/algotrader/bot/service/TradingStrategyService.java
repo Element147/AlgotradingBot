@@ -212,6 +212,18 @@ public class TradingStrategyService {
             .toList();
     }
 
+    @Transactional(readOnly = true)
+    public TradeHistoryResponse getTradeDetails(Long tradeId, Long accountId) {
+        Trade trade = tradeRepository.findById(tradeId)
+            .orElseThrow(() -> new EntityNotFoundException("Trade not found with ID: " + tradeId));
+
+        if (accountId != null && !accountId.equals(trade.getAccountId())) {
+            throw new EntityNotFoundException("Trade not found with ID: " + tradeId + " for account " + accountId);
+        }
+
+        return mapToTradeHistoryResponse(trade);
+    }
+
     /**
      * Get backtest results with optional filters.
      *

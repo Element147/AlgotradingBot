@@ -118,7 +118,7 @@ describe('RecentTradesList', { timeout: 15000 }, () => {
       </Provider>
     );
 
-    expect(screen.getByText(/Failed to load trades/i)).toBeInTheDocument();
+    expect(screen.getByText('Server error')).toBeInTheDocument();
   });
 
   it('should render empty state when no trades', () => {

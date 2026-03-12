@@ -6,6 +6,7 @@ import {
   Button,
   Card,
   CardContent,
+  Chip,
   FormControl,
   FormControlLabel,
   Grid,
@@ -15,6 +16,11 @@ import {
   Stack,
   Switch,
   Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
   Tabs,
   TextField,
   Typography,
@@ -26,6 +32,7 @@ import {
   useGetExchangeConnectionStatusQuery,
   useGetExchangeOrdersQuery,
   useGetSystemInfoQuery,
+  useGetAuditEventsQuery,
   useTestExchangeConnectionMutation,
   useTriggerBackupMutation,
 } from './exchangeApi';
@@ -47,6 +54,9 @@ import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { FieldTooltip } from '@/components/ui/FieldTooltip';
 import { selectEnvironmentMode, setEnvironmentMode } from '@/features/environment/environmentSlice';
+import { getApiErrorMessage } from '@/services/api';
+import { getErrorMessage } from '@/services/axiosClient';
+import { formatDateTime, truncate } from '@/utils/formatters';
 
 const defaultCommandList = [
   'cd /d C:\\Git\\algotradingbot\\AlgotradingBot && docker compose -f compose.yaml up -d postgres',
@@ -56,7 +66,7 @@ const defaultCommandList = [
   'cd /d C:\\Git\\algotradingbot\\frontend && npm run dev',
 ];
 
-type SettingsTab = 'api' | 'notifications' | 'display' | 'database' | 'exchange';
+type SettingsTab = 'api' | 'notifications' | 'display' | 'database' | 'exchange' | 'audit';
 
 const initialApiConfig = {
   exchange: 'binance',
@@ -85,16 +95,35 @@ export default function SettingsPage() {
   const [revealSecret, setRevealSecret] = useState(false);
 
   const { data: systemInfo, isError: isSystemInfoError } = useGetSystemInfoQuery();
-  const { data: exchangeBalance, refetch: refetchBalance, isError: isExchangeBalanceError } =
+  const {
+    data: exchangeBalance,
+    refetch: refetchBalance,
+    isError: isExchangeBalanceError,
+    error: exchangeBalanceError,
+  } =
     useGetExchangeBalanceQuery(undefined, {
       pollingInterval: environmentMode === 'live' ? 60000 : 0,
       skipPollingIfUnfocused: true,
     });
-  const { data: exchangeOrders = [] } = useGetExchangeOrdersQuery(undefined, {
+  const {
+    data: exchangeOrders = [],
+    isError: isExchangeOrdersError,
+    error: exchangeOrdersError,
+  } = useGetExchangeOrdersQuery(undefined, {
     pollingInterval: environmentMode === 'live' ? 60000 : 0,
     skipPollingIfUnfocused: true,
   });
-  const { data: connectionStatus, isError: isConnectionError } = useGetExchangeConnectionStatusQuery();
+  const {
+    data: connectionStatus,
+    isError: isConnectionError,
+    error: connectionStatusError,
+  } = useGetExchangeConnectionStatusQuery();
+  const { data: auditEvents = [], isLoading: isAuditLoading, isError: isAuditError, refetch: refetchAudit } =
+    useGetAuditEventsQuery(100, {
+      skip: !isAdmin,
+      pollingInterval: isAdmin ? 30000 : 0,
+      skipPollingIfUnfocused: true,
+    });
   const [testConnection, { isLoading: isTestingConnection }] = useTestExchangeConnectionMutation();
   const [triggerBackup, { isLoading: isBackingUp }] = useTriggerBackupMutation();
 
@@ -122,13 +151,15 @@ export default function SettingsPage() {
         testnet: apiConfig.testnet,
       }).unwrap();
       setFeedback({
-        severity: 'success',
-        message: `Connection ${result.connected ? 'successful' : 'failed'} (${result.rateLimitUsage}).`,
+        severity: result.connected ? 'success' : 'warning',
+        message: result.connected
+          ? `Connection successful (${result.rateLimitUsage}).`
+          : `Connection failed: ${result.error ?? result.rateLimitUsage}.`,
       });
-    } catch {
+    } catch (error) {
       setFeedback({
-        severity: 'warning',
-        message: 'Connection test endpoint is unavailable locally. Verify backend support for /api/system/test-connection.',
+        severity: 'error',
+        message: getErrorMessage(error),
       });
     }
   };
@@ -137,16 +168,16 @@ export default function SettingsPage() {
     try {
       const result = await triggerBackup().unwrap();
       setFeedback({ severity: 'success', message: `Backup triggered: ${result.path} (${result.size}).` });
-    } catch {
+    } catch (error) {
       setFeedback({
-        severity: 'warning',
-        message: 'Backup endpoint unavailable locally. Verify backend support for /api/system/backup.',
+        severity: 'error',
+        message: getErrorMessage(error),
       });
     }
   };
 
   const activeTab: SettingsTab =
-    !isAdmin && (tab === 'api' || tab === 'database') ? 'display' : tab;
+    !isAdmin && (tab === 'api' || tab === 'database' || tab === 'audit') ? 'display' : tab;
 
   return (
     <AppLayout>
@@ -176,6 +207,7 @@ export default function SettingsPage() {
               <Tab value="notifications" label="Notifications" />
               <Tab value="display" label="Display" />
               {isAdmin ? <Tab value="database" label="Database" /> : null}
+              {isAdmin ? <Tab value="audit" label="Audit Trail" /> : null}
               <Tab value="exchange" label="Exchange" />
             </Tabs>
           </CardContent>
@@ -476,7 +508,7 @@ export default function SettingsPage() {
                   </Typography>
                   {isSystemInfoError ? (
                     <Alert severity="warning">
-                      System info endpoint unavailable locally. Use command scripts and health endpoint as fallback.
+                      Unable to load system information. Use the standard run scripts and health endpoint as a fallback.
                     </Alert>
                   ) : (
                     <Stack spacing={1}>
@@ -530,7 +562,10 @@ export default function SettingsPage() {
                   </Stack>
                   {isExchangeBalanceError ? (
                     <Alert severity="warning">
-                      Live exchange balance endpoint unavailable. Ensure backend supports live routing.
+                      {getApiErrorMessage(
+                        exchangeBalanceError,
+                        'Unable to load live exchange balance data for the current environment.'
+                      )}
                     </Alert>
                   ) : (
                     <Stack spacing={1}>
@@ -559,7 +594,10 @@ export default function SettingsPage() {
                   </Typography>
                   {isConnectionError ? (
                     <Alert severity="warning">
-                      Connection status endpoint unavailable. Use test connection action to verify.
+                      {getApiErrorMessage(
+                        connectionStatusError,
+                        'Unable to load connection status. Use the test-connection action to verify credentials.'
+                      )}
                     </Alert>
                   ) : (
                     <Stack spacing={1}>
@@ -590,7 +628,14 @@ export default function SettingsPage() {
                     Open Orders
                   </Typography>
                   <Stack spacing={0.5}>
-                    {exchangeOrders.length === 0 ? (
+                    {isExchangeOrdersError ? (
+                      <Alert severity="warning">
+                        {getApiErrorMessage(
+                          exchangeOrdersError,
+                          'Unable to load open orders for the live environment.'
+                        )}
+                      </Alert>
+                    ) : exchangeOrders.length === 0 ? (
                       <Typography variant="body2">No open orders reported.</Typography>
                     ) : (
                       exchangeOrders.slice(0, 10).map((order) => (
@@ -605,6 +650,76 @@ export default function SettingsPage() {
               </Card>
             </Grid>
           </Grid>
+        ) : null}
+
+        {activeTab === 'audit' ? (
+          <Card>
+            <CardContent>
+              <Stack
+                direction={{ xs: 'column', md: 'row' }}
+                spacing={1}
+                justifyContent="space-between"
+                alignItems={{ xs: 'flex-start', md: 'center' }}
+                sx={{ mb: 2 }}
+              >
+                <Box>
+                  <Typography variant="h6">Operator Audit Trail</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Recent critical operator actions and system-side outcomes.
+                  </Typography>
+                </Box>
+                <Button variant="outlined" onClick={() => void refetchAudit()} disabled={isAuditLoading}>
+                  Refresh Audit Trail
+                </Button>
+              </Stack>
+
+              {isAuditError ? (
+                <Alert severity="error">Unable to load operator audit events.</Alert>
+              ) : null}
+
+              {!isAuditError && auditEvents.length === 0 ? (
+                <Alert severity="info">No operator audit events have been recorded yet.</Alert>
+              ) : null}
+
+              {!isAuditError && auditEvents.length > 0 ? (
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Time</TableCell>
+                      <TableCell>Actor</TableCell>
+                      <TableCell>Action</TableCell>
+                      <TableCell>Environment</TableCell>
+                      <TableCell>Target</TableCell>
+                      <TableCell>Outcome</TableCell>
+                      <TableCell>Details</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {auditEvents.map((event) => (
+                      <TableRow key={event.id}>
+                        <TableCell>{formatDateTime(event.createdAt)}</TableCell>
+                        <TableCell>{event.actor}</TableCell>
+                        <TableCell>{event.action}</TableCell>
+                        <TableCell>{event.environment}</TableCell>
+                        <TableCell>
+                          {event.targetType}
+                          {event.targetId ? `:${event.targetId}` : ''}
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            size="small"
+                            label={event.outcome}
+                            color={event.outcome === 'SUCCESS' ? 'success' : 'error'}
+                          />
+                        </TableCell>
+                        <TableCell title={event.details ?? ''}>{truncate(event.details ?? '-', 80)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : null}
+            </CardContent>
+          </Card>
         ) : null}
       </Box>
     </AppLayout>

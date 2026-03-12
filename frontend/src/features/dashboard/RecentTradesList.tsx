@@ -16,6 +16,7 @@ import {
 import React from 'react';
 
 import { useGetRecentTradesQuery } from '@/features/account/accountApi';
+import { getApiErrorMessage } from '@/services/api';
 import { formatCurrency, formatPercentage, formatDateTime } from '@/utils/formatters';
 
 /**
@@ -57,9 +58,7 @@ export const RecentTradesList: React.FC = () => {
           <Typography variant="h6" gutterBottom>
             Recent Trades
           </Typography>
-          <Alert severity="error">
-            Failed to load trades. Please try again.
-          </Alert>
+          <Alert severity="error">{getApiErrorMessage(error, 'Failed to load trades. Please try again.')}</Alert>
         </CardContent>
       </Card>
     );

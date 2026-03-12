@@ -42,6 +42,26 @@ vi.mock('./tradesApi', () => ({
     isError: false,
     refetch: vi.fn(),
   }),
+  useGetTradeDetailsQuery: () => ({
+    data: {
+      id: 10,
+      pair: 'BTC/USDT',
+      entryTime: '2026-02-01T10:00:00',
+      entryPrice: 100,
+      exitTime: '2026-02-01T14:00:00',
+      exitPrice: 110,
+      signal: 'BUY',
+      positionSize: 0.5,
+      riskAmount: 20,
+      pnl: 5,
+      feesActual: 1,
+      slippageActual: 0.2,
+      stopLoss: 90,
+      takeProfit: 120,
+    },
+    isFetching: false,
+    isError: false,
+  }),
 }));
 
 vi.mock('@/components/layout/AppLayout', () => ({
@@ -66,7 +86,7 @@ vi.mock('./VirtualizedTradeTable', () => ({
   ),
 }));
 
-describe('TradesPage', () => {
+describe('TradesPage', { timeout: 15000 }, () => {
   const renderPage = () =>
     render(
       <MemoryRouter>

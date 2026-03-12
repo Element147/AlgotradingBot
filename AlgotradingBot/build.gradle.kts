@@ -123,3 +123,20 @@ tasks.register<JavaExec>("validateProduction") {
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set("com.algotrader.bot.validation.ValidationSuite")
 }
+
+tasks.register<Test>("exportOpenApiContract") {
+    group = "verification"
+    description = "Export the generated OpenAPI contract to build/openapi/openapi.json"
+
+    useJUnitPlatform()
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    systemProperty("spring.profiles.active", "test")
+    systemProperty(
+        "openapi.output",
+        layout.buildDirectory.file("openapi/openapi.json").get().asFile.absolutePath
+    )
+    filter {
+        includeTestsMatching("com.algotrader.bot.controller.OpenApiContractExportTest")
+    }
+}

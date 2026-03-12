@@ -8,7 +8,7 @@ Local-first full-stack algorithmic trading research platform for strategy resear
 - Live-money trading is never enabled by default.
 - Backtests and paper results are research artifacts, not proof of future profitability.
 
-## Current Capability Snapshot (March 11, 2026)
+## Current Capability Snapshot (March 12, 2026)
 
 Implemented and usable end-to-end:
 
@@ -16,10 +16,13 @@ Implemented and usable end-to-end:
 - Backtest execution, history, and details
 - Backtest replay and side-by-side comparison APIs
 - Dataset reproducibility metadata (`checksumSha256`, schema version) plus dataset download endpoint
+- Persisted backtest equity/trade series with chart/export support in the UI
 - Risk configuration and circuit-breaker controls
 - Paper-trading lifecycle and dashboard state
 - Operator audit-event trail for critical actions (`/api/system/audit-events`)
+- System backup endpoint with real database dump artifacts
 - CI verification gates for backend and frontend (`.github/workflows/ci.yml`)
+- Generated OpenAPI contract export and frontend contract drift check
 - Small-account strategy catalog in backend backtest engine
 
 Backtest strategy catalog:
@@ -76,6 +79,7 @@ cd frontend
 npm run lint
 npm run test -- --watch=false
 npm run build
+npm run contract:check
 ```
 
 Backend:
@@ -85,6 +89,21 @@ cd AlgotradingBot
 .\gradlew.bat test
 .\gradlew.bat build
 ```
+
+## Auth Runbook
+
+Normal local login:
+
+1. Start the stack with `.\build.ps1` and `.\run.ps1`.
+2. Open the frontend and sign in with the seeded local account `admin` / `dogbert`, unless you created another user.
+3. Leave strict auth enabled for normal verification and day-to-day development.
+
+Dev-only auth override:
+
+1. Use `ALGOTRADING_RELAXED_AUTH=true` only for isolated local debugging when you explicitly need unauthenticated `/api/**` access.
+2. In PowerShell, set the override before startup: `$env:ALGOTRADING_RELAXED_AUTH='true'`.
+3. Start the backend or full stack, reproduce the issue quickly, then remove the override with `Remove-Item Env:ALGOTRADING_RELAXED_AUTH`.
+4. Re-run normal verification with strict auth restored before considering the task complete.
 
 ## Canonical Documentation
 

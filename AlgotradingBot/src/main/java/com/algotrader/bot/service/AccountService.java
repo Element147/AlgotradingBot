@@ -31,13 +31,16 @@ public class AccountService {
     private final AccountRepository accountRepository;
     private final PortfolioRepository portfolioRepository;
     private final TradeRepository tradeRepository;
+    private final ExchangeIntegrationService exchangeIntegrationService;
 
     public AccountService(AccountRepository accountRepository,
                          PortfolioRepository portfolioRepository,
-                         TradeRepository tradeRepository) {
+                         TradeRepository tradeRepository,
+                         ExchangeIntegrationService exchangeIntegrationService) {
         this.accountRepository = accountRepository;
         this.portfolioRepository = portfolioRepository;
         this.tradeRepository = tradeRepository;
+        this.exchangeIntegrationService = exchangeIntegrationService;
     }
 
     /**
@@ -51,14 +54,9 @@ public class AccountService {
      */
     @Transactional(readOnly = true)
     public BalanceResponse getBalance(String environment, Long accountId) {
+        assertLiveReadsSupported(environment);
         Long resolvedAccountId = resolveAccountId(accountId);
         logger.info("Fetching balance for account {} in {} environment", accountId, environment);
-
-        if ("live".equalsIgnoreCase(environment)) {
-            // TODO: Implement live exchange API integration
-            logger.warn("Live environment not yet implemented, returning test data");
-            return getLiveBalance(resolvedAccountId);
-        }
 
         return getTestBalance(resolvedAccountId);
     }
@@ -110,15 +108,6 @@ public class AccountService {
     }
 
     /**
-     * Get balance from live exchange API (placeholder).
-     */
-    private BalanceResponse getLiveBalance(Long accountId) {
-        // Placeholder: return test balance for now
-        // TODO: Implement actual exchange API integration (Binance, Coinbase, Kraken)
-        return getTestBalance(accountId);
-    }
-
-    /**
      * Get performance metrics for specified timeframe.
      *
      * @param environment "test" or "live"
@@ -128,6 +117,7 @@ public class AccountService {
      */
     @Transactional(readOnly = true)
     public PerformanceResponse getPerformance(String environment, Long accountId, String timeframe) {
+        assertLiveReadsSupported(environment);
         Long resolvedAccountId = resolveAccountId(accountId);
         logger.info("Fetching performance for account {} in {} environment, timeframe: {}", 
                    resolvedAccountId, environment, timeframe);
@@ -189,6 +179,7 @@ public class AccountService {
      */
     @Transactional(readOnly = true)
     public List<OpenPositionResponse> getOpenPositions(String environment, Long accountId) {
+        assertLiveReadsSupported(environment);
         Long resolvedAccountId = resolveAccountId(accountId);
         logger.info("Fetching open positions for account {} in {} environment", resolvedAccountId, environment);
 
@@ -218,6 +209,7 @@ public class AccountService {
      */
     @Transactional(readOnly = true)
     public List<RecentTradeResponse> getRecentTrades(String environment, Long accountId, int limit) {
+        assertLiveReadsSupported(environment);
         Long resolvedAccountId = resolveAccountId(accountId);
         logger.info("Fetching recent {} trades for account {} in {} environment", 
                    limit, resolvedAccountId, environment);
@@ -281,5 +273,11 @@ public class AccountService {
         return accountRepository.findTopByOrderByCreatedAtDesc()
                 .map(Account::getId)
                 .orElseThrow(() -> new RuntimeException("No trading account found"));
+    }
+
+    private void assertLiveReadsSupported(String environment) {
+        if (EnvironmentRequestResolver.LIVE.equalsIgnoreCase(environment)) {
+            throw new LiveAccountReadUnavailableException(exchangeIntegrationService.getLiveAccountReadUnavailableReason());
+        }
     }
 }

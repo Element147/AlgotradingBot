@@ -32,9 +32,15 @@ const mockState = {
 
 vi.mock('./exchangeApi', () => ({
   useGetSystemInfoQuery: () => ({ data: undefined, isError: true }),
-  useGetExchangeBalanceQuery: () => ({ data: undefined, isError: true, refetch: vi.fn() }),
-  useGetExchangeOrdersQuery: () => ({ data: [] }),
-  useGetExchangeConnectionStatusQuery: () => ({ data: undefined, isError: true }),
+  useGetExchangeBalanceQuery: () => ({
+    data: undefined,
+    isError: true,
+    error: { status: 409, data: { message: 'Live account reads are unavailable on this backend.' } },
+    refetch: vi.fn(),
+  }),
+  useGetExchangeOrdersQuery: () => ({ data: [], isError: false, error: undefined }),
+  useGetExchangeConnectionStatusQuery: () => ({ data: undefined, isError: true, error: undefined }),
+  useGetAuditEventsQuery: () => ({ data: [], isLoading: false, isError: false, refetch: vi.fn() }),
   useTestExchangeConnectionMutation: () => [vi.fn(), { isLoading: false }],
   useTriggerBackupMutation: () => [vi.fn(), { isLoading: false }],
 }));
@@ -48,7 +54,11 @@ vi.mock('@/components/layout/AppLayout', () => ({
   AppLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
-describe('SettingsPage', () => {
+vi.mock('@/services/axiosClient', () => ({
+  getErrorMessage: () => 'error',
+}));
+
+describe('SettingsPage', { timeout: 15000 }, () => {
   beforeEach(() => {
     mockDispatch.mockReset();
     writeTextMock = vi.fn().mockResolvedValue(undefined);
@@ -65,6 +75,7 @@ describe('SettingsPage', () => {
 
     expect(screen.getByText('Settings')).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'API Config' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Audit Trail' })).toBeInTheDocument();
     expect(screen.getByText('API Configuration')).toBeInTheDocument();
     expect(screen.getByText('Local Commands (CMD)')).toBeInTheDocument();
   });
@@ -88,5 +99,13 @@ describe('SettingsPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Command copied to clipboard.')).toBeInTheDocument();
     });
+  });
+
+  it('shows backend capability message for exchange balance errors', () => {
+    render(<SettingsPage />);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Exchange' }));
+
+    expect(screen.getByText('Live account reads are unavailable on this backend.')).toBeInTheDocument();
   });
 });

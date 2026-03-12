@@ -5,33 +5,18 @@ import type { HistogramBin } from './TradeDistributionHistogram';
 import type { DrawdownPoint } from '@/components/charts/DrawdownChart';
 import type { EquityCurvePoint } from '@/components/charts/EquityCurve';
 
+export const createEquityCurve = (details: BacktestDetails): EquityCurvePoint[] => {
+  if (details.equityCurve.length > 0) {
+    return details.equityCurve.map((point) => ({
+      timestamp: point.timestamp,
+      equity: point.equity,
+    }));
+  }
 
-const daysBetween = (start: Date, end: Date): number => {
-  const diff = end.getTime() - start.getTime();
-  return Math.max(1, Math.floor(diff / (1000 * 60 * 60 * 24)));
-};
-
-export const createSyntheticEquityCurve = (details: BacktestDetails): EquityCurvePoint[] => {
-  const start = new Date(details.startDate);
-  const end = new Date(details.endDate);
-  const totalDays = daysBetween(start, end);
-  const pointsCount = Math.min(180, Math.max(20, Math.floor(totalDays / 2)));
-  const initial = details.initialBalance;
-  const delta = details.finalBalance - details.initialBalance;
-  const drawdownPressure = Math.max(0.02, details.maxDrawdown / 100);
-
-  return Array.from({ length: pointsCount }, (_, index) => {
-    const progress = index / Math.max(1, pointsCount - 1);
-    const base = initial + delta * progress;
-    const wave = Math.sin(progress * Math.PI * 6) * initial * 0.02;
-    const dip = Math.max(0, Math.sin(progress * Math.PI * 2)) * initial * drawdownPressure * 0.2;
-    const equity = base + wave - dip;
-    const timestamp = new Date(start.getTime() + progress * (end.getTime() - start.getTime()));
-    return {
-      timestamp: timestamp.toISOString(),
-      equity,
-    };
-  });
+  return [
+    { timestamp: details.startDate, equity: details.initialBalance },
+    { timestamp: details.endDate, equity: details.finalBalance },
+  ];
 };
 
 export const createDrawdownCurve = (equity: EquityCurvePoint[]): DrawdownPoint[] => {
@@ -71,44 +56,31 @@ export const createMonthlyReturns = (equity: EquityCurvePoint[]): MonthlyReturnC
 };
 
 export const createTradeDistribution = (details: BacktestDetails): HistogramBin[] => {
-  const trades = Math.max(1, details.totalTrades);
-  const baseWinCount = Math.round((details.winRate / 100) * trades);
-  const baseLossCount = trades - baseWinCount;
-  const buckets = [
-    { rangeLabel: '< -5%', count: Math.max(1, Math.round(baseLossCount * 0.15)) },
-    { rangeLabel: '-5% to -2%', count: Math.max(1, Math.round(baseLossCount * 0.35)) },
-    { rangeLabel: '-2% to 0%', count: Math.max(1, Math.round(baseLossCount * 0.5)) },
-    { rangeLabel: '0% to 2%', count: Math.max(1, Math.round(baseWinCount * 0.45)) },
-    { rangeLabel: '2% to 5%', count: Math.max(1, Math.round(baseWinCount * 0.35)) },
-    { rangeLabel: '> 5%', count: Math.max(1, Math.round(baseWinCount * 0.2)) },
+  const bins = [
+    { rangeLabel: '< -5%', count: 0 },
+    { rangeLabel: '-5% to -2%', count: 0 },
+    { rangeLabel: '-2% to 0%', count: 0 },
+    { rangeLabel: '0% to 2%', count: 0 },
+    { rangeLabel: '2% to 5%', count: 0 },
+    { rangeLabel: '> 5%', count: 0 },
   ];
-  return buckets;
-};
 
-export const createMonteCarloProjection = (details: BacktestDetails): {
-  confidence95Floor: number;
-  confidence95Ceiling: number;
-  worstCase: number;
-} => {
-  const final = details.finalBalance;
-  return {
-    confidence95Floor: final * 0.88,
-    confidence95Ceiling: final * 1.12,
-    worstCase: final * 0.78,
-  };
-};
+  details.tradeSeries.forEach((trade) => {
+    const value = trade.returnPct;
+    if (value < -5) {
+      bins[0].count += 1;
+    } else if (value < -2) {
+      bins[1].count += 1;
+    } else if (value < 0) {
+      bins[2].count += 1;
+    } else if (value < 2) {
+      bins[3].count += 1;
+    } else if (value <= 5) {
+      bins[4].count += 1;
+    } else {
+      bins[5].count += 1;
+    }
+  });
 
-export const createWalkForwardProjection = (details: BacktestDetails): {
-  inSampleProfitFactor: number;
-  outOfSampleProfitFactor: number;
-  degradationPct: number;
-} => {
-  const inSample = details.profitFactor;
-  const outSample = Math.max(0, inSample * 0.88);
-  const degradationPct = inSample === 0 ? 0 : ((inSample - outSample) / inSample) * 100;
-  return {
-    inSampleProfitFactor: inSample,
-    outOfSampleProfitFactor: outSample,
-    degradationPct,
-  };
+  return bins;
 };

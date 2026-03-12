@@ -12,6 +12,23 @@ import java.util.List;
 public class RepairEngine {
     private static final Logger logger = LoggerFactory.getLogger(RepairEngine.class);
     private static final int MAX_REPAIR_ATTEMPTS = 3;
+    private final BuildRepairActions buildRepairActions;
+    private final OrchestrationRepairActions orchestrationRepairActions;
+    private final HealthCheckRepairActions healthCheckRepairActions;
+
+    public RepairEngine() {
+        this(new BuildRepairActions(), new OrchestrationRepairActions(), new HealthCheckRepairActions());
+    }
+
+    RepairEngine(
+        BuildRepairActions buildRepairActions,
+        OrchestrationRepairActions orchestrationRepairActions,
+        HealthCheckRepairActions healthCheckRepairActions
+    ) {
+        this.buildRepairActions = buildRepairActions;
+        this.orchestrationRepairActions = orchestrationRepairActions;
+        this.healthCheckRepairActions = healthCheckRepairActions;
+    }
 
     public RepairResult repairBuildFailure(ValidationResult failure) {
         logger.info("Attempting to repair build failure");
@@ -68,33 +85,45 @@ public class RepairEngine {
             
             switch (action) {
                 case CLEAN_GRADLE_CACHE:
-                    // This would be handled by BuildRepairActions
-                    success = true;
-                    message = "Gradle cache cleanup initiated";
+                    RepairResult cacheResult = buildRepairActions.cleanGradleCache();
+                    success = cacheResult.isSuccessful();
+                    message = cacheResult.getMessage();
                     break;
                 case REBUILD_JAR:
-                    success = true;
-                    message = "JAR rebuild initiated";
+                    RepairResult jarResult = buildRepairActions.rebuildJar();
+                    success = jarResult.isSuccessful();
+                    message = jarResult.getMessage();
                     break;
                 case PRUNE_DOCKER_IMAGES:
-                    success = true;
-                    message = "Docker image prune initiated";
+                    RepairResult pruneResult = buildRepairActions.pruneDockerImages();
+                    success = pruneResult.isSuccessful();
+                    message = pruneResult.getMessage();
                     break;
                 case REBUILD_DOCKER_IMAGE:
-                    success = true;
-                    message = "Docker image rebuild initiated";
+                    RepairResult imageResult = buildRepairActions.rebuildDockerImage();
+                    success = imageResult.isSuccessful();
+                    message = imageResult.getMessage();
                     break;
                 case RESTART_SERVICES:
-                    success = true;
-                    message = "Service restart initiated";
+                    RepairResult stopResult = orchestrationRepairActions.stopAllServices();
+                    if (!stopResult.isSuccessful()) {
+                        success = false;
+                        message = stopResult.getMessage();
+                        break;
+                    }
+                    RepairResult startResult = orchestrationRepairActions.startAllServices();
+                    success = startResult.isSuccessful();
+                    message = startResult.getMessage();
                     break;
                 case RESTART_CONTAINER:
-                    success = true;
-                    message = "Container restart initiated";
+                    RepairResult restartResult = healthCheckRepairActions.restartContainer(resolveServiceName(failure));
+                    success = restartResult.isSuccessful();
+                    message = restartResult.getMessage();
                     break;
                 case CHECK_LOGS:
-                    success = true;
-                    message = "Log check initiated";
+                    RepairResult logResult = healthCheckRepairActions.checkServiceLogs(resolveServiceName(failure));
+                    success = logResult.isSuccessful();
+                    message = logResult.getMessage();
                     break;
                 default:
                     success = false;
@@ -142,5 +171,16 @@ public class RepairEngine {
         report.addSystemInfo("totalAttempts", String.valueOf(attempts.size()));
         
         return report;
+    }
+
+    private String resolveServiceName(ValidationResult failure) {
+        String searchText = (failure.getRequirementName() + " " + failure.getMessage()).toLowerCase();
+        if (searchText.contains("postgres")) {
+            return "postgres";
+        }
+        if (searchText.contains("kafka")) {
+            return "kafka";
+        }
+        return "algotrading-app";
     }
 }

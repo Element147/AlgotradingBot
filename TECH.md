@@ -37,6 +37,7 @@ cd frontend
 npm run lint
 npm run test -- --watch=false
 npm run build
+npm run contract:check
 ```
 
 ### Local Runtime
@@ -47,11 +48,36 @@ npm run build
 .\stop.ps1
 ```
 
+### Backup Runbook
+
+- `/api/system/backup` now creates a real database artifact.
+- Test/build profile uses H2 `SCRIPT` exports.
+- Runtime PostgreSQL uses `pg_dump`, with a Docker `exec` fallback aligned to `AlgotradingBot/compose.yaml`.
+
 ### CI
 
 - GitHub Actions workflow: `.github/workflows/ci.yml`
 - Backend gate: Gradle `test` + `build`
-- Frontend gate: `lint` + `test` + `build`
+- Frontend gate: `contract:check` + `lint` + `test` + `build`
+
+## Security Runbook
+
+Default local auth posture:
+
+- `algotrading.security.relaxed-auth=false`
+- normal local login uses seeded credentials unless replaced
+- verification should be performed with strict auth enabled
+
+Dev-only override:
+
+```powershell
+$env:ALGOTRADING_RELAXED_AUTH='true'
+cd AlgotradingBot
+.\gradlew.bat bootRun
+Remove-Item Env:ALGOTRADING_RELAXED_AUTH
+```
+
+Use the override only for isolated local debugging. Never leave it enabled for baseline verification, CI, or shared demonstrations.
 
 ## Engineering Standards
 

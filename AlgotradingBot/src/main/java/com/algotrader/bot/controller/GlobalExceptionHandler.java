@@ -2,6 +2,7 @@ package com.algotrader.bot.controller;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
+import com.algotrader.bot.service.LiveAccountReadUnavailableException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -115,6 +116,15 @@ public class GlobalExceptionHandler {
         
         logger.warn("Business logic error: {}", ex.getMessage());
         return buildErrorResponse(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(LiveAccountReadUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleLiveAccountReadUnavailable(
+        LiveAccountReadUnavailableException ex,
+        HttpServletRequest request
+    ) {
+        logger.warn("Live account read unavailable: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
     
     /**

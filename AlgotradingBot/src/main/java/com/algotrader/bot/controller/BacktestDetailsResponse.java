@@ -2,6 +2,7 @@ package com.algotrader.bot.controller;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record BacktestDetailsResponse(
     Long id,
@@ -24,5 +25,7 @@ public record BacktestDetailsResponse(
     LocalDateTime startDate,
     LocalDateTime endDate,
     LocalDateTime timestamp,
-    String errorMessage
+    String errorMessage,
+    List<BacktestEquityPointResponse> equityCurve,
+    List<BacktestTradeSeriesItemResponse> tradeSeries
 ) {}
