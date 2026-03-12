@@ -27,6 +27,8 @@ Implemented product slices:
 11. In-app paper-trading incident alerts and operator actions
 12. Typed strategy-configuration preset guidance
 13. Filterable operator audit summaries and review UX in dashboard/settings
+14. Provider-backed historical market data download/import jobs with automated retry handling and direct dataset ingestion for backtests
+15. Admin-managed encrypted market-data provider credentials stored in PostgreSQL with per-provider notes and backend env-var fallback
 
 ## Active Design Decisions (Source of Truth)
 
@@ -66,12 +68,15 @@ Implemented product slices:
 23. Added typed strategy preset guidance in strategy configuration UX.
 24. Extended repair action selection for port-conflict and orphan/network failure signatures.
 25. Added filterable operator audit summaries plus dashboard/settings audit review surfaces.
+26. Added a market-data downloader tab plus backend import jobs for free stock/crypto providers, automatic wait-and-retry handling, and direct dataset imports into the backtest catalog.
+27. Added encrypted database-backed provider credential management in Settings, including note storage and runtime fallback to environment variables.
 
 ## Remaining Work (Current Priorities)
 
 1. No blocking items remain in the March 12, 2026 current-priority technical-debt set.
 2. The March 12, 2026 research-quality, operator-alerting, audit-review, and migration-hardening set is complete end to end.
 3. Next priorities move to multi-channel alert delivery plus deeper experiment governance/review automation on top of the now-hardened research workflow.
+4. Additional market-data providers should only be added when they cover a concrete stock/crypto history gap not already served by the current free-provider set.
 
 ## Risk Elimination Migration Strategy
 
@@ -114,9 +119,9 @@ Phase 5 (implemented now):
 
 Last verified baseline (local):
 
-- Frontend: targeted `test` pass, `build` pass, `lint` pass after fixing an existing duplicate-import issue in `BacktestResults.test.tsx`
-- Backend: `test` and `build` pass
-- Contract artifacts: `npm run contract:generate` refreshed `contracts/openapi.json` and `frontend/src/generated/openapi.d.ts`; `npm run contract:check` will remain non-zero until those generated diffs are committed
+- Frontend: market-data/settings targeted `vitest` pass, `lint` pass, and `build` pass
+- Backend: targeted market-data credential/import tests pass and full `build` pass
+- Contract artifacts: `npm run contract:generate` refreshed `contracts/openapi.json` and `frontend/src/generated/openapi.d.ts`; `npm run contract:check` remains non-zero until those generated diffs are committed because it compares against the current git index/HEAD
 - Local app startup path (`run.ps1`) is functional with health endpoint availability
 
 Use `README.md` commands as the standard verification/runbook.

@@ -3,6 +3,7 @@ import {
   ShowChart as StrategyIcon,
   History as TradesIcon,
   Assessment as BacktestIcon,
+  CloudDownloadOutlined as MarketDataIcon,
   Security as RiskIcon,
   Settings as SettingsIcon,
 } from '@mui/icons-material';
@@ -35,6 +36,7 @@ const navigationItems = [
   { text: 'Strategies', icon: <StrategyIcon />, path: '/strategies' },
   { text: 'Trades', icon: <TradesIcon />, path: '/trades' },
   { text: 'Backtest', icon: <BacktestIcon />, path: '/backtest' },
+  { text: 'Market Data', icon: <MarketDataIcon />, path: '/market-data' },
   { text: 'Risk', icon: <RiskIcon />, path: '/risk' },
   { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
 ];

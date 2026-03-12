@@ -32,6 +32,7 @@ import {
   useTestExchangeConnectionMutation,
   useTriggerBackupMutation,
 } from './exchangeApi';
+import { MarketDataCredentialsPanel } from './MarketDataCredentialsPanel';
 import { OperatorAuditPanel } from './OperatorAuditPanel';
 import {
   deleteExchangeConnection,
@@ -644,9 +645,12 @@ export default function SettingsPage() {
                   </Stack>
                 </CardContent>
               </Card>
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <MarketDataCredentialsPanel />
+              </Grid>
             </Grid>
-          </Grid>
-        ) : null}
+          ) : null}
 
         {activeTab === 'notifications' ? (
           <Card>

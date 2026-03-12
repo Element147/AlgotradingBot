@@ -16,8 +16,9 @@ C:\Git\algotradingbot/
 
 - `controller`: API contracts and request handling
 - `service`: business orchestration
+- `service/marketdata`: provider integrations, import-job scheduling/orchestration, CSV normalization, session filters, timeframe resampling
 - `repository`: data access
-- `entity`: persistence models
+- `entity`: persistence models, including market-data import jobs and encrypted provider credential records
 - `backtest` + `backtest/strategy`: simulation and strategy modules
 - `risk`: risk and execution-cost logic
 - `security`, `config`, `websocket`, `validation`: platform support
@@ -26,7 +27,7 @@ C:\Git\algotradingbot/
 
 `frontend/src/`
 
-- `features/*`: feature-first modules (`auth`, `strategies`, `backtest`, `risk`, `trades`, etc.)
+- `features/*`: feature-first modules (`auth`, `strategies`, `backtest`, `marketData`, `risk`, `trades`, `settings`, etc.)
 - `app`: store and app-level wiring
 - `components`: shared UI/layout primitives
 - `services`: API and transport helpers

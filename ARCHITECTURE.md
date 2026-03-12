@@ -15,6 +15,7 @@ Primary packages in `com.algotrader.bot`:
 
 - `controller`: HTTP endpoints and DTO boundaries
 - `service`: orchestration and business logic
+- `service/marketdata`: provider adapters, retry-aware import orchestration, CSV normalization, resampling, and session filtering
 - `repository`: Spring Data JPA access
 - `entity`: persistence models
 - `entity` + `repository` include `operator_audit_events` for critical action auditability
@@ -55,6 +56,7 @@ Feature modules under `frontend/src/features/`:
 - `account`
 - `strategies`
 - `backtest`
+- `marketData`
 - `risk`
 - `trades`
 - `settings`
@@ -78,6 +80,8 @@ Key frontend design rules:
 - Runtime app: PostgreSQL (Docker) with Liquibase migrations.
 - Backend test/build: H2 in-memory via Spring `test` profile.
 - Backup path uses real database-native exports: H2 `SCRIPT` in tests and PostgreSQL `pg_dump` with Docker-container fallback in runtime.
+- Historical download path uses provider-specific fetch adapters but normalizes everything into the same backtest dataset catalog used by upload/import workflows.
+- Keyed historical-data providers can resolve API keys from either backend environment variables or encrypted PostgreSQL credentials managed through the admin UI; stored secrets depend on a backend master key and keep operator notes alongside the provider setting.
 - Repair/orchestration automation resolves repo-local paths and uses `run.ps1`, `stop.ps1`, `.pids`, and `compose.yaml` rather than ad-hoc global Docker commands.
 - Keep runtime and test data concerns strictly separated.
 
@@ -94,6 +98,8 @@ Key frontend design rules:
 9. Backend compilation surfaces deprecated API usage with `-Xlint:deprecation` so modernization regressions are caught during normal builds.
 10. Paper-trading operator alerts are derived from recovery telemetry and surfaced through DTO/service boundaries rather than embedded in dashboard-only logic.
 11. Operator audit-event review uses a filterable summary+timeline API contract so dashboard and settings surfaces can share the same audit model.
+12. Historical market-data acquisition runs as persistent import jobs with explicit `QUEUED/RUNNING/WAITING_RETRY/COMPLETED/FAILED/CANCELLED` states so provider waits and retries stay observable and resumable.
+13. Provider credential storage for the downloader stays backend-owned: the frontend submits secrets only to authenticated admin endpoints, PostgreSQL stores only encrypted ciphertext, and runtime resolution can fall back to environment variables when needed.
 
 ## Near-Term Architecture Work
 

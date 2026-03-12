@@ -16,6 +16,7 @@ Implemented and usable end-to-end:
 - Backtest execution, experiment summaries, history, and details
 - Backtest replay and side-by-side comparison APIs
 - Dataset lifecycle inventory (`checksumSha256`, schema version, retention, archive/restore) plus dataset download endpoint
+- Provider-backed historical market data downloader with automated retry/wait handling and direct dataset imports into the backtest catalog
 - Persisted backtest equity/trade series with chart/export support in the UI
 - Strategy configuration version history plus typed preset guidance in API and UI
 - Risk configuration and circuit-breaker controls
@@ -47,6 +48,39 @@ Backtest strategy catalog:
 - Repeatable experiment labels now group related runs into multi-run summaries while keeping per-run provenance intact.
 - Action model is currently conservative (`long/rotate/sell-to-cash/hold`).
 - True shorting, margin, and leverage are not default behavior.
+
+## Historical Data Downloader
+
+- UI entrypoint: `Market Data` tab (`/market-data`)
+- Supported timeframes: `1m`, `5m`, `15m`, `30m`, `1h`, `4h`, `1d`
+- Implemented providers:
+  - `Binance` and `Kraken` for public crypto OHLCV with no API key
+  - `Twelve Data` and `Finnhub` for stock/crypto with free API-key tiers
+  - `Alpha Vantage` for stock history with a free API key
+- Import flow:
+  - the backend creates persistent import jobs
+  - jobs fetch bars in provider-safe chunks
+  - rate-limit or provider-pause responses move the job into `WAITING_RETRY`
+  - the scheduler retries automatically and imports the finished CSV into the backtest dataset catalog
+- API-key management:
+  - keyed providers can use backend env vars
+  - admins can also save provider API keys from `Settings` -> `API Config` into PostgreSQL in encrypted form
+  - each saved provider setting also stores an operator note for account purpose, limits, or rotation reminders
+  - database-stored keys require `ALGOTRADING_MARKET_DATA_CREDENTIALS_MASTER_KEY` on the backend to encrypt/decrypt them
+- Optional backend environment variables for keyed providers:
+  - `ALGOTRADING_MARKET_DATA_CREDENTIALS_MASTER_KEY`
+  - `ALGOTRADING_MARKET_DATA_TWELVEDATA_API_KEY`
+  - `ALGOTRADING_MARKET_DATA_FINNHUB_API_KEY`
+  - `ALGOTRADING_MARKET_DATA_ALPHAVANTAGE_API_KEY`
+
+Using it locally:
+
+1. Set `ALGOTRADING_MARKET_DATA_CREDENTIALS_MASTER_KEY` if you want to manage provider keys securely from the frontend.
+2. Start the stack with `.\build.ps1` and `.\run.ps1`.
+3. If a provider needs a key, either set its env var or open `Settings` -> `API Config` -> `Market Data Provider Credentials` and save the key plus an optional note.
+4. Open the `Market Data` tab, choose a provider, symbols, timeframe, and date range, then create a job.
+5. Watch job status in the same tab. If the provider asks the app to wait, the UI shows the retry window and the backend resumes automatically.
+6. When the job reaches `COMPLETED`, open `Backtest` and use the imported dataset there.
 
 ## Stack
 

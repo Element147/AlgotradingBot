@@ -6,6 +6,7 @@ import { authApi } from '@/features/auth/authApi';
 import authReducer from '@/features/auth/authSlice';
 import { backtestApi } from '@/features/backtest/backtestApi';
 import environmentReducer from '@/features/environment/environmentSlice';
+import { marketDataApi } from '@/features/marketData/marketDataApi';
 import { paperApi } from '@/features/paperApi';
 import { riskApi } from '@/features/risk/riskApi';
 import { exchangeApi } from '@/features/settings/exchangeApi';
@@ -30,6 +31,7 @@ export const store = configureStore({
     environment: environmentReducer,
     settings: settingsReducer,
     websocket: websocketReducer,
+    [marketDataApi.reducerPath]: marketDataApi.reducer,
     [authApi.reducerPath]: authApi.reducer,
     [accountApi.reducerPath]: accountApi.reducer,
     [backtestApi.reducerPath]: backtestApi.reducer,
@@ -55,6 +57,7 @@ export const store = configureStore({
       paperApi.middleware,
       strategiesApi.middleware,
       tradesApi.middleware,
+      marketDataApi.middleware,
       websocketMiddleware
     ),
   // Enable Redux DevTools in development only

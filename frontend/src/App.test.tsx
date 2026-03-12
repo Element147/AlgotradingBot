@@ -29,6 +29,10 @@ vi.mock('./features/backtest/BacktestPage', () => ({
   default: () => <div data-testid="backtest-page">Backtest Page</div>,
 }));
 
+vi.mock('./features/marketData/MarketDataPage', () => ({
+  default: () => <div data-testid="market-data-page">Market Data Page</div>,
+}));
+
 vi.mock('./features/risk/RiskPage', () => ({
   default: () => <div data-testid="risk-page">Risk Page</div>,
 }));
@@ -190,6 +194,21 @@ describe('App Routing', () => {
         expect(window.location.pathname).toBe('/login');
       });
     });
+
+    it('should redirect to login when accessing /market-data without authentication', async () => {
+      const store = createMockStore(false);
+      window.history.pushState({}, '', '/market-data');
+
+      render(
+        <Provider store={store}>
+          <App />
+        </Provider>
+      );
+
+      await waitFor(() => {
+        expect(window.location.pathname).toBe('/login');
+      });
+    });
   });
 
   describe('Protected Routes - Authenticated', () => {
@@ -269,6 +288,21 @@ describe('App Routing', () => {
 
       await waitFor(() => {
         expect(screen.getByTestId('risk-page')).toBeInTheDocument();
+      });
+    });
+
+    it('should render market data page when authenticated', async () => {
+      const store = createMockStore(true);
+      window.history.pushState({}, '', '/market-data');
+
+      render(
+        <Provider store={store}>
+          <App />
+        </Provider>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('market-data-page')).toBeInTheDocument();
       });
     });
 
