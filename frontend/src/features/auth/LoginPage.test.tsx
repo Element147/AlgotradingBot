@@ -50,6 +50,7 @@ describe('LoginPage', { timeout: 15000 }, () => {
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/remember me/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
+    expect(screen.queryByText(/local default account on first startup/i)).not.toBeInTheDocument();
   });
 
   it('should show validation errors for empty fields', async () => {

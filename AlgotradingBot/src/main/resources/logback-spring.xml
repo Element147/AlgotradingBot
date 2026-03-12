@@ -87,8 +87,9 @@
         </logger>
         
         <logger name="org.springframework.web" level="DEBUG"/>
-        <logger name="org.hibernate.SQL" level="DEBUG"/>
-        <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE"/>
+        <logger name="org.hibernate.SQL" level="WARN"/>
+        <logger name="org.hibernate.orm.jdbc.bind" level="WARN"/>
+        <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="WARN"/>
     </springProfile>
     
     <!-- Spring Profile: Production -->
@@ -114,6 +115,8 @@
         
         <logger name="org.springframework.web" level="WARN"/>
         <logger name="org.hibernate.SQL" level="WARN"/>
+        <logger name="org.hibernate.orm.jdbc.bind" level="WARN"/>
+        <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="WARN"/>
     </springProfile>
     
     <!-- Default Profile (no profile specified) -->
@@ -136,6 +139,10 @@
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="RISK_MANAGEMENT"/>
         </logger>
+
+        <logger name="org.hibernate.SQL" level="WARN"/>
+        <logger name="org.hibernate.orm.jdbc.bind" level="WARN"/>
+        <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="WARN"/>
     </springProfile>
     
 </configuration>

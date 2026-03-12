@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SettingsPage from './SettingsPage';
 
 const mockDispatch = vi.fn();
-let writeTextMock: ReturnType<typeof vi.fn>;
 
 const mockState = {
   settings: {
@@ -19,6 +18,17 @@ const mockState = {
       drawdownThreshold: 15,
       riskThreshold: 75,
     },
+    exchangeConnections: [
+      {
+        id: 'binance-paper',
+        name: 'Binance Paper',
+        exchange: 'binance',
+        apiKey: '',
+        apiSecret: '',
+        testnet: true,
+      },
+    ],
+    activeExchangeConnectionId: 'binance-paper',
   },
   environment: {
     mode: 'test' as const,
@@ -92,13 +102,6 @@ vi.mock('@/services/axiosClient', () => ({
 describe('SettingsPage', { timeout: 15000 }, () => {
   beforeEach(() => {
     mockDispatch.mockReset();
-    writeTextMock = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, 'clipboard', {
-      configurable: true,
-      value: {
-        writeText: writeTextMock,
-      },
-    });
   });
 
   it('renders tab navigation and api section', () => {
@@ -108,7 +111,9 @@ describe('SettingsPage', { timeout: 15000 }, () => {
     expect(screen.getByRole('tab', { name: 'API Config' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Audit Trail' })).toBeInTheDocument();
     expect(screen.getByText('API Configuration')).toBeInTheDocument();
-    expect(screen.getByText('Local Commands (CMD)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Saved Connection')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Set Active' })).toBeInTheDocument();
+    expect(screen.queryByText('Local Commands (CMD)')).not.toBeInTheDocument();
   });
 
   it('switches to notifications tab', () => {
@@ -128,17 +133,18 @@ describe('SettingsPage', { timeout: 15000 }, () => {
     expect(screen.getByRole('button', { name: 'Clear Filters' })).toBeInTheDocument();
   });
 
-  it('copies command to clipboard', async () => {
+  it('keeps display edits local until save is clicked', async () => {
     render(<SettingsPage />);
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Copy' })[0]);
+    fireEvent.click(screen.getByRole('tab', { name: 'Display' }));
+    fireEvent.change(screen.getByLabelText('Text Scale'), { target: { value: '1.5' } });
+
+    expect(mockDispatch).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save Display Settings' }));
 
     await waitFor(() => {
-      expect(writeTextMock).toHaveBeenCalled();
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText('Command copied to clipboard.')).toBeInTheDocument();
+      expect(mockDispatch).toHaveBeenCalled();
     });
   });
 

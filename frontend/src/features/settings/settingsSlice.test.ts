@@ -1,16 +1,20 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
 
 import settingsReducer, {
+  selectActiveExchangeConnection,
   resetSettings,
   selectCurrency,
+  selectExchangeConnections,
   selectNotificationSettings,
   selectTextScale,
   selectTheme,
   selectTimezone,
+  setActiveExchangeConnection,
   setCurrency,
   setTextScale,
   setTheme,
   setTimezone,
+  upsertExchangeConnection,
   updateNotificationSetting,
   type SettingsState,
 } from './settingsSlice';
@@ -27,6 +31,17 @@ const createBaseState = (): SettingsState => ({
     drawdownThreshold: 15,
     riskThreshold: 75,
   },
+  exchangeConnections: [
+    {
+      id: 'binance-paper',
+      name: 'Binance Paper',
+      exchange: 'binance',
+      apiKey: '',
+      apiSecret: '',
+      testnet: true,
+    },
+  ],
+  activeExchangeConnectionId: 'binance-paper',
 });
 
 describe('settingsSlice', () => {
@@ -82,6 +97,25 @@ describe('settingsSlice', () => {
     expect(localStorage.getItem('notificationSettings')).toBeNull();
   });
 
+  it('saves exchange connections and active selection', () => {
+    let state = settingsReducer(
+      createBaseState(),
+      upsertExchangeConnection({
+        id: 'kraken-live',
+        name: 'Kraken Live',
+        exchange: 'kraken',
+        apiKey: 'key',
+        apiSecret: 'secret',
+        testnet: false,
+      })
+    );
+    state = settingsReducer(state, setActiveExchangeConnection('kraken-live'));
+
+    expect(localStorage.getItem('exchangeConnections')).toContain('"kraken-live"');
+    expect(localStorage.getItem('activeExchangeConnectionId')).toBe('kraken-live');
+    expect(state.activeExchangeConnectionId).toBe('kraken-live');
+  });
+
   it('selectors expose expected fields', () => {
     const settings = createBaseState();
     const root = { settings };
@@ -90,5 +124,7 @@ describe('settingsSlice', () => {
     expect(selectTimezone(root)).toBe('UTC');
     expect(selectTextScale(root)).toBe(1);
     expect(selectNotificationSettings(root).riskThreshold).toBe(75);
+    expect(selectExchangeConnections(root)).toHaveLength(1);
+    expect(selectActiveExchangeConnection(root)?.name).toBe('Binance Paper');
   });
 });

@@ -1,11 +1,14 @@
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {
   Alert,
   Box,
   Button,
   Card,
   CardContent,
+  Chip,
   FormControl,
   FormControlLabel,
   Grid,
@@ -19,7 +22,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
   useGetExchangeBalanceQuery,
@@ -31,41 +34,103 @@ import {
 } from './exchangeApi';
 import { OperatorAuditPanel } from './OperatorAuditPanel';
 import {
-  resetSettings,
+  deleteExchangeConnection,
+  selectActiveExchangeConnection,
+  selectActiveExchangeConnectionId,
   selectCurrency,
+  selectExchangeConnections,
   selectNotificationSettings,
   selectTextScale,
   selectTheme,
   selectTimezone,
+  setActiveExchangeConnection,
   setCurrency,
+  setNotificationSettings,
   setTextScale,
   setTheme,
   setTimezone,
-  updateNotificationSetting,
+  upsertExchangeConnection,
+  type ExchangeConnectionProfile,
+  type NotificationSettings,
 } from './settingsSlice';
 
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { FieldTooltip } from '@/components/ui/FieldTooltip';
-import { selectEnvironmentMode, setEnvironmentMode } from '@/features/environment/environmentSlice';
+import {
+  selectEnvironmentMode,
+  setConnectedExchange,
+  setEnvironmentMode,
+  type EnvironmentMode,
+} from '@/features/environment/environmentSlice';
 import { getApiErrorMessage } from '@/services/api';
 import { getErrorMessage } from '@/services/axiosClient';
 
-const defaultCommandList = [
-  'cd /d C:\\Git\\algotradingbot\\AlgotradingBot && docker compose -f compose.yaml up -d postgres',
-  'cd /d C:\\Git\\algotradingbot\\AlgotradingBot && gradlew.bat clean build',
-  'cd /d C:\\Git\\algotradingbot\\AlgotradingBot && gradlew.bat bootRun',
-  'cd /d C:\\Git\\algotradingbot\\frontend && npm run build',
-  'cd /d C:\\Git\\algotradingbot\\frontend && npm run dev',
-];
-
 type SettingsTab = 'api' | 'notifications' | 'display' | 'database' | 'exchange' | 'audit';
 
-const initialApiConfig = {
-  exchange: 'binance',
+type DisplayDraft = {
+  theme: 'light' | 'dark';
+  currency: 'USD' | 'BTC';
+  timezone: string;
+  textScale: number;
+  environmentMode: EnvironmentMode;
+};
+
+const EXCHANGE_OPTIONS = [
+  { value: 'binance', label: 'Binance' },
+  { value: 'coinbase', label: 'Coinbase' },
+  { value: 'kraken', label: 'Kraken' },
+  { value: 'bybit', label: 'Bybit' },
+  { value: 'okx', label: 'OKX' },
+  { value: 'kucoin', label: 'KuCoin' },
+] as const;
+
+const NEW_CONNECTION_VALUE = '__new_connection__';
+
+const createEmptyConnectionDraft = (preferredExchange = 'binance'): ExchangeConnectionProfile => ({
+  id: '',
+  name: '',
+  exchange: preferredExchange,
   apiKey: '',
-  secret: '',
+  apiSecret: '',
   testnet: true,
+});
+
+const parseNumberInput = (value: string, fallback: number) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const getExchangeLabel = (exchange: string) =>
+  EXCHANGE_OPTIONS.find((option) => option.value === exchange)?.label ??
+  exchange.charAt(0).toUpperCase() + exchange.slice(1);
+
+const createConnectionId = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  return `connection-${Date.now()}`;
+};
+
+const areNotificationsEqual = (left: NotificationSettings, right: NotificationSettings) =>
+  left.emailAlerts === right.emailAlerts &&
+  left.telegramAlerts === right.telegramAlerts &&
+  left.profitLossThreshold === right.profitLossThreshold &&
+  left.drawdownThreshold === right.drawdownThreshold &&
+  left.riskThreshold === right.riskThreshold;
+
+const areConnectionsEqual = (left: ExchangeConnectionProfile, right: ExchangeConnectionProfile) =>
+  left.name === right.name &&
+  left.exchange === right.exchange &&
+  left.apiKey === right.apiKey &&
+  left.apiSecret === right.apiSecret &&
+  left.testnet === right.testnet;
+
+const createConnectionName = (exchange: string, existingConnections: ExchangeConnectionProfile[]) => {
+  const baseLabel = getExchangeLabel(exchange);
+  const sameExchangeCount = existingConnections.filter((connection) => connection.exchange === exchange).length;
+  return `${baseLabel} Connection ${sameExchangeCount + 1}`;
 };
 
 export default function SettingsPage() {
@@ -75,6 +140,9 @@ export default function SettingsPage() {
   const timezone = useAppSelector(selectTimezone);
   const textScale = useAppSelector(selectTextScale);
   const notifications = useAppSelector(selectNotificationSettings);
+  const exchangeConnections = useAppSelector(selectExchangeConnections);
+  const activeExchangeConnectionId = useAppSelector(selectActiveExchangeConnectionId);
+  const activeExchangeConnection = useAppSelector(selectActiveExchangeConnection);
   const environmentMode = useAppSelector(selectEnvironmentMode);
   const userRole = useAppSelector((state) => state.auth.user?.role ?? 'trader');
   const isAdmin = userRole === 'admin';
@@ -83,9 +151,20 @@ export default function SettingsPage() {
     null
   );
   const [tab, setTab] = useState<SettingsTab>(isAdmin ? 'api' : 'display');
-  const [apiConfig, setApiConfig] = useState(initialApiConfig);
+  const [selectedConnectionId, setSelectedConnectionId] = useState(activeExchangeConnectionId ?? '');
   const [revealApiKey, setRevealApiKey] = useState(false);
   const [revealSecret, setRevealSecret] = useState(false);
+  const [displayDraft, setDisplayDraft] = useState<DisplayDraft>({
+    theme,
+    currency,
+    timezone,
+    textScale,
+    environmentMode,
+  });
+  const [notificationDraft, setNotificationDraft] = useState<NotificationSettings>(notifications);
+  const [connectionDraft, setConnectionDraft] = useState<ExchangeConnectionProfile>(() =>
+    activeExchangeConnection ? { ...activeExchangeConnection } : createEmptyConnectionDraft()
+  );
 
   const { data: systemInfo, isError: isSystemInfoError } = useGetSystemInfoQuery();
   const {
@@ -93,11 +172,10 @@ export default function SettingsPage() {
     refetch: refetchBalance,
     isError: isExchangeBalanceError,
     error: exchangeBalanceError,
-  } =
-    useGetExchangeBalanceQuery(undefined, {
-      pollingInterval: environmentMode === 'live' ? 60000 : 0,
-      skipPollingIfUnfocused: true,
-    });
+  } = useGetExchangeBalanceQuery(undefined, {
+    pollingInterval: environmentMode === 'live' ? 60000 : 0,
+    skipPollingIfUnfocused: true,
+  });
   const {
     data: exchangeOrders = [],
     isError: isExchangeOrdersError,
@@ -120,22 +198,163 @@ export default function SettingsPage() {
     return Array.from(new Set(options));
   }, []);
 
-  const copyCommand = async (command: string) => {
-    try {
-      await navigator.clipboard.writeText(command);
-      setFeedback({ severity: 'success', message: 'Command copied to clipboard.' });
-    } catch {
-      setFeedback({ severity: 'error', message: 'Clipboard copy failed. You can still copy manually.' });
+  const selectedSavedConnection =
+    exchangeConnections.find((connection) => connection.id === selectedConnectionId) ?? null;
+
+  const emptyConnectionDraft = useMemo(
+    () => createEmptyConnectionDraft(activeExchangeConnection?.exchange ?? 'binance'),
+    [activeExchangeConnection?.exchange]
+  );
+
+  useEffect(() => {
+    setDisplayDraft({
+      theme,
+      currency,
+      timezone,
+      textScale,
+      environmentMode,
+    });
+  }, [theme, currency, timezone, textScale, environmentMode]);
+
+  useEffect(() => {
+    setNotificationDraft(notifications);
+  }, [notifications]);
+
+  useEffect(() => {
+    const nextSelectedConnectionId =
+      selectedConnectionId && exchangeConnections.some((connection) => connection.id === selectedConnectionId)
+        ? selectedConnectionId
+        : activeExchangeConnectionId ?? exchangeConnections[0]?.id ?? '';
+
+    if (nextSelectedConnectionId !== selectedConnectionId) {
+      setSelectedConnectionId(nextSelectedConnectionId);
+      return;
     }
+
+    const nextConnectionDraft = exchangeConnections.find(
+      (connection) => connection.id === nextSelectedConnectionId
+    );
+
+    setConnectionDraft(nextConnectionDraft ? { ...nextConnectionDraft } : emptyConnectionDraft);
+    setRevealApiKey(false);
+    setRevealSecret(false);
+  }, [
+    activeExchangeConnectionId,
+    emptyConnectionDraft,
+    exchangeConnections,
+    selectedConnectionId,
+  ]);
+
+  const hasDisplayChanges =
+    displayDraft.theme !== theme ||
+    displayDraft.currency !== currency ||
+    displayDraft.timezone !== timezone ||
+    displayDraft.textScale !== textScale ||
+    displayDraft.environmentMode !== environmentMode;
+
+  const hasNotificationChanges = !areNotificationsEqual(notificationDraft, notifications);
+
+  const hasConnectionChanges = selectedSavedConnection
+    ? !areConnectionsEqual(selectedSavedConnection, connectionDraft)
+    : !areConnectionsEqual(emptyConnectionDraft, connectionDraft);
+
+  const canSaveConnection =
+    selectedSavedConnection !== null ||
+    connectionDraft.name.trim().length > 0 ||
+    connectionDraft.apiKey.trim().length > 0 ||
+    connectionDraft.apiSecret.trim().length > 0 ||
+    connectionDraft.exchange !== emptyConnectionDraft.exchange ||
+    connectionDraft.testnet !== emptyConnectionDraft.testnet;
+
+  const canDeleteSelectedConnection =
+    Boolean(selectedConnectionId) && !(exchangeConnections.length === 1 && selectedSavedConnection);
+
+  const saveDisplaySettings = () => {
+    dispatch(setTheme(displayDraft.theme));
+    dispatch(setCurrency(displayDraft.currency));
+    dispatch(setTimezone(displayDraft.timezone));
+    dispatch(setTextScale(displayDraft.textScale));
+    dispatch(setEnvironmentMode(displayDraft.environmentMode));
+    setFeedback({ severity: 'success', message: 'Display settings saved and applied.' });
   };
 
-  const runConnectionTest = async () => {
+  const saveNotificationSettings = () => {
+    dispatch(setNotificationSettings(notificationDraft));
+    setFeedback({ severity: 'success', message: 'Notification settings saved.' });
+  };
+
+  const saveConnectionProfile = () => {
+    const normalizedExchange = connectionDraft.exchange.trim().toLowerCase() || 'binance';
+    const profile: ExchangeConnectionProfile = {
+      id: selectedSavedConnection?.id ?? createConnectionId(),
+      name:
+        connectionDraft.name.trim() ||
+        selectedSavedConnection?.name ||
+        createConnectionName(normalizedExchange, exchangeConnections),
+      exchange: normalizedExchange,
+      apiKey: connectionDraft.apiKey.trim(),
+      apiSecret: connectionDraft.apiSecret.trim(),
+      testnet: connectionDraft.testnet,
+    };
+
+    dispatch(upsertExchangeConnection(profile));
+    setSelectedConnectionId(profile.id);
+
+    if (activeExchangeConnectionId === profile.id) {
+      dispatch(setConnectedExchange(profile.exchange));
+    }
+
+    setFeedback({
+      severity: 'success',
+      message: `${profile.name} saved. Use "Set Active" to switch the bot to this connection profile.`,
+    });
+  };
+
+  const activateSelectedConnection = () => {
+    if (!selectedSavedConnection) {
+      setFeedback({
+        severity: 'warning',
+        message: 'Save this connection profile before making it active.',
+      });
+      return;
+    }
+
+    dispatch(setActiveExchangeConnection(selectedSavedConnection.id));
+    dispatch(setConnectedExchange(selectedSavedConnection.exchange));
+    setFeedback({
+      severity: 'success',
+      message: `${selectedSavedConnection.name} is now the active bot connection.`,
+    });
+  };
+
+  const deleteSelectedConnection = () => {
+    if (!selectedSavedConnection) {
+      setConnectionDraft(emptyConnectionDraft);
+      setRevealApiKey(false);
+      setRevealSecret(false);
+      return;
+    }
+
+    const nextConnection = exchangeConnections.find(
+      (connection) => connection.id !== selectedSavedConnection.id
+    );
+
+    dispatch(deleteExchangeConnection(selectedSavedConnection.id));
+    dispatch(setConnectedExchange(nextConnection?.exchange ?? null));
+    setSelectedConnectionId(nextConnection?.id ?? '');
+    setFeedback({
+      severity: 'warning',
+      message: `${selectedSavedConnection.name} was removed from saved connections.`,
+    });
+  };
+
+  const runConnectionTest = async (profile: ExchangeConnectionProfile) => {
     try {
       const result = await testConnection({
-        exchange: apiConfig.exchange,
-        apiKey: apiConfig.apiKey,
-        apiSecret: apiConfig.secret,
-        testnet: apiConfig.testnet,
+        exchange: profile.exchange,
+        apiKey: profile.apiKey,
+        apiSecret: profile.apiSecret,
+        testnet: profile.testnet,
       }).unwrap();
       setFeedback({
         severity: result.connected ? 'success' : 'warning',
@@ -205,102 +424,223 @@ export default function SettingsPage() {
             <Grid size={{ xs: 12, lg: 8 }}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" sx={{ mb: 2 }}>
-                    API Configuration
-                  </Typography>
-                  <Stack spacing={2}>
-                    <FieldTooltip title="Exchange name for connection test. Binance is currently supported by backend test endpoint.">
+                  <Stack spacing={2.5}>
+                    <Box>
+                      <Typography variant="h6" sx={{ mb: 0.5 }}>
+                        API Configuration
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Connection edits stay in draft until you save them. The bot uses the currently active saved
+                        connection.
+                      </Typography>
+                    </Box>
+
+                    <FieldTooltip title="Choose a saved connection profile or start a new one, similar to selecting a saved database connection.">
+                      <FormControl fullWidth>
+                        <InputLabel id="saved-connection-label">Saved Connection</InputLabel>
+                        <Select
+                          labelId="saved-connection-label"
+                          value={selectedConnectionId || NEW_CONNECTION_VALUE}
+                          label="Saved Connection"
+                          onChange={(event) => {
+                            const nextValue = event.target.value;
+                            setSelectedConnectionId(nextValue === NEW_CONNECTION_VALUE ? '' : nextValue);
+                          }}
+                        >
+                          {exchangeConnections.map((connection) => (
+                            <MenuItem key={connection.id} value={connection.id}>
+                              {connection.name}
+                              {connection.id === activeExchangeConnectionId ? ' (Active)' : ''}
+                            </MenuItem>
+                          ))}
+                          <MenuItem value={NEW_CONNECTION_VALUE}>New connection...</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </FieldTooltip>
+
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                      <Button
+                        variant="outlined"
+                        startIcon={<AddCircleOutlineIcon />}
+                        onClick={() => {
+                          setSelectedConnectionId('');
+                          setConnectionDraft(emptyConnectionDraft);
+                          setRevealApiKey(false);
+                          setRevealSecret(false);
+                        }}
+                      >
+                        New Connection
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        startIcon={<DeleteOutlineIcon />}
+                        onClick={deleteSelectedConnection}
+                        disabled={!canDeleteSelectedConnection}
+                      >
+                        Delete
+                      </Button>
+                      <Button
+                        variant="contained"
+                        color="secondary"
+                        onClick={activateSelectedConnection}
+                        disabled={!selectedSavedConnection || selectedConnectionId === activeExchangeConnectionId}
+                      >
+                        Set Active
+                      </Button>
+                    </Stack>
+
+                    <FieldTooltip title="Friendly name shown in the connection dropdown and active-profile summary.">
                       <TextField
-                        label="Exchange"
-                        value={apiConfig.exchange}
+                        label="Connection Name"
+                        value={connectionDraft.name}
                         onChange={(event) =>
-                          setApiConfig((prev) => ({ ...prev, exchange: event.target.value }))
+                          setConnectionDraft((prev) => ({ ...prev, name: event.target.value }))
                         }
-                        helperText="Use binance for current backend support."
+                        helperText="Saved locally, similar to a named SQL Developer connection."
                       />
                     </FieldTooltip>
+
+                    <FieldTooltip title="Select which exchange this saved connection profile belongs to. Only Binance connectivity testing is wired in the backend right now.">
+                      <FormControl fullWidth>
+                        <InputLabel id="exchange-label">Exchange</InputLabel>
+                        <Select
+                          labelId="exchange-label"
+                          value={connectionDraft.exchange}
+                          label="Exchange"
+                          onChange={(event) =>
+                            setConnectionDraft((prev) => ({
+                              ...prev,
+                              exchange: event.target.value,
+                            }))
+                          }
+                        >
+                          {EXCHANGE_OPTIONS.map((option) => (
+                            <MenuItem key={option.value} value={option.value}>
+                              {option.label}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </FieldTooltip>
+
                     <FieldTooltip title="Exchange credential identifier. Revealing keys on shared screens is a security risk.">
                       <TextField
                         label="Exchange API Key"
                         type={revealApiKey ? 'text' : 'password'}
-                        value={apiConfig.apiKey}
+                        value={connectionDraft.apiKey}
                         onChange={(event) =>
-                          setApiConfig((prev) => ({ ...prev, apiKey: event.target.value }))
+                          setConnectionDraft((prev) => ({ ...prev, apiKey: event.target.value }))
                         }
-                        helperText="Used only for connection test request."
+                        helperText="Stored locally in this browser profile until you edit or remove the connection."
                       />
                     </FieldTooltip>
                     <Button variant="outlined" onClick={() => setRevealApiKey((prev) => !prev)}>
                       {revealApiKey ? 'Hide API Key' : 'Reveal API Key'}
                     </Button>
+
                     <FieldTooltip title="Secret used for signed exchange requests. Exposure can compromise account safety.">
                       <TextField
                         label="Exchange API Secret"
                         type={revealSecret ? 'text' : 'password'}
-                        value={apiConfig.secret}
+                        value={connectionDraft.apiSecret}
                         onChange={(event) =>
-                          setApiConfig((prev) => ({ ...prev, secret: event.target.value }))
+                          setConnectionDraft((prev) => ({ ...prev, apiSecret: event.target.value }))
                         }
-                        helperText="Used only for signed connectivity test. Not persisted by frontend."
+                        helperText="Stored locally in this browser profile. Save changes before activating the profile."
                       />
                     </FieldTooltip>
                     <Button variant="outlined" onClick={() => setRevealSecret((prev) => !prev)}>
                       {revealSecret ? 'Hide Secret' : 'Reveal Secret'}
                     </Button>
-                    <FieldTooltip title="Testnet avoids production account scope. Keep enabled unless intentionally validating mainnet keys.">
+
+                    <FieldTooltip title="Use testnet for paper-safe credentials. Turn this off only when you intentionally want a live/mainnet connection profile.">
                       <FormControlLabel
                         control={
                           <Switch
-                            checked={apiConfig.testnet}
+                            checked={connectionDraft.testnet}
                             onChange={(event) =>
-                              setApiConfig((prev) => ({ ...prev, testnet: event.target.checked }))
+                              setConnectionDraft((prev) => ({
+                                ...prev,
+                                testnet: event.target.checked,
+                              }))
                             }
                           />
                         }
-                        label="Use Binance Testnet"
+                        label={connectionDraft.testnet ? 'Use testnet / paper credentials' : 'Use mainnet / live credentials'}
                       />
                     </FieldTooltip>
-                    <Button
-                      variant="contained"
-                      onClick={() => void runConnectionTest()}
-                      disabled={isTestingConnection}
-                    >
-                      Test Connection
-                    </Button>
+
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                      <Button
+                        variant="contained"
+                        startIcon={<SaveOutlinedIcon />}
+                        onClick={saveConnectionProfile}
+                        disabled={!canSaveConnection || !hasConnectionChanges}
+                      >
+                        Save Connection
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        onClick={() => void runConnectionTest(connectionDraft)}
+                        disabled={isTestingConnection}
+                      >
+                        Test This Connection
+                      </Button>
+                    </Stack>
                   </Stack>
                 </CardContent>
               </Card>
             </Grid>
+
             <Grid size={{ xs: 12, lg: 4 }}>
               <Card>
                 <CardContent>
                   <Typography variant="h6" sx={{ mb: 2 }}>
-                    Local Commands (CMD)
+                    Connection Library
                   </Typography>
                   <Stack spacing={1.5}>
-                    {defaultCommandList.map((command, index) => (
-                      <Box
-                        key={command}
-                        sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1.5 }}
-                      >
-                        <Typography variant="caption" color="text.secondary">
-                          Command {index + 1}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={{ fontFamily: 'monospace', wordBreak: 'break-all', mb: 1 }}
-                        >
-                          {command}
-                        </Typography>
-                        <Button
-                          size="small"
-                          startIcon={<ContentCopyIcon />}
-                          onClick={() => void copyCommand(command)}
-                        >
-                          Copy
-                        </Button>
-                      </Box>
-                    ))}
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">
+                        Active profile
+                      </Typography>
+                      <Typography variant="body1">
+                        {activeExchangeConnection?.name ?? 'No active connection selected'}
+                      </Typography>
+                    </Box>
+                    <Chip
+                      label={
+                        activeExchangeConnection
+                          ? activeExchangeConnection.testnet
+                            ? 'Paper configuration'
+                            : 'Live configuration'
+                          : 'No active configuration'
+                      }
+                      color={
+                        activeExchangeConnection
+                          ? activeExchangeConnection.testnet
+                            ? 'success'
+                            : 'error'
+                          : 'default'
+                      }
+                      variant="outlined"
+                    />
+                    <Typography variant="body2">
+                      Exchange: {activeExchangeConnection ? getExchangeLabel(activeExchangeConnection.exchange) : '-'}
+                    </Typography>
+                    <Typography variant="body2">
+                      Scope:{' '}
+                      {activeExchangeConnection
+                        ? activeExchangeConnection.testnet
+                          ? 'Testnet / paper-safe'
+                          : 'Mainnet / live'
+                        : '-'}
+                    </Typography>
+                    <Typography variant="body2">Saved profiles: {exchangeConnections.length}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      The backend currently supports live connectivity testing for Binance only. Other exchanges can
+                      still be saved now and wired later.
+                    </Typography>
                   </Stack>
                 </CardContent>
               </Card>
@@ -314,14 +654,20 @@ export default function SettingsPage() {
               <Typography variant="h6" sx={{ mb: 2 }}>
                 Notification Settings
               </Typography>
+              <Alert severity="info" sx={{ mb: 2 }}>
+                Notification edits stay in draft until you save them.
+              </Alert>
               <Stack spacing={2}>
                 <FieldTooltip title="Enable/disable email alerts. Disabling can delay awareness of critical risk events.">
                   <FormControlLabel
                     control={
                       <Switch
-                        checked={notifications.emailAlerts}
+                        checked={notificationDraft.emailAlerts}
                         onChange={(event) =>
-                          dispatch(updateNotificationSetting({ key: 'emailAlerts', value: event.target.checked }))
+                          setNotificationDraft((prev) => ({
+                            ...prev,
+                            emailAlerts: event.target.checked,
+                          }))
                         }
                       />
                     }
@@ -332,9 +678,12 @@ export default function SettingsPage() {
                   <FormControlLabel
                     control={
                       <Switch
-                        checked={notifications.telegramAlerts}
+                        checked={notificationDraft.telegramAlerts}
                         onChange={(event) =>
-                          dispatch(updateNotificationSetting({ key: 'telegramAlerts', value: event.target.checked }))
+                          setNotificationDraft((prev) => ({
+                            ...prev,
+                            telegramAlerts: event.target.checked,
+                          }))
                         }
                       />
                     }
@@ -345,14 +694,12 @@ export default function SettingsPage() {
                   <TextField
                     label="Profit/Loss Threshold (%)"
                     type="number"
-                    value={notifications.profitLossThreshold}
+                    value={notificationDraft.profitLossThreshold}
                     onChange={(event) =>
-                      dispatch(
-                        updateNotificationSetting({
-                          key: 'profitLossThreshold',
-                          value: Number(event.target.value),
-                        })
-                      )
+                      setNotificationDraft((prev) => ({
+                        ...prev,
+                        profitLossThreshold: parseNumberInput(event.target.value, prev.profitLossThreshold),
+                      }))
                     }
                     helperText="Threshold for PnL alert generation."
                   />
@@ -361,14 +708,12 @@ export default function SettingsPage() {
                   <TextField
                     label="Drawdown Threshold (%)"
                     type="number"
-                    value={notifications.drawdownThreshold}
+                    value={notificationDraft.drawdownThreshold}
                     onChange={(event) =>
-                      dispatch(
-                        updateNotificationSetting({
-                          key: 'drawdownThreshold',
-                          value: Number(event.target.value),
-                        })
-                      )
+                      setNotificationDraft((prev) => ({
+                        ...prev,
+                        drawdownThreshold: parseNumberInput(event.target.value, prev.drawdownThreshold),
+                      }))
                     }
                     helperText="Percent drawdown level that emits warning notifications."
                   />
@@ -377,18 +722,30 @@ export default function SettingsPage() {
                   <TextField
                     label="Risk Threshold (%)"
                     type="number"
-                    value={notifications.riskThreshold}
+                    value={notificationDraft.riskThreshold}
                     onChange={(event) =>
-                      dispatch(
-                        updateNotificationSetting({
-                          key: 'riskThreshold',
-                          value: Number(event.target.value),
-                        })
-                      )
+                      setNotificationDraft((prev) => ({
+                        ...prev,
+                        riskThreshold: parseNumberInput(event.target.value, prev.riskThreshold),
+                      }))
                     }
                     helperText="Percent utilization threshold for risk alerts."
                   />
                 </FieldTooltip>
+
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                  <Button
+                    variant="contained"
+                    startIcon={<SaveOutlinedIcon />}
+                    onClick={saveNotificationSettings}
+                    disabled={!hasNotificationChanges}
+                  >
+                    Save Notifications
+                  </Button>
+                  <Button variant="outlined" onClick={() => setNotificationDraft(notifications)}>
+                    Revert Draft
+                  </Button>
+                </Stack>
               </Stack>
             </CardContent>
           </Card>
@@ -400,15 +757,23 @@ export default function SettingsPage() {
               <Typography variant="h6" sx={{ mb: 2 }}>
                 Display Preferences
               </Typography>
+              <Alert severity="info" sx={{ mb: 2 }}>
+                Display and environment changes apply only after you save them.
+              </Alert>
               <Stack spacing={2}>
                 <FieldTooltip title="Visual theme preference only. Does not change trading logic or risk behavior.">
                   <FormControl fullWidth>
                     <InputLabel id="theme-label">Theme</InputLabel>
                     <Select
                       labelId="theme-label"
-                      value={theme}
+                      value={displayDraft.theme}
                       label="Theme"
-                      onChange={(event) => dispatch(setTheme(event.target.value))}
+                      onChange={(event) =>
+                        setDisplayDraft((prev) => ({
+                          ...prev,
+                          theme: event.target.value,
+                        }))
+                      }
                     >
                       <MenuItem value="light">Light</MenuItem>
                       <MenuItem value="dark">Dark</MenuItem>
@@ -421,9 +786,14 @@ export default function SettingsPage() {
                     <InputLabel id="currency-label">Currency Display</InputLabel>
                     <Select
                       labelId="currency-label"
-                      value={currency}
+                      value={displayDraft.currency}
                       label="Currency Display"
-                      onChange={(event) => dispatch(setCurrency(event.target.value))}
+                      onChange={(event) =>
+                        setDisplayDraft((prev) => ({
+                          ...prev,
+                          currency: event.target.value,
+                        }))
+                      }
                     >
                       <MenuItem value="USD">USD (fiat view)</MenuItem>
                       <MenuItem value="BTC">BTC (crypto unit view)</MenuItem>
@@ -436,9 +806,14 @@ export default function SettingsPage() {
                     <InputLabel id="timezone-label">Timezone</InputLabel>
                     <Select
                       labelId="timezone-label"
-                      value={timezone}
+                      value={displayDraft.timezone}
                       label="Timezone"
-                      onChange={(event) => dispatch(setTimezone(event.target.value))}
+                      onChange={(event) =>
+                        setDisplayDraft((prev) => ({
+                          ...prev,
+                          timezone: event.target.value,
+                        }))
+                      }
                     >
                       {timezoneOptions.map((option) => (
                         <MenuItem key={option} value={option}>
@@ -453,22 +828,30 @@ export default function SettingsPage() {
                   <TextField
                     label="Text Scale"
                     type="number"
-                    value={textScale}
+                    value={displayDraft.textScale}
                     inputProps={{ min: 1, max: 2, step: 0.1 }}
-                    onChange={(event) => dispatch(setTextScale(Number(event.target.value)))}
+                    onChange={(event) =>
+                      setDisplayDraft((prev) => ({
+                        ...prev,
+                        textScale: parseNumberInput(event.target.value, prev.textScale),
+                      }))
+                    }
                     helperText="Supports accessibility scaling up to 200%."
                   />
                 </FieldTooltip>
 
-                <FieldTooltip title="Critical operating mode selector. Switching to live changes data source context and risk posture.">
+                <FieldTooltip title="Critical operating mode selector. Save before it takes effect across API requests and dashboards.">
                   <FormControl fullWidth>
                     <InputLabel id="environment-label">Active Mode</InputLabel>
                     <Select
                       labelId="environment-label"
-                      value={environmentMode}
+                      value={displayDraft.environmentMode}
                       label="Active Mode"
                       onChange={(event) =>
-                        dispatch(setEnvironmentMode(event.target.value))
+                        setDisplayDraft((prev) => ({
+                          ...prev,
+                          environmentMode: event.target.value as EnvironmentMode,
+                        }))
                       }
                     >
                       <MenuItem value="test">Test / Paper (recommended)</MenuItem>
@@ -477,9 +860,31 @@ export default function SettingsPage() {
                   </FormControl>
                 </FieldTooltip>
 
-                <Button variant="outlined" color="warning" onClick={() => dispatch(resetSettings())}>
-                  Reset Preferences
-                </Button>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                  <Button
+                    variant="contained"
+                    startIcon={<SaveOutlinedIcon />}
+                    onClick={saveDisplaySettings}
+                    disabled={!hasDisplayChanges}
+                  >
+                    Save Display Settings
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="warning"
+                    onClick={() =>
+                      setDisplayDraft({
+                        theme: 'light',
+                        currency: 'USD',
+                        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                        textScale: 1,
+                        environmentMode: 'test',
+                      })
+                    }
+                  >
+                    Reset Draft To Defaults
+                  </Button>
+                </Stack>
               </Stack>
             </CardContent>
           </Card>
@@ -557,7 +962,14 @@ export default function SettingsPage() {
                   ) : (
                     <Stack spacing={1}>
                       <Typography variant="body2">
-                        Exchange: {exchangeBalance?.exchange ?? connectionStatus?.exchange ?? 'Live Exchange'}
+                        Active Profile: {activeExchangeConnection?.name ?? 'No active connection selected'}
+                      </Typography>
+                      <Typography variant="body2">
+                        Exchange:{' '}
+                        {exchangeBalance?.exchange ??
+                          (activeExchangeConnection ? getExchangeLabel(activeExchangeConnection.exchange) : null) ??
+                          connectionStatus?.exchange ??
+                          'Live Exchange'}
                       </Typography>
                       <Typography variant="body2">Available: {exchangeBalance?.available ?? '-'}</Typography>
                       <Typography variant="body2">Locked: {exchangeBalance?.locked ?? '-'}</Typography>
@@ -579,6 +991,23 @@ export default function SettingsPage() {
                   <Typography variant="h6" sx={{ mb: 2 }}>
                     Connection Status
                   </Typography>
+                  {activeExchangeConnection ? (
+                    <Stack spacing={1.5} sx={{ mb: 2 }}>
+                      <Chip
+                        label={activeExchangeConnection.testnet ? 'Paper configuration' : 'Live configuration'}
+                        color={activeExchangeConnection.testnet ? 'success' : 'error'}
+                        variant="outlined"
+                      />
+                      <Typography variant="body2">Profile: {activeExchangeConnection.name}</Typography>
+                      <Typography variant="body2">
+                        Exchange: {getExchangeLabel(activeExchangeConnection.exchange)}
+                      </Typography>
+                    </Stack>
+                  ) : (
+                    <Alert severity="info" sx={{ mb: 2 }}>
+                      No active connection is selected yet. Save and activate a connection in the API Config tab first.
+                    </Alert>
+                  )}
                   {isConnectionError ? (
                     <Alert severity="warning">
                       {getApiErrorMessage(
@@ -589,7 +1018,7 @@ export default function SettingsPage() {
                   ) : (
                     <Stack spacing={1}>
                       <Typography variant="body2">
-                        Connected: {connectionStatus?.connected ? 'Yes' : 'No'}
+                        Last Check Connected: {connectionStatus?.connected ? 'Yes' : 'No'}
                       </Typography>
                       <Typography variant="body2">Rate Limit: {connectionStatus?.rateLimitUsage ?? '-'}</Typography>
                       <Typography variant="body2">Last Sync: {connectionStatus?.lastSync ?? '-'}</Typography>
@@ -601,10 +1030,10 @@ export default function SettingsPage() {
                   <Button
                     variant="outlined"
                     sx={{ mt: 2 }}
-                    onClick={() => void runConnectionTest()}
-                    disabled={isTestingConnection}
+                    onClick={() => void (activeExchangeConnection ? runConnectionTest(activeExchangeConnection) : undefined)}
+                    disabled={isTestingConnection || !activeExchangeConnection}
                   >
-                    Test Connection
+                    Test Active Connection
                   </Button>
                 </CardContent>
               </Card>
@@ -627,8 +1056,8 @@ export default function SettingsPage() {
                     ) : (
                       exchangeOrders.slice(0, 10).map((order) => (
                         <Typography key={order.id} variant="caption">
-                          #{order.id} {order.symbol} {order.side} @ {order.entryPrice} ({order.quantity}){' '}
-                          [{order.status}]
+                          #{order.id} {order.symbol} {order.side} @ {order.entryPrice} ({order.quantity}) [{' '}
+                          {order.status}]
                         </Typography>
                       ))
                     )}
@@ -639,9 +1068,7 @@ export default function SettingsPage() {
           </Grid>
         ) : null}
 
-        {activeTab === 'audit' ? (
-          <OperatorAuditPanel />
-        ) : null}
+        {activeTab === 'audit' ? <OperatorAuditPanel /> : null}
       </Box>
     </AppLayout>
   );

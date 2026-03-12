@@ -126,21 +126,6 @@ export default function LoginPage() {
             </Box>
 
             <Box component="form" onSubmit={(event) => void handleSubmit(event)} noValidate>
-              <Box
-                sx={{
-                  mb: 2,
-                  px: 1.5,
-                  py: 1,
-                  borderRadius: 1,
-                  backgroundColor: 'info.light',
-                  color: 'text.primary',
-                }}
-              >
-                <Typography variant="body2">
-                  Local default account on first startup: <strong>admin</strong> / <strong>dogbert</strong>.
-                </Typography>
-              </Box>
-
               {apiError && (
                 <Alert severity="error" sx={{ mb: 2 }}>
                   {apiError}

@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import authReducer from '../../features/auth/authSlice';
+import environmentReducer from '../../features/environment/environmentSlice';
 import settingsReducer from '../../features/settings/settingsSlice';
 
 import { Header } from './Header';
@@ -23,6 +24,7 @@ vi.mock('react-router-dom', async () => {
 const createMockStore = (user = { id: '1', username: 'testuser', email: 'test@example.com', role: 'trader' as const }) => configureStore({
     reducer: {
       auth: authReducer,
+      environment: environmentReducer,
       settings: settingsReducer,
     },
     preloadedState: {
@@ -36,6 +38,11 @@ const createMockStore = (user = { id: '1', username: 'testuser', email: 'test@ex
         sessionTimeout: null,
         lastActivity: Date.now(),
       },
+      environment: {
+        mode: 'test' as const,
+        connectedExchange: 'binance',
+        lastSyncTime: null,
+      },
       settings: {
         theme: 'light',
         currency: 'USD',
@@ -48,6 +55,17 @@ const createMockStore = (user = { id: '1', username: 'testuser', email: 'test@ex
           drawdownThreshold: 15,
           riskThreshold: 75,
         },
+        exchangeConnections: [
+          {
+            id: 'binance-paper',
+            name: 'Binance Paper',
+            exchange: 'binance',
+            apiKey: '',
+            apiSecret: '',
+            testnet: true,
+          },
+        ],
+        activeExchangeConnectionId: 'binance-paper',
       },
     },
   });
@@ -92,6 +110,21 @@ describe('Header', () => {
 
     const notificationsButton = screen.getByLabelText('Open notifications');
     expect(notificationsButton).toBeInTheDocument();
+  });
+
+  it('renders settings shortcut and bot mode chip', () => {
+    renderHeader();
+
+    expect(screen.getByLabelText('Open settings')).toBeInTheDocument();
+    expect(screen.getByText('Paper - Binance Paper')).toBeInTheDocument();
+  });
+
+  it('navigates to settings when the shortcut button is clicked', () => {
+    renderHeader();
+
+    fireEvent.click(screen.getByLabelText('Open settings'));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/settings');
   });
 
   it('renders user avatar with first letter of username', () => {

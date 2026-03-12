@@ -8,9 +8,18 @@ export interface NotificationSettings {
   riskThreshold: number;
 }
 
+export interface ExchangeConnectionProfile {
+  id: string;
+  name: string;
+  exchange: string;
+  apiKey: string;
+  apiSecret: string;
+  testnet: boolean;
+}
+
 /**
  * Settings state interface
- * Manages user preferences for theme, currency, timezone, and notifications
+ * Manages user preferences and saved exchange connections.
  */
 export interface SettingsState {
   theme: 'light' | 'dark';
@@ -18,6 +27,8 @@ export interface SettingsState {
   timezone: string;
   textScale: number;
   notifications: NotificationSettings;
+  exchangeConnections?: ExchangeConnectionProfile[];
+  activeExchangeConnectionId?: string | null;
 }
 
 const DEFAULT_NOTIFICATIONS: NotificationSettings = {
@@ -27,6 +38,20 @@ const DEFAULT_NOTIFICATIONS: NotificationSettings = {
   drawdownThreshold: 15,
   riskThreshold: 75,
 };
+
+const EXCHANGE_CONNECTIONS_STORAGE_KEY = 'exchangeConnections';
+const ACTIVE_EXCHANGE_CONNECTION_ID_STORAGE_KEY = 'activeExchangeConnectionId';
+
+const DEFAULT_EXCHANGE_CONNECTIONS: ExchangeConnectionProfile[] = [
+  {
+    id: 'binance-paper',
+    name: 'Binance Paper',
+    exchange: 'binance',
+    apiKey: '',
+    apiSecret: '',
+    testnet: true,
+  },
+];
 
 const parseNotifications = (raw: string | null): NotificationSettings => {
   if (!raw) {
@@ -47,8 +72,62 @@ const parseNotifications = (raw: string | null): NotificationSettings => {
   }
 };
 
+const parseExchangeConnections = (raw: string | null): ExchangeConnectionProfile[] => {
+  if (!raw) {
+    return DEFAULT_EXCHANGE_CONNECTIONS;
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<ExchangeConnectionProfile>[];
+    const normalized = parsed
+      .filter((connection): connection is Partial<ExchangeConnectionProfile> => Boolean(connection))
+      .map((connection, index) => ({
+        id: connection.id?.trim() || `saved-connection-${index + 1}`,
+        name: connection.name?.trim() || `Connection ${index + 1}`,
+        exchange: connection.exchange?.trim().toLowerCase() || 'binance',
+        apiKey: connection.apiKey ?? '',
+        apiSecret: connection.apiSecret ?? '',
+        testnet: connection.testnet ?? true,
+      }));
+
+    return normalized.length > 0 ? normalized : DEFAULT_EXCHANGE_CONNECTIONS;
+  } catch {
+    return DEFAULT_EXCHANGE_CONNECTIONS;
+  }
+};
+
+const persistNotifications = (notifications: NotificationSettings) => {
+  localStorage.setItem('notificationSettings', JSON.stringify(notifications));
+};
+
+const persistExchangeConnections = (connections: ExchangeConnectionProfile[]) => {
+  localStorage.setItem(EXCHANGE_CONNECTIONS_STORAGE_KEY, JSON.stringify(connections));
+};
+
+const persistActiveExchangeConnectionId = (connectionId: string | null) => {
+  if (connectionId) {
+    localStorage.setItem(ACTIVE_EXCHANGE_CONNECTION_ID_STORAGE_KEY, connectionId);
+    return;
+  }
+
+  localStorage.removeItem(ACTIVE_EXCHANGE_CONNECTION_ID_STORAGE_KEY);
+};
+
+const getSavedExchangeConnections = () =>
+  parseExchangeConnections(localStorage.getItem(EXCHANGE_CONNECTIONS_STORAGE_KEY));
+
+const resolveActiveExchangeConnectionId = (connections: ExchangeConnectionProfile[]) => {
+  const savedActiveId = localStorage.getItem(ACTIVE_EXCHANGE_CONNECTION_ID_STORAGE_KEY);
+
+  if (savedActiveId && connections.some((connection) => connection.id === savedActiveId)) {
+    return savedActiveId;
+  }
+
+  return connections[0]?.id ?? null;
+};
+
 /**
- * Initialize settings from localStorage or use defaults
+ * Initialize settings from localStorage or use defaults.
  */
 const initializeSettings = (): SettingsState => {
   const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
@@ -56,6 +135,7 @@ const initializeSettings = (): SettingsState => {
   const savedTimezone = localStorage.getItem('timezone');
   const savedTextScale = Number(localStorage.getItem('textScale') ?? '1');
   const notifications = parseNotifications(localStorage.getItem('notificationSettings'));
+  const exchangeConnections = getSavedExchangeConnections();
 
   return {
     theme: savedTheme || 'light',
@@ -63,18 +143,16 @@ const initializeSettings = (): SettingsState => {
     timezone: savedTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
     textScale: Number.isFinite(savedTextScale) && savedTextScale >= 1 ? savedTextScale : 1,
     notifications,
+    exchangeConnections,
+    activeExchangeConnectionId: resolveActiveExchangeConnectionId(exchangeConnections),
   };
 };
 
 const initialState: SettingsState = initializeSettings();
 
-const persistNotifications = (notifications: NotificationSettings) => {
-  localStorage.setItem('notificationSettings', JSON.stringify(notifications));
-};
-
 /**
  * Settings slice
- * Manages user preferences with localStorage persistence
+ * Manages user preferences with localStorage persistence.
  */
 const settingsSlice = createSlice({
   name: 'settings',
@@ -111,6 +189,52 @@ const settingsSlice = createSlice({
       state.notifications[key] = value as never;
       persistNotifications(state.notifications);
     },
+    upsertExchangeConnection: (state, action: PayloadAction<ExchangeConnectionProfile>) => {
+      const existingConnections = state.exchangeConnections ?? DEFAULT_EXCHANGE_CONNECTIONS;
+      const nextConnections = [...existingConnections];
+      const index = nextConnections.findIndex((connection) => connection.id === action.payload.id);
+
+      if (index >= 0) {
+        nextConnections[index] = action.payload;
+      } else {
+        nextConnections.push(action.payload);
+      }
+
+      state.exchangeConnections = nextConnections;
+      if (!state.activeExchangeConnectionId) {
+        state.activeExchangeConnectionId = action.payload.id;
+      }
+
+      persistExchangeConnections(nextConnections);
+      persistActiveExchangeConnectionId(state.activeExchangeConnectionId ?? null);
+    },
+    deleteExchangeConnection: (state, action: PayloadAction<string>) => {
+      const existingConnections = state.exchangeConnections ?? DEFAULT_EXCHANGE_CONNECTIONS;
+      const nextConnections = existingConnections.filter((connection) => connection.id !== action.payload);
+
+      state.exchangeConnections =
+        nextConnections.length > 0 ? nextConnections : DEFAULT_EXCHANGE_CONNECTIONS;
+
+      if (
+        !state.activeExchangeConnectionId ||
+        state.activeExchangeConnectionId === action.payload ||
+        !state.exchangeConnections.some((connection) => connection.id === state.activeExchangeConnectionId)
+      ) {
+        state.activeExchangeConnectionId = state.exchangeConnections[0]?.id ?? null;
+      }
+
+      persistExchangeConnections(state.exchangeConnections);
+      persistActiveExchangeConnectionId(state.activeExchangeConnectionId ?? null);
+    },
+    setActiveExchangeConnection: (state, action: PayloadAction<string | null>) => {
+      const nextActiveId =
+        action.payload && (state.exchangeConnections ?? DEFAULT_EXCHANGE_CONNECTIONS).some((connection) => connection.id === action.payload)
+          ? action.payload
+          : (state.exchangeConnections ?? DEFAULT_EXCHANGE_CONNECTIONS)[0]?.id ?? null;
+
+      state.activeExchangeConnectionId = nextActiveId;
+      persistActiveExchangeConnectionId(nextActiveId);
+    },
     resetSettings: (state) => {
       state.theme = 'light';
       state.currency = 'USD';
@@ -133,6 +257,9 @@ export const {
   setTextScale,
   setNotificationSettings,
   updateNotificationSetting,
+  upsertExchangeConnection,
+  deleteExchangeConnection,
+  setActiveExchangeConnection,
   resetSettings,
 } = settingsSlice.actions;
 
@@ -143,6 +270,14 @@ export const selectCurrency = (state: SettingsRootState) => state.settings.curre
 export const selectTimezone = (state: SettingsRootState) => state.settings.timezone;
 export const selectTextScale = (state: SettingsRootState) => state.settings.textScale;
 export const selectNotificationSettings = (state: SettingsRootState) => state.settings.notifications;
+export const selectExchangeConnections = (state: SettingsRootState) =>
+  state.settings.exchangeConnections ?? DEFAULT_EXCHANGE_CONNECTIONS;
+export const selectActiveExchangeConnectionId = (state: SettingsRootState) =>
+  state.settings.activeExchangeConnectionId ?? selectExchangeConnections(state)[0]?.id ?? null;
+export const selectActiveExchangeConnection = (state: SettingsRootState) =>
+  selectExchangeConnections(state).find(
+    (connection) => connection.id === selectActiveExchangeConnectionId(state)
+  ) ?? selectExchangeConnections(state)[0] ?? null;
 export const selectSettings = (state: SettingsRootState) => state.settings;
 
 export default settingsSlice.reducer;

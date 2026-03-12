@@ -10,6 +10,7 @@ import {
   IconButton,
   Typography,
   Box,
+  Chip,
   Menu,
   MenuItem,
   Badge,
@@ -25,6 +26,8 @@ import { useNavigate } from 'react-router-dom';
 
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
 import { logout, selectUser } from '../../features/auth/authSlice';
+import { selectEnvironmentMode } from '../../features/environment/environmentSlice';
+import { selectActiveExchangeConnection } from '../../features/settings/settingsSlice';
 import ThemeToggle from '../ThemeToggle';
 
 interface HeaderProps {
@@ -37,6 +40,8 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const user = useAppSelector(selectUser);
+  const environmentMode = useAppSelector(selectEnvironmentMode);
+  const activeExchangeConnection = useAppSelector(selectActiveExchangeConnection);
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
@@ -68,6 +73,18 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     void navigate('/settings');
   };
 
+  const botModeLabel = activeExchangeConnection
+    ? activeExchangeConnection.testnet
+      ? 'Paper'
+      : 'Live'
+    : environmentMode === 'live'
+      ? 'Live'
+      : 'Paper/Test';
+
+  const botStatusLabel = activeExchangeConnection
+    ? `${botModeLabel} - ${activeExchangeConnection.name}`
+    : botModeLabel;
+
   return (
     <AppBar
       position="sticky"
@@ -98,6 +115,30 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 
         {/* Theme Toggle */}
         <ThemeToggle />
+
+        <IconButton
+          color="inherit"
+          aria-label="Open settings"
+          onClick={handleSettings}
+          sx={{ mr: 1 }}
+        >
+          <SettingsIcon />
+        </IconButton>
+
+        <Chip
+          label={isMobile ? botModeLabel : botStatusLabel}
+          color={botModeLabel === 'Live' ? 'error' : 'success'}
+          size="small"
+          variant="outlined"
+          sx={{
+            mr: 1,
+            maxWidth: { xs: 120, sm: 240 },
+            '& .MuiChip-label': {
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            },
+          }}
+        />
 
         {/* Notifications */}
         <IconButton
