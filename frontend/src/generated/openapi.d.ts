@@ -227,6 +227,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/market-data/provider-credentials/{providerId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["saveProviderCredential"];
+        delete: operations["deleteProviderCredential"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/market-data/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["jobs"];
+        put?: never;
+        post: operations["createJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/market-data/jobs/{jobId}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["retryJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/market-data/jobs/{jobId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["cancelJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/exchange/connections": {
         parameters: {
             query?: never;
@@ -626,6 +690,38 @@ export interface paths {
             cookie?: never;
         };
         get: operations["state"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/market-data/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["providers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/market-data/provider-credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["providerCredentials"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1074,6 +1170,83 @@ export interface components {
             /** Format: date-time */
             createdAt?: string;
         };
+        MarketDataProviderCredentialRequest: {
+            apiKey?: string;
+            note?: string;
+        };
+        MarketDataProviderCredentialResponse: {
+            providerId?: string;
+            providerLabel?: string;
+            apiKeyEnvironmentVariable?: string;
+            apiKeyRequired?: boolean;
+            hasStoredCredential?: boolean;
+            hasEnvironmentCredential?: boolean;
+            effectiveCredentialConfigured?: boolean;
+            credentialSource?: string;
+            storageEncryptionConfigured?: boolean;
+            note?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+            docsUrl?: string;
+            signupUrl?: string;
+            accountNotes?: string;
+        };
+        MarketDataImportJobRequest: {
+            providerId: string;
+            /** @enum {string} */
+            assetType: "STOCK" | "CRYPTO";
+            symbols: string[];
+            timeframe: string;
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+            datasetName?: string;
+            adjusted?: boolean;
+            regularSessionOnly?: boolean;
+        };
+        MarketDataImportJobResponse: {
+            /** Format: int64 */
+            id?: number;
+            providerId?: string;
+            providerLabel?: string;
+            assetType?: string;
+            datasetName?: string;
+            symbolsCsv?: string;
+            timeframe?: string;
+            /** Format: date */
+            startDate?: string;
+            /** Format: date */
+            endDate?: string;
+            adjusted?: boolean;
+            regularSessionOnly?: boolean;
+            status?: string;
+            statusMessage?: string;
+            /** Format: date-time */
+            nextRetryAt?: string;
+            /** Format: int32 */
+            currentSymbolIndex?: number;
+            /** Format: int32 */
+            totalSymbols?: number;
+            currentSymbol?: string;
+            /** Format: int32 */
+            importedRowCount?: number;
+            /** Format: int64 */
+            datasetId?: number;
+            datasetReady?: boolean;
+            /** Format: date-time */
+            currentChunkStart?: string;
+            /** Format: int32 */
+            attemptCount?: number;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+            /** Format: date-time */
+            startedAt?: string;
+            /** Format: date-time */
+            completedAt?: string;
+        };
         BacktestRunResponse: {
             /** Format: int64 */
             id?: number;
@@ -1423,6 +1596,23 @@ export interface components {
             recoveryMessage?: string;
             incidentSummary?: string;
             alerts?: components["schemas"]["PaperTradingAlertResponse"][];
+        };
+        MarketDataProviderResponse: {
+            id?: string;
+            label?: string;
+            description?: string;
+            supportedAssetTypes?: string[];
+            supportedTimeframes?: string[];
+            apiKeyRequired?: boolean;
+            apiKeyEnvironmentVariable?: string;
+            apiKeyConfigured?: boolean;
+            apiKeyConfiguredSource?: string;
+            supportsAdjusted?: boolean;
+            supportsRegularSessionOnly?: boolean;
+            symbolExamples?: string[];
+            docsUrl?: string;
+            signupUrl?: string;
+            accountNotes?: string;
         };
         ExchangeConnectionProfilesResponse: {
             connections?: components["schemas"]["ExchangeConnectionProfileResponse"][];
@@ -2104,6 +2294,140 @@ export interface operations {
             };
         };
     };
+    saveProviderCredential: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                providerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarketDataProviderCredentialRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MarketDataProviderCredentialResponse"];
+                };
+            };
+        };
+    };
+    deleteProviderCredential: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                providerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    jobs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MarketDataImportJobResponse"][];
+                };
+            };
+        };
+    };
+    createJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarketDataImportJobRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MarketDataImportJobResponse"];
+                };
+            };
+        };
+    };
+    retryJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jobId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MarketDataImportJobResponse"];
+                };
+            };
+        };
+    };
+    cancelJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jobId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MarketDataImportJobResponse"];
+                };
+            };
+        };
+    };
     listConnections: {
         parameters: {
             query?: never;
@@ -2770,6 +3094,46 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PaperTradingStateResponse"];
+                };
+            };
+        };
+    };
+    providers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MarketDataProviderResponse"][];
+                };
+            };
+        };
+    };
+    providerCredentials: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MarketDataProviderCredentialResponse"][];
                 };
             };
         };

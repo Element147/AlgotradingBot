@@ -21,12 +21,16 @@ Status updated: March 12, 2026
    - completed: strict-default auth posture shipped
    - completed: explicit local-dev override guidance and rollout/rollback playbook
 4. Keep docs lean: only canonical root docs remain current.
+5. Historical research data acquisition
+   - completed: provider-backed stock/crypto downloader/import jobs with automatic wait-and-retry handling
+   - completed: admin-managed encrypted provider credential storage with note support for keyed free providers
 
 ## Next (1-2 months)
 
 1. Research reproducibility infrastructure
    - completed: dataset lifecycle tooling beyond upload/download (inventory, retention)
    - completed: repeatable experiment structure
+   - completed: provider-backed historical dataset acquisition that lands in the same reproducible backtest catalog
 2. Backtest analytics depth
    - completed: persist equity/trade series
    - completed: strategy comparison views/exports with provenance guards in frontend
@@ -44,6 +48,7 @@ Status updated: March 12, 2026
    - next: multi-channel notification routing
 2. Contract stability
    - completed: generated/shared frontend-backend API contracts
+   - next: export market-data endpoints through the generated contract when downloader workflows need external client reuse
 3. Optional live-readiness evaluation
    - only after paper stability, audit controls, and guardrail verification
 4. Optional production-readiness automation

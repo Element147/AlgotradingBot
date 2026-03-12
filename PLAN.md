@@ -34,15 +34,18 @@ Single slim implementation plan replacing legacy multi-file phase specs.
 24. Paper-trading state now includes incident summaries plus in-app operator alerts derived from recovery telemetry.
 25. Strategy configuration modal now surfaces typed strategy presets and recommended timeframe/risk ergonomics.
 26. Repair selection now recognizes port-conflict and orphan/network failure signatures and routes to dedicated playbooks.
+27. Historical market-data downloader/import workflows are implemented for free stock/crypto providers and feed completed datasets into backtest storage.
+28. Admin-managed encrypted provider credential storage with note support is implemented for keyed market-data providers.
 
 ## Current Work (Now)
 
 1. Documentation discipline
    - keep only root canonical docs current
    - remove stale one-off logs
-2. Research quality improvements
-   - completed: repeatable experiment structure on top of versioned datasets and config history
-   - completed: richer multi-run research summaries beyond the current provenance-guarded exports
+2. Research data acquisition
+   - completed: provider-backed historical market-data downloader with retry-aware import jobs and direct backtest dataset ingestion
+   - completed: encrypted PostgreSQL storage for keyed-provider credentials with frontend note capture and env-var fallback
+   - next: expand provider coverage only when a concrete data gap remains after the current free-source set
 3. Operational hardening
    - completed: operator alert delivery on top of paper-trading recovery signals
    - completed: extend repair playbooks for additional runtime failure signatures

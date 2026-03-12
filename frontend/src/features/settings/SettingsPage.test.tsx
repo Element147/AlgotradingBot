@@ -4,6 +4,26 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SettingsPage from './SettingsPage';
 
 const mockDispatch = vi.fn();
+const saveProviderCredentialMock = vi.fn();
+const deleteProviderCredentialMock = vi.fn();
+const marketDataCredentialSettings = [
+  {
+    providerId: 'twelvedata',
+    providerLabel: 'Twelve Data',
+    apiKeyEnvironmentVariable: 'ALGOTRADING_MARKET_DATA_TWELVEDATA_API_KEY',
+    apiKeyRequired: true,
+    hasStoredCredential: false,
+    hasEnvironmentCredential: false,
+    effectiveCredentialConfigured: false,
+    credentialSource: 'NONE',
+    storageEncryptionConfigured: true,
+    note: null,
+    updatedAt: null,
+    docsUrl: 'https://example.com/docs',
+    signupUrl: 'https://example.com/signup',
+    accountNotes: 'Free API key required.',
+  },
+];
 const mockCreateSavedConnection = vi.fn();
 const mockUpdateSavedConnection = vi.fn();
 const mockActivateSavedConnection = vi.fn();
@@ -103,6 +123,20 @@ vi.mock('./exchangeApi', () => ({
   useTriggerBackupMutation: () => [vi.fn(), { isLoading: false }],
 }));
 
+vi.mock('@/features/marketData/marketDataApi', () => ({
+  useGetMarketDataProviderCredentialsQuery: () => ({
+    data: marketDataCredentialSettings,
+  }),
+  useSaveMarketDataProviderCredentialMutation: () => [
+    saveProviderCredentialMock,
+    { isLoading: false },
+  ],
+  useDeleteMarketDataProviderCredentialMutation: () => [
+    deleteProviderCredentialMock,
+    { isLoading: false },
+  ],
+}));
+
 vi.mock('@/app/hooks', () => ({
   useAppDispatch: () => mockDispatch,
   useAppSelector: (selector: (state: typeof mockState) => unknown) => selector(mockState),
@@ -119,6 +153,10 @@ vi.mock('@/services/axiosClient', () => ({
 describe('SettingsPage', { timeout: 15000 }, () => {
   beforeEach(() => {
     mockDispatch.mockReset();
+    saveProviderCredentialMock.mockReset();
+    deleteProviderCredentialMock.mockReset();
+    saveProviderCredentialMock.mockReturnValue({ unwrap: () => Promise.resolve({}) });
+    deleteProviderCredentialMock.mockReturnValue({ unwrap: () => Promise.resolve({}) });
     mockCreateSavedConnection.mockReset();
     mockUpdateSavedConnection.mockReset();
     mockActivateSavedConnection.mockReset();
@@ -133,12 +171,33 @@ describe('SettingsPage', { timeout: 15000 }, () => {
     expect(screen.getByRole('tab', { name: 'API Config' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Audit Trail' })).toBeInTheDocument();
     expect(screen.getByText('API Configuration')).toBeInTheDocument();
+    expect(screen.getByText('Market Data Provider Credentials')).toBeInTheDocument();
     expect(screen.getByLabelText('Saved Connection')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Set Active' })).toBeInTheDocument();
     expect(screen.queryByText('Local Commands (CMD)')).not.toBeInTheDocument();
     expect(
       screen.getByText(/saved profiles live in the database and the bot uses the currently active saved connection/i)
     ).toBeInTheDocument();
+  });
+
+  it('saves a market data provider key and note from settings', async () => {
+    render(<SettingsPage />);
+
+    fireEvent.change(screen.getByLabelText('Twelve Data API Key'), {
+      target: { value: 'demo-key' },
+    });
+    fireEvent.change(screen.getByLabelText('Note'), {
+      target: { value: 'Use for 2y liquid stock imports' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Save Provider Setting' }));
+
+    await waitFor(() => {
+      expect(saveProviderCredentialMock).toHaveBeenCalledWith({
+        providerId: 'twelvedata',
+        apiKey: 'demo-key',
+        note: 'Use for 2y liquid stock imports',
+      });
+    });
   });
 
   it('switches to notifications tab', () => {

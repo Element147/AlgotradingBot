@@ -55,6 +55,24 @@ Runtime discipline:
 - Never start a frontend or backend dev server until existing instances are checked and stopped first.
 - If you start a frontend or backend server for a task, stop it before ending the session.
 
+### Market Data Downloader Runbook
+
+- Built-in public providers with no key: `Binance`, `Kraken`
+- Backend encryption master key for frontend-saved provider credentials:
+  - `ALGOTRADING_MARKET_DATA_CREDENTIALS_MASTER_KEY`
+- Built-in free-key providers:
+  - `ALGOTRADING_MARKET_DATA_TWELVEDATA_API_KEY`
+  - `ALGOTRADING_MARKET_DATA_FINNHUB_API_KEY`
+  - `ALGOTRADING_MARKET_DATA_ALPHAVANTAGE_API_KEY`
+- Supported download/import timeframes: `1m`, `5m`, `15m`, `30m`, `1h`, `4h`, `1d`
+- Scheduler poll interval property: `algotrading.market-data.import-poll-ms` (default `5000`)
+- Operator flow:
+  1. Set `ALGOTRADING_MARKET_DATA_CREDENTIALS_MASTER_KEY` if operators should save keyed-provider credentials from the UI.
+  2. Start the app.
+  3. If needed, open `Settings` -> `API Config` and save a provider API key plus note, or use provider env vars instead.
+  4. Open the frontend `Market Data` tab and create an import job.
+  5. Let the backend worker fetch in chunks, wait through provider retry windows, and import the finished dataset into the backtest catalog.
+
 ### Backup Runbook
 
 - `/api/system/backup` now creates a real database artifact.

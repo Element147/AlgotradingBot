@@ -502,3 +502,202 @@ databaseChangeLog:
             columns:
               - column:
                   name: changed_at
+
+  - changeSet:
+      id: 0010-create-market-data-import-jobs
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          tableExists:
+            tableName: market_data_import_jobs
+      changes:
+        - createTable:
+            tableName: market_data_import_jobs
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: provider_id
+                  type: VARCHAR(40)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: asset_type
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: dataset_name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: symbols_csv
+                  type: VARCHAR(1000)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: timeframe
+                  type: VARCHAR(10)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: start_date
+                  type: DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: end_date
+                  type: DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: adjusted
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: regular_session_only
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status_message
+                  type: VARCHAR(2000)
+              - column:
+                  name: next_retry_at
+                  type: TIMESTAMP
+              - column:
+                  name: current_symbol_index
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: current_chunk_start
+                  type: TIMESTAMP
+              - column:
+                  name: imported_row_count
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: staged_csv_data
+                  type: BLOB
+              - column:
+                  name: dataset_id
+                  type: BIGINT
+              - column:
+                  name: attempt_count
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: started_at
+                  type: TIMESTAMP
+              - column:
+                  name: completed_at
+                  type: TIMESTAMP
+        - createIndex:
+            indexName: idx_market_data_import_status
+            tableName: market_data_import_jobs
+            columns:
+              - column:
+                  name: status
+        - createIndex:
+            indexName: idx_market_data_import_next_retry
+            tableName: market_data_import_jobs
+            columns:
+              - column:
+                  name: next_retry_at
+        - createIndex:
+            indexName: idx_market_data_import_created_at
+            tableName: market_data_import_jobs
+            columns:
+              - column:
+                  name: created_at
+
+  - changeSet:
+      id: 0011-create-market-data-provider-credentials
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          tableExists:
+            tableName: market_data_provider_credentials
+      changes:
+        - createTable:
+            tableName: market_data_provider_credentials
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: provider_id
+                  type: VARCHAR(40)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: encrypted_api_key
+                  type: VARCHAR(4000)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: encryption_iv
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: encryption_version
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: note
+                  type: VARCHAR(500)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: market_data_provider_credentials
+            columnNames: provider_id
+            constraintName: uk_market_data_provider_credential_provider
+        - createIndex:
+            indexName: idx_market_data_provider_credential_provider
+            tableName: market_data_provider_credentials
+            columns:
+              - column:
+                  name: provider_id

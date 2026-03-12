@@ -52,15 +52,7 @@ public class BacktestDatasetService {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("CSV file is required");
         }
-        if (file.getSize() > MAX_UPLOAD_BYTES) {
-            throw new IllegalArgumentException("CSV file is too large. Max size is 25MB");
-        }
-
         String filename = file.getOriginalFilename() == null ? "dataset.csv" : file.getOriginalFilename();
-        String name = (requestedName == null || requestedName.isBlank()) ? filename : requestedName.trim();
-        if (name.length() < 3 || name.length() > 100) {
-            throw new IllegalArgumentException("Dataset name must be between 3 and 100 characters");
-        }
 
         byte[] csvData;
         try {
@@ -69,45 +61,27 @@ public class BacktestDatasetService {
             throw new IllegalArgumentException("Unable to read uploaded file");
         }
 
-        List<OHLCVData> candles = historicalDataCsvParser.parse(csvData);
-        if (candles.isEmpty()) {
-            throw new IllegalArgumentException("CSV dataset does not contain any rows");
-        }
-
-        Set<String> symbols = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-        LocalDateTime start = null;
-        LocalDateTime end = null;
-
-        for (OHLCVData candle : candles) {
-            symbols.add(candle.getSymbol());
-            LocalDateTime timestamp = candle.getTimestamp();
-            if (start == null || timestamp.isBefore(start)) {
-                start = timestamp;
-            }
-            if (end == null || timestamp.isAfter(end)) {
-                end = timestamp;
-            }
-        }
-
-        BacktestDataset dataset = new BacktestDataset();
-        dataset.setName(name);
-        dataset.setOriginalFilename(filename);
-        dataset.setCsvData(csvData);
-        dataset.setRowCount(candles.size());
-        dataset.setSymbolsCsv(String.join(",", symbols));
-        dataset.setDataStart(start);
-        dataset.setDataEnd(end);
-        dataset.setChecksumSha256(sha256Hex(csvData));
-        dataset.setSchemaVersion("ohlcv-v1");
-        dataset.setArchived(Boolean.FALSE);
-
-        BacktestDataset saved = backtestDatasetRepository.save(dataset);
+        BacktestDataset saved = saveDataset(requestedName, filename, csvData);
         operatorAuditService.recordSuccess(
             "BACKTEST_DATASET_UPLOADED",
             "test",
             "BACKTEST_DATASET",
             String.valueOf(saved.getId()),
             "name=" + saved.getName() + ", rows=" + saved.getRowCount()
+        );
+        List<BacktestDataset> datasets = backtestDatasetRepository.findAllByOrderByUploadedAtDesc();
+        return toResponse(saved, getUsageStatsByDatasetId(), getDuplicateCountByChecksum(datasets));
+    }
+
+    @Transactional
+    public BacktestDatasetResponse importDataset(String requestedName, String filename, byte[] csvData, String sourceDetails) {
+        BacktestDataset saved = saveDataset(requestedName, filename, csvData);
+        operatorAuditService.recordSuccess(
+            "BACKTEST_DATASET_IMPORTED",
+            "test",
+            "BACKTEST_DATASET",
+            String.valueOf(saved.getId()),
+            "name=" + saved.getName() + ", rows=" + saved.getRowCount() + ", source=" + sourceDetails
         );
         List<BacktestDataset> datasets = backtestDatasetRepository.findAllByOrderByUploadedAtDesc();
         return toResponse(saved, getUsageStatsByDatasetId(), getDuplicateCountByChecksum(datasets));
@@ -323,6 +297,53 @@ public class BacktestDatasetService {
             return HexFormat.of().formatHex(messageDigest.digest(payload));
         } catch (NoSuchAlgorithmException exception) {
             throw new IllegalStateException("SHA-256 not available", exception);
+        }
+    }
+
+    private BacktestDataset saveDataset(String requestedName, String filename, byte[] csvData) {
+        validateDatasetSize(csvData == null ? 0 : csvData.length);
+        String name = (requestedName == null || requestedName.isBlank()) ? filename : requestedName.trim();
+        if (name.length() < 3 || name.length() > 100) {
+            throw new IllegalArgumentException("Dataset name must be between 3 and 100 characters");
+        }
+
+        List<OHLCVData> candles = historicalDataCsvParser.parse(csvData);
+        if (candles.isEmpty()) {
+            throw new IllegalArgumentException("CSV dataset does not contain any rows");
+        }
+
+        Set<String> symbols = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        LocalDateTime start = null;
+        LocalDateTime end = null;
+
+        for (OHLCVData candle : candles) {
+            symbols.add(candle.getSymbol());
+            LocalDateTime timestamp = candle.getTimestamp();
+            if (start == null || timestamp.isBefore(start)) {
+                start = timestamp;
+            }
+            if (end == null || timestamp.isAfter(end)) {
+                end = timestamp;
+            }
+        }
+
+        BacktestDataset dataset = new BacktestDataset();
+        dataset.setName(name);
+        dataset.setOriginalFilename(filename);
+        dataset.setCsvData(csvData);
+        dataset.setRowCount(candles.size());
+        dataset.setSymbolsCsv(String.join(",", symbols));
+        dataset.setDataStart(start);
+        dataset.setDataEnd(end);
+        dataset.setChecksumSha256(sha256Hex(csvData));
+        dataset.setSchemaVersion("ohlcv-v1");
+        dataset.setArchived(Boolean.FALSE);
+        return backtestDatasetRepository.save(dataset);
+    }
+
+    public void validateDatasetSize(long payloadSizeBytes) {
+        if (payloadSizeBytes > MAX_UPLOAD_BYTES) {
+            throw new IllegalArgumentException("CSV file is too large. Max size is 25MB");
         }
     }
 

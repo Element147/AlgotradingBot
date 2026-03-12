@@ -37,6 +37,7 @@ describe('Sidebar', () => {
     expect(screen.getByText('Strategies')).toBeInTheDocument();
     expect(screen.getByText('Trades')).toBeInTheDocument();
     expect(screen.getByText('Backtest')).toBeInTheDocument();
+    expect(screen.getByText('Market Data')).toBeInTheDocument();
     expect(screen.getByText('Risk')).toBeInTheDocument();
     expect(screen.getByText('Settings')).toBeInTheDocument();
   });
@@ -52,7 +53,7 @@ describe('Sidebar', () => {
 
     // Check that icons are rendered (MUI icons render as SVG)
     const icons = container.querySelectorAll('.MuiListItemIcon-root svg');
-    expect(icons.length).toBe(6); // 6 navigation items
+    expect(icons.length).toBe(7); // 7 navigation items
   });
 
   it('should highlight active route', () => {
@@ -89,6 +90,7 @@ describe('Sidebar', () => {
       { name: /strategies/i, path: '/strategies' },
       { name: /trades/i, path: '/trades' },
       { name: /backtest/i, path: '/backtest' },
+      { name: /market data/i, path: '/market-data' },
       { name: /risk/i, path: '/risk' },
       { name: /settings/i, path: '/settings' },
     ];
@@ -150,6 +152,7 @@ describe('Sidebar', () => {
         button.textContent?.includes('Strategies') ||
         button.textContent?.includes('Trades') ||
         button.textContent?.includes('Backtest') ||
+        button.textContent?.includes('Market Data') ||
         button.textContent?.includes('Risk') ||
         button.textContent?.includes('Settings')
     );
@@ -158,8 +161,9 @@ describe('Sidebar', () => {
     expect(navigationButtons[1]).toHaveTextContent('Strategies');
     expect(navigationButtons[2]).toHaveTextContent('Trades');
     expect(navigationButtons[3]).toHaveTextContent('Backtest');
-    expect(navigationButtons[4]).toHaveTextContent('Risk');
-    expect(navigationButtons[5]).toHaveTextContent('Settings');
+    expect(navigationButtons[4]).toHaveTextContent('Market Data');
+    expect(navigationButtons[5]).toHaveTextContent('Risk');
+    expect(navigationButtons[6]).toHaveTextContent('Settings');
   });
 
   it('should have proper ARIA labels for accessibility', () => {
