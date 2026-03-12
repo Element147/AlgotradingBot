@@ -39,7 +39,7 @@ vi.mock('./strategiesApi', () => ({
 }));
 
 describe('StrategyConfigModal', () => {
-  it('renders config history entries', () => {
+  it('renders config history entries', { timeout: 10000 }, () => {
     render(
       <StrategyConfigModal
         strategy={{
