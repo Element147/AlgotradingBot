@@ -50,6 +50,11 @@ npm run contract:check
 .\stop.ps1
 ```
 
+Runtime discipline:
+
+- Never start a frontend or backend dev server until existing instances are checked and stopped first.
+- If you start a frontend or backend server for a task, stop it before ending the session.
+
 ### Backup Runbook
 
 - `/api/system/backup` now creates a real database artifact.

@@ -72,6 +72,11 @@ Legacy full-stack wrappers are still available:
 .\stop-all.ps1
 ```
 
+Server hygiene:
+
+- Never start a frontend or backend dev server until existing instances are checked and stopped first.
+- If you start a frontend or backend server while working, stop it before you finish the session.
+
 ## Verification Commands
 
 Frontend:

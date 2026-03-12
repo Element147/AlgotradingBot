@@ -61,6 +61,7 @@ If a task touches a planned feature, cite the relevant root planning document an
 - When docs and code disagree, update docs to match verified reality and record the contradiction in `PROJECT_STATUS.md`.
 - Keep code ASCII unless the file already needs other characters.
 - Update docs when architecture, workflow, risk posture, or project status materially changes.
+- Never start a frontend or backend dev server until existing instances are checked and stopped first; always stop any server you started before finishing the task.
 
 ## Preferred Workflow
 
