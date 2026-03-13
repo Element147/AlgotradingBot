@@ -181,7 +181,8 @@ describe('BacktestPage', { timeout: 15000 }, () => {
   it('renders upload section and run form', () => {
     render(<BacktestPage />);
 
-    expect(screen.getByText('Backtest')).toBeInTheDocument();
+    expect(screen.getByText('Backtest Lab')).toBeInTheDocument();
+    expect(screen.getByText('Current Run Progress')).toBeInTheDocument();
     expect(screen.getByText('Dataset Upload')).toBeInTheDocument();
     expect(screen.getByText('Dataset Inventory')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Run New Backtest' })).toBeInTheDocument();

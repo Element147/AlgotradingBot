@@ -14,6 +14,7 @@ import {
   Chip,
   Divider,
   Grid,
+  LinearProgress,
   Stack,
   Table,
   TableBody,
@@ -132,6 +133,51 @@ const retentionLabel = (status: BacktestDataset['retentionStatus']): string => {
   }
 };
 
+const executionProgressValue = (status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED'): number => {
+  switch (status) {
+    case 'PENDING':
+      return 20;
+    case 'RUNNING':
+      return 70;
+    case 'COMPLETED':
+      return 100;
+    case 'FAILED':
+      return 100;
+    default:
+      return 0;
+  }
+};
+
+const executionStatusColor = (
+  status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED'
+): 'default' | 'info' | 'success' | 'error' => {
+  switch (status) {
+    case 'RUNNING':
+      return 'info';
+    case 'COMPLETED':
+      return 'success';
+    case 'FAILED':
+      return 'error';
+    default:
+      return 'default';
+  }
+};
+
+const executionStageDescription = (status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED'): string => {
+  switch (status) {
+    case 'PENDING':
+      return 'Queued for validation and dataset loading.';
+    case 'RUNNING':
+      return 'Historical candles are being replayed and metrics are being calculated.';
+    case 'COMPLETED':
+      return 'Simulation and scoring finished. You can review charts and trades below.';
+    case 'FAILED':
+      return 'Execution stopped before finishing. Open the run details for the error reason.';
+    default:
+      return '';
+  }
+};
+
 interface HeaderCellProps {
   label: string;
   description: string;
@@ -202,6 +248,12 @@ export default function BacktestPage() {
   const comparisonIsStale =
     activeComparisonIds.length > 0 && activeComparisonIds.join(',') !== comparisonIds.join(',');
   const datasetLifecycleBusy = isArchivingDataset || isRestoringDataset;
+  const trackedRun = useMemo(() => {
+    if (selectedId !== null) {
+      return history.find((item) => item.id === selectedId) ?? null;
+    }
+    return history.find((item) => item.executionStatus === 'PENDING' || item.executionStatus === 'RUNNING') ?? history[0] ?? null;
+  }, [history, selectedId]);
 
   const onUploadDataset = async () => {
     if (!datasetFile) {
@@ -341,17 +393,82 @@ export default function BacktestPage() {
   return (
     <AppLayout>
       <Box>
-        <Typography variant="h4" gutterBottom>
-          Backtest
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Upload local CSV history data, choose an algorithm, and run research backtests without broker connectivity.
-        </Typography>
+        <Card
+          sx={{
+            mb: 3,
+            borderRadius: 4,
+            color: 'text.primary',
+            background:
+              'linear-gradient(135deg, rgba(15,23,42,0.98) 0%, rgba(8,47,73,0.96) 45%, rgba(21,128,61,0.90) 100%)',
+          }}
+        >
+          <CardContent sx={{ p: 3 }}>
+            <Grid container spacing={2} alignItems="center">
+              <Grid size={{ xs: 12, md: 8 }}>
+                <Typography variant="h4" gutterBottom sx={{ color: '#f8fafc' }}>
+                  Backtest Lab
+                </Typography>
+                <Typography variant="body1" sx={{ color: 'rgba(248,250,252,0.82)', maxWidth: 760 }}>
+                  Upload historical data, choose a strategy, and run safe research simulations in `test` mode. The flow now
+                  guides you toward supported choices, shows run-stage progress, and keeps beginner explanations close to each step.
+                </Typography>
+              </Grid>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap justifyContent={{ xs: 'flex-start', md: 'flex-end' }}>
+                  <Chip label="Default-safe: test" sx={{ bgcolor: 'rgba(255,255,255,0.12)', color: '#f8fafc' }} />
+                  <Chip label="Research only" sx={{ bgcolor: 'rgba(255,255,255,0.12)', color: '#f8fafc' }} />
+                  <Chip label="Realistic costs enabled" sx={{ bgcolor: 'rgba(255,255,255,0.12)', color: '#f8fafc' }} />
+                </Stack>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
 
         {feedback ? (
           <Alert severity={feedback.severity} sx={{ mb: 2 }} onClose={() => setFeedback(null)}>
             {feedback.message}
           </Alert>
+        ) : null}
+
+        {trackedRun ? (
+          <Card sx={{ mb: 3, borderRadius: 3 }}>
+            <CardContent>
+              <Stack spacing={1.5}>
+                <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={1}>
+                  <Box>
+                    <Typography variant="h6">Current Run Progress</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Tracking run #{trackedRun.id} for {trackedRun.strategyId} on {trackedRun.datasetName ?? 'dataset'}.
+                    </Typography>
+                  </Box>
+                  <Chip
+                    label={trackedRun.executionStatus}
+                    color={executionStatusColor(trackedRun.executionStatus)}
+                    variant={trackedRun.executionStatus === 'COMPLETED' ? 'filled' : 'outlined'}
+                  />
+                </Stack>
+                <LinearProgress
+                  variant="determinate"
+                  value={executionProgressValue(trackedRun.executionStatus)}
+                  color={trackedRun.executionStatus === 'FAILED' ? 'error' : 'primary'}
+                  sx={{ height: 10, borderRadius: 999 }}
+                />
+                <Typography variant="body2" color="text.secondary">
+                  {executionStageDescription(trackedRun.executionStatus)}
+                </Typography>
+                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                  <Chip
+                    size="small"
+                    label={`Validation: ${trackedRun.validationStatus}`}
+                    sx={{ color: validationColor(trackedRun.validationStatus) }}
+                    variant="outlined"
+                  />
+                  <Chip size="small" label={`${trackedRun.symbol} (${trackedRun.timeframe})`} variant="outlined" />
+                  <Chip size="small" label={`${trackedRun.feesBps} / ${trackedRun.slippageBps} bps`} variant="outlined" />
+                </Stack>
+              </Stack>
+            </CardContent>
+          </Card>
         ) : null}
 
         <Grid container spacing={2}>
@@ -362,6 +479,10 @@ export default function BacktestPage() {
                   Dataset Upload
                 </Typography>
                 <Stack spacing={2}>
+                  <Alert severity="info">
+                    Beginner tip: if you are unsure, start with one clean symbol dataset first, then move to multi-symbol
+                    universe strategies after you understand the baseline behavior.
+                  </Alert>
                   {retentionReport ? (
                     <Alert
                       severity={retentionReport.archiveCandidateDatasets > 0 ? 'warning' : 'info'}
@@ -502,6 +623,10 @@ export default function BacktestPage() {
                 <Typography variant="h6" sx={{ mb: 2 }}>
                   Run Backtest
                 </Typography>
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  Not sure what to choose? Start with <strong>Buy and Hold</strong> or <strong>SMA Crossover</strong>, a single active
+                  dataset, the recommended timeframe, and the default cost assumptions.
+                </Alert>
                 {selectedAlgorithm ? (
                   <Alert severity="info" sx={{ mb: 2 }}>
                     <strong>{selectedAlgorithm.label}:</strong> {selectedAlgorithm.description}
@@ -708,9 +833,32 @@ export default function BacktestPage() {
                           <TableCell>{item.datasetName ?? '-'}</TableCell>
                           <TableCell>{item.experimentName}</TableCell>
                           <TableCell>
-                            {item.symbol} ({item.timeframe})
+                            <Stack spacing={0.5}>
+                              <span>
+                                {item.symbol} ({item.timeframe})
+                              </span>
+                              {(item.executionStatus === 'PENDING' || item.executionStatus === 'RUNNING') && (
+                                <LinearProgress
+                                  variant="determinate"
+                                  value={executionProgressValue(item.executionStatus)}
+                                  sx={{ height: 6, borderRadius: 999, minWidth: 120 }}
+                                />
+                              )}
+                            </Stack>
                           </TableCell>
-                          <TableCell>{item.executionStatus}</TableCell>
+                          <TableCell>
+                            <Stack spacing={0.5}>
+                              <Chip
+                                size="small"
+                                label={item.executionStatus}
+                                color={executionStatusColor(item.executionStatus)}
+                                variant={item.executionStatus === 'COMPLETED' ? 'filled' : 'outlined'}
+                              />
+                              <Typography variant="caption" color="text.secondary">
+                                {executionStageDescription(item.executionStatus)}
+                              </Typography>
+                            </Stack>
+                          </TableCell>
                           <TableCell sx={{ color: validationColor(item.validationStatus) }}>
                             {item.validationStatus}
                           </TableCell>

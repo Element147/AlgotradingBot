@@ -36,6 +36,7 @@ public class BacktestManagementService {
 
     private static final int DEFAULT_HISTORY_LIMIT = 20;
     private static final int MAX_HISTORY_LIMIT = 500;
+    private static final String DATASET_UNIVERSE_LABEL = "DATASET_UNIVERSE";
 
     private final BacktestResultRepository backtestResultRepository;
     private final BacktestDatasetRepository backtestDatasetRepository;
@@ -290,20 +291,27 @@ public class BacktestManagementService {
     private String resolveRequestedSymbol(String requestedSymbol,
                                          String datasetSymbolsCsv,
                                          com.algotrader.bot.backtest.strategy.BacktestStrategySelectionMode selectionMode) {
-        if (selectionMode == com.algotrader.bot.backtest.strategy.BacktestStrategySelectionMode.DATASET_UNIVERSE) {
-            return datasetSymbolsCsv;
-        }
+        List<String> supportedSymbols = parseSymbols(datasetSymbolsCsv);
 
-        List<String> supportedSymbols = List.of(datasetSymbolsCsv.split(",")).stream()
-            .map(String::trim)
-            .filter(symbol -> !symbol.isBlank())
-            .toList();
+        if (selectionMode == com.algotrader.bot.backtest.strategy.BacktestStrategySelectionMode.DATASET_UNIVERSE) {
+            if (requestedSymbol != null && !requestedSymbol.isBlank() && !supportedSymbols.contains(requestedSymbol)) {
+                throw new IllegalArgumentException("Selected primary symbol is not present in dataset: " + requestedSymbol);
+            }
+            return DATASET_UNIVERSE_LABEL;
+        }
 
         if (!supportedSymbols.contains(requestedSymbol)) {
             throw new IllegalArgumentException("Selected symbol is not present in dataset: " + requestedSymbol);
         }
 
         return requestedSymbol;
+    }
+
+    private List<String> parseSymbols(String datasetSymbolsCsv) {
+        return List.of(datasetSymbolsCsv.split(",")).stream()
+            .map(String::trim)
+            .filter(symbol -> !symbol.isBlank())
+            .toList();
     }
 
     private BacktestHistoryItemResponse toHistoryItem(BacktestResult result) {

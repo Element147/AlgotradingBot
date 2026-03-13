@@ -1,4 +1,5 @@
-import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
+import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
@@ -14,6 +15,7 @@ const buildSpec = join(backendDir, 'build', 'openapi', 'openapi.json');
 const repoSpec = join(contractsDir, 'openapi.json');
 const generatedTypes = join(generatedDir, 'openapi.d.ts');
 const checkMode = process.argv.includes('--check');
+const gradleWrapper = join(backendDir, 'gradlew');
 
 const execCommand = (command, args, cwd) => {
   execFileSync(command, args, {
@@ -25,28 +27,64 @@ const execCommand = (command, args, cwd) => {
 mkdirSync(contractsDir, { recursive: true });
 mkdirSync(generatedDir, { recursive: true });
 
-if (process.platform === 'win32') {
-  execCommand('cmd.exe', ['/c', 'gradlew.bat', 'exportOpenApiContract', '--no-daemon'], backendDir);
-} else {
-  execCommand('sh', ['./gradlew', 'exportOpenApiContract', '--no-daemon'], backendDir);
-}
+const runGradleTask = (taskName) => {
+  if (process.platform === 'win32') {
+    execCommand('cmd.exe', ['/c', 'gradlew.bat', taskName, '--no-daemon'], backendDir);
+    return;
+  }
+
+  try {
+    chmodSync(gradleWrapper, 0o755);
+  } catch {
+    // Best-effort only; some environments may not allow mode changes.
+  }
+
+  try {
+    execCommand('./gradlew', [taskName, '--no-daemon'], backendDir);
+  } catch (error) {
+    if (error?.code && error.code !== 'EACCES' && error.code !== 'ENOENT') {
+      throw error;
+    }
+    execCommand('sh', ['./gradlew', taskName, '--no-daemon'], backendDir);
+  }
+};
+
+const runOpenApiTypes = (inputSpec, outputTypes) => {
+  if (process.platform === 'win32') {
+    execCommand('cmd.exe', ['/c', 'npx', 'openapi-typescript', inputSpec, '-o', outputTypes], frontendDir);
+  } else {
+    execCommand('npx', ['openapi-typescript', inputSpec, '-o', outputTypes], frontendDir);
+  }
+};
+
+runGradleTask('exportOpenApiContract');
 
 if (!existsSync(buildSpec)) {
   throw new Error(`Expected OpenAPI contract at ${buildSpec}`);
 }
 
-copyFileSync(buildSpec, repoSpec);
-
-if (process.platform === 'win32') {
-  execCommand('cmd.exe', ['/c', 'npx', 'openapi-typescript', repoSpec, '-o', generatedTypes], frontendDir);
-} else {
-  execCommand('npx', ['openapi-typescript', repoSpec, '-o', generatedTypes], frontendDir);
-}
-
 if (checkMode) {
+  const tempDir = mkdtempSync(join(tmpdir(), 'algotradingbot-openapi-'));
+
   try {
-    execCommand('git', ['diff', '--exit-code', '--', 'contracts/openapi.json', 'frontend/src/generated/openapi.d.ts'], repoRoot);
-  } catch {
-    throw new Error('OpenAPI contract artifacts are out of date. Run `npm run contract:generate` in frontend.');
+    const tempSpec = join(tempDir, 'openapi.json');
+    const tempTypes = join(tempDir, 'openapi.d.ts');
+
+    copyFileSync(buildSpec, tempSpec);
+    runOpenApiTypes(tempSpec, tempTypes);
+
+    const repoSpecMatches =
+      existsSync(repoSpec) && readFileSync(repoSpec, 'utf8') === readFileSync(tempSpec, 'utf8');
+    const generatedTypesMatch =
+      existsSync(generatedTypes) && readFileSync(generatedTypes, 'utf8') === readFileSync(tempTypes, 'utf8');
+
+    if (!repoSpecMatches || !generatedTypesMatch) {
+      throw new Error('OpenAPI contract artifacts are out of date. Run `npm run contract:generate` in frontend.');
+    }
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
   }
+} else {
+  copyFileSync(buildSpec, repoSpec);
+  runOpenApiTypes(repoSpec, generatedTypes);
 }

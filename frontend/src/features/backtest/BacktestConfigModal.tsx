@@ -1,19 +1,25 @@
 import {
   Alert,
+  Autocomplete,
+  Box,
   Button,
+  Chip,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  MenuItem,
+  Divider,
+  Paper,
   Stack,
   TextField,
+  Typography,
 } from '@mui/material';
 import { useEffect, useMemo } from 'react';
 
 import type { BacktestAlgorithm, BacktestDataset, RunBacktestPayload } from './backtestApi';
 
 import { FieldTooltip } from '@/components/ui/FieldTooltip';
+import { getStrategyProfile } from '@/features/strategies/strategyProfiles';
 import { sanitizeText } from '@/utils/security';
 
 export interface BacktestConfigFormState {
@@ -59,6 +65,8 @@ const parseSymbols = (symbolsCsv: string): string[] =>
     .map((symbol) => symbol.trim())
     .filter((symbol) => symbol.length > 0);
 
+const COMMON_TIMEFRAMES = ['15m', '1h', '4h', '1d'];
+
 export function BacktestConfigModal({
   open,
   form,
@@ -82,80 +90,187 @@ export function BacktestConfigModal({
     [selectedDataset]
   );
   const requiresDatasetUniverse = selectedAlgorithm?.selectionMode === 'DATASET_UNIVERSE';
+  const selectedAlgorithmProfile = useMemo(
+    () => getStrategyProfile(form.algorithmType),
+    [form.algorithmType]
+  );
+  const timeframeOptions = selectedAlgorithmProfile?.timeframeOptions ?? COMMON_TIMEFRAMES;
+  const recommendedTimeframe = selectedAlgorithmProfile?.configPreset.timeframe ?? timeframeOptions[0] ?? '1h';
 
   useEffect(() => {
-    if (requiresDatasetUniverse || availableSymbols.length === 0 || availableSymbols.includes(form.symbol)) {
+    if (availableSymbols.length === 0) {
       return;
     }
 
-    onChange({ ...form, symbol: availableSymbols[0] });
+    if (requiresDatasetUniverse && !form.symbol) {
+      onChange({ ...form, symbol: availableSymbols[0] });
+      return;
+    }
+
+    if (!requiresDatasetUniverse && !availableSymbols.includes(form.symbol)) {
+      onChange({ ...form, symbol: availableSymbols[0] });
+    }
   }, [availableSymbols, form, onChange, requiresDatasetUniverse]);
 
-  const validationError = useMemo(() => {
+  const validation = useMemo(() => {
+    const errors: Partial<Record<keyof BacktestConfigFormState | 'dateRange', string>> = {};
+
     if (!form.algorithmType.trim()) {
-      return 'Algorithm type is required';
+      errors.algorithmType = 'Choose a strategy before starting a run.';
     }
 
     if (!form.datasetId) {
-      return 'Please upload/select a dataset first';
+      errors.datasetId = 'Please choose a dataset first.';
+    } else if (!selectedDataset) {
+      errors.datasetId = 'The selected dataset is no longer available. Pick another one.';
     }
 
-    if (!requiresDatasetUniverse && !form.symbol.trim()) {
-      return 'Please select a symbol from the dataset';
+    if (!requiresDatasetUniverse) {
+      if (!form.symbol.trim()) {
+        errors.symbol = 'Please choose one symbol from the selected dataset.';
+      } else if (!availableSymbols.includes(form.symbol)) {
+        errors.symbol = 'The selected symbol is not available in this dataset.';
+      }
+    }
+
+    if (!form.timeframe.trim()) {
+      errors.timeframe = 'Choose a timeframe.';
+    } else if (!timeframeOptions.includes(form.timeframe)) {
+      errors.timeframe = `Choose one of the supported timeframes for this strategy: ${timeframeOptions.join(', ')}.`;
     }
 
     const initialBalance = Number(form.initialBalance);
     if (Number.isNaN(initialBalance) || initialBalance <= 100) {
-      return 'Initial balance must be greater than 100';
+      errors.initialBalance = 'Initial balance must be greater than 100.';
     }
 
     const fees = Number(form.feesBps);
+    if (Number.isNaN(fees) || fees < 0 || fees > 200) {
+      errors.feesBps = 'Fees must be between 0 and 200 bps.';
+    }
+
     const slippage = Number(form.slippageBps);
-    if (
-      Number.isNaN(fees) ||
-      fees < 0 ||
-      fees > 200 ||
-      Number.isNaN(slippage) ||
-      slippage < 0 ||
-      slippage > 200
-    ) {
-      return 'Fees and slippage must be between 0 and 200 bps';
+    if (Number.isNaN(slippage) || slippage < 0 || slippage > 200) {
+      errors.slippageBps = 'Slippage must be between 0 and 200 bps.';
     }
 
     if (new Date(form.startDate) >= new Date(form.endDate)) {
-      return 'Start date must be earlier than end date';
+      errors.dateRange = 'Start date must be earlier than end date.';
     }
 
-    return null;
-  }, [form, requiresDatasetUniverse]);
+    return {
+      errors,
+      summary:
+        errors.algorithmType ??
+        errors.datasetId ??
+        errors.symbol ??
+        errors.timeframe ??
+        errors.initialBalance ??
+        errors.feesBps ??
+        errors.slippageBps ??
+        errors.dateRange ??
+        null,
+    };
+  }, [availableSymbols, form, requiresDatasetUniverse, selectedDataset, timeframeOptions]);
 
   const run = async () => {
-    if (validationError) {
+    if (validation.summary) {
       return;
     }
     await onRun(normalizePayload(form));
   };
 
+  const applyRecommendedSetup = () => {
+    onChange({
+      ...form,
+      timeframe: recommendedTimeframe,
+      feesBps: '10',
+      slippageBps: '3',
+      symbol: availableSymbols[0] ?? form.symbol,
+    });
+  };
+
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
       <DialogTitle>Run New Backtest</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 2,
+              borderRadius: 3,
+              background:
+                'linear-gradient(135deg, rgba(15,118,110,0.10) 0%, rgba(14,165,233,0.08) 55%, rgba(250,204,21,0.08) 100%)',
+            }}
+          >
+            <Stack spacing={1.25}>
+              <Typography variant="subtitle1" fontWeight={700}>
+                Beginner-friendly setup
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Pick a strategy, choose a dataset that matches its style, then keep timeframe and cost assumptions realistic.
+                Backtests are research evidence, not proof of future profits.
+              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                <Chip label={requiresDatasetUniverse ? 'Multi-symbol strategy' : 'Single-symbol strategy'} color="primary" variant="outlined" />
+                <Chip
+                  label={`Recommended timeframe: ${recommendedTimeframe}`}
+                  color="success"
+                  variant="outlined"
+                />
+                <Button size="small" variant="contained" onClick={applyRecommendedSetup}>
+                  Use Recommended Setup
+                </Button>
+              </Stack>
+            </Stack>
+          </Paper>
+
           <FieldTooltip title="Select the strategy model to evaluate. Different models can produce very different risk and drawdown behavior.">
-            <TextField
-              select
-              label="Algorithm"
-              value={form.algorithmType}
-              onChange={(event) => onChange({ ...form, algorithmType: event.target.value })}
-              helperText="Determines signal logic used in simulation."
-            >
-              {algorithms.map((algorithm) => (
-                <MenuItem key={algorithm.id} value={algorithm.id}>
-                  {algorithm.label}
-                </MenuItem>
-              ))}
-            </TextField>
+            <Autocomplete
+              options={algorithms}
+              value={selectedAlgorithm}
+              onChange={(_event, value) =>
+                onChange({
+                  ...form,
+                  algorithmType: value?.id ?? '',
+                  timeframe: value ? getStrategyProfile(value.id)?.configPreset.timeframe ?? form.timeframe : form.timeframe,
+                })
+              }
+              getOptionLabel={(option) => option.label}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Algorithm"
+                  error={Boolean(validation.errors.algorithmType)}
+                  helperText={validation.errors.algorithmType ?? 'Determines the signal logic used in the simulation.'}
+                />
+              )}
+              renderOption={(props, option) => {
+                const profile = getStrategyProfile(option.id);
+                return (
+                  <Box component="li" {...props}>
+                    <Stack spacing={0.25}>
+                      <Typography variant="body2" fontWeight={600}>
+                        {option.label}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {profile?.shortDescription ?? option.description}
+                      </Typography>
+                    </Stack>
+                  </Box>
+                );
+              }}
+            />
           </FieldTooltip>
+
+          {selectedAlgorithmProfile ? (
+            <Alert severity="info">
+              <strong>{selectedAlgorithmProfile.title}:</strong> {selectedAlgorithmProfile.shortDescription} Best for:{' '}
+              {selectedAlgorithmProfile.bestFor}
+            </Alert>
+          ) : null}
 
           <FieldTooltip title="Experiment labels group related runs together so multi-run research stays reviewable and repeatable.">
             <TextField
@@ -167,52 +282,114 @@ export function BacktestConfigModal({
           </FieldTooltip>
 
           <FieldTooltip title="Dataset controls what market history is replayed. Wrong dataset means misleading conclusions.">
-            <TextField
-              select
-              label="Dataset"
-              value={form.datasetId}
-              onChange={(event) => onChange({ ...form, datasetId: event.target.value })}
-              helperText="Uploaded historical CSV dataset for this run."
-            >
-              {datasets.map((dataset) => (
-                <MenuItem key={dataset.id} value={String(dataset.id)}>
-                  {dataset.name} ({dataset.rowCount} rows)
-                </MenuItem>
-              ))}
-            </TextField>
+            <Autocomplete
+              options={datasets}
+              value={selectedDataset}
+              onChange={(_event, value) =>
+                onChange({
+                  ...form,
+                  datasetId: value ? String(value.id) : '',
+                  symbol: value ? parseSymbols(value.symbolsCsv)[0] ?? '' : '',
+                })
+              }
+              getOptionLabel={(option) => option.name}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Dataset"
+                  error={Boolean(validation.errors.datasetId)}
+                  helperText={validation.errors.datasetId ?? 'Historical CSV dataset used for this run.'}
+                />
+              )}
+              renderOption={(props, option) => (
+                <Box component="li" {...props}>
+                  <Stack spacing={0.25}>
+                    <Typography variant="body2" fontWeight={600}>
+                      {option.name}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {parseSymbols(option.symbolsCsv).length} symbols • {option.rowCount} rows • {option.dataStart.slice(0, 10)} to{' '}
+                      {option.dataEnd.slice(0, 10)}
+                    </Typography>
+                  </Stack>
+                </Box>
+              )}
+            />
           </FieldTooltip>
+
+          {selectedDataset ? (
+            <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
+              <Stack spacing={0.75}>
+                <Typography variant="subtitle2">Dataset snapshot</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Symbols: {availableSymbols.join(', ')}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Coverage: {selectedDataset.dataStart.slice(0, 10)} to {selectedDataset.dataEnd.slice(0, 10)} • {selectedDataset.rowCount} rows
+                </Typography>
+              </Stack>
+            </Paper>
+          ) : null}
 
           {requiresDatasetUniverse ? (
             <Alert severity="info">
-              This strategy uses every symbol in the selected dataset.
-              {selectedDataset ? ` Universe: ${selectedDataset.symbolsCsv}` : ''}
+              This strategy evaluates the whole dataset universe, not just one pair. The engine can use any symbol in the selected dataset.
+              {form.symbol ? ` Anchor symbol for context: ${form.symbol}.` : ''}
             </Alert>
-          ) : (
+          ) : availableSymbols.length > 0 ? (
             <FieldTooltip title="Trading pair to simulate. Must match dataset coverage for meaningful results.">
-              <TextField
-                select
-                label="Symbol"
-                value={form.symbol}
-                onChange={(event) => onChange({ ...form, symbol: event.target.value })}
-                helperText="Primary market pair used by the strategy."
-              >
-                {availableSymbols.map((symbol) => (
-                  <MenuItem key={symbol} value={symbol}>
-                    {symbol}
-                  </MenuItem>
-                ))}
-              </TextField>
+              <Autocomplete
+                options={availableSymbols}
+                value={form.symbol || null}
+                onChange={(_event, value) => onChange({ ...form, symbol: value ?? '' })}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Symbol"
+                    error={Boolean(validation.errors.symbol)}
+                    helperText={validation.errors.symbol ?? 'Primary market pair used by the strategy.'}
+                  />
+                )}
+              />
             </FieldTooltip>
+          ) : (
+            <Alert severity="warning">This dataset does not expose any symbols that can be selected.</Alert>
           )}
 
           <FieldTooltip title="Candle interval for strategy logic. A mismatch with dataset granularity can distort metrics.">
             <TextField
+              select
               label="Timeframe"
               value={form.timeframe}
               onChange={(event) => onChange({ ...form, timeframe: sanitizeText(event.target.value) })}
-              helperText="Examples: 15m, 1h, 4h, 1d."
-            />
+              error={Boolean(validation.errors.timeframe)}
+              helperText={
+                validation.errors.timeframe ??
+                `Recommended choices for this strategy: ${timeframeOptions.join(', ')}.`
+              }
+              SelectProps={{ native: true }}
+            >
+              {timeframeOptions.map((timeframe) => (
+                <option key={timeframe} value={timeframe}>
+                  {timeframe}
+                </option>
+              ))}
+            </TextField>
           </FieldTooltip>
+
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            {timeframeOptions.map((timeframe) => (
+              <Chip
+                key={timeframe}
+                label={timeframe === recommendedTimeframe ? `${timeframe} recommended` : timeframe}
+                color={form.timeframe === timeframe ? 'primary' : 'default'}
+                variant={form.timeframe === timeframe ? 'filled' : 'outlined'}
+                onClick={() => onChange({ ...form, timeframe })}
+              />
+            ))}
+          </Stack>
+
           <FieldTooltip title="Backtest start boundary. Earlier start includes more market regimes.">
             <TextField
               label="Start Date"
@@ -239,7 +416,9 @@ export function BacktestConfigModal({
               type="number"
               value={form.initialBalance}
               onChange={(event) => onChange({ ...form, initialBalance: event.target.value })}
-              helperText="Must be greater than 100."
+              error={Boolean(validation.errors.initialBalance)}
+              helperText={validation.errors.initialBalance ?? 'Must be greater than 100.'}
+              inputProps={{ min: 101, step: 100 }}
             />
           </FieldTooltip>
           <FieldTooltip title="Transaction fee in basis points. Understating fees inflates performance.">
@@ -248,7 +427,9 @@ export function BacktestConfigModal({
               type="number"
               value={form.feesBps}
               onChange={(event) => onChange({ ...form, feesBps: event.target.value })}
-              helperText="1 bps = 0.01%. Keep realistic exchange costs."
+              error={Boolean(validation.errors.feesBps)}
+              helperText={validation.errors.feesBps ?? '1 bps = 0.01%. Keep realistic exchange costs.'}
+              inputProps={{ min: 0, max: 200, step: 1 }}
             />
           </FieldTooltip>
           <FieldTooltip title="Execution slippage in basis points. Lower values can overstate real-world fills.">
@@ -257,16 +438,36 @@ export function BacktestConfigModal({
               type="number"
               value={form.slippageBps}
               onChange={(event) => onChange({ ...form, slippageBps: event.target.value })}
-              helperText="Models adverse fill movement during execution."
+              error={Boolean(validation.errors.slippageBps)}
+              helperText={validation.errors.slippageBps ?? 'Models adverse fill movement during execution.'}
+              inputProps={{ min: 0, max: 200, step: 1 }}
             />
           </FieldTooltip>
 
-          {validationError ? <Alert severity="error">{validationError}</Alert> : null}
+          <Divider />
+
+          <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
+            <Stack spacing={0.75}>
+              <Typography variant="subtitle2">Run summary</Typography>
+              <Typography variant="body2" color="text.secondary">
+                Strategy: {selectedAlgorithm?.label ?? 'Not selected'} | Dataset: {selectedDataset?.name ?? 'Not selected'}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Market focus: {requiresDatasetUniverse ? 'Whole dataset universe' : form.symbol || 'Choose a symbol'} | Timeframe: {form.timeframe || 'Choose a timeframe'}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Capital: {form.initialBalance || '-'} | Fees/slippage: {form.feesBps || '-'} / {form.slippageBps || '-'} bps
+              </Typography>
+            </Stack>
+          </Paper>
+
+          {validation.errors.dateRange ? <Alert severity="error">{validation.errors.dateRange}</Alert> : null}
+          {validation.summary ? <Alert severity="error">{validation.summary}</Alert> : null}
         </Stack>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" disabled={busy || Boolean(validationError)} onClick={() => void run()}>
+        <Button variant="contained" disabled={busy || Boolean(validation.summary)} onClick={() => void run()}>
           Run Backtest
         </Button>
       </DialogActions>

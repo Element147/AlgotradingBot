@@ -62,7 +62,7 @@ public class BacktestExecutionService {
                 BacktestAlgorithmType.from(result.getStrategyId()),
                 new BacktestSimulationRequest(
                     filtered,
-                    result.getSymbol().contains(",") ? firstSymbol(result.getSymbol()) : result.getSymbol(),
+                    resolvePrimarySymbol(result, dataset.getSymbolsCsv()),
                     result.getTimeframe(),
                     result.getInitialBalance(),
                     result.getFeesBps(),
@@ -124,11 +124,20 @@ public class BacktestExecutionService {
             && simulationResult.maxDrawdownPercent().compareTo(new BigDecimal("25")) < 0;
     }
 
-    private String firstSymbol(String symbolsCsv) {
+    private String resolvePrimarySymbol(BacktestResult result, String datasetSymbolsCsv) {
+        List<String> datasetSymbols = parseSymbols(datasetSymbolsCsv);
+        if (datasetSymbols.contains(result.getSymbol())) {
+            return result.getSymbol();
+        }
+        return datasetSymbols.stream()
+            .findFirst()
+            .orElse(result.getSymbol());
+    }
+
+    private List<String> parseSymbols(String symbolsCsv) {
         return List.of(symbolsCsv.split(",")).stream()
             .map(String::trim)
             .filter(symbol -> !symbol.isBlank())
-            .findFirst()
-            .orElse(symbolsCsv);
+            .toList();
     }
 }

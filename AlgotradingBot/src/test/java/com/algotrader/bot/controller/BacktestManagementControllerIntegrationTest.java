@@ -101,6 +101,44 @@ class BacktestManagementControllerIntegrationTest {
         dataset.setSchemaVersion("ohlcv-v1");
         datasetId = backtestDatasetRepository.save(dataset).getId();
 
+        BacktestDataset universeDataset = new BacktestDataset();
+        universeDataset.setName("multi-asset-universe");
+        universeDataset.setOriginalFilename("multi-asset.csv");
+        universeDataset.setCsvData((
+            "timestamp,symbol,open,high,low,close,volume\n" +
+            "2025-01-01T00:00:00,BTC/USDT,100,101,99,100,1\n" +
+            "2025-01-01T01:00:00,BTC/USDT,101,102,100,101,1\n" +
+            "2025-01-01T02:00:00,BTC/USDT,102,103,101,102,1\n" +
+            "2025-01-01T03:00:00,BTC/USDT,103,104,102,103,1\n" +
+            "2025-01-01T04:00:00,BTC/USDT,104,105,103,104,1\n" +
+            "2025-01-01T05:00:00,BTC/USDT,105,106,104,105,1\n" +
+            "2025-01-01T06:00:00,BTC/USDT,106,107,105,106,1\n" +
+            "2025-01-01T07:00:00,BTC/USDT,107,108,106,107,1\n" +
+            "2025-01-01T08:00:00,BTC/USDT,108,109,107,108,1\n" +
+            "2025-01-01T09:00:00,BTC/USDT,109,110,108,109,1\n" +
+            "2025-01-01T10:00:00,BTC/USDT,110,111,109,110,1\n" +
+            "2025-01-01T11:00:00,BTC/USDT,111,112,110,111,1\n" +
+            "2025-01-01T12:00:00,ETH/USDT,200,201,199,200,1\n" +
+            "2025-01-01T13:00:00,ETH/USDT,201,202,200,201,1\n" +
+            "2025-01-01T14:00:00,ETH/USDT,202,203,201,202,1\n" +
+            "2025-01-01T15:00:00,ETH/USDT,203,204,202,203,1\n" +
+            "2025-01-01T16:00:00,ETH/USDT,204,205,203,204,1\n" +
+            "2025-01-01T17:00:00,ETH/USDT,205,206,204,205,1\n" +
+            "2025-01-01T18:00:00,ETH/USDT,206,207,205,206,1\n" +
+            "2025-01-01T19:00:00,ETH/USDT,207,208,206,207,1\n" +
+            "2025-01-01T20:00:00,ETH/USDT,208,209,207,208,1\n" +
+            "2025-01-01T21:00:00,ETH/USDT,209,210,208,209,1\n" +
+            "2025-01-01T22:00:00,ETH/USDT,210,211,209,210,1\n" +
+            "2025-01-01T23:00:00,ETH/USDT,211,212,210,211,1\n"
+        ).getBytes());
+        universeDataset.setRowCount(24);
+        universeDataset.setSymbolsCsv("BTC/USDT,ETH/USDT");
+        universeDataset.setDataStart(LocalDateTime.parse("2025-01-01T00:00:00"));
+        universeDataset.setDataEnd(LocalDateTime.parse("2025-01-01T23:00:00"));
+        universeDataset.setChecksumSha256("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+        universeDataset.setSchemaVersion("ohlcv-v1");
+        backtestDatasetRepository.save(universeDataset);
+
         BacktestResult result = new BacktestResult(
             "BOLLINGER_BANDS",
             "BTC/USDT",
@@ -217,6 +255,41 @@ class BacktestManagementControllerIntegrationTest {
     }
 
     @Test
+    void runBacktest_datasetUniverseStoresSafeMarketLabel() throws Exception {
+        Long universeDatasetId = backtestDatasetRepository.findAll().stream()
+            .filter(dataset -> "multi-asset-universe".equals(dataset.getName()))
+            .findFirst()
+            .orElseThrow()
+            .getId();
+
+        RunBacktestRequest request = new RunBacktestRequest(
+            "DUAL_MOMENTUM_ROTATION",
+            universeDatasetId,
+            "BTC/USDT",
+            "1h",
+            java.time.LocalDate.parse("2025-01-01"),
+            java.time.LocalDate.parse("2025-01-02"),
+            new BigDecimal("2000"),
+            10,
+            3,
+            "Universe rotation smoke test"
+        );
+
+        mockMvc.perform(post("/api/backtests/run")
+                .header("Authorization", "Bearer " + authToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").exists())
+            .andExpect(jsonPath("$.status").value("PENDING"));
+
+        BacktestResult saved = backtestResultRepository.findAllByOrderByTimestampDesc().stream()
+            .findFirst()
+            .orElseThrow();
+        org.junit.jupiter.api.Assertions.assertEquals("DATASET_UNIVERSE", saved.getSymbol());
+    }
+
+    @Test
     void runBacktest_rejectsInvalidDateRange() throws Exception {
         RunBacktestRequest request = new RunBacktestRequest(
             "BOLLINGER_BANDS",
@@ -250,18 +323,18 @@ class BacktestManagementControllerIntegrationTest {
         mockMvc.perform(get("/api/backtests/datasets")
                 .header("Authorization", "Bearer " + authToken))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$[0].name").value("sample-btc"))
-            .andExpect(jsonPath("$[0].checksumSha256").isString())
-            .andExpect(jsonPath("$[0].schemaVersion").value("ohlcv-v1"))
-            .andExpect(jsonPath("$[0].archived").value(false))
-            .andExpect(jsonPath("$[0].usageCount").value(greaterThanOrEqualTo(1)))
-            .andExpect(jsonPath("$[0].retentionStatus").value("ACTIVE"));
+            .andExpect(jsonPath("$[?(@.name == 'sample-btc')]").isArray())
+            .andExpect(jsonPath("$[?(@.name == 'sample-btc')].checksumSha256").isNotEmpty())
+            .andExpect(jsonPath("$[?(@.name == 'sample-btc')].schemaVersion").value(org.hamcrest.Matchers.hasItem("ohlcv-v1")))
+            .andExpect(jsonPath("$[?(@.name == 'sample-btc')].archived").value(org.hamcrest.Matchers.hasItem(false)))
+            .andExpect(jsonPath("$[?(@.name == 'sample-btc')].usageCount").isNotEmpty())
+            .andExpect(jsonPath("$[?(@.name == 'sample-btc')].retentionStatus").value(org.hamcrest.Matchers.hasItem("ACTIVE")));
 
         mockMvc.perform(get("/api/backtests/datasets/retention-report")
                 .header("Authorization", "Bearer " + authToken))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.totalDatasets").value(1))
-            .andExpect(jsonPath("$.activeDatasets").value(1))
+            .andExpect(jsonPath("$.totalDatasets").value(2))
+            .andExpect(jsonPath("$.activeDatasets").value(2))
             .andExpect(jsonPath("$.referencedDatasetCount").value(1));
     }
 

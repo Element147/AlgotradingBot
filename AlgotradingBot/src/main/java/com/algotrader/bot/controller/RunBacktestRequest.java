@@ -17,8 +17,10 @@ public record RunBacktestRequest(
     @Positive(message = "Dataset ID must be positive")
     Long datasetId,
     @NotBlank(message = "Symbol is required")
+    @Size(min = 3, max = 20, message = "Symbol length must be 3-20 characters")
     String symbol,
     @NotBlank(message = "Timeframe is required")
+    @Size(min = 1, max = 10, message = "Timeframe length must be 1-10 characters")
     String timeframe,
     @NotNull(message = "Start date is required")
     LocalDate startDate,

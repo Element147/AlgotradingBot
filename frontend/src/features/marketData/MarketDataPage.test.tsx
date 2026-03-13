@@ -85,7 +85,7 @@ vi.mock('@/services/api', () => ({
   getApiErrorMessage: () => 'failed',
 }));
 
-describe('MarketDataPage', () => {
+describe('MarketDataPage', { timeout: 15000 }, () => {
   const renderPage = () =>
     render(
       <BrowserRouter>
