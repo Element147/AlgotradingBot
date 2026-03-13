@@ -16,7 +16,7 @@ The repository is in an operational local-first MVP state:
 - Optional free Docker MCP support now also includes `semgrep` and `hoverfly-mcp-server` for security scanning and provider/exchange mocking when a task needs them.
 - Canonical docs now use a slim core plus task-specific optional guides so Codex and humans can load only the workflow detail relevant to the current task.
 - Local script-driven runtime now keeps backend file logs under repo-local untracked `.runtime/logs` instead of tracked source paths.
-- Local developer memory behavior is now reclaim-friendly by default: shorter-lived Gradle daemon retention, no-daemon `bootRun` in `run.ps1`, and user-level WSL auto-memory-reclaim guidance.
+- Local developer memory behavior now keeps reclaim-friendly build defaults while giving backend runtime more headroom: no-daemon `bootRun`, a larger 2 GB backend heap, and ZGC for lower-pause local/container startup and runtime behavior.
 - Docker Desktop AI and inference UI features are disabled locally because this workflow does not use them.
 - No default real-money execution path is enabled.
 - Cross-stack CI verification gates now exist in `.github/workflows/ci.yml`.
@@ -93,6 +93,7 @@ Implemented product slices:
 39. Hardened repair/validation process execution with service/script allowlists, typed process arguments, validated PID parsing, and managed Compose/network identity.
 40. Replaced production WebSocket URL string rewriting with explicit secure same-origin resolution, while keeping localhost `ws` only for development/test.
 41. Cleaned the Semgrep security baseline to zero findings and documented the resolved rules plus scan workflow in `docs/SEMGREP_TRIAGE.md`.
+42. Added a Liquibase repair migration for legacy `market_data_import_jobs.staged_csv_data` large-object columns and aligned backend runtime defaults on a 2 GB ZGC heap for lower-latency local operation.
 
 ## Remaining Work (Current Priorities)
 
@@ -155,6 +156,7 @@ Last verified baseline (local):
   - shared PowerShell helpers now back `build*.ps1`, `run*.ps1`, and `stop*.ps1`
   - local runtime logs now write to `.runtime/logs`
   - Gradle daemon heap is reduced from 2 GB to 1 GB and the idle timeout is 15 minutes
+  - backend runtime defaults now use `-Xms512m -Xmx2g -XX:+UseZGC -XX:+ZGenerational -XX:MaxMetaspaceSize=512m` in local script and container entrypoints
   - user-level WSL config now enables `autoMemoryReclaim=gradual` with page reporting and 2 GB swap
   - after `wsl --shutdown`, `vmmemWSL` dropped to roughly 1.1 GB working set / 1.24 GB private memory
 - Security workflow verified:

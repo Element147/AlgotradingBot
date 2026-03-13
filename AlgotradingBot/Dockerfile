@@ -39,8 +39,8 @@ USER spring:spring
 # Expose application port
 EXPOSE 8080
 
-# Set JVM options for production
-ENV JAVA_OPTS="-Xms128m -Xmx512m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+UseStringDeduplication"
+# Set JVM options for container runtime
+ENV JAVA_OPTS="-Xms512m -Xmx2g -XX:+UseZGC -XX:+ZGenerational -XX:MaxMetaspaceSize=512m"
 
 # Health check configuration
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \

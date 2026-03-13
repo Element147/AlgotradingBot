@@ -120,7 +120,7 @@ function Get-LowMemoryBackendEnvironment {
     )
 
     $environment = Get-BackendLogEnvironment $RepoPaths
-    $environment["JAVA_TOOL_OPTIONS"] = "-Xms128m -Xmx768m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+UseStringDeduplication"
+    $environment["JAVA_TOOL_OPTIONS"] = "-Xms512m -Xmx2g -XX:+UseZGC -XX:+ZGenerational -XX:MaxMetaspaceSize=512m"
 
     return $environment
 }

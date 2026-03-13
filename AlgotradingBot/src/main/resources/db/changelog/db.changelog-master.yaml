@@ -5,3 +5,5 @@ databaseChangeLog:
       file: db/changelog/changes/0010-add-short-support.yaml
   - include:
       file: db/changelog/changes/0011-add-exchange-connection-profiles.yaml
+  - include:
+      file: db/changelog/changes/0012-fix-market-data-import-job-bytea.yaml
