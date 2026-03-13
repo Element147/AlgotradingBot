@@ -26,7 +26,9 @@ public class HistoricalDataCsvParser {
         }
 
         CsvIndexes indexes = resolveIndexes(rawLines[0]);
-        List<OHLCVData> candles = new ArrayList<>();
+        List<OHLCVData> candles = new ArrayList<>(Math.max(1, rawLines.length - 1));
+        LocalDateTime previousTimestamp = null;
+        boolean alreadySorted = true;
 
         for (int i = 1; i < rawLines.length; i++) {
             String line = rawLines[i].trim();
@@ -40,8 +42,13 @@ public class HistoricalDataCsvParser {
             }
 
             try {
+                LocalDateTime timestamp = LocalDateTime.parse(columns[indexes.timestamp()].trim());
+                if (previousTimestamp != null && timestamp.isBefore(previousTimestamp)) {
+                    alreadySorted = false;
+                }
+                previousTimestamp = timestamp;
                 candles.add(new OHLCVData(
-                    LocalDateTime.parse(columns[indexes.timestamp()].trim()),
+                    timestamp,
                     columns[indexes.symbol()].trim(),
                     new BigDecimal(columns[indexes.open()].trim()),
                     new BigDecimal(columns[indexes.high()].trim()),
@@ -54,7 +61,9 @@ public class HistoricalDataCsvParser {
             }
         }
 
-        candles.sort(Comparator.comparing(OHLCVData::getTimestamp));
+        if (!alreadySorted) {
+            candles.sort(Comparator.comparing(OHLCVData::getTimestamp));
+        }
         if (candles.isEmpty()) {
             throw new IllegalArgumentException("CSV does not contain valid OHLCV rows");
         }

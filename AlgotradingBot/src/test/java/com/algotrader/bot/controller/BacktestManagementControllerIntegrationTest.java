@@ -27,6 +27,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -210,7 +211,10 @@ class BacktestManagementControllerIntegrationTest {
             .andExpect(jsonPath("$[0].datasetName").value("sample-btc"))
             .andExpect(jsonPath("$[0].experimentName").value("BTC Mean Reversion Retest"))
             .andExpect(jsonPath("$[0].feesBps").value(10))
-            .andExpect(jsonPath("$[0].slippageBps").value(3));
+            .andExpect(jsonPath("$[0].slippageBps").value(3))
+            .andExpect(jsonPath("$[0].executionStage").value("COMPLETED"))
+            .andExpect(jsonPath("$[0].progressPercent").value(100))
+            .andExpect(jsonPath("$[0].statusMessage").value("Completed."));
     }
 
     @Test
@@ -226,8 +230,19 @@ class BacktestManagementControllerIntegrationTest {
             .andExpect(jsonPath("$.datasetChecksumSha256").value("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
             .andExpect(jsonPath("$.datasetSchemaVersion").value("ohlcv-v1"))
             .andExpect(jsonPath("$.datasetArchived").value(false))
+            .andExpect(jsonPath("$.executionStage").value("COMPLETED"))
+            .andExpect(jsonPath("$.progressPercent").value(100))
             .andExpect(jsonPath("$.equityCurve[0].equity").value(1000))
             .andExpect(jsonPath("$.tradeSeries[0].returnPct").value(10.0000));
+    }
+
+    @Test
+    void deleteBacktest_removesCompletedResult() throws Exception {
+        mockMvc.perform(delete("/api/backtests/{backtestId}", backtestId)
+                .header("Authorization", "Bearer " + authToken))
+            .andExpect(status().isNoContent());
+
+        org.junit.jupiter.api.Assertions.assertFalse(backtestResultRepository.findById(backtestId).isPresent());
     }
 
     @Test

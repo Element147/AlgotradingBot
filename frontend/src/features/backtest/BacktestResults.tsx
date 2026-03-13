@@ -1,3 +1,4 @@
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import DownloadIcon from '@mui/icons-material/Download';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {
@@ -33,10 +34,18 @@ import { TradeDistributionHistogram } from './TradeDistributionHistogram';
 
 import { DrawdownChart } from '@/components/charts/DrawdownChart';
 import { EquityCurve } from '@/components/charts/EquityCurve';
-import { formatCurrency, formatDateTime, formatNumber, formatPercentage } from '@/utils/formatters';
+import {
+  formatCurrency,
+  formatDateTime,
+  formatDistanceToNow,
+  formatNumber,
+  formatPercentage,
+} from '@/utils/formatters';
 
 interface BacktestResultsProps {
   details: BacktestDetails;
+  onDelete?: () => void;
+  deleteDisabled?: boolean;
 }
 
 const validationColor = (status: BacktestDetails['validationStatus']) => {
@@ -92,7 +101,7 @@ const metricDefinitions: Array<{ key: string; label: string; description: string
   },
 ];
 
-export function BacktestResults({ details }: BacktestResultsProps) {
+export function BacktestResults({ details, onDelete, deleteDisabled = false }: BacktestResultsProps) {
   const exportRef = useRef<HTMLDivElement | null>(null);
   const [exportFeedback, setExportFeedback] = useState<string | null>(null);
   const equityCurve = useMemo(() => createEquityCurve(details), [details]);
@@ -115,6 +124,9 @@ export function BacktestResults({ details }: BacktestResultsProps) {
     details.finalBalance.toFixed(2),
     details.validationStatus,
   ];
+  const lastUpdateLabel = details.lastProgressAt
+    ? formatDistanceToNow(new Date(details.lastProgressAt))
+    : 'No progress updates yet';
 
   const exportPdf = async () => {
     if (!hasCompleteProvenance) {
@@ -169,6 +181,8 @@ export function BacktestResults({ details }: BacktestResultsProps) {
                 label={`Validation: ${details.validationStatus}`}
                 sx={{ color: validationColor(details.validationStatus) }}
               />
+              <Chip size="small" label={`Stage: ${details.executionStage}`} variant="outlined" />
+              <Chip size="small" label={`Progress: ${details.progressPercent}%`} variant="outlined" />
               <Button
                 variant="outlined"
                 startIcon={<DownloadIcon />}
@@ -177,6 +191,17 @@ export function BacktestResults({ details }: BacktestResultsProps) {
               >
                 Export PDF
               </Button>
+              {onDelete ? (
+                <Button
+                  variant="outlined"
+                  color="error"
+                  startIcon={<DeleteOutlineIcon />}
+                  onClick={onDelete}
+                  disabled={deleteDisabled}
+                >
+                  Delete Result
+                </Button>
+              ) : null}
             </Stack>
           </Stack>
 
@@ -185,6 +210,34 @@ export function BacktestResults({ details }: BacktestResultsProps) {
               {exportFeedback}
             </Alert>
           ) : null}
+
+          <Card variant="outlined" sx={{ mt: 2 }}>
+            <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Execution Telemetry
+              </Typography>
+              <Stack spacing={0.75}>
+                <Typography variant="body2" color="text.secondary">
+                  Status: {details.executionStatus} | Stage: {details.executionStage} | Progress: {details.progressPercent}%
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Current data date: {details.currentDataTimestamp ? formatDateTime(details.currentDataTimestamp) : 'Waiting for first candle'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Candles processed: {formatNumber(details.processedCandles)} / {formatNumber(details.totalCandles)} | Remaining:{' '}
+                  {Math.max(0, 100 - details.progressPercent)}%
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Started: {details.startedAt ? formatDateTime(details.startedAt) : 'Queued only'} | Last update: {lastUpdateLabel}
+                  {details.completedAt ? ` | Completed: ${formatDateTime(details.completedAt)}` : ''}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {details.statusMessage ?? 'No backend status message was recorded for this run.'}
+                </Typography>
+                {details.errorMessage ? <Alert severity="error">{details.errorMessage}</Alert> : null}
+              </Stack>
+            </CardContent>
+          </Card>
 
           <Card variant="outlined" sx={{ mt: 2 }}>
             <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>

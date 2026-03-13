@@ -105,6 +105,11 @@ public class BacktestResult {
     private ExecutionStatus executionStatus;
 
     @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 40)
+    private ExecutionStage executionStage;
+
+    @NotNull
     @Column(nullable = false)
     private Integer feesBps;
 
@@ -117,6 +122,25 @@ public class BacktestResult {
 
     @NotNull
     @Column(nullable = false)
+    private Integer progressPercent;
+
+    @NotNull
+    @Column(nullable = false)
+    private Integer processedCandles;
+
+    @NotNull
+    @Column(nullable = false)
+    private Integer totalCandles;
+
+    @Column
+    private LocalDateTime currentDataTimestamp;
+
+    @Size(max = 500)
+    @Column(length = 500)
+    private String statusMessage;
+
+    @NotNull
+    @Column(nullable = false)
     private LocalDateTime timestamp;
 
     @Column(updatable = false)
@@ -124,6 +148,15 @@ public class BacktestResult {
 
     @Column
     private LocalDateTime updatedAt;
+
+    @Column
+    private LocalDateTime lastProgressAt;
+
+    @Column
+    private LocalDateTime startedAt;
+
+    @Column
+    private LocalDateTime completedAt;
 
     @OneToMany(mappedBy = "backtestResult", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("pointTimestamp ASC")
@@ -150,6 +183,17 @@ public class BacktestResult {
         FAILED
     }
 
+    public enum ExecutionStage {
+        QUEUED,
+        VALIDATING_REQUEST,
+        LOADING_DATASET,
+        FILTERING_CANDLES,
+        SIMULATING,
+        PERSISTING_RESULTS,
+        COMPLETED,
+        FAILED
+    }
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -160,11 +204,23 @@ public class BacktestResult {
         if (executionStatus == null) {
             executionStatus = ExecutionStatus.PENDING;
         }
+        if (executionStage == null) {
+            executionStage = ExecutionStage.QUEUED;
+        }
         if (feesBps == null) {
             feesBps = 10;
         }
         if (slippageBps == null) {
             slippageBps = 3;
+        }
+        if (progressPercent == null) {
+            progressPercent = 0;
+        }
+        if (processedCandles == null) {
+            processedCandles = 0;
+        }
+        if (totalCandles == null) {
+            totalCandles = 0;
         }
     }
 
@@ -195,9 +251,18 @@ public class BacktestResult {
         this.totalTrades = totalTrades;
         this.validationStatus = validationStatus;
         this.executionStatus = ExecutionStatus.COMPLETED;
+        this.executionStage = ExecutionStage.COMPLETED;
         this.feesBps = 10;
         this.slippageBps = 3;
         this.timestamp = LocalDateTime.now();
+        this.progressPercent = 100;
+        this.processedCandles = 0;
+        this.totalCandles = 0;
+        this.currentDataTimestamp = endDate;
+        this.statusMessage = "Completed.";
+        this.lastProgressAt = this.timestamp;
+        this.startedAt = this.timestamp;
+        this.completedAt = this.timestamp;
     }
 
     // Getters and Setters
@@ -353,6 +418,14 @@ public class BacktestResult {
         this.executionStatus = executionStatus;
     }
 
+    public ExecutionStage getExecutionStage() {
+        return executionStage;
+    }
+
+    public void setExecutionStage(ExecutionStage executionStage) {
+        this.executionStage = executionStage;
+    }
+
     public Integer getFeesBps() {
         return feesBps;
     }
@@ -377,6 +450,46 @@ public class BacktestResult {
         this.errorMessage = errorMessage;
     }
 
+    public Integer getProgressPercent() {
+        return progressPercent;
+    }
+
+    public void setProgressPercent(Integer progressPercent) {
+        this.progressPercent = progressPercent;
+    }
+
+    public Integer getProcessedCandles() {
+        return processedCandles;
+    }
+
+    public void setProcessedCandles(Integer processedCandles) {
+        this.processedCandles = processedCandles;
+    }
+
+    public Integer getTotalCandles() {
+        return totalCandles;
+    }
+
+    public void setTotalCandles(Integer totalCandles) {
+        this.totalCandles = totalCandles;
+    }
+
+    public LocalDateTime getCurrentDataTimestamp() {
+        return currentDataTimestamp;
+    }
+
+    public void setCurrentDataTimestamp(LocalDateTime currentDataTimestamp) {
+        this.currentDataTimestamp = currentDataTimestamp;
+    }
+
+    public String getStatusMessage() {
+        return statusMessage;
+    }
+
+    public void setStatusMessage(String statusMessage) {
+        this.statusMessage = statusMessage;
+    }
+
     public LocalDateTime getTimestamp() {
         return timestamp;
     }
@@ -391,6 +504,30 @@ public class BacktestResult {
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    public LocalDateTime getLastProgressAt() {
+        return lastProgressAt;
+    }
+
+    public void setLastProgressAt(LocalDateTime lastProgressAt) {
+        this.lastProgressAt = lastProgressAt;
+    }
+
+    public LocalDateTime getStartedAt() {
+        return startedAt;
+    }
+
+    public void setStartedAt(LocalDateTime startedAt) {
+        this.startedAt = startedAt;
+    }
+
+    public LocalDateTime getCompletedAt() {
+        return completedAt;
+    }
+
+    public void setCompletedAt(LocalDateTime completedAt) {
+        this.completedAt = completedAt;
     }
 
     public List<BacktestEquityPoint> getEquityPoints() {
@@ -446,6 +583,9 @@ public class BacktestResult {
                 ", maxDrawdown=" + maxDrawdown +
                 ", totalTrades=" + totalTrades +
                 ", validationStatus=" + validationStatus +
+                ", executionStatus=" + executionStatus +
+                ", executionStage=" + executionStage +
+                ", progressPercent=" + progressPercent +
                 ", timestamp=" + timestamp +
                 '}';
     }

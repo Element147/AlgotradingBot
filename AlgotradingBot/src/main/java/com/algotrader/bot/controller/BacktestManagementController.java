@@ -100,6 +100,13 @@ public class BacktestManagementController {
         return ResponseEntity.ok(backtestManagementService.getDetails(backtestId));
     }
 
+    @DeleteMapping("/{backtestId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> delete(@PathVariable Long backtestId) {
+        backtestManagementService.deleteBacktest(backtestId);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/run")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<BacktestRunResponse> run(@Valid @RequestBody RunBacktestRequest request) {

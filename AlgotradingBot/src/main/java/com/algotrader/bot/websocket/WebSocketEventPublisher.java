@@ -122,6 +122,34 @@ public class WebSocketEventPublisher {
         webSocketHandler.publishEvent(channel, event);
     }
 
+    public void publishBacktestProgress(String environment,
+                                        Long backtestId,
+                                        String executionStatus,
+                                        String executionStage,
+                                        Integer progressPercent,
+                                        Integer processedCandles,
+                                        Integer totalCandles,
+                                        LocalDateTime currentDataTimestamp,
+                                        LocalDateTime lastProgressAt,
+                                        String statusMessage) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("backtestId", backtestId);
+        data.put("executionStatus", executionStatus);
+        data.put("executionStage", executionStage);
+        data.put("progressPercent", progressPercent);
+        data.put("processedCandles", processedCandles);
+        data.put("totalCandles", totalCandles);
+        data.put("currentDataTimestamp", currentDataTimestamp == null ? null : currentDataTimestamp.toString());
+        data.put("lastProgressAt", lastProgressAt == null ? null : lastProgressAt.toString());
+        data.put("statusMessage", statusMessage);
+
+        Map<String, Object> event = createEvent("backtest.progress", environment, data);
+        String channel = environment + ".backtests";
+
+        logger.debug("Publishing backtest.progress event to channel: {}", channel);
+        webSocketHandler.publishEvent(channel, event);
+    }
+
     /**
      * Create event structure with type, environment, timestamp, and data.
      */

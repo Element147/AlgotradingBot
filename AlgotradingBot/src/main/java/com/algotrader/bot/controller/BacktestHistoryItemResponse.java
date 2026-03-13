@@ -16,5 +16,14 @@ public record BacktestHistoryItemResponse(
     Integer slippageBps,
     LocalDateTime timestamp,
     BigDecimal initialBalance,
-    BigDecimal finalBalance
+    BigDecimal finalBalance,
+    String executionStage,
+    Integer progressPercent,
+    Integer processedCandles,
+    Integer totalCandles,
+    LocalDateTime currentDataTimestamp,
+    String statusMessage,
+    LocalDateTime lastProgressAt,
+    LocalDateTime startedAt,
+    LocalDateTime completedAt
 ) {}

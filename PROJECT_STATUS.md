@@ -38,6 +38,8 @@ Implemented product slices:
 13. Filterable operator audit summaries and review UX in dashboard/settings
 14. Provider-backed historical market data download/import jobs with automated retry handling and direct dataset ingestion for backtests
 15. Admin-managed encrypted market-data provider credentials stored in PostgreSQL with per-provider notes and backend env-var fallback
+16. Persisted backtest execution telemetry (stage, percent, current candle date, status messaging) plus explicit UI details/delete controls
+17. Virtual-thread-backed background execution plus parsed backtest dataset candle caching to improve repeat-run throughput
 
 ## Active Design Decisions (Source of Truth)
 
@@ -94,6 +96,8 @@ Implemented product slices:
 40. Replaced production WebSocket URL string rewriting with explicit secure same-origin resolution, while keeping localhost `ws` only for development/test.
 41. Cleaned the Semgrep security baseline to zero findings and documented the resolved rules plus scan workflow in `docs/SEMGREP_TRIAGE.md`.
 42. Added a Liquibase repair migration for legacy `market_data_import_jobs.staged_csv_data` large-object columns and aligned backend runtime defaults on a 2 GB ZGC heap for lower-latency local operation.
+43. Added persisted backtest progress telemetry with committed mid-run updates, clearer backend execution logging, frontend live-progress transparency, and delete-result controls for finished runs.
+44. Added a dedicated virtual-thread async executor, moved market-data job dispatch onto async background workers, reduced backtest progress-write frequency, and reused parsed candles for repeated dataset-backed backtests.
 
 ## Remaining Work (Current Priorities)
 

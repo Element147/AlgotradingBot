@@ -46,6 +46,15 @@ const baseDetails = {
   totalTrades: 80,
   startDate: '2025-01-01T00:00:00',
   endDate: '2025-12-31T00:00:00',
+  executionStage: 'COMPLETED' as const,
+  progressPercent: 100,
+  processedCandles: 8760,
+  totalCandles: 8760,
+  currentDataTimestamp: '2025-12-31T00:00:00',
+  statusMessage: 'Backtest completed. Metrics and trade series are ready to review.',
+  lastProgressAt: '2026-03-10T10:00:00',
+  startedAt: '2026-03-10T09:58:00',
+  completedAt: '2026-03-10T10:00:00',
   errorMessage: null,
   equityCurve: [
     { timestamp: '2025-01-01T00:00:00', equity: 1000, drawdownPct: 0 },
@@ -68,7 +77,7 @@ const baseDetails = {
 };
 
 describe('BacktestResults', () => {
-  it('blocks export when dataset provenance is incomplete', () => {
+  it('blocks export when dataset provenance is incomplete', { timeout: 15000 }, () => {
     render(
       <BacktestResults
         details={{

@@ -16,6 +16,8 @@ import com.algotrader.bot.entity.BacktestResult;
 import com.algotrader.bot.repository.BacktestDatasetRepository;
 import com.algotrader.bot.repository.BacktestResultRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +36,7 @@ import java.util.stream.Collectors;
 @Service
 public class BacktestManagementService {
 
+    private static final Logger logger = LoggerFactory.getLogger(BacktestManagementService.class);
     private static final int DEFAULT_HISTORY_LIMIT = 20;
     private static final int MAX_HISTORY_LIMIT = 500;
     private static final String DATASET_UNIVERSE_LABEL = "DATASET_UNIVERSE";
@@ -143,11 +146,29 @@ public class BacktestManagementService {
         pending.setExperimentKey(normalizeExperimentKey(experimentName));
         pending.setTimeframe(request.timeframe());
         pending.setExecutionStatus(BacktestResult.ExecutionStatus.PENDING);
+        pending.setExecutionStage(BacktestResult.ExecutionStage.QUEUED);
+        pending.setProgressPercent(0);
+        pending.setProcessedCandles(0);
+        pending.setTotalCandles(0);
+        pending.setCurrentDataTimestamp(null);
+        pending.setStatusMessage("Queued. Waiting for the backtest worker to start.");
+        pending.setLastProgressAt(LocalDateTime.now());
+        pending.setStartedAt(null);
+        pending.setCompletedAt(null);
         pending.setFeesBps(request.feesBps());
         pending.setSlippageBps(request.slippageBps());
         pending.setTimestamp(LocalDateTime.now());
 
         BacktestResult saved = backtestResultRepository.save(pending);
+        logger.info(
+            "Queued backtest {}: strategy={}, datasetId={}, symbol={}, timeframe={}, experiment={}",
+            saved.getId(),
+            saved.getStrategyId(),
+            saved.getDatasetId(),
+            saved.getSymbol(),
+            saved.getTimeframe(),
+            saved.getExperimentName()
+        );
 
         backtestExecutionService.executeAsync(saved.getId());
         operatorAuditService.recordSuccess(
@@ -193,11 +214,26 @@ public class BacktestManagementService {
         pending.setExperimentKey(resolveExperimentKey(existing));
         pending.setTimeframe(existing.getTimeframe());
         pending.setExecutionStatus(BacktestResult.ExecutionStatus.PENDING);
+        pending.setExecutionStage(BacktestResult.ExecutionStage.QUEUED);
+        pending.setProgressPercent(0);
+        pending.setProcessedCandles(0);
+        pending.setTotalCandles(0);
+        pending.setCurrentDataTimestamp(null);
+        pending.setStatusMessage("Replay queued. Waiting for the backtest worker to start.");
+        pending.setLastProgressAt(LocalDateTime.now());
+        pending.setStartedAt(null);
+        pending.setCompletedAt(null);
         pending.setFeesBps(existing.getFeesBps());
         pending.setSlippageBps(existing.getSlippageBps());
         pending.setTimestamp(LocalDateTime.now());
 
         BacktestResult saved = backtestResultRepository.save(pending);
+        logger.info(
+            "Queued replay backtest {} from source {} using dataset {}",
+            saved.getId(),
+            backtestId,
+            dataset.getId()
+        );
         backtestExecutionService.executeAsync(saved.getId());
         operatorAuditService.recordSuccess(
             "BACKTEST_REPLAY_STARTED",
@@ -208,6 +244,27 @@ public class BacktestManagementService {
         );
 
         return new BacktestRunResponse(saved.getId(), saved.getExecutionStatus().name(), saved.getTimestamp());
+    }
+
+    @Transactional
+    public void deleteBacktest(Long backtestId) {
+        BacktestResult result = backtestResultRepository.findById(backtestId)
+            .orElseThrow(() -> new EntityNotFoundException("Backtest not found: " + backtestId));
+
+        if (result.getExecutionStatus() == BacktestResult.ExecutionStatus.PENDING
+            || result.getExecutionStatus() == BacktestResult.ExecutionStatus.RUNNING) {
+            throw new IllegalStateException("Active backtests cannot be deleted while execution is still in progress");
+        }
+
+        backtestResultRepository.delete(result);
+        logger.info("Deleted backtest {} ({})", backtestId, result.getExperimentName());
+        operatorAuditService.recordSuccess(
+            "BACKTEST_DELETED",
+            "test",
+            "BACKTEST",
+            String.valueOf(backtestId),
+            "strategy=" + result.getStrategyId() + ", datasetId=" + result.getDatasetId()
+        );
     }
 
     @Transactional(readOnly = true)
@@ -328,7 +385,16 @@ public class BacktestManagementService {
             result.getSlippageBps(),
             result.getTimestamp(),
             result.getInitialBalance(),
-            result.getFinalBalance()
+            result.getFinalBalance(),
+            result.getExecutionStage().name(),
+            result.getProgressPercent(),
+            result.getProcessedCandles(),
+            result.getTotalCandles(),
+            result.getCurrentDataTimestamp(),
+            result.getStatusMessage(),
+            result.getLastProgressAt(),
+            result.getStartedAt(),
+            result.getCompletedAt()
         );
     }
 
@@ -368,6 +434,15 @@ public class BacktestManagementService {
             result.getStartDate(),
             result.getEndDate(),
             result.getTimestamp(),
+            result.getExecutionStage().name(),
+            result.getProgressPercent(),
+            result.getProcessedCandles(),
+            result.getTotalCandles(),
+            result.getCurrentDataTimestamp(),
+            result.getStatusMessage(),
+            result.getLastProgressAt(),
+            result.getStartedAt(),
+            result.getCompletedAt(),
             result.getErrorMessage(),
             result.getEquityPoints().stream()
                 .map(point -> new BacktestEquityPointResponse(

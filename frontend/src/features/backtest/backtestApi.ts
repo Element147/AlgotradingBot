@@ -61,6 +61,23 @@ export interface BacktestHistoryItem {
   timestamp: string;
   initialBalance: number;
   finalBalance: number;
+  executionStage:
+    | 'QUEUED'
+    | 'VALIDATING_REQUEST'
+    | 'LOADING_DATASET'
+    | 'FILTERING_CANDLES'
+    | 'SIMULATING'
+    | 'PERSISTING_RESULTS'
+    | 'COMPLETED'
+    | 'FAILED';
+  progressPercent: number;
+  processedCandles: number;
+  totalCandles: number;
+  currentDataTimestamp: string | null;
+  statusMessage: string | null;
+  lastProgressAt: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
 }
 
 export interface BacktestDetails extends BacktestHistoryItem {
@@ -77,6 +94,23 @@ export interface BacktestDetails extends BacktestHistoryItem {
   totalTrades: number;
   startDate: string;
   endDate: string;
+  executionStage:
+    | 'QUEUED'
+    | 'VALIDATING_REQUEST'
+    | 'LOADING_DATASET'
+    | 'FILTERING_CANDLES'
+    | 'SIMULATING'
+    | 'PERSISTING_RESULTS'
+    | 'COMPLETED'
+    | 'FAILED';
+  progressPercent: number;
+  processedCandles: number;
+  totalCandles: number;
+  currentDataTimestamp: string | null;
+  statusMessage: string | null;
+  lastProgressAt: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
   errorMessage: string | null;
   equityCurve: Array<{
     timestamp: string;
@@ -237,6 +271,13 @@ export const backtestApi = createApi({
       }),
       invalidatesTags: ['Backtests'],
     }),
+    deleteBacktest: builder.mutation<void, number>({
+      query: (backtestId) => ({
+        url: `/api/backtests/${backtestId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Backtests'],
+    }),
     compareBacktests: builder.query<BacktestComparisonResponse, number[]>({
       query: (ids) => {
         const params = ids.map((id) => `ids=${encodeURIComponent(String(id))}`).join('&');
@@ -258,6 +299,7 @@ export const {
   useRestoreBacktestDatasetMutation,
   useRunBacktestMutation,
   useReplayBacktestMutation,
+  useDeleteBacktestMutation,
   useCompareBacktestsQuery,
   useLazyCompareBacktestsQuery,
 } = backtestApi;

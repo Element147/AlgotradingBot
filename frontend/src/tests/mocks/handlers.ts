@@ -430,6 +430,7 @@ export const handlers = [
         id: 42,
         strategyId: 'BOLLINGER_BANDS',
         datasetName: 'BTC 1h 2025',
+        experimentName: 'BTC Mean Reversion Retest',
         symbol: 'BTC/USDT',
         timeframe: '1h',
         executionStatus: 'COMPLETED',
@@ -439,6 +440,15 @@ export const handlers = [
         timestamp: '2026-03-10T10:00:00',
         initialBalance: 1000,
         finalBalance: 1080,
+        executionStage: 'COMPLETED',
+        progressPercent: 100,
+        processedCandles: 8760,
+        totalCandles: 8760,
+        currentDataTimestamp: '2025-12-31T00:00:00',
+        statusMessage: 'Backtest completed. Metrics and trade series are ready to review.',
+        lastProgressAt: '2026-03-10T10:00:00',
+        startedAt: '2026-03-10T09:58:00',
+        completedAt: '2026-03-10T10:00:00',
       },
     ])
   ),
@@ -448,6 +458,8 @@ export const handlers = [
       strategyId: 'BOLLINGER_BANDS',
       datasetId: 7,
       datasetName: 'BTC 1h 2025',
+      experimentName: 'BTC Mean Reversion Retest',
+      experimentKey: 'btc-mean-reversion-retest',
       datasetChecksumSha256: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
       datasetSchemaVersion: 'ohlcv-v1',
       datasetUploadedAt: '2026-03-10T10:00:00',
@@ -468,6 +480,15 @@ export const handlers = [
       totalTrades: 80,
       startDate: '2025-01-01T00:00:00',
       endDate: '2025-12-31T00:00:00',
+      executionStage: 'COMPLETED',
+      progressPercent: 100,
+      processedCandles: 8760,
+      totalCandles: 8760,
+      currentDataTimestamp: '2025-12-31T00:00:00',
+      statusMessage: 'Backtest completed. Metrics and trade series are ready to review.',
+      lastProgressAt: '2026-03-10T10:00:00',
+      startedAt: '2026-03-10T09:58:00',
+      completedAt: '2026-03-10T10:00:00',
       errorMessage: null,
       equityCurve: [
         { timestamp: '2025-01-01T00:00:00', equity: 1000, drawdownPct: 0 },
@@ -489,6 +510,7 @@ export const handlers = [
       ],
     })
   ),
+  http.delete(`${API_BASE_URL}/api/backtests/:id`, () => new HttpResponse(null, { status: 204 })),
   http.get(`${API_BASE_URL}/api/backtests/compare`, ({ request }) => {
     const url = new URL(request.url);
     const ids = url.searchParams.getAll('ids').map((value) => Number(value));

@@ -1,9 +1,11 @@
 import AddIcon from '@mui/icons-material/Add';
 import ArchiveOutlinedIcon from '@mui/icons-material/ArchiveOutlined';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import DownloadIcon from '@mui/icons-material/Download';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import ReplayIcon from '@mui/icons-material/Replay';
 import RestoreFromTrashIcon from '@mui/icons-material/RestoreFromTrash';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import {
   Alert,
   Box,
@@ -36,11 +38,13 @@ import {
   useGetBacktestExperimentSummariesQuery,
   useGetBacktestsQuery,
   useLazyCompareBacktestsQuery,
+  useDeleteBacktestMutation,
   useReplayBacktestMutation,
   useRestoreBacktestDatasetMutation,
   useRunBacktestMutation,
   useUploadBacktestDatasetMutation,
   type BacktestDataset,
+  type BacktestHistoryItem,
   type RunBacktestPayload,
 } from './backtestApi';
 import { BacktestComparisonPanel } from './BacktestComparisonPanel';
@@ -51,6 +55,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { FieldTooltip } from '@/components/ui/FieldTooltip';
 import { getStrategyProfile } from '@/features/strategies/strategyProfiles';
 import axiosClient, { getErrorMessage } from '@/services/axiosClient';
+import { formatDateTime, formatDistanceToNow, formatNumber } from '@/utils/formatters';
 import { sanitizeText } from '@/utils/security';
 
 const initialForm: BacktestConfigFormState = {
@@ -133,21 +138,6 @@ const retentionLabel = (status: BacktestDataset['retentionStatus']): string => {
   }
 };
 
-const executionProgressValue = (status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED'): number => {
-  switch (status) {
-    case 'PENDING':
-      return 20;
-    case 'RUNNING':
-      return 70;
-    case 'COMPLETED':
-      return 100;
-    case 'FAILED':
-      return 100;
-    default:
-      return 0;
-  }
-};
-
 const executionStatusColor = (
   status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED'
 ): 'default' | 'info' | 'success' | 'error' => {
@@ -163,20 +153,46 @@ const executionStatusColor = (
   }
 };
 
-const executionStageDescription = (status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED'): string => {
-  switch (status) {
-    case 'PENDING':
-      return 'Queued for validation and dataset loading.';
-    case 'RUNNING':
-      return 'Historical candles are being replayed and metrics are being calculated.';
+const executionStageLabel = (stage: BacktestHistoryItem['executionStage']): string => {
+  switch (stage) {
+    case 'VALIDATING_REQUEST':
+      return 'Validating request';
+    case 'LOADING_DATASET':
+      return 'Loading dataset';
+    case 'FILTERING_CANDLES':
+      return 'Filtering candles';
+    case 'SIMULATING':
+      return 'Simulating';
+    case 'PERSISTING_RESULTS':
+      return 'Saving results';
     case 'COMPLETED':
-      return 'Simulation and scoring finished. You can review charts and trades below.';
+      return 'Completed';
     case 'FAILED':
-      return 'Execution stopped before finishing. Open the run details for the error reason.';
+      return 'Failed';
     default:
-      return '';
+      return 'Queued';
   }
 };
+
+const executionProgressValue = (item: BacktestHistoryItem): number =>
+  Math.max(0, Math.min(item.progressPercent ?? 0, 100));
+
+const executionStageDescription = (item: BacktestHistoryItem): string =>
+  item.statusMessage?.trim() ||
+  (item.executionStatus === 'FAILED'
+    ? 'Execution stopped before finishing. Open the run details for the error reason.'
+    : 'Awaiting the next progress update from the backend worker.');
+
+const percentLeft = (item: BacktestHistoryItem): number => Math.max(0, 100 - executionProgressValue(item));
+
+const formatProgressTimestamp = (value: string | null): string =>
+  value ? formatDateTime(value) : 'Not started yet';
+
+const formatLastUpdate = (value: string | null): string =>
+  value ? formatDistanceToNow(new Date(value)) : 'No updates yet';
+
+const isExecutionActive = (item: BacktestHistoryItem): boolean =>
+  item.executionStatus === 'PENDING' || item.executionStatus === 'RUNNING';
 
 interface HeaderCellProps {
   label: string;
@@ -211,7 +227,7 @@ export default function BacktestPage() {
   const { data: retentionReport } = useGetBacktestDatasetRetentionReportQuery();
   const { data: experimentSummaries = [] } = useGetBacktestExperimentSummariesQuery();
   const { data: history = [], isLoading, isError } = useGetBacktestsQuery(undefined, {
-    pollingInterval: 5000,
+    pollingInterval: 2000,
     skipPollingIfUnfocused: true,
   });
   const activeDatasets = useMemo(
@@ -228,6 +244,7 @@ export default function BacktestPage() {
   const [restoreDataset, { isLoading: isRestoringDataset }] = useRestoreBacktestDatasetMutation();
   const [runBacktest, { isLoading: isRunning }] = useRunBacktestMutation();
   const [replayBacktest, { isLoading: isReplaying }] = useReplayBacktestMutation();
+  const [deleteBacktest, { isLoading: isDeletingBacktest }] = useDeleteBacktestMutation();
   const [loadComparison, { data: comparison, isFetching: isComparing, error: comparisonError }] =
     useLazyCompareBacktestsQuery();
   const selectedAlgorithm = useMemo(
@@ -242,7 +259,7 @@ export default function BacktestPage() {
 
   const { data: details } = useGetBacktestDetailsQuery(selectedId ?? 0, {
     skip: selectedId === null,
-    pollingInterval: 5000,
+    pollingInterval: 2000,
     skipPollingIfUnfocused: true,
   });
   const comparisonIsStale =
@@ -252,7 +269,7 @@ export default function BacktestPage() {
     if (selectedId !== null) {
       return history.find((item) => item.id === selectedId) ?? null;
     }
-    return history.find((item) => item.executionStatus === 'PENDING' || item.executionStatus === 'RUNNING') ?? history[0] ?? null;
+    return history.find((item) => isExecutionActive(item)) ?? history[0] ?? null;
   }, [history, selectedId]);
 
   const onUploadDataset = async () => {
@@ -337,6 +354,43 @@ export default function BacktestPage() {
       setFeedback({
         severity: 'success',
         message: `Replay started from run ${backtestId}. New run: ${replayed.id} (${replayed.status}).`,
+      });
+    } catch (error) {
+      setFeedback({ severity: 'error', message: getErrorMessage(error) });
+    }
+  };
+
+  const onViewDetails = (backtestId: number) => {
+    setSelectedId(backtestId);
+    setFeedback({
+      severity: 'success',
+      message: `Showing detailed results for run ${backtestId}.`,
+    });
+  };
+
+  const onDeleteResult = async (item: BacktestHistoryItem) => {
+    if (isExecutionActive(item)) {
+      setFeedback({
+        severity: 'error',
+        message: `Run ${item.id} is still active and cannot be deleted yet.`,
+      });
+      return;
+    }
+
+    if (!window.confirm(`Delete backtest result #${item.id}? This also removes its stored equity curve and trade series.`)) {
+      return;
+    }
+
+    try {
+      await deleteBacktest(item.id).unwrap();
+      setComparisonIds((prev) => prev.filter((id) => id !== item.id));
+      setActiveComparisonIds((prev) => prev.filter((id) => id !== item.id));
+      if (selectedId === item.id) {
+        setSelectedId(null);
+      }
+      setFeedback({
+        severity: 'success',
+        message: `Deleted backtest result ${item.id}.`,
       });
     } catch (error) {
       setFeedback({ severity: 'error', message: getErrorMessage(error) });
@@ -449,12 +503,32 @@ export default function BacktestPage() {
                 </Stack>
                 <LinearProgress
                   variant="determinate"
-                  value={executionProgressValue(trackedRun.executionStatus)}
+                  value={executionProgressValue(trackedRun)}
                   color={trackedRun.executionStatus === 'FAILED' ? 'error' : 'primary'}
                   sx={{ height: 10, borderRadius: 999 }}
                 />
+                <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} useFlexGap flexWrap="wrap">
+                  <Chip size="small" label={`Stage: ${executionStageLabel(trackedRun.executionStage)}`} variant="outlined" />
+                  <Chip size="small" label={`Done: ${executionProgressValue(trackedRun)}%`} variant="outlined" />
+                  <Chip size="small" label={`Left: ${percentLeft(trackedRun)}%`} variant="outlined" />
+                  <Chip
+                    size="small"
+                    label={`Current data date: ${formatProgressTimestamp(trackedRun.currentDataTimestamp)}`}
+                    variant="outlined"
+                  />
+                  <Chip
+                    size="small"
+                    label={`Candles: ${formatNumber(trackedRun.processedCandles)} / ${formatNumber(trackedRun.totalCandles)}`}
+                    variant="outlined"
+                  />
+                  <Chip
+                    size="small"
+                    label={`Last update: ${formatLastUpdate(trackedRun.lastProgressAt)}`}
+                    variant="outlined"
+                  />
+                </Stack>
                 <Typography variant="body2" color="text.secondary">
-                  {executionStageDescription(trackedRun.executionStatus)}
+                  {executionStageDescription(trackedRun)}
                 </Typography>
                 <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                   <Chip
@@ -789,7 +863,7 @@ export default function BacktestPage() {
                         <TableCell>
                           <HeaderCellWithTooltip
                             label="Status"
-                            description="Execution lifecycle status of the run (pending, running, completed, failed)."
+                            description="Live execution stage, progress, and backend telemetry for the run."
                           />
                         </TableCell>
                         <TableCell>
@@ -807,7 +881,7 @@ export default function BacktestPage() {
                         <TableCell>
                           <HeaderCellWithTooltip
                             label="Actions"
-                            description="Replay a prior configuration to re-run the exact research setup."
+                            description="Open detailed results, replay a prior setup, or delete finished runs."
                           />
                         </TableCell>
                       </TableRow>
@@ -837,25 +911,37 @@ export default function BacktestPage() {
                               <span>
                                 {item.symbol} ({item.timeframe})
                               </span>
-                              {(item.executionStatus === 'PENDING' || item.executionStatus === 'RUNNING') && (
+                              {isExecutionActive(item) && (
                                 <LinearProgress
                                   variant="determinate"
-                                  value={executionProgressValue(item.executionStatus)}
+                                  value={executionProgressValue(item)}
                                   sx={{ height: 6, borderRadius: 999, minWidth: 120 }}
                                 />
                               )}
+                              <Typography variant="caption" color="text.secondary">
+                                {item.currentDataTimestamp
+                                  ? `Current data date: ${formatDateTime(item.currentDataTimestamp)}`
+                                  : 'Current data date: waiting for first candle'}
+                              </Typography>
                             </Stack>
                           </TableCell>
                           <TableCell>
                             <Stack spacing={0.5}>
                               <Chip
                                 size="small"
-                                label={item.executionStatus}
+                                label={`${item.executionStatus} · ${executionProgressValue(item)}%`}
                                 color={executionStatusColor(item.executionStatus)}
                                 variant={item.executionStatus === 'COMPLETED' ? 'filled' : 'outlined'}
                               />
                               <Typography variant="caption" color="text.secondary">
-                                {executionStageDescription(item.executionStatus)}
+                                {executionStageLabel(item.executionStage)} | {formatNumber(item.processedCandles)} /{' '}
+                                {formatNumber(item.totalCandles)} candles
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {executionStageDescription(item)}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                Last update: {formatLastUpdate(item.lastProgressAt)}
                               </Typography>
                             </Stack>
                           </TableCell>
@@ -866,14 +952,32 @@ export default function BacktestPage() {
                             {item.feesBps} bps / {item.slippageBps} bps
                           </TableCell>
                           <TableCell onClick={(event) => event.stopPropagation()}>
-                            <Button
-                              size="small"
-                              startIcon={<ReplayIcon />}
-                              onClick={() => void onReplayBacktest(item.id)}
-                              disabled={isReplaying}
-                            >
-                              Replay
-                            </Button>
+                            <Stack direction={{ xs: 'column', md: 'row' }} spacing={1}>
+                              <Button
+                                size="small"
+                                startIcon={<VisibilityOutlinedIcon />}
+                                onClick={() => onViewDetails(item.id)}
+                              >
+                                Details
+                              </Button>
+                              <Button
+                                size="small"
+                                startIcon={<ReplayIcon />}
+                                onClick={() => void onReplayBacktest(item.id)}
+                                disabled={isReplaying}
+                              >
+                                Replay
+                              </Button>
+                              <Button
+                                size="small"
+                                color="error"
+                                startIcon={<DeleteOutlineIcon />}
+                                onClick={() => void onDeleteResult(item)}
+                                disabled={isDeletingBacktest || isExecutionActive(item)}
+                              >
+                                Delete
+                              </Button>
+                            </Stack>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -886,7 +990,19 @@ export default function BacktestPage() {
             </Card>
           </Grid>
 
-          <Grid size={{ xs: 12 }}>{details ? <BacktestResults details={details} /> : null}</Grid>
+          <Grid size={{ xs: 12 }}>
+            {details ? (
+              <BacktestResults
+                details={details}
+                onDelete={() => void onDeleteResult(details)}
+                deleteDisabled={isExecutionActive(details) || isDeletingBacktest}
+              />
+            ) : (
+              <Alert severity="info">
+                Select a run from history or use the Details action to inspect full metrics, charts, and trades.
+              </Alert>
+            )}
+          </Grid>
         </Grid>
       </Box>
 

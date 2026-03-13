@@ -13,6 +13,8 @@ import com.algotrader.bot.service.BacktestDatasetService;
 import com.algotrader.bot.service.OperatorAuditService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +24,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,6 +35,7 @@ public class MarketDataImportService {
         MarketDataImportJobStatus.WAITING_RETRY
     );
     private static final long WORK_SLICE_SECONDS = 20;
+    private static final int READY_JOB_BATCH_SIZE = 2;
 
     private final MarketDataImportJobRepository marketDataImportJobRepository;
     private final MarketDataProviderRegistry marketDataProviderRegistry;
@@ -40,6 +44,7 @@ public class MarketDataImportService {
     private final MarketDataSessionFilter marketDataSessionFilter;
     private final BacktestDatasetService backtestDatasetService;
     private final OperatorAuditService operatorAuditService;
+    private final ObjectProvider<MarketDataImportService> selfProvider;
 
     public MarketDataImportService(
         MarketDataImportJobRepository marketDataImportJobRepository,
@@ -48,7 +53,8 @@ public class MarketDataImportService {
         MarketDataCsvSupport marketDataCsvSupport,
         MarketDataSessionFilter marketDataSessionFilter,
         BacktestDatasetService backtestDatasetService,
-        OperatorAuditService operatorAuditService
+        OperatorAuditService operatorAuditService,
+        ObjectProvider<MarketDataImportService> selfProvider
     ) {
         this.marketDataImportJobRepository = marketDataImportJobRepository;
         this.marketDataProviderRegistry = marketDataProviderRegistry;
@@ -57,6 +63,7 @@ public class MarketDataImportService {
         this.marketDataSessionFilter = marketDataSessionFilter;
         this.backtestDatasetService = backtestDatasetService;
         this.operatorAuditService = operatorAuditService;
+        this.selfProvider = selfProvider;
     }
 
     @Transactional(readOnly = true)
@@ -206,13 +213,22 @@ public class MarketDataImportService {
         List<MarketDataImportJob> readyJobs = marketDataImportJobRepository.findReadyJobs(
             READY_STATUSES,
             LocalDateTime.now(),
-            PageRequest.of(0, 1)
+            PageRequest.of(0, READY_JOB_BATCH_SIZE)
         );
         if (readyJobs.isEmpty()) {
             return;
         }
 
-        processJob(readyJobs.get(0).getId());
+        MarketDataImportService asyncProxy = selfProvider.getObject();
+        readyJobs.stream()
+            .map(MarketDataImportJob::getId)
+            .forEach(asyncProxy::processJobAsync);
+    }
+
+    @Async("virtualThreadTaskExecutor")
+    public CompletableFuture<Void> processJobAsync(Long jobId) {
+        processJob(jobId);
+        return CompletableFuture.completedFuture(null);
     }
 
     public void processJob(Long jobId) {

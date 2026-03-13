@@ -40,6 +40,12 @@ public class BacktestSimulationEngine {
     }
 
     public BacktestSimulationResult simulate(BacktestAlgorithmType algorithmType, BacktestSimulationRequest request) {
+        return simulate(algorithmType, request, null);
+    }
+
+    public BacktestSimulationResult simulate(BacktestAlgorithmType algorithmType,
+                                             BacktestSimulationRequest request,
+                                             BacktestSimulationProgressListener progressListener) {
         BacktestStrategy strategy = strategyRegistry.getStrategy(algorithmType);
         Map<String, List<OHLCVData>> scopedCandles = scopeCandles(strategy, request);
         List<LocalDateTime> timeline = buildTimeline(strategy, scopedCandles);
@@ -65,6 +71,8 @@ public class BacktestSimulationEngine {
         List<BacktestEquityPointSample> equitySamples = new ArrayList<>();
         List<BacktestTradeSample> tradeSamples = new ArrayList<>();
         equitySamples.add(new BacktestEquityPointSample(timeline.get(0), request.initialBalance(), BigDecimal.ZERO));
+        int totalTimelineSteps = timeline.size();
+        int progressMilestone = Math.max(1, totalTimelineSteps / 20);
 
         for (int timelineIndex = 0; timelineIndex < timeline.size(); timelineIndex++) {
             LocalDateTime currentTimestamp = timeline.get(timelineIndex);
@@ -201,6 +209,17 @@ public class BacktestSimulationEngine {
                 ? cash
                 : markToMarketEquity(activeSide, cash, quantity, entryPrice, entryValue, context.currentClose(activeSymbol));
             equitySamples.add(new BacktestEquityPointSample(currentTimestamp, equity, BigDecimal.ZERO));
+
+            if (progressListener != null) {
+                int processedCandles = timelineIndex + 1;
+                if (processedCandles == 1
+                    || processedCandles == totalTimelineSteps
+                    || processedCandles % progressMilestone == 0) {
+                    progressListener.onProgress(
+                        new BacktestSimulationProgress(processedCandles, totalTimelineSteps, currentTimestamp)
+                    );
+                }
+            }
         }
 
         if (activeSymbol != null) {

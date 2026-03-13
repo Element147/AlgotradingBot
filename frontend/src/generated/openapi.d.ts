@@ -773,7 +773,7 @@ export interface paths {
         get: operations["details"];
         put?: never;
         post?: never;
-        delete?: never;
+        delete: operations["delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1636,6 +1636,22 @@ export interface components {
             timestamp?: string;
             initialBalance?: number;
             finalBalance?: number;
+            executionStage?: string;
+            /** Format: int32 */
+            progressPercent?: number;
+            /** Format: int32 */
+            processedCandles?: number;
+            /** Format: int32 */
+            totalCandles?: number;
+            /** Format: date-time */
+            currentDataTimestamp?: string;
+            statusMessage?: string;
+            /** Format: date-time */
+            lastProgressAt?: string;
+            /** Format: date-time */
+            startedAt?: string;
+            /** Format: date-time */
+            completedAt?: string;
         };
         BacktestDetailsResponse: {
             /** Format: int64 */
@@ -1673,6 +1689,22 @@ export interface components {
             endDate?: string;
             /** Format: date-time */
             timestamp?: string;
+            executionStage?: string;
+            /** Format: int32 */
+            progressPercent?: number;
+            /** Format: int32 */
+            processedCandles?: number;
+            /** Format: int32 */
+            totalCandles?: number;
+            /** Format: date-time */
+            currentDataTimestamp?: string;
+            statusMessage?: string;
+            /** Format: date-time */
+            lastProgressAt?: string;
+            /** Format: date-time */
+            startedAt?: string;
+            /** Format: date-time */
+            completedAt?: string;
             errorMessage?: string;
             equityCurve?: components["schemas"]["BacktestEquityPointResponse"][];
             tradeSeries?: components["schemas"]["BacktestTradeSeriesItemResponse"][];
@@ -3199,6 +3231,26 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["BacktestDetailsResponse"];
                 };
+            };
+        };
+    };
+    delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                backtestId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

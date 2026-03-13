@@ -7,3 +7,5 @@ databaseChangeLog:
       file: db/changelog/changes/0011-add-exchange-connection-profiles.yaml
   - include:
       file: db/changelog/changes/0012-fix-market-data-import-job-bytea.yaml
+  - include:
+      file: db/changelog/changes/0013-add-backtest-progress-telemetry.yaml

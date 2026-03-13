@@ -82,6 +82,15 @@ vi.mock('./backtestApi', () => ({
         timestamp: '2026-03-10T10:00:00',
         initialBalance: 1000,
         finalBalance: 1080,
+        executionStage: 'COMPLETED',
+        progressPercent: 100,
+        processedCandles: 8760,
+        totalCandles: 8760,
+        currentDataTimestamp: '2025-12-31T00:00:00',
+        statusMessage: 'Backtest completed. Metrics and trade series are ready to review.',
+        lastProgressAt: '2026-03-10T10:00:00',
+        startedAt: '2026-03-10T09:58:00',
+        completedAt: '2026-03-10T10:00:00',
       },
     ],
     isLoading: false,
@@ -111,6 +120,15 @@ vi.mock('./backtestApi', () => ({
       totalTrades: 80,
       startDate: '2025-01-01T00:00:00',
       endDate: '2025-12-31T00:00:00',
+      executionStage: 'COMPLETED',
+      progressPercent: 100,
+      processedCandles: 8760,
+      totalCandles: 8760,
+      currentDataTimestamp: '2025-12-31T00:00:00',
+      statusMessage: 'Backtest completed. Metrics and trade series are ready to review.',
+      lastProgressAt: '2026-03-10T10:00:00',
+      startedAt: '2026-03-10T09:58:00',
+      completedAt: '2026-03-10T10:00:00',
       errorMessage: null,
       equityCurve: [
         { timestamp: '2025-01-01T00:00:00', equity: 1000, drawdownPct: 0 },
@@ -137,6 +155,7 @@ vi.mock('./backtestApi', () => ({
   useRestoreBacktestDatasetMutation: () => [vi.fn(), { isLoading: false }],
   useRunBacktestMutation: () => [vi.fn(), { isLoading: false }],
   useReplayBacktestMutation: () => [vi.fn(), { isLoading: false }],
+  useDeleteBacktestMutation: () => [vi.fn(), { isLoading: false }],
   useLazyCompareBacktestsQuery: () => [vi.fn(), { data: undefined, isFetching: false, error: undefined }],
 }));
 
@@ -183,6 +202,7 @@ describe('BacktestPage', { timeout: 15000 }, () => {
 
     expect(screen.getByText('Backtest Lab')).toBeInTheDocument();
     expect(screen.getByText('Current Run Progress')).toBeInTheDocument();
+    expect(screen.getAllByText(/Current data date:/).length).toBeGreaterThan(0);
     expect(screen.getByText('Dataset Upload')).toBeInTheDocument();
     expect(screen.getByText('Dataset Inventory')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Run New Backtest' })).toBeInTheDocument();
@@ -190,6 +210,8 @@ describe('BacktestPage', { timeout: 15000 }, () => {
     expect(screen.getAllByText('BTC Mean Reversion Retest').length).toBeGreaterThan(0);
     expect(screen.getByText('Backtest History')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Compare Selected/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Details' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
     expect(screen.getByText('42')).toBeInTheDocument();
   });
 
