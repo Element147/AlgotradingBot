@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -45,6 +46,7 @@ public class MarketDataImportService {
     private final BacktestDatasetService backtestDatasetService;
     private final OperatorAuditService operatorAuditService;
     private final ObjectProvider<MarketDataImportService> selfProvider;
+    private final Set<Long> locallyDispatchedJobIds = ConcurrentHashMap.newKeySet();
 
     public MarketDataImportService(
         MarketDataImportJobRepository marketDataImportJobRepository,
@@ -227,7 +229,15 @@ public class MarketDataImportService {
 
     @Async("virtualThreadTaskExecutor")
     public CompletableFuture<Void> processJobAsync(Long jobId) {
-        processJob(jobId);
+        if (!locallyDispatchedJobIds.add(jobId)) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        try {
+            processJob(jobId);
+        } finally {
+            locallyDispatchedJobIds.remove(jobId);
+        }
         return CompletableFuture.completedFuture(null);
     }
 

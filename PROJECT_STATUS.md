@@ -1,6 +1,6 @@
 # PROJECT_STATUS.md
 
-Status updated: March 13, 2026
+Status updated: March 14, 2026
 
 ## Current State
 
@@ -40,6 +40,7 @@ Implemented product slices:
 15. Admin-managed encrypted market-data provider credentials stored in PostgreSQL with per-provider notes and backend env-var fallback
 16. Persisted backtest execution telemetry (stage, percent, current candle date, status messaging) plus explicit UI details/delete controls
 17. Virtual-thread-backed background execution plus parsed backtest dataset candle caching to improve repeat-run throughput
+18. Startup recovery orchestration for unfinished long-running work so interrupted backtests restart automatically and market-data imports resume from saved cursor state after restart
 
 ## Active Design Decisions (Source of Truth)
 
@@ -98,6 +99,7 @@ Implemented product slices:
 42. Added a Liquibase repair migration for legacy `market_data_import_jobs.staged_csv_data` large-object columns and aligned backend runtime defaults on a 2 GB ZGC heap for lower-latency local operation.
 43. Added persisted backtest progress telemetry with committed mid-run updates, clearer backend execution logging, frontend live-progress transparency, and delete-result controls for finished runs.
 44. Added a dedicated virtual-thread async executor, moved market-data job dispatch onto async background workers, reduced backtest progress-write frequency, and reused parsed candles for repeated dataset-backed backtests.
+45. Added startup recovery participants that scan for unfinished long-running work and restart interrupted or queued backtests while resuming market-data imports from saved cursor state after server restart.
 
 ## Remaining Work (Current Priorities)
 

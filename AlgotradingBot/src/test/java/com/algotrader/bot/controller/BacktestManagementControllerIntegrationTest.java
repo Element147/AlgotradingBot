@@ -7,6 +7,7 @@ import com.algotrader.bot.entity.BacktestTradeSeriesItem;
 import com.algotrader.bot.repository.BacktestDatasetRepository;
 import com.algotrader.bot.repository.BacktestResultRepository;
 import com.algotrader.bot.security.JwtTokenProvider;
+import com.algotrader.bot.service.recovery.BacktestStartupRecoveryParticipant;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.transaction.TestTransaction;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +52,9 @@ class BacktestManagementControllerIntegrationTest {
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
+
+    @Autowired
+    private BacktestStartupRecoveryParticipant backtestStartupRecoveryParticipant;
 
     private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
@@ -243,6 +248,47 @@ class BacktestManagementControllerIntegrationTest {
             .andExpect(status().isNoContent());
 
         org.junit.jupiter.api.Assertions.assertFalse(backtestResultRepository.findById(backtestId).isPresent());
+    }
+
+    @Test
+    void startupRecovery_requeuesInterruptedBacktestAndCompletesIt() throws Exception {
+        BacktestResult interrupted = new BacktestResult(
+            "BUY_AND_HOLD",
+            "BTC/USDT",
+            LocalDateTime.parse("2025-01-01T00:00:00"),
+            LocalDateTime.parse("2025-01-01T23:00:00"),
+            new BigDecimal("1000"),
+            new BigDecimal("1000"),
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            0,
+            BacktestResult.ValidationStatus.PENDING
+        );
+        interrupted.setExecutionStatus(BacktestResult.ExecutionStatus.RUNNING);
+        interrupted.setExecutionStage(BacktestResult.ExecutionStage.SIMULATING);
+        interrupted.setProgressPercent(47);
+        interrupted.setProcessedCandles(11);
+        interrupted.setTotalCandles(24);
+        interrupted.setCurrentDataTimestamp(LocalDateTime.parse("2025-01-01T11:00:00"));
+        interrupted.setStatusMessage("Historical candles are being replayed.");
+        interrupted.setDatasetId(datasetId);
+        interrupted.setDatasetName("sample-btc");
+        interrupted.setExperimentName("Interrupted recovery test");
+        interrupted.setExperimentKey("interrupted-recovery-test");
+        interrupted.setTimeframe("1h");
+        Long interruptedId = backtestResultRepository.save(interrupted).getId();
+
+        TestTransaction.flagForCommit();
+        TestTransaction.end();
+
+        org.junit.jupiter.api.Assertions.assertEquals(1, backtestStartupRecoveryParticipant.recoverPendingWork());
+
+        BacktestResult recovered = waitForBacktest(interruptedId);
+        org.junit.jupiter.api.Assertions.assertEquals(BacktestResult.ExecutionStatus.COMPLETED, recovered.getExecutionStatus());
+        org.junit.jupiter.api.Assertions.assertEquals(BacktestResult.ExecutionStage.COMPLETED, recovered.getExecutionStage());
+        org.junit.jupiter.api.Assertions.assertEquals(100, recovered.getProgressPercent());
     }
 
     @Test
@@ -446,5 +492,17 @@ class BacktestManagementControllerIntegrationTest {
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isUnprocessableContent())
             .andExpect(jsonPath("$.message").value(containsString("Archived datasets cannot be used for new backtests")));
+    }
+
+    private BacktestResult waitForBacktest(Long id) throws InterruptedException {
+        for (int attempt = 0; attempt < 100; attempt++) {
+            BacktestResult result = backtestResultRepository.findById(id).orElseThrow();
+            if (result.getExecutionStatus() == BacktestResult.ExecutionStatus.COMPLETED
+                || result.getExecutionStatus() == BacktestResult.ExecutionStatus.FAILED) {
+                return result;
+            }
+            Thread.sleep(100);
+        }
+        return backtestResultRepository.findById(id).orElseThrow();
     }
 }

@@ -24,6 +24,8 @@ import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
@@ -39,6 +41,7 @@ public class BacktestExecutionService {
     private final BacktestSimulationEngine backtestSimulationEngine;
     private final WebSocketEventPublisher webSocketEventPublisher;
     private final TransactionTemplate transactionTemplate;
+    private final ConcurrentMap<Long, Boolean> inFlightBacktests = new ConcurrentHashMap<>();
 
     public BacktestExecutionService(BacktestResultRepository backtestResultRepository,
                                     BacktestDatasetService backtestDatasetService,
@@ -56,6 +59,11 @@ public class BacktestExecutionService {
 
     @Async("virtualThreadTaskExecutor")
     public CompletableFuture<Void> executeAsync(Long backtestId) {
+        if (inFlightBacktests.putIfAbsent(backtestId, Boolean.TRUE) != null) {
+            logger.info("Backtest {} is already scheduled or running in this JVM. Skipping duplicate dispatch.", backtestId);
+            return CompletableFuture.completedFuture(null);
+        }
+
         BacktestExecutionContext context = markRunStarted(backtestId);
 
         try {
@@ -168,6 +176,8 @@ public class BacktestExecutionService {
         } catch (Exception exception) {
             logger.error("Backtest execution failed for id {}", backtestId, exception);
             markRunFailed(backtestId, exception);
+        } finally {
+            inFlightBacktests.remove(backtestId);
         }
 
         return CompletableFuture.completedFuture(null);

@@ -8,7 +8,7 @@ Local-first full-stack algorithmic trading research platform for strategy resear
 - Live-money trading is never enabled by default.
 - Backtests and paper results are research artifacts, not proof of future profitability.
 
-## Current Capability Snapshot (March 13, 2026)
+## Current Capability Snapshot (March 14, 2026)
 
 Implemented and usable end to end:
 
@@ -16,6 +16,7 @@ Implemented and usable end to end:
 - Backtest execution, experiment summaries, history, and details
 - Live backtest progress telemetry with persisted stage/progress/current-candle visibility plus operator result deletion controls
 - Virtual-thread-backed async execution for long-running backtests and market-data import workers, plus parsed-candle reuse for repeated dataset-backed backtests
+- Startup recovery for unfinished long-running work: queued or interrupted backtests are automatically restarted, and market-data imports continue from their saved cursor after the next server start
 - Backtest replay and side-by-side comparison APIs
 - Dataset lifecycle inventory (`checksumSha256`, schema version, retention, archive/restore) plus dataset download endpoint
 - Provider-backed historical market data downloader with automated retry/wait handling and direct dataset imports into the backtest catalog

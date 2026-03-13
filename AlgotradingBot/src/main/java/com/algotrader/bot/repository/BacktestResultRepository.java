@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Collection;
 
 /**
  * Spring Data JPA repository for BacktestResult entity.
@@ -42,6 +43,7 @@ public interface BacktestResultRepository extends JpaRepository<BacktestResult, 
      * @return list of backtest results with the specified status
      */
     List<BacktestResult> findByValidationStatus(BacktestResult.ValidationStatus status);
+    List<BacktestResult> findByExecutionStatusInOrderByTimestampAsc(Collection<BacktestResult.ExecutionStatus> statuses);
 
     /**
      * Find all backtest results for a specific strategy and symbol.

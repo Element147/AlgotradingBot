@@ -22,4 +22,12 @@ public interface MarketDataImportJobRepository extends JpaRepository<MarketDataI
         order by job.createdAt asc
         """)
     List<MarketDataImportJob> findReadyJobs(Collection<MarketDataImportJobStatus> statuses, LocalDateTime now, Pageable pageable);
+
+    @Query("""
+        select job
+        from MarketDataImportJob job
+        where job.status in :statuses
+        order by job.createdAt asc
+        """)
+    List<MarketDataImportJob> findByStatusInOrderByCreatedAtAsc(Collection<MarketDataImportJobStatus> statuses);
 }

@@ -4,6 +4,9 @@ import com.algotrader.bot.backtest.OHLCVData;
 import com.algotrader.bot.controller.MarketDataImportJobRequest;
 import com.algotrader.bot.controller.MarketDataImportJobResponse;
 import com.algotrader.bot.controller.MarketDataProviderResponse;
+import com.algotrader.bot.entity.MarketDataImportJob;
+import com.algotrader.bot.repository.MarketDataImportJobRepository;
+import com.algotrader.bot.service.recovery.MarketDataImportStartupRecoveryParticipant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -11,6 +14,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.transaction.TestTransaction;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -46,6 +50,12 @@ class MarketDataImportServiceIntegrationTest {
 
     @org.springframework.beans.factory.annotation.Autowired
     private StubMarketDataProvider stubMarketDataProvider;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private MarketDataImportJobRepository marketDataImportJobRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private MarketDataImportStartupRecoveryParticipant marketDataImportStartupRecoveryParticipant;
 
     @BeforeEach
     void setUp() {
@@ -129,11 +139,54 @@ class MarketDataImportServiceIntegrationTest {
         });
     }
 
+    @Test
+    void startupRecovery_requeuesInterruptedImportAndCompletesIt() throws Exception {
+        MarketDataImportJobResponse created = marketDataImportService.createJob(new MarketDataImportJobRequest(
+            "stub",
+            MarketDataAssetType.CRYPTO,
+            List.of("BTC/USDT"),
+            "1h",
+            LocalDate.parse("2025-01-01"),
+            LocalDate.parse("2025-01-02"),
+            "Interrupted import recovery",
+            false,
+            false
+        ));
+
+        MarketDataImportJob interrupted = marketDataImportJobRepository.findById(created.id()).orElseThrow();
+        interrupted.setStatus(MarketDataImportJobStatus.RUNNING);
+        interrupted.setStatusMessage("Server stopped mid-import.");
+        interrupted.setStartedAt(LocalDateTime.now().minusMinutes(2));
+        interrupted.setCurrentChunkStart(LocalDateTime.parse("2025-01-01T00:00:00"));
+        marketDataImportJobRepository.save(interrupted);
+
+        TestTransaction.flagForCommit();
+        TestTransaction.end();
+
+        assertThat(marketDataImportStartupRecoveryParticipant.recoverPendingWork()).isEqualTo(1);
+
+        MarketDataImportJobResponse completed = waitForJob(created.id());
+        assertThat(completed.status()).isEqualTo("COMPLETED");
+        assertThat(completed.datasetReady()).isTrue();
+        assertThat(completed.datasetId()).isNotNull();
+    }
+
     private MarketDataImportJobResponse findJob(Long id) {
         return marketDataImportService.listJobs().stream()
             .filter(job -> job.id().equals(id))
             .findFirst()
             .orElseThrow();
+    }
+
+    private MarketDataImportJobResponse waitForJob(Long id) throws InterruptedException {
+        for (int attempt = 0; attempt < 100; attempt++) {
+            MarketDataImportJobResponse job = findJob(id);
+            if ("COMPLETED".equals(job.status()) || "FAILED".equals(job.status())) {
+                return job;
+            }
+            Thread.sleep(100);
+        }
+        return findJob(id);
     }
 
     enum StubMode {

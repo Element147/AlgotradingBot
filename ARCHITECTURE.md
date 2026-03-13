@@ -36,6 +36,7 @@ Primary packages in `com.algotrader.bot`:
 - Analytics persistence seam: backtest details include persisted equity-curve and trade-series records for reproducible UI charts/exports.
 - Execution-observability seam: backtest runs persist stage/progress/current-candle telemetry so operators can distinguish slow execution from stalled execution.
 - Execution-runtime seam: long-running backtests and import workers execute on dedicated async infrastructure, and repeated backtests can reuse parsed dataset candles instead of re-decoding the same CSV each run.
+- Recovery seam: startup recovery participants re-queue unfinished long-running tasks after restart; market-data imports continue from their persisted cursor, while backtests restart the interrupted run from the saved configuration.
 - Comparison seam: dedicated compare API provides side-by-side metric deltas plus dataset provenance for selected backtests.
 - Reporting seam: frontend exports fail closed when dataset provenance is incomplete, and experiment labels flow into report packaging for clearer multi-run review.
 
