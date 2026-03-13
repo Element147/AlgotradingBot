@@ -28,7 +28,17 @@ $semgrepArgs = @(
     "semgrep",
     "scan",
     "--config", "p/default",
-    "--metrics=off"
+    "--metrics=off",
+    "--exclude", ".git",
+    "--exclude", ".runtime",
+    "--exclude", ".idea",
+    "--exclude", ".gradle",
+    "--exclude", "frontend/dist",
+    "--exclude", "frontend/node_modules",
+    "--exclude", "frontend/coverage",
+    "--exclude", "frontend/src/generated",
+    "--exclude", "AlgotradingBot/build",
+    "--exclude", "AlgotradingBot/.gradle"
 )
 
 if ($FailOnFindings) {

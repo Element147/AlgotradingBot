@@ -23,7 +23,17 @@ public class HealthCheckRepairActions {
     public RepairResult restartContainer(String serviceName) {
         logger.info("Restarting container: {}", serviceName);
         try {
-            ProcessBuilder pb = new ProcessBuilder(workspaceSupport.dockerComposeCommand("restart", serviceName));
+            String composeService = workspaceSupport.composeServiceFor(serviceName);
+            ProcessBuilder pb = new ProcessBuilder(
+                "docker",
+                "compose",
+                "--project-name",
+                workspaceSupport.composeProjectName(),
+                "-f",
+                workspaceSupport.composeFile().toString(),
+                "restart",
+                composeService
+            );
             pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
             Process process = pb.start();
@@ -53,7 +63,19 @@ public class HealthCheckRepairActions {
     public RepairResult checkServiceLogs(String serviceName) {
         logger.info("Checking logs for service: {}", serviceName);
         try {
-            ProcessBuilder pb = new ProcessBuilder(workspaceSupport.dockerComposeCommand("logs", "--tail", "100", serviceName));
+            String composeService = workspaceSupport.composeServiceFor(serviceName);
+            ProcessBuilder pb = new ProcessBuilder(
+                "docker",
+                "compose",
+                "--project-name",
+                workspaceSupport.composeProjectName(),
+                "-f",
+                workspaceSupport.composeFile().toString(),
+                "logs",
+                "--tail",
+                "100",
+                composeService
+            );
             pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
             Process process = pb.start();
@@ -93,13 +115,13 @@ public class HealthCheckRepairActions {
         
         while (Duration.between(start, LocalDateTime.now()).compareTo(timeout) < 0) {
             try {
+                String containerName = workspaceSupport.containerNameFor(serviceName);
                 ProcessBuilder pb = new ProcessBuilder(
-                    workspaceSupport.dockerCommand(
-                        "inspect",
-                        "--format",
-                        "{{.State.Health.Status}}",
-                        workspaceSupport.containerNameFor(serviceName)
-                    )
+                    "docker",
+                    "inspect",
+                    "--format",
+                    "{{.State.Health.Status}}",
+                    containerName
                 );
                 pb.directory(workspaceSupport.repoRoot().toFile());
                 pb.redirectErrorStream(true);

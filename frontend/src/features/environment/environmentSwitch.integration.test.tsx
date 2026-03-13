@@ -11,7 +11,7 @@ import { EnvironmentSwitch } from './EnvironmentSwitch';
 
 import { accountApi } from '@/features/account/accountApi';
 import authReducer from '@/features/auth/authSlice';
-import { WebSocketManager } from '@/services/websocket';
+import { resolveWebSocketUrl, WebSocketManager } from '@/services/websocket';
 import { server } from '@/tests/mocks/server';
 
 const API_BASE_URL = 'http://localhost:8080';
@@ -56,7 +56,9 @@ describe('Environment Switching Integration Tests', { timeout: 15000 }, () => {
     });
 
     // Mock WebSocket manager
-    mockWebSocketManager = new WebSocketManager('ws://localhost:8080/ws');
+    mockWebSocketManager = new WebSocketManager(
+      resolveWebSocketUrl(undefined, { pageUrl: 'http://localhost:5173/' })
+    );
     vi.spyOn(mockWebSocketManager, 'connect');
     vi.spyOn(mockWebSocketManager, 'disconnect');
   });

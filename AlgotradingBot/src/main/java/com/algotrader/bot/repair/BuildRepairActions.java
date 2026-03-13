@@ -43,7 +43,7 @@ public class BuildRepairActions {
     public RepairResult cleanBuildDirectory() {
         logger.info("Cleaning build directory");
         try {
-            ProcessBuilder pb = new ProcessBuilder("cmd", "/c", "gradlew.bat clean");
+            ProcessBuilder pb = new ProcessBuilder("gradlew.bat", "clean");
             pb.directory(workspaceSupport.backendDir().toFile());
             pb.redirectErrorStream(true);
             
@@ -75,7 +75,7 @@ public class BuildRepairActions {
     public RepairResult rebuildJar() {
         logger.info("Rebuilding JAR");
         try {
-            ProcessBuilder pb = new ProcessBuilder("cmd", "/c", "gradlew.bat bootJar");
+            ProcessBuilder pb = new ProcessBuilder("gradlew.bat", "bootJar");
             pb.directory(workspaceSupport.backendDir().toFile());
             pb.redirectErrorStream(true);
             

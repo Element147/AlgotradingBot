@@ -70,13 +70,13 @@ public class StabilityValidator {
         String[] services = {"postgres", "kafka", "algotrading-app"};
         for (String service : services) {
             try {
+                String containerName = workspaceSupport.containerNameFor(service);
                 ProcessBuilder pb = new ProcessBuilder(
-                    workspaceSupport.dockerCommand(
-                        "inspect",
-                        "--format",
-                        "{{.State.Health.Status}}",
-                        workspaceSupport.containerNameFor(service)
-                    )
+                    "docker",
+                    "inspect",
+                    "--format",
+                    "{{.State.Health.Status}}",
+                    containerName
                 );
                 pb.directory(workspaceSupport.repoRoot().toFile());
                 pb.redirectErrorStream(true);
@@ -100,7 +100,11 @@ public class StabilityValidator {
     private void collectResourceMetrics(StabilityMetrics metrics) {
         try {
             ProcessBuilder pb = new ProcessBuilder(
-                workspaceSupport.dockerCommand("stats", "--no-stream", "--format", "{{.Name}},{{.MemUsage}},{{.CPUPerc}}")
+                "docker",
+                "stats",
+                "--no-stream",
+                "--format",
+                "{{.Name}},{{.MemUsage}},{{.CPUPerc}}"
             );
             pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
@@ -146,7 +150,12 @@ public class StabilityValidator {
     private void checkContainerRestarts(StabilityMetrics metrics) {
         try {
             ProcessBuilder pb = new ProcessBuilder(
-                workspaceSupport.dockerCommand("ps", "--filter", "name=algotrading", "--format", "{{.Names}},{{.Status}}")
+                "docker",
+                "ps",
+                "--filter",
+                "name=algotrading",
+                "--format",
+                "{{.Names}},{{.Status}}"
             );
             pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
@@ -172,7 +181,16 @@ public class StabilityValidator {
 
     private void scanErrorLogs(StabilityMetrics metrics) {
         try {
-            ProcessBuilder pb = new ProcessBuilder(workspaceSupport.dockerComposeCommand("logs", "algotrading-app"));
+            ProcessBuilder pb = new ProcessBuilder(
+                "docker",
+                "compose",
+                "--project-name",
+                workspaceSupport.composeProjectName(),
+                "-f",
+                workspaceSupport.composeFile().toString(),
+                "logs",
+                workspaceSupport.composeServiceFor("algotrading-app")
+            );
             pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
             Process process = pb.start();
@@ -198,7 +216,16 @@ public class StabilityValidator {
     private void checkDatabaseConnection(StabilityMetrics metrics) {
         try {
             ProcessBuilder pb = new ProcessBuilder(
-                workspaceSupport.dockerComposeCommand("logs", "--tail", "100", "algotrading-app")
+                "docker",
+                "compose",
+                "--project-name",
+                workspaceSupport.composeProjectName(),
+                "-f",
+                workspaceSupport.composeFile().toString(),
+                "logs",
+                "--tail",
+                "100",
+                workspaceSupport.composeServiceFor("algotrading-app")
             );
             pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
@@ -228,7 +255,16 @@ public class StabilityValidator {
     private void checkKafkaConnection(StabilityMetrics metrics) {
         try {
             ProcessBuilder pb = new ProcessBuilder(
-                workspaceSupport.dockerComposeCommand("logs", "--tail", "100", "algotrading-app")
+                "docker",
+                "compose",
+                "--project-name",
+                workspaceSupport.composeProjectName(),
+                "-f",
+                workspaceSupport.composeFile().toString(),
+                "logs",
+                "--tail",
+                "100",
+                workspaceSupport.composeServiceFor("algotrading-app")
             );
             pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);

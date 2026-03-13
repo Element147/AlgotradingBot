@@ -70,3 +70,13 @@ To make findings fail the command:
 ```powershell
 .\security-scan.ps1 -FailOnFindings
 ```
+
+Run Semgrep by default for:
+
+- auth or session changes
+- secret or credential handling
+- process execution or script orchestration changes
+- WebSocket or HTTP boundary parsing
+- Docker or local automation changes
+
+During a security cleanup, `-FailOnFindings` is the zero-findings gate.

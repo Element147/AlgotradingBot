@@ -8,6 +8,7 @@ import {
   WebSocketManager,
   type WebSocketLikeConstructor,
   getWebSocketManager,
+  resolveWebSocketUrl,
 } from './websocket';
 
 // Mock WebSocket
@@ -49,10 +50,11 @@ class MockWebSocket {
 
 describe('WebSocketManager', () => {
   let manager: WebSocketManager;
+  const localDevWsUrl = () => resolveWebSocketUrl(undefined, { pageUrl: 'http://localhost:5173/' });
 
   beforeEach(() => {
     manager = new WebSocketManager(
-      'ws://localhost:8080/ws',
+      localDevWsUrl(),
       MockWebSocket as unknown as WebSocketLikeConstructor
     );
     vi.clearAllTimers();
@@ -202,5 +204,31 @@ describe('getWebSocketManager', () => {
   it('should use VITE_WS_URL from environment', () => {
     const manager = getWebSocketManager();
     expect(manager).toBeDefined();
+  });
+});
+
+describe('resolveWebSocketUrl', () => {
+  it('should default to localhost WebSocket in development', () => {
+    expect(resolveWebSocketUrl(undefined, { pageUrl: 'http://localhost:5173/' })).toBe(
+      'ws://localhost:8080/ws'
+    );
+  });
+
+  it('should resolve same-origin production URLs to secure WebSockets', () => {
+    expect(
+      resolveWebSocketUrl('/ws', {
+        pageUrl: 'https://app.example.com/dashboard',
+        production: true,
+      })
+    ).toBe('wss://app.example.com/ws');
+  });
+
+  it('should reject insecure production endpoints', () => {
+    expect(() =>
+      resolveWebSocketUrl('http://api.example.com/ws', {
+        pageUrl: 'https://app.example.com/dashboard',
+        production: true,
+      })
+    ).toThrow(/secure same-origin WebSocket endpoint/i);
   });
 });

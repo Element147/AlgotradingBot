@@ -2,6 +2,8 @@ package com.algotrader.bot.service;
 
 import com.algotrader.bot.controller.BackupResponse;
 import com.algotrader.bot.controller.SystemInfoResponse;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,9 +14,7 @@ import javax.sql.DataSource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.InetSocketAddress;
 import java.net.URI;
-import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,6 +28,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -35,6 +36,9 @@ public class SystemOperationsService {
 
     private static final Logger logger = LoggerFactory.getLogger(SystemOperationsService.class);
     private static final DateTimeFormatter BACKUP_FILE_TS = DateTimeFormatter.ofPattern("yyyy-MM-dd_HHmmss");
+    private static final String PG_DUMP_COMMAND = "pg_dump";
+    private static final String DOCKER_COMMAND = "docker";
+    private static final String POSTGRES_CONTAINER_NAME = "algotrading-postgres";
 
     private final DataSource dataSource;
     private final BuildProperties buildProperties;
@@ -42,9 +46,6 @@ public class SystemOperationsService {
     private final Path backupDirectory;
     private final String datasourceUsername;
     private final String datasourcePassword;
-    private final String pgDumpCommand;
-    private final String dockerCommand;
-    private final String postgresContainerName;
     private final OperatorAuditService operatorAuditService;
     private final LocalDateTime appStartTime = LocalDateTime.now();
 
@@ -55,9 +56,6 @@ public class SystemOperationsService {
         @Value("${algotrading.system.backup-dir:backups}") String backupDirectory,
         @Value("${spring.datasource.username:}") String datasourceUsername,
         @Value("${spring.datasource.password:}") String datasourcePassword,
-        @Value("${algotrading.system.pg-dump-command:pg_dump}") String pgDumpCommand,
-        @Value("${algotrading.system.docker-command:docker}") String dockerCommand,
-        @Value("${algotrading.system.postgres-container-name:algotrading-postgres}") String postgresContainerName,
         OperatorAuditService operatorAuditService
     ) {
         this.dataSource = dataSource.orElse(null);
@@ -66,9 +64,6 @@ public class SystemOperationsService {
         this.backupDirectory = Paths.get(backupDirectory);
         this.datasourceUsername = datasourceUsername;
         this.datasourcePassword = datasourcePassword;
-        this.pgDumpCommand = pgDumpCommand;
-        this.dockerCommand = dockerCommand;
-        this.postgresContainerName = postgresContainerName;
         this.operatorAuditService = operatorAuditService;
     }
 
@@ -170,8 +165,8 @@ public class SystemOperationsService {
     }
 
     private void runLocalPgDump(JdbcBackupTarget target, Path backupFile) throws Exception {
-        List<String> command = List.of(
-            pgDumpCommand,
+        ProcessBuilder processBuilder = new ProcessBuilder(
+            PG_DUMP_COMMAND,
             "--clean",
             "--if-exists",
             "--no-owner",
@@ -187,8 +182,6 @@ public class SystemOperationsService {
             "-f",
             backupFile.toAbsolutePath().toString()
         );
-
-        ProcessBuilder processBuilder = new ProcessBuilder(command);
         if (!target.password().isBlank()) {
             processBuilder.environment().put("PGPASSWORD", target.password());
         }
@@ -206,10 +199,10 @@ public class SystemOperationsService {
     }
 
     private void runDockerPgDump(JdbcBackupTarget target, Path backupFile) throws Exception {
-        List<String> command = List.of(
-            dockerCommand,
+        Process process = new ProcessBuilder(
+            DOCKER_COMMAND,
             "exec",
-            postgresContainerName,
+            POSTGRES_CONTAINER_NAME,
             "pg_dump",
             "--clean",
             "--if-exists",
@@ -219,9 +212,7 @@ public class SystemOperationsService {
             target.username(),
             "-d",
             target.database()
-        );
-
-        Process process = new ProcessBuilder(command).start();
+        ).start();
         try (InputStream stdout = process.getInputStream();
              OutputStream fileOutput = Files.newOutputStream(backupFile)) {
             stdout.transferTo(fileOutput);
@@ -267,24 +258,16 @@ public class SystemOperationsService {
             return "not-configured";
         }
 
-        String firstServer = kafkaBootstrapServers.split(",")[0].trim();
-        String[] hostPort = firstServer.split(":");
-        if (hostPort.length != 2) {
-            return "configured";
-        }
+        Properties properties = new Properties();
+        properties.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBootstrapServers);
+        properties.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, "1000");
+        properties.put(AdminClientConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, "1000");
+        properties.put(AdminClientConfig.CLIENT_ID_CONFIG, "system-operations-health-check");
 
-        String host = hostPort[0];
-        int port;
-        try {
-            port = Integer.parseInt(hostPort[1]);
-        } catch (NumberFormatException ex) {
-            return "configured";
-        }
-
-        try (Socket socket = new Socket()) {
-            socket.connect(new InetSocketAddress(host, port), 750);
+        try (AdminClient adminClient = AdminClient.create(properties)) {
+            adminClient.describeCluster().nodes().get(1, TimeUnit.SECONDS);
             return "UP";
-        } catch (IOException ex) {
+        } catch (Exception ex) {
             return "DOWN (optional in local mode)";
         }
     }

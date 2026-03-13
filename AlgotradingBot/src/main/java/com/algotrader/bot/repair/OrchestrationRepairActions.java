@@ -24,7 +24,14 @@ public class OrchestrationRepairActions {
     public RepairResult stopAllServices() {
         logger.info("Stopping all services");
         try {
-            ProcessBuilder pb = new ProcessBuilder(workspaceSupport.scriptCommand("stop.ps1"));
+            ProcessBuilder pb = new ProcessBuilder(
+                "powershell",
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                workspaceSupport.scriptPath("stop.ps1").toString()
+            );
             pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
             Process process = pb.start();
@@ -54,7 +61,14 @@ public class OrchestrationRepairActions {
     public RepairResult startAllServices() {
         logger.info("Starting all services");
         try {
-            ProcessBuilder pb = new ProcessBuilder(workspaceSupport.scriptCommand("run.ps1"));
+            ProcessBuilder pb = new ProcessBuilder(
+                "powershell",
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                workspaceSupport.scriptPath("run.ps1").toString()
+            );
             pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
             Process process = pb.start();
@@ -124,7 +138,12 @@ public class OrchestrationRepairActions {
     public RepairResult checkNetworkConflicts() {
         logger.info("Checking for network conflicts");
         try {
-            ProcessBuilder pb = new ProcessBuilder(workspaceSupport.dockerCommand("network", "inspect", "algotrading-network"));
+            ProcessBuilder pb = new ProcessBuilder(
+                "docker",
+                "network",
+                "inspect",
+                workspaceSupport.managedNetworkName()
+            );
             pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
             Process process = pb.start();
@@ -159,7 +178,16 @@ public class OrchestrationRepairActions {
     public RepairResult cleanupOrphanedContainers() {
         logger.info("Cleaning up orphaned containers");
         try {
-            ProcessBuilder pb = new ProcessBuilder(workspaceSupport.dockerComposeCommand("down", "--remove-orphans"));
+            ProcessBuilder pb = new ProcessBuilder(
+                "docker",
+                "compose",
+                "--project-name",
+                workspaceSupport.composeProjectName(),
+                "-f",
+                workspaceSupport.composeFile().toString(),
+                "down",
+                "--remove-orphans"
+            );
             pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
             Process process = pb.start();

@@ -36,6 +36,11 @@ interface WebSocketLike {
 
 export type WebSocketLikeConstructor = new (url: string) => WebSocketLike;
 
+interface ResolveWebSocketUrlOptions {
+  pageUrl?: string;
+  production?: boolean;
+}
+
 const WS_CONNECTING = 0;
 const WS_OPEN = 1;
 const WS_CLOSING = 2;
@@ -43,6 +48,64 @@ const WS_CLOSED = 3;
 
 const toError = (error: unknown): Error =>
   error instanceof Error ? error : new Error('Unknown WebSocket error');
+
+const getDefaultPageUrl = (): string => {
+  if (typeof window !== 'undefined' && window.location?.href) {
+    return window.location.href;
+  }
+
+  return 'http://localhost:5173/';
+};
+
+const buildLocalDevWebSocketUrl = (): string => {
+  const url = new URL('http://localhost:8080/ws');
+  url.protocol = 'ws:';
+  return url.toString();
+};
+
+export const resolveWebSocketUrl = (
+  configuredUrl?: string,
+  options: ResolveWebSocketUrlOptions = {}
+): string => {
+  const production = options.production ?? import.meta.env.PROD;
+  const pageUrl = new URL(options.pageUrl ?? getDefaultPageUrl());
+
+  if (!configuredUrl || configuredUrl.trim() === '') {
+    if (!production) {
+      return buildLocalDevWebSocketUrl();
+    }
+
+    const sameOriginUrl = new URL('/ws', pageUrl);
+    sameOriginUrl.protocol = 'wss:';
+    return sameOriginUrl.toString();
+  }
+
+  const resolvedUrl = new URL(configuredUrl, pageUrl);
+
+  if (production) {
+    if (resolvedUrl.protocol === 'wss:') {
+      return resolvedUrl.toString();
+    }
+
+    if (
+      (resolvedUrl.protocol === 'http:' || resolvedUrl.protocol === 'https:') &&
+      resolvedUrl.origin === pageUrl.origin
+    ) {
+      resolvedUrl.protocol = 'wss:';
+      return resolvedUrl.toString();
+    }
+
+    throw new Error(
+      'Production WebSocket URL must resolve to a secure same-origin WebSocket endpoint'
+    );
+  }
+
+  if (resolvedUrl.protocol === 'http:' || resolvedUrl.protocol === 'https:') {
+    resolvedUrl.protocol = resolvedUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+  }
+
+  return resolvedUrl.toString();
+};
 
 export class WebSocketManager {
   private ws: WebSocketLike | null = null;
@@ -287,11 +350,7 @@ let wsManager: WebSocketManager | null = null;
  */
 export const getWebSocketManager = (): WebSocketManager => {
   if (!wsManager) {
-    const configured = import.meta.env.VITE_WS_URL || 'ws://localhost:8080/ws';
-    const wsUrl =
-      import.meta.env.PROD && configured.startsWith('ws://')
-        ? configured.replace('ws://', 'wss://')
-        : configured;
+    const wsUrl = resolveWebSocketUrl(import.meta.env.VITE_WS_URL);
     wsManager = new WebSocketManager(wsUrl);
   }
   return wsManager;

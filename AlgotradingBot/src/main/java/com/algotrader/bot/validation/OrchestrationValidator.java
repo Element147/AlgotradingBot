@@ -69,7 +69,16 @@ public class OrchestrationValidator {
     public ValidationResult startServices() {
         logger.info("Starting Docker Compose services");
         try {
-            ProcessBuilder pb = new ProcessBuilder(workspaceSupport.dockerComposeCommand("up", "-d"));
+            ProcessBuilder pb = new ProcessBuilder(
+                "docker",
+                "compose",
+                "--project-name",
+                workspaceSupport.composeProjectName(),
+                "-f",
+                workspaceSupport.composeFile().toString(),
+                "up",
+                "-d"
+            );
             pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
             
@@ -124,13 +133,13 @@ public class OrchestrationValidator {
         while (Duration.between(start, LocalDateTime.now()).compareTo(timeout) < 0) {
             attempt++;
             try {
+                String containerName = workspaceSupport.containerNameFor(serviceName);
                 ProcessBuilder pb = new ProcessBuilder(
-                    workspaceSupport.dockerCommand(
-                        "inspect",
-                        "--format",
-                        "{{.State.Health.Status}}",
-                        workspaceSupport.containerNameFor(serviceName)
-                    )
+                    "docker",
+                    "inspect",
+                    "--format",
+                    "{{.State.Health.Status}}",
+                    containerName
                 );
                 pb.directory(workspaceSupport.repoRoot().toFile());
                 pb.redirectErrorStream(true);
@@ -193,7 +202,12 @@ public class OrchestrationValidator {
         logger.info("Validating all containers are running");
         try {
             ProcessBuilder pb = new ProcessBuilder(
-                workspaceSupport.dockerCommand("ps", "--filter", "name=algotrading", "--format", "{{.Names}}")
+                "docker",
+                "ps",
+                "--filter",
+                "name=algotrading",
+                "--format",
+                "{{.Names}}"
             );
             pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
@@ -264,7 +278,16 @@ public class OrchestrationValidator {
     public ValidationResult validateServiceLogs(String serviceName, List<String> expectedMessages) {
         logger.info("Validating logs for service: {}", serviceName);
         try {
-            ProcessBuilder pb = new ProcessBuilder(workspaceSupport.dockerComposeCommand("logs", serviceName));
+            ProcessBuilder pb = new ProcessBuilder(
+                "docker",
+                "compose",
+                "--project-name",
+                workspaceSupport.composeProjectName(),
+                "-f",
+                workspaceSupport.composeFile().toString(),
+                "logs",
+                workspaceSupport.composeServiceFor(serviceName)
+            );
             pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
             

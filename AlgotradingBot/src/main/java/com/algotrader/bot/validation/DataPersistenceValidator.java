@@ -112,7 +112,16 @@ public class DataPersistenceValidator {
     public ValidationResult restartPostgresContainer() {
         logger.info("Restarting PostgreSQL container");
         try {
-            ProcessBuilder pb = new ProcessBuilder(workspaceSupport.dockerComposeCommand("restart", "postgres"));
+            ProcessBuilder pb = new ProcessBuilder(
+                "docker",
+                "compose",
+                "--project-name",
+                workspaceSupport.composeProjectName(),
+                "-f",
+                workspaceSupport.composeFile().toString(),
+                "restart",
+                workspaceSupport.composeServiceFor("postgres")
+            );
             pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
             Process process = pb.start();
@@ -161,13 +170,13 @@ public class DataPersistenceValidator {
         
         while (Duration.between(start, LocalDateTime.now()).compareTo(timeout) < 0) {
             try {
+                String containerName = workspaceSupport.containerNameFor("postgres");
                 ProcessBuilder pb = new ProcessBuilder(
-                    workspaceSupport.dockerCommand(
-                        "inspect",
-                        "--format",
-                        "{{.State.Health.Status}}",
-                        workspaceSupport.containerNameFor("postgres")
-                    )
+                    "docker",
+                    "inspect",
+                    "--format",
+                    "{{.State.Health.Status}}",
+                    containerName
                 );
                 pb.directory(workspaceSupport.repoRoot().toFile());
                 pb.redirectErrorStream(true);
@@ -252,7 +261,16 @@ public class DataPersistenceValidator {
     public ValidationResult restartApplicationContainer() {
         logger.info("Restarting application container");
         try {
-            ProcessBuilder pb = new ProcessBuilder(workspaceSupport.dockerComposeCommand("restart", "algotrading-app"));
+            ProcessBuilder pb = new ProcessBuilder(
+                "docker",
+                "compose",
+                "--project-name",
+                workspaceSupport.composeProjectName(),
+                "-f",
+                workspaceSupport.composeFile().toString(),
+                "restart",
+                workspaceSupport.composeServiceFor("algotrading-app")
+            );
             pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
             Process process = pb.start();
@@ -301,13 +319,13 @@ public class DataPersistenceValidator {
         
         while (Duration.between(start, LocalDateTime.now()).compareTo(timeout) < 0) {
             try {
+                String containerName = workspaceSupport.containerNameFor("algotrading-app");
                 ProcessBuilder pb = new ProcessBuilder(
-                    workspaceSupport.dockerCommand(
-                        "inspect",
-                        "--format",
-                        "{{.State.Health.Status}}",
-                        workspaceSupport.containerNameFor("algotrading-app")
-                    )
+                    "docker",
+                    "inspect",
+                    "--format",
+                    "{{.State.Health.Status}}",
+                    containerName
                 );
                 pb.directory(workspaceSupport.repoRoot().toFile());
                 pb.redirectErrorStream(true);
@@ -355,7 +373,16 @@ public class DataPersistenceValidator {
         logger.info("Verifying application reconnects to database");
         try {
             ProcessBuilder pb = new ProcessBuilder(
-                workspaceSupport.dockerComposeCommand("logs", "--tail", "50", "algotrading-app")
+                "docker",
+                "compose",
+                "--project-name",
+                workspaceSupport.composeProjectName(),
+                "-f",
+                workspaceSupport.composeFile().toString(),
+                "logs",
+                "--tail",
+                "50",
+                workspaceSupport.composeServiceFor("algotrading-app")
             );
             pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);

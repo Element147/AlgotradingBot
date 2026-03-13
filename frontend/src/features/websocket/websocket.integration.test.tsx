@@ -15,7 +15,13 @@ import { configureStore } from '@reduxjs/toolkit';
 import { waitFor } from '@testing-library/react';
 import { describe, it, expect, beforeEach, afterEach, vi, beforeAll, afterAll } from 'vitest';
 
-import { WebSocketManager, type WebSocketEvent, type WebSocketLikeConstructor, setWebSocketManager } from '../../services/websocket';
+import {
+  resolveWebSocketUrl,
+  WebSocketManager,
+  type WebSocketEvent,
+  type WebSocketLikeConstructor,
+  setWebSocketManager,
+} from '../../services/websocket';
 import { server } from '../../tests/mocks/server';
 import { accountApi } from '../account/accountApi';
 import authReducer from '../auth/authSlice';
@@ -136,7 +142,10 @@ describe('WebSocket Integration Tests', () => {
     mockWebSocketInstance = null;
 
     // Create WebSocket manager
-    wsManager = new WebSocketManager('ws://localhost:8080/ws', MockWebSocketConstructor as unknown as WebSocketLikeConstructor);
+    wsManager = new WebSocketManager(
+      resolveWebSocketUrl(undefined, { pageUrl: 'http://localhost:5173/' }),
+      MockWebSocketConstructor as unknown as WebSocketLikeConstructor
+    );
     
     // Set as singleton for middleware to use
     setWebSocketManager(wsManager);

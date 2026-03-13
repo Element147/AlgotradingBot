@@ -1,5 +1,6 @@
 package com.algotrader.bot.validation;
 
+import com.algotrader.bot.repair.RepairWorkspaceSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,6 +18,7 @@ public class BuildValidator {
     private static final long MIN_JAR_SIZE_MB = 30;
     private static final long MAX_JAR_SIZE_MB = 100;
     private static final long MAX_IMAGE_SIZE_MB = 300;
+    private final RepairWorkspaceSupport workspaceSupport = RepairWorkspaceSupport.detect();
 
     public ValidationResult validateBuild() {
         logger.info("Starting build validation");
@@ -52,8 +54,8 @@ public class BuildValidator {
         logger.info("Validating JAR build");
         try {
             // Avoid `clean` here: nested Gradle invocations during test runs can wipe active task outputs.
-            ProcessBuilder pb = new ProcessBuilder("./gradlew", "--no-daemon", "bootJar");
-            pb.directory(Paths.get(".").toFile());
+            ProcessBuilder pb = new ProcessBuilder("gradlew.bat", "--no-daemon", "bootJar");
+            pb.directory(workspaceSupport.backendDir().toFile());
             pb.redirectErrorStream(true);
             
             Process process = pb.start();
@@ -233,7 +235,7 @@ public class BuildValidator {
         logger.info("Building Docker image: {}", imageName);
         try {
             ProcessBuilder pb = new ProcessBuilder("docker", "build", "-t", imageName, ".");
-            pb.directory(Paths.get(".").toFile());
+            pb.directory(workspaceSupport.backendDir().toFile());
             pb.redirectErrorStream(true);
             
             Process process = pb.start();

@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   type WebSocketEvent,
+  resolveWebSocketUrl,
   WebSocketManager,
   type WebSocketLikeConstructor,
   setWebSocketManager,
@@ -82,7 +83,7 @@ describe('useWebSocketConnection', () => {
     vi.clearAllMocks();
     setWebSocketManager(
       new WebSocketManager(
-        'ws://localhost:8080/ws',
+        resolveWebSocketUrl(undefined, { pageUrl: 'http://localhost:5173/' }),
         MockWebSocket as unknown as WebSocketLikeConstructor
       )
     );
@@ -162,7 +163,7 @@ describe('useWebSocketSubscription', () => {
     vi.clearAllMocks();
     setWebSocketManager(
       new WebSocketManager(
-        'ws://localhost:8080/ws',
+        resolveWebSocketUrl(undefined, { pageUrl: 'http://localhost:5173/' }),
         MockWebSocket as unknown as WebSocketLikeConstructor
       )
     );

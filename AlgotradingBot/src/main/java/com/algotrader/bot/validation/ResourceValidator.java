@@ -1,5 +1,6 @@
 package com.algotrader.bot.validation;
 
+import com.algotrader.bot.repair.RepairWorkspaceSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,6 +14,7 @@ public class ResourceValidator {
     private static final long MAX_KAFKA_MEMORY_MB = 512;
     private static final long MAX_TOTAL_MEMORY_MB = 1536; // 1.5GB
     private static final long MAX_DISK_USAGE_GB = 2;
+    private final RepairWorkspaceSupport workspaceSupport = RepairWorkspaceSupport.detect();
 
     public ValidationResult validateMemoryUsage() {
         logger.info("Validating memory usage");
@@ -85,6 +87,7 @@ public class ResourceValidator {
         logger.info("Validating disk usage");
         try {
             ProcessBuilder pb = new ProcessBuilder("docker", "system", "df", "-v");
+            pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
             Process process = pb.start();
             
@@ -143,6 +146,7 @@ public class ResourceValidator {
         try {
             ProcessBuilder pb = new ProcessBuilder("docker", "stats", "--no-stream", 
                 "--format", "{{.Name}},{{.MemUsage}},{{.CPUPerc}}");
+            pb.directory(workspaceSupport.repoRoot().toFile());
             pb.redirectErrorStream(true);
             Process process = pb.start();
             

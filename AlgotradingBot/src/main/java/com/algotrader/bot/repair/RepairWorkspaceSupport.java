@@ -12,6 +12,8 @@ import java.util.Map;
 public final class RepairWorkspaceSupport {
 
     private static final List<Integer> MANAGED_PORTS = List.of(5432, 8080, 5173, 9092);
+    private static final String COMPOSE_PROJECT_NAME = "algotradingbot";
+    private static final String MANAGED_NETWORK_NAME = COMPOSE_PROJECT_NAME + "_algotrading-network";
 
     private final Path repoRoot;
     private final Path backendDir;
@@ -46,36 +48,28 @@ public final class RepairWorkspaceSupport {
         return backendDir;
     }
 
+    public Path composeFile() {
+        return composeFile;
+    }
+
+    public String composeProjectName() {
+        return COMPOSE_PROJECT_NAME;
+    }
+
+    public String managedNetworkName() {
+        return MANAGED_NETWORK_NAME;
+    }
+
     public Path pidFile(String name) {
         return pidDirectory.resolve(name + ".pid");
     }
 
-    public List<String> scriptCommand(String scriptName) {
-        return List.of(
-            "powershell",
-            "-NoProfile",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-File",
-            repoRoot.resolve(scriptName).toString()
-        );
+    public Path scriptPath(String scriptName) {
+        return repoRoot.resolve(resolveManagedScript(scriptName));
     }
 
-    public List<String> dockerComposeCommand(String... args) {
-        List<String> command = new ArrayList<>();
-        command.add("docker");
-        command.add("compose");
-        command.add("-f");
-        command.add(composeFile.toString());
-        command.addAll(List.of(args));
-        return command;
-    }
-
-    public List<String> dockerCommand(String... args) {
-        List<String> command = new ArrayList<>();
-        command.add("docker");
-        command.addAll(List.of(args));
-        return command;
+    public String composeServiceFor(String serviceName) {
+        return resolveManagedService(serviceName).composeService();
     }
 
     public List<Integer> managedPorts() {
@@ -83,18 +77,13 @@ public final class RepairWorkspaceSupport {
     }
 
     public String containerNameFor(String serviceName) {
-        return switch (serviceName) {
-            case "postgres" -> "algotrading-postgres";
-            case "kafka" -> "algotrading-kafka";
-            case "algotrading-app", "app", "backend" -> "algotrading-app";
-            default -> "algotrading-" + serviceName;
-        };
+        return resolveManagedService(serviceName).containerName();
     }
 
     public Map<Integer, String> findListeningProcesses(List<Integer> ports) {
         Map<Integer, String> conflicts = new LinkedHashMap<>();
         try {
-            ProcessBuilder processBuilder = new ProcessBuilder("cmd", "/c", "netstat -ano -p tcp");
+            ProcessBuilder processBuilder = new ProcessBuilder("netstat", "-ano", "-p", "tcp");
             processBuilder.redirectErrorStream(true);
             Process process = processBuilder.start();
             List<String> lines = new ArrayList<>();
@@ -137,9 +126,60 @@ public final class RepairWorkspaceSupport {
             return;
         }
 
-        Process process = new ProcessBuilder("cmd", "/c", "taskkill /PID " + pidValue + " /F")
+        int pid = parseManagedPid(pidValue);
+        Process process = new ProcessBuilder("taskkill", "/PID", Integer.toString(pid), "/F")
             .redirectErrorStream(true)
             .start();
         process.waitFor();
+    }
+
+    private ManagedService resolveManagedService(String serviceName) {
+        return switch (serviceName == null ? "" : serviceName.trim().toLowerCase()) {
+            case "postgres" -> ManagedService.POSTGRES;
+            case "kafka" -> ManagedService.KAFKA;
+            case "algotrading-app", "app", "backend" -> ManagedService.APP;
+            default -> throw new IllegalArgumentException("Unsupported managed service: " + serviceName);
+        };
+    }
+
+    private String resolveManagedScript(String scriptName) {
+        return switch (scriptName == null ? "" : scriptName.trim().toLowerCase()) {
+            case "run.ps1", "stop.ps1", "run-all.ps1", "stop-all.ps1" -> scriptName;
+            default -> throw new IllegalArgumentException("Unsupported managed script: " + scriptName);
+        };
+    }
+
+    private int parseManagedPid(String pidValue) {
+        try {
+            int pid = Integer.parseInt(pidValue);
+            if (pid <= 0) {
+                throw new IllegalArgumentException("PID must be positive");
+            }
+            return pid;
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("PID file does not contain a valid integer: " + pidValue, ex);
+        }
+    }
+
+    private enum ManagedService {
+        POSTGRES("postgres", "algotrading-postgres"),
+        KAFKA("kafka", "algotrading-kafka"),
+        APP("algotrading-app", "algotrading-app");
+
+        private final String composeService;
+        private final String containerName;
+
+        ManagedService(String composeService, String containerName) {
+            this.composeService = composeService;
+            this.containerName = containerName;
+        }
+
+        String composeService() {
+            return composeService;
+        }
+
+        String containerName() {
+            return containerName;
+        }
     }
 }

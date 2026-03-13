@@ -134,3 +134,28 @@ postgresql+asyncpg://postgres:postgres@host.docker.internal:5432/algotrading
 - `playwright`: UI verification when browser automation is the fastest path
 - `semgrep`: optional static security scan when auth, secrets, HTTP boundaries, or dependency-sensitive code changes
 - `hoverfly-mcp-server`: optional mock-provider/exchange simulation when third-party APIs are unstable or unavailable
+
+## Semgrep Trigger Rules
+
+Run `.\security-scan.ps1` for any task that changes:
+
+- auth or session handling
+- secret storage or credential loading
+- process execution or shelling out
+- Docker, PowerShell, or orchestration automation
+- WebSocket or HTTP boundary parsing
+
+Use `.\security-scan.ps1 -FailOnFindings` when you are closing a security-sensitive task and want a zero-findings gate.
+
+## Hoverfly Operator Flow
+
+Use Hoverfly only for local provider or exchange simulation. Do not treat it as a substitute for real integration verification.
+
+Typical flow:
+
+1. Start the server from the Docker MCP toolset.
+2. Add mocks or import a captured simulation for the provider or exchange flow under test.
+3. List mocks to confirm the expected simulation is loaded.
+4. Point the local integration path at the Hoverfly endpoint and run the targeted verification.
+5. Clear mocks when the task is done so the next session starts from a known state.
+6. Stop Hoverfly when you no longer need API simulation.
