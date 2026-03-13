@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <!-- Property definitions -->
-    <property name="LOG_FILE" value="${LOG_FILE:-logs/algotrading-bot.log}"/>
-    <property name="LOG_PATH" value="${LOG_PATH:-logs}"/>
+    <property name="LOG_FILE" value="${APP_LOG_FILE:-.runtime/logs/algotrading-bot.log}"/>
+    <property name="LOG_PATH" value="${APP_LOG_PATH:-.runtime/logs}"/>
     
     <!-- Console Appender with readable pattern format -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">

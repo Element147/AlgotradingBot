@@ -1,6 +1,6 @@
 # ACCEPTANCE_CRITERIA
 
-Status updated: March 11, 2026
+Status updated: March 13, 2026
 
 ## Definition Of Done (Global)
 
@@ -54,6 +54,7 @@ Every change is done only when all are true:
   - `TRADING_GUARDRAILS.md`
   - `docs/ROADMAP.md`
   - `docs/ACCEPTANCE_CRITERIA.md`
+  - `docs/guides/*.md` when task-specific workflow or agent-routing guidance changes
 - One-off completion/progress logs should be removed after key findings are merged.
 
 ## Verification Baseline

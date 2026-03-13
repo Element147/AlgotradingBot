@@ -1,6 +1,6 @@
 # ROADMAP
 
-Status updated: March 12, 2026
+Status updated: March 13, 2026
 
 ## Planning Principles
 
@@ -20,7 +20,7 @@ Status updated: March 12, 2026
 3. Risk-elimination migration phase 2
    - completed: strict-default auth posture shipped
    - completed: explicit local-dev override guidance and rollout/rollback playbook
-4. Keep docs lean: only canonical root docs remain current.
+4. Keep docs lean: maintain a slim core plus task-specific optional guides.
 5. Historical research data acquisition
    - completed: provider-backed stock/crypto downloader/import jobs with automatic wait-and-retry handling
    - completed: admin-managed encrypted provider credential storage with note support for keyed free providers

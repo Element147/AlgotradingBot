@@ -1,4 +1,4 @@
-﻿# AGENTS.md
+# AGENTS.md
 
 ## Mission
 
@@ -22,7 +22,7 @@ This repository does not assume strategy profitability. Treat every strategy as 
 
 ## Read Before Coding
 
-Before changing code, read in this order:
+Always read this slim core first:
 
 1. `README.md`
 2. `PROJECT_STATUS.md`
@@ -30,14 +30,20 @@ Before changing code, read in this order:
 4. `TRADING_GUARDRAILS.md`
 5. `PLAN.md`
 6. `PRODUCT.md`
-7. `TECH.md`
-8. `STRUCTURE.md`
-9. `GRADLE_AUTOMATION.md`
-10. `docs/ROADMAP.md`
-11. `docs/ACCEPTANCE_CRITERIA.md`
-12. The modules and tests you are about to change
 
-If a task touches a planned feature, cite the relevant root planning document and keep implementation aligned with what is actually present in the repo.
+Then open only the guides that match the task:
+
+- task-to-guide index first when routing is unclear: `docs/guides/README.md`
+- Frontend feature or UI work: `docs/guides/FRONTEND_IMPLEMENTATION.md`
+- Backend/controller/service/repository work: `docs/guides/BACKEND_IMPLEMENTATION.md`
+- Local runtime, Docker, PowerShell, or MCP work: `docs/guides/LOCAL_DEV_DOCKER_MCP.md`
+- Verification, CI, or contract drift work: `docs/guides/TESTING_AND_CONTRACTS.md`
+- Downloader, provider credentials, or research workflow work: `docs/guides/MARKET_DATA_RESEARCH.md`
+- Module/file boundary clarification: `STRUCTURE.md`
+- Planned feature scope or acceptance gates: `docs/ROADMAP.md` and `docs/ACCEPTANCE_CRITERIA.md`
+- Backend wrapper-specific execution detail only when needed: `GRADLE_AUTOMATION.md`
+
+If a task touches a planned feature, cite the relevant planning document and keep implementation aligned with what is actually present in the repo.
 
 ## Working Rules
 
@@ -63,13 +69,24 @@ If a task touches a planned feature, cite the relevant root planning document an
 - Update docs when architecture, workflow, risk posture, or project status materially changes.
 - Never start a frontend or backend dev server until existing instances are checked and stopped first; always stop any server you started before finishing the task.
 
+### Tooling
+
+- Prefer the persistent free Docker MCP set when it reduces guesswork:
+  - `context7` for up-to-date library/framework docs
+  - `database-server` for runtime PostgreSQL inspection
+  - `openapi-schema` for contract inspection
+  - `playwright` for UI verification
+  - `semgrep` for optional security scans on auth/secrets/request-boundary changes
+  - `hoverfly-mcp-server` for optional provider/exchange API mocking
+- Docker MCP path and host conventions are documented in `docs/guides/LOCAL_DEV_DOCKER_MCP.md`.
+
 ## Preferred Workflow
 
-1. Read the relevant root plan/docs and current implementation.
+1. Read the slim core docs and the single most relevant optional guide.
 2. Identify the smallest safe change that moves the project forward.
 3. Implement the change without disturbing unrelated work.
 4. Run the narrowest useful verification first, then broader checks if needed.
-5. Update documentation for status, architecture, or guardrails when needed.
+5. Update documentation for status, architecture, workflow, or guardrails when needed.
 6. Report assumptions, verification results, and any remaining risks.
 
 ## Definition Of Done
@@ -90,7 +107,7 @@ A task is done when all of the following are true:
 Use the narrowest meaningful set of:
 
 - `npm run lint`
-- `npx vitest run --watch=false`
+- `npm run test -- --watch=false`
 - `npm run build`
 
 If lint or tests are already failing for unrelated reasons, document the existing failures and avoid hiding them.
@@ -107,16 +124,27 @@ If sandboxing, missing services, or local environment limits prevent verificatio
 
 ## Documentation Files To Keep Current
 
-- `PLAN.md`: slim current/future implementation plan
-- `PRODUCT.md`: product intent and operating boundaries
-- `TECH.md`: stack and command standards
-- `STRUCTURE.md`: module boundaries and architectural structure
-- `GRADLE_AUTOMATION.md`: backend build/test execution guidance
-- `PROJECT_STATUS.md`: current completion, gaps, contradictions, risks, priorities
-- `ARCHITECTURE.md`: actual module boundaries and data flow
-- `TRADING_GUARDRAILS.md`: risk, paper/live rules, validation gates
-- `docs/ROADMAP.md`: realistic phased next work
-- `docs/ACCEPTANCE_CRITERIA.md`: feature completion standards
+Slim core docs:
+
+- `README.md`
+- `PLAN.md`
+- `PRODUCT.md`
+- `PROJECT_STATUS.md`
+- `ARCHITECTURE.md`
+- `TRADING_GUARDRAILS.md`
+
+Optional durable docs:
+
+- `TECH.md`
+- `STRUCTURE.md`
+- `GRADLE_AUTOMATION.md`
+- `docs/ROADMAP.md`
+- `docs/ACCEPTANCE_CRITERIA.md`
+- `docs/guides/FRONTEND_IMPLEMENTATION.md`
+- `docs/guides/BACKEND_IMPLEMENTATION.md`
+- `docs/guides/LOCAL_DEV_DOCKER_MCP.md`
+- `docs/guides/TESTING_AND_CONTRACTS.md`
+- `docs/guides/MARKET_DATA_RESEARCH.md`
 
 ## Strategy And Live Trading Guardrails
 

@@ -3,29 +3,36 @@
 # ============================================
 # This script stops all running services
 
+$scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
+. (Join-Path $scriptPath "scripts/powershell/Common.ps1")
+
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "Stopping AlgoTrading Bot Services" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Get script directory (repository root)
-$scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $scriptPath
+$repoPaths = Get-RepoPaths -ScriptPath $scriptPath
+$frontendPidFile = Get-PidFilePath -RepoPaths $repoPaths -Name "frontend"
 
-# Refresh PATH environment variable (fixes Node.js not found in PowerShell)
-$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+Refresh-UserPath
 
 # Stop Backend Docker Containers
 Write-Host "Stopping Backend services..." -ForegroundColor Yellow
-Set-Location AlgotradingBot
-docker-compose down
-Set-Location ..
-Write-Host "[OK] Backend services stopped" -ForegroundColor Green
+if (Test-DockerRunning) {
+    docker compose @($repoPaths.ComposeArgs) down
+    Write-Host "[OK] Backend services stopped" -ForegroundColor Green
+} else {
+    Write-Host "[SKIP] Docker not running - backend containers already stopped" -ForegroundColor DarkYellow
+}
 
 # Stop Frontend (kill npm processes)
 Write-Host ""
 Write-Host "Stopping Frontend dev server..." -ForegroundColor Yellow
-Get-Process -Name "node" -ErrorAction SilentlyContinue | Where-Object {$_.Path -like "*frontend*"} | Stop-Process -Force
+Stop-FromPidFile -PidFile $frontendPidFile -Label "frontend"
+Stop-ListeningProcess -Port 5173 -Label "frontend"
+Remove-PidFile -PidFile $frontendPidFile
+
 Write-Host "[OK] Frontend dev server stopped" -ForegroundColor Green
 
 Write-Host ""

@@ -79,11 +79,14 @@ Key frontend design rules:
 ## Runtime and Data Boundaries
 
 - Runtime app: PostgreSQL (Docker) with Liquibase migrations.
+- Local Docker Compose uses the explicit project name `algotradingbot` so container and volume naming remain stable across scripts and manual runs.
+- Script-driven local runtime writes backend file logs into repo-local untracked `.runtime/logs` storage instead of tracked source paths.
 - Backend test/build: H2 in-memory via Spring `test` profile.
 - Backup path uses real database-native exports: H2 `SCRIPT` in tests and PostgreSQL `pg_dump` with Docker-container fallback in runtime.
 - Historical download path uses provider-specific fetch adapters but normalizes everything into the same backtest dataset catalog used by upload/import workflows.
 - Keyed historical-data providers can resolve API keys from either backend environment variables or encrypted PostgreSQL credentials managed through the admin UI; stored secrets depend on a backend master key and keep operator notes alongside the provider setting.
-- Repair/orchestration automation resolves repo-local paths and uses `run.ps1`, `stop.ps1`, `.pids`, and `compose.yaml` rather than ad-hoc global Docker commands.
+- Repair/orchestration automation resolves repo-local paths and uses `run.ps1`, `stop.ps1`, shared PowerShell helpers, `.pids`, `.runtime`, and `compose.yaml` rather than ad-hoc global Docker commands.
+- Kafka runtime mounts use a reusable named secrets volume so repeated runs do not create anonymous volume churn.
 - Keep runtime and test data concerns strictly separated.
 
 ## Current Architecture Decisions

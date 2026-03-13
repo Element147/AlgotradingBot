@@ -1,6 +1,6 @@
 # PROJECT_STATUS.md
 
-Status updated: March 12, 2026
+Status updated: March 13, 2026
 
 ## Current State
 
@@ -9,7 +9,14 @@ The repository is in an operational local-first MVP state:
 - Backend and frontend are integrated for core research workflows.
 - Default operating posture remains `test`/`paper`.
 - Local runtime uses Docker PostgreSQL; backend tests/build run on H2 `test` profile.
+- Local Docker runtime now uses the explicit Compose project name `algotradingbot`, keeping container/network naming stable across scripts and manual runs.
+- Kafka runtime storage now uses reusable named volumes, including a named secrets volume, instead of creating new anonymous secrets volumes on repeated full-stack runs.
 - Saved exchange connection profiles are now persisted per user in the runtime database instead of browser storage.
+- Persistent free Docker MCP support is configured for `context7`, `database-server`, `openapi-schema`, and `playwright`.
+- Optional free Docker MCP support now also includes `semgrep` and `hoverfly-mcp-server` for security scanning and provider/exchange mocking when a task needs them.
+- Canonical docs now use a slim core plus task-specific optional guides so Codex and humans can load only the workflow detail relevant to the current task.
+- Local script-driven runtime now keeps backend file logs under repo-local untracked `.runtime/logs` instead of tracked source paths.
+- Local developer memory behavior is now reclaim-friendly by default: shorter-lived Gradle daemon retention, no-daemon `bootRun` in `run.ps1`, and user-level WSL auto-memory-reclaim guidance.
 - No default real-money execution path is enabled.
 - Cross-stack CI verification gates now exist in `.github/workflows/ci.yml`.
 
@@ -73,6 +80,14 @@ Implemented product slices:
 27. Moved saved exchange connection profiles from browser storage into database-backed per-user persistence with active-profile selection in the settings UI.
 28. Added a market-data downloader tab plus backend import jobs for free stock/crypto providers, automatic wait-and-retry handling, and direct dataset imports into the backtest catalog.
 29. Added encrypted database-backed provider credential management in Settings, including note storage and runtime fallback to environment variables.
+30. Made the Docker-backed MCP starter set persistent for this repo's workflow (`context7`, `database-server`, `openapi-schema`, `playwright`) and documented the Windows/Docker path plus `host.docker.internal` conventions.
+31. Standardized local runtime scripts on an explicit Compose project name and reusable named volumes, including a deterministic Kafka secrets volume.
+32. Restructured docs into a slim core plus optional task guides for frontend, backend, runtime/MCP, testing/contracts, and market-data workflows.
+33. Extracted shared PowerShell helpers for path refresh, runtime directory setup, PID cleanup, port cleanup, and health polling across the local scripts.
+34. Moved script-driven backend logs into untracked `.runtime/logs` storage and stopped using tracked source log files as the default runtime target.
+35. Tuned local runtime/build memory behavior to keep parallel builds but release idle memory sooner, including lower Gradle heap ceilings, a shorter daemon idle timeout, `--no-daemon` local `bootRun`, and capped local Kafka heap.
+36. Added optional free Semgrep and Hoverfly tooling paths for security-sensitive changes and provider/exchange API mocking.
+37. Expanded the optional guide index with task tags and examples so task routing stays low-noise.
 
 ## Remaining Work (Current Priorities)
 
@@ -122,9 +137,28 @@ Phase 5 (implemented now):
 
 Last verified baseline (local):
 
-- Frontend: market-data/settings targeted `vitest` pass, `lint` pass, and `build` pass
-- Backend: targeted market-data credential/import tests pass and full `build` pass
-- Contract artifacts: `npm run contract:generate` refreshed `contracts/openapi.json` and `frontend/src/generated/openapi.d.ts`; `npm run contract:check` remains non-zero until those generated diffs are committed because it compares against the current git index/HEAD
-- Local app startup path (`run.ps1`) is functional with health endpoint availability
+- Docker MCP persistence verified:
+  - enabled servers include `context7`, `database-server`, `openapi-schema`, `playwright`, `semgrep`, and `hoverfly-mcp-server`
+  - database MCP connects to local PostgreSQL via `host.docker.internal` and sees 16 tables
+  - OpenAPI MCP lists endpoints from `contracts/openapi.json`
+  - Context7 resolves Spring Boot docs and returns versioned documentation for Spring Boot `4.0.3`
+  - Docker MCP tool listing now includes Hoverfly mock-management tools
+- Docker cleanup verified:
+  - one-time `docker system prune -a --volumes -f` completed successfully and reclaimed 10.86 GB of unused images, volumes, and build cache
+  - only named project data volumes remained after cleanup
+- Runtime/memory workflow verified:
+  - shared PowerShell helpers now back `build*.ps1`, `run*.ps1`, and `stop*.ps1`
+  - local runtime logs now write to `.runtime/logs`
+  - Gradle daemon heap is reduced from 2 GB to 1 GB and the idle timeout is 15 minutes
+  - user-level WSL config now enables `autoMemoryReclaim=gradual` with page reporting and 2 GB swap
+  - after `wsl --shutdown`, `vmmemWSL` dropped to roughly 1.1 GB working set / 1.24 GB private memory
+- Local runtime verification:
+  - `.\run.ps1` starts PostgreSQL plus local backend/frontend; backend health returned `UP` and frontend responded on `5173`
+  - `.\stop.ps1` stops backend, frontend, and PostgreSQL cleanly
+  - `.\run-all.ps1` starts app, PostgreSQL, Kafka, and frontend successfully; backend health returned `UP`
+  - repeated `.\run-all.ps1` start/stop cycles reuse only `algotradingbot_postgres_data`, `algotradingbot_kafka_data`, and `algotradingbot_kafka_secrets`, with no new anonymous Kafka secrets volume created
+  - `.\stop-all.ps1` tears down the full stack cleanly
+  - full-stack container memory during smoke test was about 446 MiB for `algotrading-app`, 373 MiB for Kafka, and 33 MiB for PostgreSQL
+  - `.\security-scan.ps1` runs successfully and currently reports 28 existing Semgrep findings without failing unless `-FailOnFindings` is supplied
 
 Use `README.md` commands as the standard verification/runbook.

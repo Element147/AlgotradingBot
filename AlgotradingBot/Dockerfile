@@ -24,8 +24,8 @@ RUN addgroup -S spring && adduser -S spring -G spring
 
 WORKDIR /app
 
-# Create logs directory with proper permissions
-RUN mkdir -p logs && chown spring:spring logs
+# Create runtime directories with proper permissions
+RUN mkdir -p .runtime/logs && chown -R spring:spring .runtime
 
 # Copy JAR from build stage
 COPY --from=build /app/build/libs/algotrading-bot.jar app.jar
@@ -40,7 +40,7 @@ USER spring:spring
 EXPOSE 8080
 
 # Set JVM options for production
-ENV JAVA_OPTS="-Xmx512m -Xms256m"
+ENV JAVA_OPTS="-Xms128m -Xmx512m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+UseStringDeduplication"
 
 # Health check configuration
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \

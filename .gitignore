@@ -1,6 +1,7 @@
 # Temporary files
 temp_*.txt
 .pids/
+.runtime/
 
 # Backend (Spring Boot / Gradle)
 AlgotradingBot/HELP.md

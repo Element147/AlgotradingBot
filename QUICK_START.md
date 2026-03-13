@@ -1,11 +1,5 @@
 # Quick Start
 
-## Prerequisites
-
-- Docker Desktop running
-- Java 21
-- Node.js 18+
-
 ## Fast Local Run (Recommended)
 
 From repo root:
@@ -27,21 +21,8 @@ Stop services:
 - Backend health: http://localhost:8080/actuator/health
 - Swagger UI: http://localhost:8080/swagger-ui.html
 
-## Verification
+## More Detail
 
-```powershell
-cd frontend
-npm run lint
-npm run test -- --watch=false
-npm run build
-
-cd ..\AlgotradingBot
-.\gradlew.bat test
-.\gradlew.bat build
-```
-
-## Notes
-
-- Runtime backend uses PostgreSQL (`AlgotradingBot/compose.yaml`).
-- Backend tests/build use H2 in-memory (`test` profile).
-- Default safety posture is `test`/`paper`; no live trading by default.
+- Local runtime, Docker, MCP, and cleanup: `docs/guides/LOCAL_DEV_DOCKER_MCP.md`
+- Verification and contract workflow: `docs/guides/TESTING_AND_CONTRACTS.md`
+- Backend logs during local script-driven runs: `.runtime/logs/`

@@ -3,24 +3,24 @@
 # ============================================
 # This script builds both the backend and frontend
 
+$scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
+. (Join-Path $scriptPath "scripts/powershell/Common.ps1")
+
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "Building AlgoTrading Bot - Full Stack" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Get script directory (repository root)
-$scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $scriptPath
 
-# Refresh PATH environment variable (fixes Node.js not found in PowerShell)
-$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+Refresh-UserPath
 
 # Build Backend
 Write-Host "[1/2] Building Backend (Spring Boot)..." -ForegroundColor Yellow
-Set-Location AlgotradingBot
-./gradlew clean build -x test
+Push-Location AlgotradingBot
+.\gradlew.bat clean build -x test
 $backendResult = $LASTEXITCODE
-Set-Location ..
+Pop-Location
 
 if ($backendResult -ne 0) {
     Write-Host "[X] Backend build failed!" -ForegroundColor Red
@@ -32,16 +32,14 @@ Write-Host "[OK] Backend build successful!" -ForegroundColor Green
 Write-Host ""
 Write-Host "[2/2] Building Frontend (React)..." -ForegroundColor Yellow
 
-# Check if Node.js is installed
-$nodeInstalled = Get-Command node -ErrorAction SilentlyContinue
-if (-not $nodeInstalled) {
+if (-not (Test-NodeInstalled)) {
     Write-Host "[SKIP] Node.js not installed - skipping frontend build" -ForegroundColor Yellow
     Write-Host "       Install Node.js from https://nodejs.org/ to build frontend" -ForegroundColor Gray
 } else {
-    Set-Location frontend
+    Push-Location frontend
     cmd /c "npm run build"
     $frontendResult = $LASTEXITCODE
-    Set-Location ..
+    Pop-Location
 
     if ($frontendResult -ne 0) {
         Write-Host "[X] Frontend build failed!" -ForegroundColor Red
