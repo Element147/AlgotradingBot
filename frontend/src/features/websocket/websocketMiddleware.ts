@@ -12,8 +12,16 @@
 
 import type { Middleware } from '@reduxjs/toolkit';
 
-import { getWebSocketManager, type WebSocketEvent, type WebSocketEventType } from '../../services/websocket';
+import {
+  getWebSocketManager,
+  type BacktestProgressEventData,
+  type MarketDataImportProgressEventData,
+  type WebSocketEvent,
+  type WebSocketEventType,
+} from '../../services/websocket';
 import { accountApi } from '../account/accountApi';
+import { backtestApi } from '../backtest/backtestApi';
+import { marketDataApi } from '../marketData/marketDataApi';
 import { riskApi } from '../risk/riskApi';
 import { strategiesApi } from '../strategies/strategiesApi';
 import { tradesApi } from '../trades/tradesApi';
@@ -36,10 +44,65 @@ interface ThrottleState {
  * - balance.updated: Invalidates balance cache
  * - trade.executed: Invalidates balance and performance cache
  * - position.updated: Invalidates balance cache
- * - strategy.status: (Future implementation)
- * - risk.alert: (Future implementation)
- * - system.error: (Future implementation)
+ * - strategy.status: Invalidates strategy caches
+ * - risk.alert: Invalidates risk caches
+ * - system.error: Logs operator-visible system failures
+ * - backtest.progress: Streams live backtest telemetry into RTK Query caches
+ * - marketData.import.progress: Streams live import-job telemetry into RTK Query caches
  */
+
+const isTerminalBacktestStatus = (status: BacktestProgressEventData['executionStatus']) =>
+  status === 'COMPLETED' || status === 'FAILED';
+
+const isTerminalMarketDataStatus = (status: MarketDataImportProgressEventData['status']) =>
+  status === 'COMPLETED' || status === 'FAILED' || status === 'CANCELLED';
+
+const applyBacktestProgressToHistoryItem = (
+  draft: BacktestProgressEventData,
+  update: BacktestProgressEventData
+) => {
+  draft.executionStatus = update.executionStatus;
+  draft.validationStatus = update.validationStatus;
+  draft.progressPercent = update.progressPercent;
+  draft.processedCandles = update.processedCandles;
+  draft.totalCandles = update.totalCandles;
+  draft.currentDataTimestamp = update.currentDataTimestamp;
+  draft.statusMessage = update.statusMessage;
+  draft.lastProgressAt = update.lastProgressAt;
+  draft.startedAt = update.startedAt;
+  draft.completedAt = update.completedAt;
+  draft.executionStage = update.executionStage;
+  draft.finalBalance = update.finalBalance;
+};
+
+const applyBacktestProgressToDetails = (
+  draft: BacktestProgressEventData & { errorMessage: string | null },
+  update: BacktestProgressEventData
+) => {
+  applyBacktestProgressToHistoryItem(draft, update);
+  draft.errorMessage = update.errorMessage;
+};
+
+const applyMarketDataProgressToJob = (
+  draft: MarketDataImportProgressEventData,
+  update: MarketDataImportProgressEventData
+) => {
+  draft.status = update.status;
+  draft.statusMessage = update.statusMessage;
+  draft.nextRetryAt = update.nextRetryAt;
+  draft.currentSymbolIndex = update.currentSymbolIndex;
+  draft.totalSymbols = update.totalSymbols;
+  draft.currentSymbol = update.currentSymbol;
+  draft.importedRowCount = update.importedRowCount;
+  draft.datasetId = update.datasetId;
+  draft.datasetReady = update.datasetReady;
+  draft.currentChunkStart = update.currentChunkStart;
+  draft.attemptCount = update.attemptCount;
+  draft.updatedAt = update.updatedAt;
+  draft.startedAt = update.startedAt;
+  draft.completedAt = update.completedAt;
+};
+
 export const websocketMiddleware: Middleware = (storeApi) => {
   const wsManager = getWebSocketManager();
   const throttleStates = new Map<WebSocketEventType, ThrottleState>();
@@ -73,10 +136,15 @@ export const websocketMiddleware: Middleware = (storeApi) => {
    * Process WebSocket event and dispatch appropriate Redux actions
    */
   const processEvent = (event: WebSocketEvent) => {
-    const { dispatch } = storeApi;
+    const dispatch = storeApi.dispatch as (action: unknown) => unknown;
 
     // Update last event time in websocket slice
-    dispatch(eventReceived(event.timestamp));
+    dispatch(
+      eventReceived({
+        timestamp: event.timestamp,
+        type: event.type,
+      })
+    );
 
     // Handle different event types
     switch (event.type) {
@@ -123,9 +191,141 @@ export const websocketMiddleware: Middleware = (storeApi) => {
 
       case 'system.error':
         console.error('[WebSocket Middleware] System error:', event.data);
-        // Future: Dispatch error notification action
-        // For now, just log the error
         break;
+
+      case 'backtest.progress': {
+        const progress = event.data as BacktestProgressEventData;
+        console.warn(
+          '[WebSocket Middleware] Backtest progress received:',
+          progress.backtestId,
+          progress.executionStatus,
+          progress.progressPercent
+        );
+
+        dispatch(
+          backtestApi.util.updateQueryData('getBacktests', undefined, (draft) => {
+            const existing = draft.find((item) => item.id === progress.backtestId);
+            if (existing) {
+              applyBacktestProgressToHistoryItem(existing as unknown as BacktestProgressEventData, progress);
+              return;
+            }
+
+            draft.unshift({
+              id: progress.backtestId,
+              strategyId: progress.strategyId,
+              datasetName: progress.datasetName,
+              experimentName: progress.experimentName,
+              symbol: progress.symbol,
+              timeframe: progress.timeframe,
+              executionStatus: progress.executionStatus,
+              validationStatus: progress.validationStatus,
+              feesBps: progress.feesBps,
+              slippageBps: progress.slippageBps,
+              timestamp: progress.timestamp,
+              initialBalance: progress.initialBalance,
+              finalBalance: progress.finalBalance,
+              executionStage: progress.executionStage,
+              progressPercent: progress.progressPercent,
+              processedCandles: progress.processedCandles,
+              totalCandles: progress.totalCandles,
+              currentDataTimestamp: progress.currentDataTimestamp,
+              statusMessage: progress.statusMessage,
+              lastProgressAt: progress.lastProgressAt,
+              startedAt: progress.startedAt,
+              completedAt: progress.completedAt,
+            });
+          })
+        );
+        dispatch(
+          backtestApi.util.updateQueryData('getBacktestExperimentSummaries', undefined, (draft) => {
+            const existing = draft.find((item) => item.latestBacktestId === progress.backtestId);
+            if (!existing) {
+              return;
+            }
+
+            existing.latestExecutionStatus = progress.executionStatus;
+            existing.latestValidationStatus = progress.validationStatus;
+          })
+        );
+        dispatch(
+          backtestApi.util.updateQueryData('getBacktestDetails', progress.backtestId, (draft) => {
+            applyBacktestProgressToDetails(
+              draft as unknown as BacktestProgressEventData & { errorMessage: string | null },
+              progress
+            );
+          })
+        );
+
+        if (isTerminalBacktestStatus(progress.executionStatus)) {
+          dispatch(
+            backtestApi.util.invalidateTags([
+              'Backtests',
+              { type: 'Backtests', id: progress.backtestId },
+            ])
+          );
+        }
+        break;
+      }
+
+      case 'marketData.import.progress': {
+        const progress = event.data as MarketDataImportProgressEventData;
+        console.warn(
+          '[WebSocket Middleware] Market-data import progress received:',
+          progress.id,
+          progress.status,
+          progress.currentSymbol
+        );
+
+        dispatch(
+          marketDataApi.util.updateQueryData('getMarketDataJobs', undefined, (draft) => {
+            const existing = draft.find((job) => job.id === progress.id);
+            if (existing) {
+              applyMarketDataProgressToJob(
+                existing as unknown as MarketDataImportProgressEventData,
+                progress
+              );
+              return;
+            }
+
+            draft.unshift({
+              id: progress.id,
+              providerId: progress.providerId,
+              providerLabel: progress.providerLabel,
+              assetType: progress.assetType,
+              datasetName: progress.datasetName,
+              symbolsCsv: progress.symbolsCsv,
+              timeframe: progress.timeframe,
+              startDate: progress.startDate,
+              endDate: progress.endDate,
+              adjusted: progress.adjusted,
+              regularSessionOnly: progress.regularSessionOnly,
+              status: progress.status,
+              statusMessage: progress.statusMessage,
+              nextRetryAt: progress.nextRetryAt,
+              currentSymbolIndex: progress.currentSymbolIndex,
+              totalSymbols: progress.totalSymbols,
+              currentSymbol: progress.currentSymbol,
+              importedRowCount: progress.importedRowCount,
+              datasetId: progress.datasetId,
+              datasetReady: progress.datasetReady,
+              currentChunkStart: progress.currentChunkStart,
+              attemptCount: progress.attemptCount,
+              createdAt: progress.createdAt,
+              updatedAt: progress.updatedAt,
+              startedAt: progress.startedAt,
+              completedAt: progress.completedAt,
+            });
+          })
+        );
+
+        if (isTerminalMarketDataStatus(progress.status)) {
+          dispatch(marketDataApi.util.invalidateTags(['MarketDataJobs']));
+        }
+        if (progress.status === 'COMPLETED' && progress.datasetReady) {
+          dispatch(backtestApi.util.invalidateTags(['BacktestDatasets']));
+        }
+        break;
+      }
 
       default:
         console.warn('[WebSocket Middleware] Unknown event type:', event.type);
@@ -217,6 +417,8 @@ export const websocketMiddleware: Middleware = (storeApi) => {
     'strategy.status',
     'risk.alert',
     'system.error',
+    'backtest.progress',
+    'marketData.import.progress',
   ];
 
   eventTypes.forEach((eventType) => {

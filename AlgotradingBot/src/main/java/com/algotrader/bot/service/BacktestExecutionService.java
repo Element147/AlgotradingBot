@@ -321,14 +321,28 @@ public class BacktestExecutionService {
         webSocketEventPublisher.publishBacktestProgress(
             "test",
             result.getId(),
+            result.getStrategyId(),
+            result.getDatasetName(),
+            result.getExperimentName(),
+            result.getSymbol(),
+            result.getTimeframe(),
             result.getExecutionStatus().name(),
+            result.getValidationStatus().name(),
+            result.getFeesBps(),
+            result.getSlippageBps(),
+            result.getTimestamp(),
+            result.getInitialBalance(),
+            result.getFinalBalance(),
             result.getExecutionStage().name(),
             result.getProgressPercent(),
             result.getProcessedCandles(),
             result.getTotalCandles(),
             result.getCurrentDataTimestamp(),
             result.getLastProgressAt(),
-            result.getStatusMessage()
+            result.getStatusMessage(),
+            result.getStartedAt(),
+            result.getCompletedAt(),
+            result.getErrorMessage()
         );
     }
 

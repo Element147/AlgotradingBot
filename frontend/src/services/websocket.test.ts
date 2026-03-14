@@ -53,6 +53,7 @@ describe('WebSocketManager', () => {
   const localDevWsUrl = () => resolveWebSocketUrl(undefined, { pageUrl: 'http://localhost:5173/' });
 
   beforeEach(() => {
+    vi.useRealTimers();
     manager = new WebSocketManager(
       localDevWsUrl(),
       MockWebSocket as unknown as WebSocketLikeConstructor
@@ -62,6 +63,7 @@ describe('WebSocketManager', () => {
 
   afterEach(() => {
     manager.disconnect();
+    vi.useRealTimers();
   });
 
   describe('connect', () => {

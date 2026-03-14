@@ -3,7 +3,7 @@
  */
 
 import { configureStore } from '@reduxjs/toolkit';
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -80,6 +80,7 @@ const createTestStore = (initialState = {}) =>
 
 describe('useWebSocketConnection', () => {
   beforeEach(() => {
+    vi.useRealTimers();
     vi.clearAllMocks();
     setWebSocketManager(
       new WebSocketManager(
@@ -91,6 +92,7 @@ describe('useWebSocketConnection', () => {
 
   afterEach(() => {
     setWebSocketManager(null);
+    vi.useRealTimers();
   });
 
   it('should connect when token is available', async () => {
@@ -118,7 +120,9 @@ describe('useWebSocketConnection', () => {
       expect(result.current.isConnected).toBe(true);
     });
 
-    store.dispatch({ type: 'auth/logout' });
+    act(() => {
+      store.dispatch({ type: 'auth/logout' });
+    });
     rerender();
 
     await waitFor(() => {
@@ -149,7 +153,9 @@ describe('useWebSocketConnection', () => {
       expect(result.current.isConnected).toBe(true);
     });
 
-    store.dispatch({ type: 'environment/setEnvironmentMode', payload: 'live' });
+    act(() => {
+      store.dispatch({ type: 'environment/setEnvironmentMode', payload: 'live' });
+    });
     rerender();
 
     await waitFor(() => {
@@ -160,6 +166,7 @@ describe('useWebSocketConnection', () => {
 
 describe('useWebSocketSubscription', () => {
   beforeEach(() => {
+    vi.useRealTimers();
     vi.clearAllMocks();
     setWebSocketManager(
       new WebSocketManager(
@@ -171,6 +178,7 @@ describe('useWebSocketSubscription', () => {
 
   afterEach(() => {
     setWebSocketManager(null);
+    vi.useRealTimers();
   });
 
   it('should subscribe to event type', () => {

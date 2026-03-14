@@ -14,12 +14,12 @@ Implemented and usable end to end:
 
 - Strategy management APIs and UI workflows
 - Backtest execution, experiment summaries, history, and details
-- Live backtest progress telemetry with persisted stage/progress/current-candle visibility plus operator result deletion controls
+- Live backtest progress telemetry with persisted stage/progress/current-candle visibility, explicit WebSocket-vs-polling transport status in the UI, and operator result deletion controls
 - Virtual-thread-backed async execution for long-running backtests and market-data import workers, plus parsed-candle reuse for repeated dataset-backed backtests
 - Startup recovery for unfinished long-running work: queued or interrupted backtests are automatically restarted, and market-data imports continue from their saved cursor after the next server start
 - Backtest replay and side-by-side comparison APIs
 - Dataset lifecycle inventory (`checksumSha256`, schema version, retention, archive/restore) plus dataset download endpoint
-- Provider-backed historical market data downloader with automated retry/wait handling and direct dataset imports into the backtest catalog
+- Provider-backed historical market data downloader with automated retry/wait handling, direct dataset imports into the backtest catalog, and live import-progress telemetry streamed into the operator UI
 - Persisted backtest equity/trade series with chart/export support in the UI
 - Strategy configuration version history plus typed preset guidance in API and UI
 - Paper/backtest short-selling enablement with saved strategy-level toggles and explicit `LONG`/`SHORT` state in dashboard and trade views

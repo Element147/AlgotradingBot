@@ -11,6 +11,7 @@ import com.algotrader.bot.entity.MarketDataImportJob;
 import com.algotrader.bot.repository.MarketDataImportJobRepository;
 import com.algotrader.bot.service.BacktestDatasetService;
 import com.algotrader.bot.service.OperatorAuditService;
+import com.algotrader.bot.websocket.WebSocketEventPublisher;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.beans.factory.ObjectProvider;
@@ -45,6 +46,7 @@ public class MarketDataImportService {
     private final MarketDataSessionFilter marketDataSessionFilter;
     private final BacktestDatasetService backtestDatasetService;
     private final OperatorAuditService operatorAuditService;
+    private final WebSocketEventPublisher webSocketEventPublisher;
     private final ObjectProvider<MarketDataImportService> selfProvider;
     private final Set<Long> locallyDispatchedJobIds = ConcurrentHashMap.newKeySet();
 
@@ -56,6 +58,7 @@ public class MarketDataImportService {
         MarketDataSessionFilter marketDataSessionFilter,
         BacktestDatasetService backtestDatasetService,
         OperatorAuditService operatorAuditService,
+        WebSocketEventPublisher webSocketEventPublisher,
         ObjectProvider<MarketDataImportService> selfProvider
     ) {
         this.marketDataImportJobRepository = marketDataImportJobRepository;
@@ -65,6 +68,7 @@ public class MarketDataImportService {
         this.marketDataSessionFilter = marketDataSessionFilter;
         this.backtestDatasetService = backtestDatasetService;
         this.operatorAuditService = operatorAuditService;
+        this.webSocketEventPublisher = webSocketEventPublisher;
         this.selfProvider = selfProvider;
     }
 
@@ -147,6 +151,7 @@ public class MarketDataImportService {
         job.setAttemptCount(0);
 
         MarketDataImportJob saved = marketDataImportJobRepository.save(job);
+        publishJobProgress(saved);
         operatorAuditService.recordSuccess(
             "MARKET_DATA_IMPORT_CREATED",
             "test",
@@ -177,6 +182,7 @@ public class MarketDataImportService {
         job.setCompletedAt(null);
 
         MarketDataImportJob saved = marketDataImportJobRepository.save(job);
+        publishJobProgress(saved);
         operatorAuditService.recordSuccess(
             "MARKET_DATA_IMPORT_RETRIED",
             "test",
@@ -200,6 +206,7 @@ public class MarketDataImportService {
         job.setNextRetryAt(null);
         job.setCompletedAt(LocalDateTime.now());
         MarketDataImportJob saved = marketDataImportJobRepository.save(job);
+        publishJobProgress(saved);
         operatorAuditService.recordSuccess(
             "MARKET_DATA_IMPORT_CANCELLED",
             "test",
@@ -280,7 +287,8 @@ public class MarketDataImportService {
                 : job.getCurrentChunkStart();
             if (chunkStart.isAfter(absoluteEnd)) {
                 advanceCursor(job, symbols, absoluteEnd, timeframe, 0);
-                marketDataImportJobRepository.save(job);
+                job = marketDataImportJobRepository.save(job);
+                publishJobProgress(job);
                 continue;
             }
 
@@ -326,6 +334,7 @@ public class MarketDataImportService {
             );
             advanceCursor(job, symbols, actualChunkEnd, timeframe, filteredBars.size());
             job = marketDataImportJobRepository.save(job);
+            publishJobProgress(job);
         }
 
         queueForContinuation(job.getId(), "Work slice finished. Continuing automatically.");
@@ -368,7 +377,9 @@ public class MarketDataImportService {
         if (job.getStartedAt() == null) {
             job.setStartedAt(LocalDateTime.now());
         }
-        return marketDataImportJobRepository.save(job);
+        MarketDataImportJob saved = marketDataImportJobRepository.save(job);
+        publishJobProgress(saved);
+        return saved;
     }
 
     @Transactional
@@ -377,7 +388,8 @@ public class MarketDataImportService {
         job.setStatus(MarketDataImportJobStatus.WAITING_RETRY);
         job.setStatusMessage(message);
         job.setNextRetryAt(retryAt);
-        marketDataImportJobRepository.save(job);
+        MarketDataImportJob saved = marketDataImportJobRepository.save(job);
+        publishJobProgress(saved);
     }
 
     @Transactional
@@ -387,7 +399,8 @@ public class MarketDataImportService {
         job.setStatusMessage(message == null || message.isBlank() ? "Import failed." : message);
         job.setNextRetryAt(null);
         job.setCompletedAt(LocalDateTime.now());
-        marketDataImportJobRepository.save(job);
+        MarketDataImportJob saved = marketDataImportJobRepository.save(job);
+        publishJobProgress(saved);
         operatorAuditService.recordFailure(
             "MARKET_DATA_IMPORT_FAILED",
             "test",
@@ -406,7 +419,8 @@ public class MarketDataImportService {
         job.setStatus(MarketDataImportJobStatus.QUEUED);
         job.setStatusMessage(message);
         job.setNextRetryAt(LocalDateTime.now().plusSeconds(1));
-        marketDataImportJobRepository.save(job);
+        MarketDataImportJob saved = marketDataImportJobRepository.save(job);
+        publishJobProgress(saved);
     }
 
     @Transactional
@@ -432,7 +446,8 @@ public class MarketDataImportService {
         );
         managed.setNextRetryAt(null);
         managed.setCompletedAt(LocalDateTime.now());
-        marketDataImportJobRepository.save(managed);
+        MarketDataImportJob saved = marketDataImportJobRepository.save(managed);
+        publishJobProgress(saved);
         operatorAuditService.recordSuccess(
             "MARKET_DATA_IMPORT_COMPLETED",
             "test",
@@ -539,6 +554,39 @@ public class MarketDataImportService {
             job.getUpdatedAt(),
             job.getStartedAt(),
             job.getCompletedAt()
+        );
+    }
+
+    private void publishJobProgress(MarketDataImportJob job) {
+        MarketDataImportJobResponse response = toResponse(job);
+        webSocketEventPublisher.publishMarketDataImportProgress(
+            "test",
+            response.id(),
+            response.providerId(),
+            response.providerLabel(),
+            response.assetType(),
+            response.datasetName(),
+            response.symbolsCsv(),
+            response.timeframe(),
+            response.startDate().toString(),
+            response.endDate().toString(),
+            response.adjusted(),
+            response.regularSessionOnly(),
+            response.status(),
+            response.statusMessage(),
+            response.nextRetryAt(),
+            response.currentSymbolIndex(),
+            response.totalSymbols(),
+            response.currentSymbol(),
+            response.importedRowCount(),
+            response.datasetId(),
+            response.datasetReady(),
+            response.currentChunkStart(),
+            response.attemptCount(),
+            response.createdAt(),
+            response.updatedAt(),
+            response.startedAt(),
+            response.completedAt()
         );
     }
 

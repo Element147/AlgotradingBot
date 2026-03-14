@@ -44,6 +44,9 @@ import {
 
 interface BacktestResultsProps {
   details: BacktestDetails;
+  transportLabel?: string;
+  lastLiveEventAt?: string | null;
+  transportError?: string | null;
   onDelete?: () => void;
   deleteDisabled?: boolean;
 }
@@ -101,7 +104,17 @@ const metricDefinitions: Array<{ key: string; label: string; description: string
   },
 ];
 
-export function BacktestResults({ details, onDelete, deleteDisabled = false }: BacktestResultsProps) {
+const formatLiveEventLabel = (value: string | null | undefined) =>
+  value ? formatDistanceToNow(new Date(value)) : 'No live progress event received yet';
+
+export function BacktestResults({
+  details,
+  transportLabel = 'Fallback polling',
+  lastLiveEventAt = null,
+  transportError = null,
+  onDelete,
+  deleteDisabled = false,
+}: BacktestResultsProps) {
   const exportRef = useRef<HTMLDivElement | null>(null);
   const [exportFeedback, setExportFeedback] = useState<string | null>(null);
   const equityCurve = useMemo(() => createEquityCurve(details), [details]);
@@ -230,6 +243,10 @@ export function BacktestResults({ details, onDelete, deleteDisabled = false }: B
                 <Typography variant="body2" color="text.secondary">
                   Started: {details.startedAt ? formatDateTime(details.startedAt) : 'Queued only'} | Last update: {lastUpdateLabel}
                   {details.completedAt ? ` | Completed: ${formatDateTime(details.completedAt)}` : ''}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Transport: {transportLabel} | Last pushed event: {formatLiveEventLabel(lastLiveEventAt)}
+                  {transportError ? ` | Stream status: ${transportError}` : ''}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   {details.statusMessage ?? 'No backend status message was recorded for this run.'}

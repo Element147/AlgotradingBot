@@ -13,6 +13,7 @@ import { riskApi } from './features/risk/riskApi';
 import { selectTextScale, selectTheme } from './features/settings/settingsSlice';
 import { strategiesApi } from './features/strategies/strategiesApi';
 import { tradesApi } from './features/trades/tradesApi';
+import { WebSocketRuntime } from './features/websocket/WebSocketRuntime';
 import { lightTheme, darkTheme } from './theme/theme';
 import './App.css';
 
@@ -37,6 +38,7 @@ function App() {
     () => (themeMode === 'light' ? lightTheme : darkTheme),
     [themeMode]
   );
+  const enableWebSocketRuntime = import.meta.env.MODE !== 'test';
 
   useEffect(() => {
     if (import.meta.env.MODE === 'test') {
@@ -61,6 +63,7 @@ function App() {
       <ErrorBoundary>
         <BrowserRouter>
           <Box sx={{ fontSize: `${textScale}rem`, minHeight: '100vh' }}>
+            {enableWebSocketRuntime ? <WebSocketRuntime /> : null}
             <Suspense fallback={<LoadingFallback />}>
               <Routes>
               {/* Public route - Login */}

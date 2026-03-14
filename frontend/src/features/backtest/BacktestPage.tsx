@@ -51,9 +51,17 @@ import { BacktestComparisonPanel } from './BacktestComparisonPanel';
 import { BacktestConfigModal, type BacktestConfigFormState } from './BacktestConfigModal';
 import { BacktestResults } from './BacktestResults';
 
+import { useAppSelector } from '@/app/hooks';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { FieldTooltip } from '@/components/ui/FieldTooltip';
+import { selectEnvironmentMode } from '@/features/environment/environmentSlice';
 import { getStrategyProfile } from '@/features/strategies/strategyProfiles';
+import {
+  selectConnectionError,
+  selectIsConnected,
+  selectLastEventTimeForType,
+  selectSubscribedChannels,
+} from '@/features/websocket/websocketSlice';
 import axiosClient, { getErrorMessage } from '@/services/axiosClient';
 import { formatDateTime, formatDistanceToNow, formatNumber } from '@/utils/formatters';
 import { sanitizeText } from '@/utils/security';
@@ -191,6 +199,9 @@ const formatProgressTimestamp = (value: string | null): string =>
 const formatLastUpdate = (value: string | null): string =>
   value ? formatDistanceToNow(new Date(value)) : 'No updates yet';
 
+const formatLiveEventTimestamp = (value: string | null): string =>
+  value ? formatDistanceToNow(new Date(value)) : 'No live progress event received yet';
+
 const isExecutionActive = (item: BacktestHistoryItem): boolean =>
   item.executionStatus === 'PENDING' || item.executionStatus === 'RUNNING';
 
@@ -211,6 +222,16 @@ function HeaderCellWithTooltip({ label, description }: HeaderCellProps) {
 }
 
 export default function BacktestPage() {
+  const environmentMode = useAppSelector(selectEnvironmentMode);
+  const websocketConnected = useAppSelector(selectIsConnected);
+  const websocketError = useAppSelector(selectConnectionError);
+  const subscribedChannels = useAppSelector(selectSubscribedChannels);
+  const lastBacktestEventAt = useAppSelector((state) =>
+    selectLastEventTimeForType(state, 'backtest.progress')
+  );
+  const backtestLiveTransportConnected =
+    websocketConnected && subscribedChannels.includes(`${environmentMode}.backtests`);
+  const backtestPollingInterval = backtestLiveTransportConnected ? 30000 : 2000;
   const [form, setForm] = useState(initialForm);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [datasetName, setDatasetName] = useState('');
@@ -227,7 +248,7 @@ export default function BacktestPage() {
   const { data: retentionReport } = useGetBacktestDatasetRetentionReportQuery();
   const { data: experimentSummaries = [] } = useGetBacktestExperimentSummariesQuery();
   const { data: history = [], isLoading, isError } = useGetBacktestsQuery(undefined, {
-    pollingInterval: 2000,
+    pollingInterval: backtestPollingInterval,
     skipPollingIfUnfocused: true,
   });
   const activeDatasets = useMemo(
@@ -259,7 +280,7 @@ export default function BacktestPage() {
 
   const { data: details } = useGetBacktestDetailsQuery(selectedId ?? 0, {
     skip: selectedId === null,
-    pollingInterval: 2000,
+    pollingInterval: backtestPollingInterval,
     skipPollingIfUnfocused: true,
   });
   const comparisonIsStale =
@@ -484,6 +505,13 @@ export default function BacktestPage() {
           </Alert>
         ) : null}
 
+        <Alert severity={backtestLiveTransportConnected ? 'success' : 'info'} sx={{ mb: 2 }}>
+          Backtest transport: {backtestLiveTransportConnected ? 'live WebSocket stream connected' : 'fallback polling active'}.
+          {' '}Last pushed progress event: {formatLiveEventTimestamp(lastBacktestEventAt)}.
+          {' '}Safety poll cadence: {backtestLiveTransportConnected ? '30 seconds' : '2 seconds'}.
+          {!backtestLiveTransportConnected && websocketError ? ` Stream status: ${websocketError}.` : ''}
+        </Alert>
+
         {trackedRun ? (
           <Card sx={{ mb: 3, borderRadius: 3 }}>
             <CardContent>
@@ -508,6 +536,12 @@ export default function BacktestPage() {
                   sx={{ height: 10, borderRadius: 999 }}
                 />
                 <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} useFlexGap flexWrap="wrap">
+                  <Chip
+                    size="small"
+                    color={backtestLiveTransportConnected ? 'success' : 'warning'}
+                    label={`Transport: ${backtestLiveTransportConnected ? 'WebSocket live' : 'Polling fallback'}`}
+                    variant={backtestLiveTransportConnected ? 'filled' : 'outlined'}
+                  />
                   <Chip size="small" label={`Stage: ${executionStageLabel(trackedRun.executionStage)}`} variant="outlined" />
                   <Chip size="small" label={`Done: ${executionProgressValue(trackedRun)}%`} variant="outlined" />
                   <Chip size="small" label={`Left: ${percentLeft(trackedRun)}%`} variant="outlined" />
@@ -523,13 +557,23 @@ export default function BacktestPage() {
                   />
                   <Chip
                     size="small"
-                    label={`Last update: ${formatLastUpdate(trackedRun.lastProgressAt)}`}
+                    label={`Last backend update: ${formatLastUpdate(trackedRun.lastProgressAt)}`}
+                    variant="outlined"
+                  />
+                  <Chip
+                    size="small"
+                    label={`Last pushed event: ${formatLiveEventTimestamp(lastBacktestEventAt)}`}
                     variant="outlined"
                   />
                 </Stack>
                 <Typography variant="body2" color="text.secondary">
                   {executionStageDescription(trackedRun)}
                 </Typography>
+                {isExecutionActive(trackedRun) && !backtestLiveTransportConnected ? (
+                  <Alert severity="warning">
+                    Live stream is not connected, so this page is temporarily relying on polling for execution updates.
+                  </Alert>
+                ) : null}
                 <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                   <Chip
                     size="small"
@@ -929,7 +973,7 @@ export default function BacktestPage() {
                             <Stack spacing={0.5}>
                               <Chip
                                 size="small"
-                                label={`${item.executionStatus} · ${executionProgressValue(item)}%`}
+                                label={`${item.executionStatus} | ${executionProgressValue(item)}%`}
                                 color={executionStatusColor(item.executionStatus)}
                                 variant={item.executionStatus === 'COMPLETED' ? 'filled' : 'outlined'}
                               />
@@ -941,7 +985,10 @@ export default function BacktestPage() {
                                 {executionStageDescription(item)}
                               </Typography>
                               <Typography variant="caption" color="text.secondary">
-                                Last update: {formatLastUpdate(item.lastProgressAt)}
+                                Last backend update: {formatLastUpdate(item.lastProgressAt)}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                Last pushed event: {formatLiveEventTimestamp(lastBacktestEventAt)}
                               </Typography>
                             </Stack>
                           </TableCell>
@@ -994,6 +1041,9 @@ export default function BacktestPage() {
             {details ? (
               <BacktestResults
                 details={details}
+                transportLabel={backtestLiveTransportConnected ? 'Live WebSocket stream' : 'Fallback polling'}
+                lastLiveEventAt={lastBacktestEventAt}
+                transportError={websocketError}
                 onDelete={() => void onDeleteResult(details)}
                 deleteDisabled={isExecutionActive(details) || isDeletingBacktest}
               />

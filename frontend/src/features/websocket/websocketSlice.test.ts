@@ -24,6 +24,7 @@ describe('websocketSlice', () => {
     reconnectAttempts: 0,
     subscribedChannels: [],
     lastEventTime: null,
+    lastEventByType: {},
   };
 
   describe('connectionStarted', () => {
@@ -136,21 +137,32 @@ describe('websocketSlice', () => {
   describe('eventReceived', () => {
     it('should update lastEventTime', () => {
       const timestamp = '2024-03-09T12:00:00Z';
-      const state = websocketReducer(initialState, eventReceived(timestamp));
+      const state = websocketReducer(
+        initialState,
+        eventReceived({ timestamp, type: 'balance.updated' })
+      );
 
       expect(state.lastEventTime).toBe(timestamp);
+      expect(state.lastEventByType['balance.updated']).toBe(timestamp);
     });
 
     it('should overwrite previous event time', () => {
       const stateWithEvent: WebSocketState = {
         ...initialState,
         lastEventTime: '2024-03-09T11:00:00Z',
+        lastEventByType: {
+          'balance.updated': '2024-03-09T11:00:00Z',
+        },
       };
 
       const newTimestamp = '2024-03-09T12:00:00Z';
-      const state = websocketReducer(stateWithEvent, eventReceived(newTimestamp));
+      const state = websocketReducer(
+        stateWithEvent,
+        eventReceived({ timestamp: newTimestamp, type: 'balance.updated' })
+      );
 
       expect(state.lastEventTime).toBe(newTimestamp);
+      expect(state.lastEventByType['balance.updated']).toBe(newTimestamp);
     });
   });
 
@@ -164,6 +176,9 @@ describe('websocketSlice', () => {
         reconnectAttempts: 3,
         subscribedChannels: ['test.balance'],
         lastEventTime: '2024-03-09T12:00:00Z',
+        lastEventByType: {
+          'balance.updated': '2024-03-09T12:00:00Z',
+        },
       };
 
       const state = websocketReducer(modifiedState, resetState());

@@ -14,6 +14,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import { getWebSocketManager, WebSocketEvent } from '../../services/websocket';
 import { accountApi } from '../account/accountApi';
+import { backtestApi } from '../backtest/backtestApi';
+import { marketDataApi } from '../marketData/marketDataApi';
 import { tradesApi } from '../trades/tradesApi';
 
 import { websocketMiddleware } from './websocketMiddleware';
@@ -62,10 +64,18 @@ describe('websocketMiddleware', () => {
       reducer: {
         websocket: websocketReducer,
         [accountApi.reducerPath]: accountApi.reducer,
+        [backtestApi.reducerPath]: backtestApi.reducer,
+        [marketDataApi.reducerPath]: marketDataApi.reducer,
         [tradesApi.reducerPath]: tradesApi.reducer,
       },
       middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware().concat(accountApi.middleware, tradesApi.middleware, websocketMiddleware),
+        getDefaultMiddleware().concat(
+          accountApi.middleware,
+          backtestApi.middleware,
+          marketDataApi.middleware,
+          tradesApi.middleware,
+          websocketMiddleware
+        ),
     });
 
     wsManager = getWebSocketManager();
@@ -83,6 +93,8 @@ describe('websocketMiddleware', () => {
       expect(subscribeMock).toHaveBeenCalledWith('strategy.status', expect.any(Function));
       expect(subscribeMock).toHaveBeenCalledWith('risk.alert', expect.any(Function));
       expect(subscribeMock).toHaveBeenCalledWith('system.error', expect.any(Function));
+      expect(subscribeMock).toHaveBeenCalledWith('backtest.progress', expect.any(Function));
+      expect(subscribeMock).toHaveBeenCalledWith('marketData.import.progress', expect.any(Function));
     });
   });
 
@@ -194,6 +206,100 @@ describe('websocketMiddleware', () => {
       expect(() => {
         (wsManager as any).__triggerEvent(event);
       }).not.toThrow();
+    });
+
+    it('should stream backtest progress into the cached history list', () => {
+      const updateQueryDataSpy = vi.spyOn(backtestApi.util, 'updateQueryData');
+
+      const event: WebSocketEvent = {
+        type: 'backtest.progress',
+        environment: 'test',
+        timestamp: '2024-03-09T12:00:00Z',
+        data: {
+          backtestId: 42,
+          strategyId: 'SMA_CROSSOVER',
+          datasetName: 'BTC 1h',
+          experimentName: 'WebSocket test',
+          symbol: 'BTC/USDT',
+          timeframe: '1h',
+          executionStatus: 'RUNNING',
+          validationStatus: 'PENDING',
+          feesBps: 10,
+          slippageBps: 3,
+          timestamp: '2024-03-09T11:59:00Z',
+          initialBalance: 1000,
+          finalBalance: 1002,
+          executionStage: 'SIMULATING',
+          progressPercent: 64,
+          processedCandles: 64,
+          totalCandles: 100,
+          currentDataTimestamp: '2024-01-03T00:00:00Z',
+          statusMessage: 'Replaying candle 64 of 100.',
+          lastProgressAt: '2024-03-09T12:00:00Z',
+          startedAt: '2024-03-09T11:59:30Z',
+          completedAt: null,
+          errorMessage: null,
+        },
+      };
+
+      (wsManager as any).__triggerEvent(event);
+
+      expect(updateQueryDataSpy).toHaveBeenCalledWith(
+        'getBacktests',
+        undefined,
+        expect.any(Function)
+      );
+      expect(updateQueryDataSpy).toHaveBeenCalledWith(
+        'getBacktestDetails',
+        42,
+        expect.any(Function)
+      );
+    });
+
+    it('should stream market-data import progress into the cached jobs list', () => {
+      const updateQueryDataSpy = vi.spyOn(marketDataApi.util, 'updateQueryData');
+
+      const event: WebSocketEvent = {
+        type: 'marketData.import.progress',
+        environment: 'test',
+        timestamp: '2024-03-09T12:00:00Z',
+        data: {
+          id: 12,
+          providerId: 'binance',
+          providerLabel: 'Binance',
+          assetType: 'CRYPTO',
+          datasetName: 'BTC majors',
+          symbolsCsv: 'BTC/USDT,ETH/USDT',
+          timeframe: '1h',
+          startDate: '2024-03-01',
+          endDate: '2024-03-31',
+          adjusted: false,
+          regularSessionOnly: false,
+          status: 'RUNNING',
+          statusMessage: 'Fetched 240 bars for BTC/USDT.',
+          nextRetryAt: null,
+          currentSymbolIndex: 0,
+          totalSymbols: 2,
+          currentSymbol: 'BTC/USDT',
+          importedRowCount: 240,
+          datasetId: null,
+          datasetReady: false,
+          currentChunkStart: '2024-03-03T00:00:00Z',
+          attemptCount: 1,
+          createdAt: '2024-03-09T11:59:00Z',
+          updatedAt: '2024-03-09T12:00:00Z',
+          startedAt: '2024-03-09T11:59:30Z',
+          completedAt: null,
+        },
+      };
+
+      (wsManager as any).__triggerEvent(event);
+
+      expect(updateQueryDataSpy).toHaveBeenCalledWith(
+        'getMarketDataJobs',
+        undefined,
+        expect.any(Function)
+      );
     });
   });
 

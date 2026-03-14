@@ -1,7 +1,12 @@
+import { configureStore } from '@reduxjs/toolkit';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
+import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+import environmentReducer from '../environment/environmentSlice';
+import websocketReducer from '../websocket/websocketSlice';
 
 import MarketDataPage from './MarketDataPage';
 
@@ -86,12 +91,41 @@ vi.mock('@/services/api', () => ({
 }));
 
 describe('MarketDataPage', { timeout: 15000 }, () => {
-  const renderPage = () =>
-    render(
-      <BrowserRouter>
-        <MarketDataPage />
-      </BrowserRouter>
+  const renderPage = () => {
+    const store = configureStore({
+      reducer: {
+        environment: environmentReducer,
+        websocket: websocketReducer,
+      },
+      preloadedState: {
+        environment: {
+          mode: 'test',
+          connectedExchange: null,
+          lastSyncTime: null,
+        },
+        websocket: {
+          connected: true,
+          connecting: false,
+          error: null,
+          lastReconnectAttempt: null,
+          reconnectAttempts: 0,
+          subscribedChannels: ['test.marketData'],
+          lastEventTime: '2026-03-12T09:05:00',
+          lastEventByType: {
+            'marketData.import.progress': '2026-03-12T09:05:00',
+          },
+        },
+      },
+    });
+
+    return render(
+      <Provider store={store}>
+        <BrowserRouter>
+          <MarketDataPage />
+        </BrowserRouter>
+      </Provider>
     );
+  };
 
   beforeEach(() => {
     createJobMock.mockReset();
@@ -112,6 +146,8 @@ describe('MarketDataPage', { timeout: 15000 }, () => {
     renderPage();
 
     expect(screen.getByText('Market Data Downloader')).toBeInTheDocument();
+    expect(screen.getByText(/Import transport: live WebSocket stream connected/i)).toBeInTheDocument();
+    expect(screen.getByText('Current Import Telemetry')).toBeInTheDocument();
     expect(screen.getByText(/This provider works without an API key/i)).toBeInTheDocument();
     expect(screen.getByText(/waiting for provider retry windows/i)).toBeInTheDocument();
     expect(screen.getByText(/BTC majors 1h/i)).toBeInTheDocument();

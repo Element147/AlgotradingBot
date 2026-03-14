@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -124,29 +125,119 @@ public class WebSocketEventPublisher {
 
     public void publishBacktestProgress(String environment,
                                         Long backtestId,
+                                        String strategyId,
+                                        String datasetName,
+                                        String experimentName,
+                                        String symbol,
+                                        String timeframe,
                                         String executionStatus,
+                                        String validationStatus,
+                                        Integer feesBps,
+                                        Integer slippageBps,
+                                        LocalDateTime timestamp,
+                                        BigDecimal initialBalance,
+                                        BigDecimal finalBalance,
                                         String executionStage,
                                         Integer progressPercent,
                                         Integer processedCandles,
                                         Integer totalCandles,
                                         LocalDateTime currentDataTimestamp,
                                         LocalDateTime lastProgressAt,
-                                        String statusMessage) {
+                                        String statusMessage,
+                                        LocalDateTime startedAt,
+                                        LocalDateTime completedAt,
+                                        String errorMessage) {
         Map<String, Object> data = new HashMap<>();
         data.put("backtestId", backtestId);
+        data.put("strategyId", strategyId);
+        data.put("datasetName", datasetName);
+        data.put("experimentName", experimentName);
+        data.put("symbol", symbol);
+        data.put("timeframe", timeframe);
         data.put("executionStatus", executionStatus);
+        data.put("validationStatus", validationStatus);
+        data.put("feesBps", feesBps);
+        data.put("slippageBps", slippageBps);
+        data.put("timestamp", toIso(timestamp));
+        data.put("initialBalance", initialBalance);
+        data.put("finalBalance", finalBalance);
         data.put("executionStage", executionStage);
         data.put("progressPercent", progressPercent);
         data.put("processedCandles", processedCandles);
         data.put("totalCandles", totalCandles);
-        data.put("currentDataTimestamp", currentDataTimestamp == null ? null : currentDataTimestamp.toString());
-        data.put("lastProgressAt", lastProgressAt == null ? null : lastProgressAt.toString());
+        data.put("currentDataTimestamp", toIso(currentDataTimestamp));
+        data.put("lastProgressAt", toIso(lastProgressAt));
         data.put("statusMessage", statusMessage);
+        data.put("startedAt", toIso(startedAt));
+        data.put("completedAt", toIso(completedAt));
+        data.put("errorMessage", errorMessage);
 
         Map<String, Object> event = createEvent("backtest.progress", environment, data);
         String channel = environment + ".backtests";
 
         logger.debug("Publishing backtest.progress event to channel: {}", channel);
+        webSocketHandler.publishEvent(channel, event);
+    }
+
+    public void publishMarketDataImportProgress(String environment,
+                                                Long jobId,
+                                                String providerId,
+                                                String providerLabel,
+                                                String assetType,
+                                                String datasetName,
+                                                String symbolsCsv,
+                                                String timeframe,
+                                                String startDate,
+                                                String endDate,
+                                                boolean adjusted,
+                                                boolean regularSessionOnly,
+                                                String status,
+                                                String statusMessage,
+                                                LocalDateTime nextRetryAt,
+                                                Integer currentSymbolIndex,
+                                                Integer totalSymbols,
+                                                String currentSymbol,
+                                                Integer importedRowCount,
+                                                Long datasetId,
+                                                boolean datasetReady,
+                                                LocalDateTime currentChunkStart,
+                                                Integer attemptCount,
+                                                LocalDateTime createdAt,
+                                                LocalDateTime updatedAt,
+                                                LocalDateTime startedAt,
+                                                LocalDateTime completedAt) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("id", jobId);
+        data.put("providerId", providerId);
+        data.put("providerLabel", providerLabel);
+        data.put("assetType", assetType);
+        data.put("datasetName", datasetName);
+        data.put("symbolsCsv", symbolsCsv);
+        data.put("timeframe", timeframe);
+        data.put("startDate", startDate);
+        data.put("endDate", endDate);
+        data.put("adjusted", adjusted);
+        data.put("regularSessionOnly", regularSessionOnly);
+        data.put("status", status);
+        data.put("statusMessage", statusMessage);
+        data.put("nextRetryAt", toIso(nextRetryAt));
+        data.put("currentSymbolIndex", currentSymbolIndex);
+        data.put("totalSymbols", totalSymbols);
+        data.put("currentSymbol", currentSymbol);
+        data.put("importedRowCount", importedRowCount);
+        data.put("datasetId", datasetId);
+        data.put("datasetReady", datasetReady);
+        data.put("currentChunkStart", toIso(currentChunkStart));
+        data.put("attemptCount", attemptCount);
+        data.put("createdAt", toIso(createdAt));
+        data.put("updatedAt", toIso(updatedAt));
+        data.put("startedAt", toIso(startedAt));
+        data.put("completedAt", toIso(completedAt));
+
+        Map<String, Object> event = createEvent("marketData.import.progress", environment, data);
+        String channel = environment + ".marketData";
+
+        logger.debug("Publishing marketData.import.progress event to channel: {}", channel);
         webSocketHandler.publishEvent(channel, event);
     }
 
@@ -160,5 +251,9 @@ public class WebSocketEventPublisher {
         event.put("timestamp", LocalDateTime.now().toString());
         event.put("data", data);
         return event;
+    }
+
+    private String toIso(LocalDateTime value) {
+        return value == null ? null : value.toString();
     }
 }

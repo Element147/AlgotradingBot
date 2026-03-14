@@ -5,6 +5,8 @@
 
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
+import type { WebSocketEventType } from '@/services/websocket';
+
 export interface WebSocketState {
   connected: boolean;
   connecting: boolean;
@@ -13,6 +15,7 @@ export interface WebSocketState {
   reconnectAttempts: number;
   subscribedChannels: string[];
   lastEventTime: string | null;
+  lastEventByType: Partial<Record<WebSocketEventType, string>>;
 }
 
 const initialState: WebSocketState = {
@@ -23,6 +26,7 @@ const initialState: WebSocketState = {
   reconnectAttempts: 0,
   subscribedChannels: [],
   lastEventTime: null,
+  lastEventByType: {},
 };
 
 const websocketSlice = createSlice({
@@ -54,8 +58,12 @@ const websocketSlice = createSlice({
       state.reconnectAttempts += 1;
       state.lastReconnectAttempt = new Date().toISOString();
     },
-    eventReceived: (state, action: PayloadAction<string>) => {
-      state.lastEventTime = action.payload;
+    eventReceived: (
+      state,
+      action: PayloadAction<{ timestamp: string; type: WebSocketEventType }>
+    ) => {
+      state.lastEventTime = action.payload.timestamp;
+      state.lastEventByType[action.payload.type] = action.payload.timestamp;
     },
     resetState: () => initialState,
   },
@@ -88,5 +96,9 @@ export const selectSubscribedChannels = (state: { websocket?: WebSocketState }) 
   selectWebSocketSlice(state).subscribedChannels;
 export const selectLastEventTime = (state: { websocket?: WebSocketState }) =>
   selectWebSocketSlice(state).lastEventTime;
+export const selectLastEventTimeForType = (
+  state: { websocket?: WebSocketState },
+  eventType: WebSocketEventType
+) => selectWebSocketSlice(state).lastEventByType[eventType] ?? null;
 export default websocketSlice.reducer;
 

@@ -15,6 +15,7 @@ import com.algotrader.bot.entity.BacktestDataset;
 import com.algotrader.bot.entity.BacktestResult;
 import com.algotrader.bot.repository.BacktestDatasetRepository;
 import com.algotrader.bot.repository.BacktestResultRepository;
+import com.algotrader.bot.websocket.WebSocketEventPublisher;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,19 +48,22 @@ public class BacktestManagementService {
     private final BacktestDatasetService backtestDatasetService;
     private final BacktestStrategyRegistry backtestStrategyRegistry;
     private final OperatorAuditService operatorAuditService;
+    private final WebSocketEventPublisher webSocketEventPublisher;
 
     public BacktestManagementService(BacktestResultRepository backtestResultRepository,
                                      BacktestDatasetRepository backtestDatasetRepository,
                                      BacktestExecutionService backtestExecutionService,
                                      BacktestDatasetService backtestDatasetService,
                                      BacktestStrategyRegistry backtestStrategyRegistry,
-                                     OperatorAuditService operatorAuditService) {
+                                     OperatorAuditService operatorAuditService,
+                                     WebSocketEventPublisher webSocketEventPublisher) {
         this.backtestResultRepository = backtestResultRepository;
         this.backtestDatasetRepository = backtestDatasetRepository;
         this.backtestExecutionService = backtestExecutionService;
         this.backtestDatasetService = backtestDatasetService;
         this.backtestStrategyRegistry = backtestStrategyRegistry;
         this.operatorAuditService = operatorAuditService;
+        this.webSocketEventPublisher = webSocketEventPublisher;
     }
 
     @Transactional(readOnly = true)
@@ -160,6 +164,7 @@ public class BacktestManagementService {
         pending.setTimestamp(LocalDateTime.now());
 
         BacktestResult saved = backtestResultRepository.save(pending);
+        publishProgress(saved);
         logger.info(
             "Queued backtest {}: strategy={}, datasetId={}, symbol={}, timeframe={}, experiment={}",
             saved.getId(),
@@ -228,6 +233,7 @@ public class BacktestManagementService {
         pending.setTimestamp(LocalDateTime.now());
 
         BacktestResult saved = backtestResultRepository.save(pending);
+        publishProgress(saved);
         logger.info(
             "Queued replay backtest {} from source {} using dataset {}",
             saved.getId(),
@@ -395,6 +401,35 @@ public class BacktestManagementService {
             result.getLastProgressAt(),
             result.getStartedAt(),
             result.getCompletedAt()
+        );
+    }
+
+    private void publishProgress(BacktestResult result) {
+        webSocketEventPublisher.publishBacktestProgress(
+            "test",
+            result.getId(),
+            result.getStrategyId(),
+            result.getDatasetName(),
+            result.getExperimentName(),
+            result.getSymbol(),
+            result.getTimeframe(),
+            result.getExecutionStatus().name(),
+            result.getValidationStatus().name(),
+            result.getFeesBps(),
+            result.getSlippageBps(),
+            result.getTimestamp(),
+            result.getInitialBalance(),
+            result.getFinalBalance(),
+            result.getExecutionStage().name(),
+            result.getProgressPercent(),
+            result.getProcessedCandles(),
+            result.getTotalCandles(),
+            result.getCurrentDataTimestamp(),
+            result.getLastProgressAt(),
+            result.getStatusMessage(),
+            result.getStartedAt(),
+            result.getCompletedAt(),
+            result.getErrorMessage()
         );
     }
 

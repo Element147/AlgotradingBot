@@ -78,6 +78,7 @@ Key frontend design rules:
 - Keep feature boundaries explicit to support independent strategy workflows.
 - Use strategy-profile metadata to keep parameter editing guidance typed and centralized instead of scattering heuristics across components.
 - Keep exchange-connection profile persistence in backend APIs/DB, while non-sensitive display preferences may remain browser-local.
+- Keep long-running-task visibility transport-aware: the app shell mounts a shared WebSocket runtime, RTK Query caches absorb streamed progress events, and pages surface when they are on live push updates versus polling fallback.
 
 ## Runtime and Data Boundaries
 
@@ -108,6 +109,7 @@ Key frontend design rules:
 12. Saved exchange API connection profiles are stored per authenticated user in PostgreSQL and exposed through dedicated `/api/exchange/connections` endpoints rather than browser-only state.
 13. Historical market-data acquisition runs as persistent import jobs with explicit `QUEUED/RUNNING/WAITING_RETRY/COMPLETED/FAILED/CANCELLED` states so provider waits and retries stay observable and resumable.
 14. Provider credential storage for the downloader stays backend-owned: the frontend submits secrets only to authenticated admin endpoints, PostgreSQL stores only encrypted ciphertext, and runtime resolution can fall back to environment variables when needed.
+15. Frontend progress views for backtests and market-data imports are fed by backend WebSocket snapshots first and retain slower polling only as an operator-visible safety fallback.
 
 ## Near-Term Architecture Work
 

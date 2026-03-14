@@ -7,6 +7,7 @@ import { useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import {
+  buildEnvironmentChannels,
   getWebSocketManager,
   type WebSocketEventType,
   type WebSocketEventHandler,
@@ -19,6 +20,7 @@ import {
   connectionEstablished,
   connectionFailed,
   connectionClosed,
+  reconnectAttempted,
   eventReceived,
   selectIsConnected,
 } from './websocketSlice';
@@ -34,60 +36,63 @@ export const useWebSocketConnection = () => {
   const isConnected = useSelector(selectIsConnected);
 
   useEffect(() => {
-    if (!token) {
-      // No token, disconnect if connected
-      if (wsManager.isConnected()) {
-        wsManager.disconnect();
-        dispatch(connectionClosed());
+    const unsubscribeConnectionState = wsManager.subscribeConnectionState(({ error, state }) => {
+      if (state === 'connecting') {
+        dispatch(connectionStarted());
+        return;
       }
+
+      if (state === 'open') {
+        dispatch(connectionEstablished(buildEnvironmentChannels(environment)));
+        return;
+      }
+
+      dispatch(connectionClosed());
+      if (error) {
+        dispatch(connectionFailed(error));
+      }
+    });
+
+    const unsubscribeReconnects = wsManager.subscribeReconnectAttempts(() => {
+      dispatch(reconnectAttempted());
+    });
+
+    return () => {
+      unsubscribeConnectionState();
+      unsubscribeReconnects();
+    };
+  }, [dispatch, environment, wsManager]);
+
+  useEffect(() => {
+    if (!token) {
+      wsManager.disconnect();
       return;
     }
 
-    // Connect to WebSocket
-    dispatch(connectionStarted());
-
     wsManager
       .connect(token, environment)
-      .then(() => {
-        const channels = [
-          `${environment}.balance`,
-          `${environment}.trades`,
-          `${environment}.positions`,
-          `${environment}.strategies`,
-          `${environment}.risk`,
-        ];
-        dispatch(connectionEstablished(channels));
-      })
       .catch((error: unknown) => {
         const message = error instanceof Error ? error.message : 'Connection failed';
-        dispatch(connectionFailed(message));
+        if (message !== 'Connection already in progress') {
+          dispatch(connectionFailed(message));
+        }
       });
 
     // Cleanup on unmount or token/environment change
     return () => {
       wsManager.disconnect();
-      dispatch(connectionClosed());
     };
   }, [token, environment, dispatch, wsManager]);
 
   const reconnect = useCallback(() => {
     if (token) {
-      dispatch(connectionStarted());
       wsManager
         .connect(token, environment)
-        .then(() => {
-          const channels = [
-            `${environment}.balance`,
-            `${environment}.trades`,
-            `${environment}.positions`,
-            `${environment}.strategies`,
-            `${environment}.risk`,
-          ];
-          dispatch(connectionEstablished(channels));
-        })
         .catch((error: unknown) => {
           const message = error instanceof Error ? error.message : 'Connection failed';
-          dispatch(connectionFailed(message));
+          if (message !== 'Connection already in progress') {
+            dispatch(connectionFailed(message));
+          }
         });
     }
   }, [token, environment, dispatch, wsManager]);
@@ -112,7 +117,12 @@ export const useWebSocketSubscription = (
   useEffect(() => {
     // Wrap handler to dispatch eventReceived action
     const wrappedHandler: WebSocketEventHandler = (event) => {
-      dispatch(eventReceived(new Date().toISOString()));
+      dispatch(
+        eventReceived({
+          timestamp: event.timestamp,
+          type: event.type,
+        })
+      );
       handler(event);
     };
 

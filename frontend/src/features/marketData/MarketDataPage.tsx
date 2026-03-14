@@ -37,9 +37,18 @@ import {
   type MarketDataProvider,
 } from './marketDataApi';
 
+import { useAppSelector } from '@/app/hooks';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { FieldTooltip } from '@/components/ui/FieldTooltip';
+import { selectEnvironmentMode } from '@/features/environment/environmentSlice';
+import {
+  selectConnectionError,
+  selectIsConnected,
+  selectLastEventTimeForType,
+  selectSubscribedChannels,
+} from '@/features/websocket/websocketSlice';
 import { getApiErrorMessage } from '@/services/api';
+import { formatDateTime, formatDistanceToNow, formatNumber } from '@/utils/formatters';
 import { sanitizeText } from '@/utils/security';
 
 type FormState = {
@@ -111,13 +120,32 @@ const providerCredentialMessage = (configuredSource: MarketDataProvider['apiKeyC
   }
 };
 
+const formatOptionalDateTime = (value: string | null): string =>
+  value ? formatDateTime(value) : 'Not available yet';
+
+const formatRelativeUpdate = (value: string | null): string =>
+  value ? formatDistanceToNow(new Date(value)) : 'No updates yet';
+
+const formatLiveEventTimestamp = (value: string | null): string =>
+  value ? formatDistanceToNow(new Date(value)) : 'No live import event received yet';
+
 export default function MarketDataPage() {
+  const environmentMode = useAppSelector(selectEnvironmentMode);
+  const websocketConnected = useAppSelector(selectIsConnected);
+  const websocketError = useAppSelector(selectConnectionError);
+  const subscribedChannels = useAppSelector(selectSubscribedChannels);
+  const lastImportEventAt = useAppSelector((state) =>
+    selectLastEventTimeForType(state, 'marketData.import.progress')
+  );
+  const marketDataLiveTransportConnected =
+    websocketConnected && subscribedChannels.includes(`${environmentMode}.marketData`);
+  const marketDataPollingInterval = marketDataLiveTransportConnected ? 30000 : 5000;
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [feedback, setFeedback] = useState<{ severity: 'success' | 'error'; message: string } | null>(null);
 
   const { data: providers = [] } = useGetMarketDataProvidersQuery();
   const { data: jobs = [] } = useGetMarketDataJobsQuery(undefined, {
-    pollingInterval: 5000,
+    pollingInterval: marketDataPollingInterval,
     skipPollingIfUnfocused: true,
   });
   const [createJob, { isLoading: isCreating }] = useCreateMarketDataJobMutation();
@@ -136,6 +164,10 @@ export default function MarketDataPage() {
 
   const waitingJobs = jobs.filter((job) => job.status === 'WAITING_RETRY');
   const activeJobs = jobs.filter((job) => job.status === 'RUNNING' || job.status === 'QUEUED');
+  const trackedJob = useMemo(
+    () => activeJobs[0] ?? waitingJobs[0] ?? jobs[0] ?? null,
+    [activeJobs, jobs, waitingJobs]
+  );
 
   const onSubmit = async () => {
     const payload: CreateMarketDataJobPayload = {
@@ -227,10 +259,87 @@ export default function MarketDataPage() {
           </Alert>
         ) : null}
 
+        <Alert severity={marketDataLiveTransportConnected ? 'success' : 'info'} sx={{ mb: 2 }}>
+          Import transport: {marketDataLiveTransportConnected ? 'live WebSocket stream connected' : 'fallback polling active'}.
+          {' '}Last pushed import event: {formatLiveEventTimestamp(lastImportEventAt)}.
+          {' '}Safety poll cadence: {marketDataLiveTransportConnected ? '30 seconds' : '5 seconds'}.
+          {!marketDataLiveTransportConnected && websocketError ? ` Stream status: ${websocketError}.` : ''}
+        </Alert>
+
         {waitingJobs.length > 0 ? (
           <Alert severity="info" icon={<HourglassTopIcon />} sx={{ mb: 2 }}>
             {waitingJobs.length} job{waitingJobs.length === 1 ? '' : 's'} waiting for provider retry windows.
           </Alert>
+        ) : null}
+
+        {trackedJob ? (
+          <Card sx={{ mb: 3, borderRadius: 3 }}>
+            <CardContent>
+              <Stack spacing={1.5}>
+                <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={1}>
+                  <Box>
+                    <Typography variant="h6">Current Import Telemetry</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Tracking job #{trackedJob.id} for {trackedJob.providerLabel} on {trackedJob.symbolsCsv}.
+                    </Typography>
+                  </Box>
+                  <Chip size="small" color={statusColor(trackedJob.status)} label={trackedJob.status} />
+                </Stack>
+                <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} useFlexGap flexWrap="wrap">
+                  <Chip
+                    size="small"
+                    color={marketDataLiveTransportConnected ? 'success' : 'warning'}
+                    label={`Transport: ${marketDataLiveTransportConnected ? 'WebSocket live' : 'Polling fallback'}`}
+                    variant={marketDataLiveTransportConnected ? 'filled' : 'outlined'}
+                  />
+                  <Chip
+                    size="small"
+                    label={`Current symbol: ${trackedJob.currentSymbol ?? 'Waiting for first symbol'}`}
+                    variant="outlined"
+                  />
+                  <Chip
+                    size="small"
+                    label={`Symbol cursor: ${Math.min(trackedJob.currentSymbolIndex + (trackedJob.currentSymbol ? 1 : 0), trackedJob.totalSymbols || 0)} / ${trackedJob.totalSymbols}`}
+                    variant="outlined"
+                  />
+                  <Chip
+                    size="small"
+                    label={`Rows imported: ${formatNumber(trackedJob.importedRowCount)}`}
+                    variant="outlined"
+                  />
+                  <Chip
+                    size="small"
+                    label={`Current chunk start: ${formatOptionalDateTime(trackedJob.currentChunkStart)}`}
+                    variant="outlined"
+                  />
+                  <Chip
+                    size="small"
+                    label={`Last backend update: ${formatRelativeUpdate(trackedJob.updatedAt)}`}
+                    variant="outlined"
+                  />
+                  <Chip
+                    size="small"
+                    label={`Last pushed event: ${formatLiveEventTimestamp(lastImportEventAt)}`}
+                    variant="outlined"
+                  />
+                </Stack>
+                <Typography variant="body2" color="text.secondary">
+                  {trackedJob.statusMessage}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Attempts: {trackedJob.attemptCount} | Started: {formatOptionalDateTime(trackedJob.startedAt)}
+                  {trackedJob.nextRetryAt ? ` | Next retry: ${formatOptionalDateTime(trackedJob.nextRetryAt)}` : ''}
+                  {trackedJob.completedAt ? ` | Completed: ${formatOptionalDateTime(trackedJob.completedAt)}` : ''}
+                </Typography>
+                {(trackedJob.status === 'RUNNING' || trackedJob.status === 'QUEUED' || trackedJob.status === 'WAITING_RETRY') &&
+                !marketDataLiveTransportConnected ? (
+                  <Alert severity="warning">
+                    Live stream is not connected, so this page is temporarily relying on polling for import updates.
+                  </Alert>
+                ) : null}
+              </Stack>
+            </CardContent>
+          </Card>
         ) : null}
 
         <Grid container spacing={2}>
@@ -509,9 +618,15 @@ export default function MarketDataPage() {
                                 </Typography>
                                 <Typography variant="body2">{job.statusMessage}</Typography>
                                 <Typography variant="caption" color="text.secondary">
-                                  Rows imported: {job.importedRowCount} | Attempts: {job.attemptCount}
+                                  Rows imported: {formatNumber(job.importedRowCount)} | Attempts: {job.attemptCount}
                                   {job.currentSymbol ? ` | Current symbol: ${job.currentSymbol}` : ''}
-                                  {job.nextRetryAt ? ` | Next retry: ${new Date(job.nextRetryAt).toLocaleString()}` : ''}
+                                  {job.currentChunkStart ? ` | Chunk start: ${formatOptionalDateTime(job.currentChunkStart)}` : ''}
+                                  {job.nextRetryAt ? ` | Next retry: ${formatOptionalDateTime(job.nextRetryAt)}` : ''}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  Last backend update: {formatRelativeUpdate(job.updatedAt)} | Started:{' '}
+                                  {job.startedAt ? formatOptionalDateTime(job.startedAt) : 'queued only'}
+                                  {job.completedAt ? ` | Completed: ${formatOptionalDateTime(job.completedAt)}` : ''}
                                 </Typography>
                                 <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                                   {job.status === 'FAILED' || job.status === 'CANCELLED' ? (

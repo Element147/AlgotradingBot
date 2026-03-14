@@ -9,16 +9,101 @@ export type WebSocketEventType =
   | 'position.updated'
   | 'strategy.status'
   | 'risk.alert'
-  | 'system.error';
+  | 'system.error'
+  | 'backtest.progress'
+  | 'marketData.import.progress';
 
-export interface WebSocketEvent {
-  type: WebSocketEventType;
+export interface BacktestProgressEventData {
+  backtestId: number;
+  strategyId: string;
+  datasetName: string | null;
+  experimentName: string;
+  symbol: string;
+  timeframe: string;
+  executionStatus: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+  validationStatus: 'PENDING' | 'PASSED' | 'FAILED' | 'PRODUCTION_READY';
+  feesBps: number;
+  slippageBps: number;
+  timestamp: string;
+  initialBalance: number;
+  finalBalance: number;
+  executionStage:
+    | 'QUEUED'
+    | 'VALIDATING_REQUEST'
+    | 'LOADING_DATASET'
+    | 'FILTERING_CANDLES'
+    | 'SIMULATING'
+    | 'PERSISTING_RESULTS'
+    | 'COMPLETED'
+    | 'FAILED';
+  progressPercent: number;
+  processedCandles: number;
+  totalCandles: number;
+  currentDataTimestamp: string | null;
+  statusMessage: string | null;
+  lastProgressAt: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  errorMessage: string | null;
+}
+
+export interface MarketDataImportProgressEventData {
+  id: number;
+  providerId: string;
+  providerLabel: string;
+  assetType: 'STOCK' | 'CRYPTO';
+  datasetName: string;
+  symbolsCsv: string;
+  timeframe: string;
+  startDate: string;
+  endDate: string;
+  adjusted: boolean;
+  regularSessionOnly: boolean;
+  status: 'QUEUED' | 'RUNNING' | 'WAITING_RETRY' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+  statusMessage: string;
+  nextRetryAt: string | null;
+  currentSymbolIndex: number;
+  totalSymbols: number;
+  currentSymbol: string | null;
+  importedRowCount: number;
+  datasetId: number | null;
+  datasetReady: boolean;
+  currentChunkStart: string | null;
+  attemptCount: number;
+  createdAt: string;
+  updatedAt: string;
+  startedAt: string | null;
+  completedAt: string | null;
+}
+
+export interface WebSocketEventDataMap {
+  'balance.updated': unknown;
+  'trade.executed': unknown;
+  'position.updated': unknown;
+  'strategy.status': unknown;
+  'risk.alert': unknown;
+  'system.error': unknown;
+  'backtest.progress': BacktestProgressEventData;
+  'marketData.import.progress': MarketDataImportProgressEventData;
+}
+
+export interface WebSocketEvent<T extends WebSocketEventType = WebSocketEventType> {
+  type: T;
   environment: 'test' | 'live';
   timestamp: string;
-  data: unknown;
+  data: WebSocketEventDataMap[T];
 }
 
 export type WebSocketEventHandler = (event: WebSocketEvent) => void;
+export type WebSocketConnectionState = 'connecting' | 'open' | 'closing' | 'closed';
+
+export interface WebSocketConnectionStateEvent {
+  error: string | null;
+  state: WebSocketConnectionState;
+}
+
+export type WebSocketConnectionStateHandler = (event: WebSocketConnectionStateEvent) => void;
+export type WebSocketReconnectHandler = (attempt: number, maxAttempts: number) => void;
 
 interface SubscriptionHandlers {
   [channel: string]: Set<WebSocketEventHandler>;
@@ -62,6 +147,16 @@ const buildLocalDevWebSocketUrl = (): string => {
   url.protocol = 'ws:';
   return url.toString();
 };
+
+export const buildEnvironmentChannels = (environment: 'test' | 'live'): string[] => [
+  `${environment}.balance`,
+  `${environment}.trades`,
+  `${environment}.positions`,
+  `${environment}.strategies`,
+  `${environment}.risk`,
+  `${environment}.backtests`,
+  `${environment}.marketData`,
+];
 
 export const resolveWebSocketUrl = (
   configuredUrl?: string,
@@ -120,6 +215,10 @@ export class WebSocketManager {
   private isConnecting = false;
   private shouldReconnect = true;
   private webSocketConstructor: WebSocketLikeConstructor;
+  private connectionState: WebSocketConnectionState = 'closed';
+  private connectionError: string | null = null;
+  private connectionStateHandlers = new Set<WebSocketConnectionStateHandler>();
+  private reconnectHandlers = new Set<WebSocketReconnectHandler>();
 
   constructor(url: string, webSocketConstructor?: WebSocketLikeConstructor) {
     this.url = url;
@@ -133,6 +232,7 @@ export class WebSocketManager {
   connect(token: string, environment: 'test' | 'live' = 'test'): Promise<void> {
     return new Promise((resolve, reject) => {
       if (this.ws?.readyState === WS_OPEN) {
+        this.notifyConnectionState('open');
         resolve();
         return;
       }
@@ -146,6 +246,8 @@ export class WebSocketManager {
       this.environment = environment;
       this.isConnecting = true;
       this.shouldReconnect = true;
+      this.connectionError = null;
+      this.notifyConnectionState('connecting');
 
       try {
         // Include auth token and environment in URL
@@ -156,6 +258,8 @@ export class WebSocketManager {
           console.warn('[WebSocket] Connected successfully');
           this.isConnecting = false;
           this.reconnectAttempts = 0;
+          this.connectionError = null;
+          this.notifyConnectionState('open');
           this.subscribeToChannels();
           resolve();
         };
@@ -167,12 +271,15 @@ export class WebSocketManager {
         this.ws.onerror = (error) => {
           console.error('[WebSocket] Error:', error);
           this.isConnecting = false;
+          this.connectionError = 'WebSocket transport error';
+          this.notifyConnectionState('closed', this.connectionError);
         };
 
         this.ws.onclose = (event) => {
           console.warn('[WebSocket] Connection closed:', event.code, event.reason);
           this.isConnecting = false;
           this.ws = null;
+          this.notifyConnectionState('closed', event.reason || this.connectionError);
 
           if (this.shouldReconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
             this.scheduleReconnect();
@@ -190,6 +297,7 @@ export class WebSocketManager {
    */
   disconnect(): void {
     this.shouldReconnect = false;
+    this.isConnecting = false;
 
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
@@ -203,6 +311,8 @@ export class WebSocketManager {
 
     this.subscriptions = {};
     this.reconnectAttempts = 0;
+    this.connectionError = null;
+    this.notifyConnectionState('closed');
   }
 
   /**
@@ -228,7 +338,7 @@ export class WebSocketManager {
    * Get current connection state
    */
   getState(): 'connecting' | 'open' | 'closing' | 'closed' {
-    if (!this.ws) return 'closed';
+    if (!this.ws) return this.connectionState;
 
     switch (this.ws.readyState) {
       case WS_CONNECTING:
@@ -249,6 +359,25 @@ export class WebSocketManager {
    */
   isConnected(): boolean {
     return this.ws?.readyState === WS_OPEN;
+  }
+
+  subscribeConnectionState(handler: WebSocketConnectionStateHandler): () => void {
+    this.connectionStateHandlers.add(handler);
+    handler({
+      error: this.connectionError,
+      state: this.connectionState,
+    });
+
+    return () => {
+      this.connectionStateHandlers.delete(handler);
+    };
+  }
+
+  subscribeReconnectAttempts(handler: WebSocketReconnectHandler): () => void {
+    this.reconnectHandlers.add(handler);
+    return () => {
+      this.reconnectHandlers.delete(handler);
+    };
   }
 
   /**
@@ -296,13 +425,7 @@ export class WebSocketManager {
       return;
     }
 
-    const channels = [
-      `${this.environment}.balance`,
-      `${this.environment}.trades`,
-      `${this.environment}.positions`,
-      `${this.environment}.strategies`,
-      `${this.environment}.risk`,
-    ];
+    const channels = buildEnvironmentChannels(this.environment);
 
     this.ws.send(
       JSON.stringify({
@@ -323,6 +446,13 @@ export class WebSocketManager {
     }
 
     this.reconnectAttempts++;
+    this.reconnectHandlers.forEach((handler) => {
+      try {
+        handler(this.reconnectAttempts, this.maxReconnectAttempts);
+      } catch (error) {
+        console.error('[WebSocket] Reconnect handler error:', error);
+      }
+    });
     console.warn(
       `[WebSocket] Scheduling reconnect attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${this.reconnectDelay}ms`
     );
@@ -339,6 +469,21 @@ export class WebSocketManager {
         });
       }
     }, this.reconnectDelay);
+  }
+
+  private notifyConnectionState(
+    state: WebSocketConnectionState,
+    error: string | null = this.connectionError
+  ): void {
+    this.connectionState = state;
+    this.connectionError = error;
+    this.connectionStateHandlers.forEach((handler) => {
+      try {
+        handler({ error, state });
+      } catch (handlerError) {
+        console.error('[WebSocket] Connection-state handler error:', handlerError);
+      }
+    });
   }
 }
 

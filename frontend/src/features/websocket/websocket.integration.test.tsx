@@ -231,6 +231,8 @@ describe('WebSocket Integration Tests', () => {
       expect(subscribeMessage.channels).toContain('live.balance');
       expect(subscribeMessage.channels).toContain('live.trades');
       expect(subscribeMessage.channels).toContain('live.positions');
+      expect(subscribeMessage.channels).toContain('live.backtests');
+      expect(subscribeMessage.channels).toContain('live.marketData');
     });
 
     it('should include auth token in connection URL', async () => {
@@ -626,6 +628,8 @@ describe('WebSocket Integration Tests', () => {
         const subscribeMessage = JSON.parse(sentMessages[0]);
         expect(subscribeMessage.type).toBe('subscribe');
         expect(subscribeMessage.channels).toContain('live.balance');
+        expect(subscribeMessage.channels).toContain('live.backtests');
+        expect(subscribeMessage.channels).toContain('live.marketData');
       } finally {
         vi.useRealTimers();
       }

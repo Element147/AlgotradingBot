@@ -1,5 +1,10 @@
+import { configureStore } from '@reduxjs/toolkit';
 import { render, screen } from '@testing-library/react';
+import { Provider } from 'react-redux';
 import { describe, expect, it, vi } from 'vitest';
+
+import environmentReducer from '../environment/environmentSlice';
+import websocketReducer from '../websocket/websocketSlice';
 
 import BacktestPage from './BacktestPage';
 
@@ -197,10 +202,45 @@ vi.mock('@/services/axiosClient', () => ({
 }));
 
 describe('BacktestPage', { timeout: 15000 }, () => {
+  const renderPage = () => {
+    const store = configureStore({
+      reducer: {
+        environment: environmentReducer,
+        websocket: websocketReducer,
+      },
+      preloadedState: {
+        environment: {
+          mode: 'test',
+          connectedExchange: null,
+          lastSyncTime: null,
+        },
+        websocket: {
+          connected: true,
+          connecting: false,
+          error: null,
+          lastReconnectAttempt: null,
+          reconnectAttempts: 0,
+          subscribedChannels: ['test.backtests'],
+          lastEventTime: '2026-03-10T10:00:00',
+          lastEventByType: {
+            'backtest.progress': '2026-03-10T10:00:00',
+          },
+        },
+      },
+    });
+
+    return render(
+      <Provider store={store}>
+        <BacktestPage />
+      </Provider>
+    );
+  };
+
   it('renders upload section and run form', () => {
-    render(<BacktestPage />);
+    renderPage();
 
     expect(screen.getByText('Backtest Lab')).toBeInTheDocument();
+    expect(screen.getByText(/Backtest transport: live WebSocket stream connected/i)).toBeInTheDocument();
     expect(screen.getByText('Current Run Progress')).toBeInTheDocument();
     expect(screen.getAllByText(/Current data date:/).length).toBeGreaterThan(0);
     expect(screen.getByText('Dataset Upload')).toBeInTheDocument();
@@ -216,7 +256,7 @@ describe('BacktestPage', { timeout: 15000 }, () => {
   });
 
   it('renders details including algorithm and dataset', () => {
-    render(<BacktestPage />);
+    renderPage();
 
     expect(screen.getByText('Backtest Details #42')).toBeInTheDocument();
     expect(screen.getByText(/Experiment: BTC Mean Reversion Retest/)).toBeInTheDocument();
