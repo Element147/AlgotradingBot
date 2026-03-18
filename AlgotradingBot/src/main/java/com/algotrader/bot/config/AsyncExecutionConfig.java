@@ -10,7 +10,7 @@ import java.util.concurrent.ThreadFactory;
 @Configuration
 public class AsyncExecutionConfig {
 
-    @Bean(name = "virtualThreadTaskExecutor", destroyMethod = "close")
+    @Bean(name = {"taskExecutor", "virtualThreadTaskExecutor"}, destroyMethod = "close")
     public ExecutorService virtualThreadTaskExecutor() {
         ThreadFactory threadFactory = Thread.ofVirtual()
             .name("algotrading-vt-", 0)

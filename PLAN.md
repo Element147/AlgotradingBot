@@ -1,6 +1,6 @@
 # PLAN
 
-Status updated: March 13, 2026
+Status updated: March 18, 2026
 
 ## Purpose
 
@@ -39,6 +39,7 @@ Single slim implementation plan replacing legacy multi-file phase specs.
 29. Admin-managed encrypted provider credential storage with note support is implemented for keyed market-data providers.
 30. Free high-value Docker MCP tooling is persisted for this repository (`context7`, `database-server`, `openapi-schema`, `playwright`).
 31. Documentation now uses a slim core plus optional task guides so implementation context stays more targeted.
+32. Java 25 migration is implemented across Gradle, Docker, CI, local scripts, and fresh PostgreSQL schema bootstrap.
 
 ## Current Work (Now)
 
@@ -53,9 +54,10 @@ Single slim implementation plan replacing legacy multi-file phase specs.
    - completed: operator alert delivery on top of paper-trading recovery signals
    - completed: extend repair playbooks for additional runtime failure signatures
 4. Developer efficiency
-   - completed: persistent free Docker MCP toolchain for docs, database inspection, contracts, and UI verification
-   - completed: deterministic local Docker project naming and reusable runtime volumes
-   - completed: shared PowerShell runtime helpers, untracked runtime logs, reclaim-friendly local memory defaults, and optional Semgrep/Hoverfly tooling
+  - completed: persistent free Docker MCP toolchain for docs, database inspection, contracts, and UI verification
+  - completed: deterministic local Docker project naming and reusable runtime volumes
+  - completed: shared PowerShell runtime helpers, untracked runtime logs, reclaim-friendly local memory defaults, and optional Semgrep/Hoverfly tooling
+  - completed: Java 25 toolchain/runtime alignment plus JDWP-aware local and Docker debug entrypoints
 
 ## Near Future
 
@@ -69,8 +71,11 @@ Single slim implementation plan replacing legacy multi-file phase specs.
    - completed: typed per-strategy parameter editing ergonomics
    - completed: higher-level experiment/change review flows
 4. Security hardening migration
-   - strict-by-default auth posture and explicit local override runbook are implemented
-   - keep rollout/rollback guidance current as auth workflows evolve
+  - strict-by-default auth posture and explicit local override runbook are implemented
+  - keep rollout/rollback guidance current as auth workflows evolve
+5. Java platform posture
+   - completed: Java 25 runtime baseline with Liquibase-first PostgreSQL bootstrap and runtime schema validation
+   - deferred by design: preview-only JDK 25 features such as structured concurrency
 
 ## Optional Future (Only After Hardening)
 

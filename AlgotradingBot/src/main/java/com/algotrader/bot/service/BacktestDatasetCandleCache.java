@@ -43,4 +43,8 @@ public class BacktestDatasetCandleCache {
         }
         return "dataset-" + Objects.requireNonNullElse(dataset.getId(), -1L);
     }
+
+    public int size() {
+        return candleCache.size();
+    }
 }

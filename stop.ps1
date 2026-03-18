@@ -12,6 +12,7 @@ Set-Location $scriptPath
 $repoPaths = Get-RepoPaths -ScriptPath $scriptPath
 $backendPidFile = Get-PidFilePath -RepoPaths $repoPaths -Name "backend"
 $frontendPidFile = Get-PidFilePath -RepoPaths $repoPaths -Name "frontend"
+$composeArgs = Get-ComposeArgs -RepoPaths $repoPaths
 
 Write-Host "Stopping frontend..." -ForegroundColor Yellow
 Stop-FromPidFile -PidFile $frontendPidFile -Label "frontend"
@@ -24,7 +25,7 @@ Stop-ListeningProcess -Port 8080 -Label "backend"
 
 Write-Host "Stopping PostgreSQL container..." -ForegroundColor Yellow
 if (Test-DockerRunning) {
-    docker compose @($repoPaths.ComposeArgs) stop postgres > $null 2>&1
+    docker compose @($composeArgs) stop postgres > $null 2>&1
     Write-Host "[OK] PostgreSQL container stopped" -ForegroundColor Green
 } else {
     Write-Host "[SKIP] Docker not running - could not stop PostgreSQL container" -ForegroundColor DarkYellow

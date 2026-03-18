@@ -9,11 +9,13 @@ Fast dev mode (`.\run.ps1`):
 - Starts PostgreSQL in Docker
 - Runs the backend locally with `.\gradlew.bat --no-daemon bootRun`
 - Runs the frontend locally with `npm run dev`
+- Supports opt-in local backend debug via `-DebugBackend`, `-DebugPort`, and `-SuspendBackend`
 - Writes backend file logs to repo-local untracked storage under `.runtime/logs`
 
 Full-stack mode (`.\run-all.ps1`):
 
 - Starts `algotrading-app`, PostgreSQL, and Kafka in Docker
+- Supports opt-in Docker backend debug via `.\run-all.ps1 -DebugBackend` and `compose.debug.yaml`
 - Runs the frontend locally with `npm run dev`
 
 ## Compose Identity and Volumes
@@ -47,13 +49,29 @@ Full stack:
 .\security-scan.ps1
 ```
 
+Debug examples:
+
+```powershell
+.\run.ps1 -DebugBackend
+.\run.ps1 -DebugBackend -SuspendBackend
+.\run-all.ps1 -DebugBackend
+```
+
 Direct Compose access:
 
 ```powershell
 docker compose --project-name algotradingbot -f .\AlgotradingBot\compose.yaml ps
 docker compose --project-name algotradingbot -f .\AlgotradingBot\compose.yaml logs
 docker compose --project-name algotradingbot -f .\AlgotradingBot\compose.yaml down
+docker compose --project-name algotradingbot -f .\AlgotradingBot\compose.yaml -f .\AlgotradingBot\compose.debug.yaml up -d
 ```
+
+## Java 25 Runtime Notes
+
+- `build.ps1`, `build-all.ps1`, `run.ps1`, and `run-all.ps1` print the locally detected Java version before starting work.
+- Docker builds and runtime images now use Temurin Java 25 (`eclipse-temurin:25-jdk-jammy` and `eclipse-temurin:25-jre-jammy`).
+- The default runtime database path is Liquibase-first plus `spring.jpa.hibernate.ddl-auto=validate`; use `SPRING_JPA_HIBERNATE_DDL_AUTO` only as an explicit override.
+- `JAVA_DEBUG_OPTS` is empty by default and is only injected by `compose.debug.yaml`.
 
 ## Docker Cleanup Policy
 

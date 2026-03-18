@@ -520,6 +520,10 @@ public class MarketDataImportService {
             .collect(Collectors.toList());
     }
 
+    public int getLocallyDispatchedJobCount() {
+        return locallyDispatchedJobIds.size();
+    }
+
     private MarketDataImportJobResponse toResponse(MarketDataImportJob job) {
         MarketDataProvider provider = marketDataProviderRegistry.get(job.getProviderId());
         List<String> symbols = parseSymbols(job.getSymbolsCsv());

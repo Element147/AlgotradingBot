@@ -23,12 +23,14 @@ Use targeted Vitest commands first when possible, then fall back to the full sui
 
 ```powershell
 cd AlgotradingBot
+.\gradlew.bat javaMigrationAudit --no-daemon
 .\gradlew.bat test
 .\gradlew.bat build
 ```
 
 - Runtime uses PostgreSQL.
 - Tests and `build` use the H2 `test` profile unless a task explicitly needs runtime services.
+- `javaMigrationAudit` runs `jdeps` and `jdeprscan` with the Java 25 toolchain and writes reports under `AlgotradingBot/build/reports/java-migration/`.
 
 ## OpenAPI Contract Workflow
 
@@ -52,7 +54,7 @@ If the backend API changed and the generated contract is expected to move, regen
 
 GitHub Actions baseline:
 
-- Backend: `test` + `build`
+- Backend: `javaMigrationAudit` + `test` + `build`
 - Frontend: `contract:check` + `lint` + `test` + `build`
 
 Local verification should mirror that ordering when the task crosses the frontend/backend contract boundary.
@@ -80,3 +82,16 @@ Run Semgrep by default for:
 - Docker or local automation changes
 
 During a security cleanup, `-FailOnFindings` is the zero-findings gate.
+
+## Runtime Smoke Checks
+
+When a change affects local orchestration, Docker deployment, or runtime config, mirror the repo runbooks:
+
+```powershell
+.\run.ps1
+.\stop.ps1
+.\run-all.ps1
+.\stop-all.ps1
+```
+
+Use the debug variants only when the task explicitly needs JDWP attach verification.

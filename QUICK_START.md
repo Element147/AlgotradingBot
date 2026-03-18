@@ -9,6 +9,12 @@ From repo root:
 .\run.ps1
 ```
 
+Optional backend debug:
+
+```powershell
+.\run.ps1 -DebugBackend
+```
+
 Stop services:
 
 ```powershell

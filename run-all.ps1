@@ -1,7 +1,6 @@
-# ============================================
-# RUN ALL - Backend + Frontend + Docker
-# ============================================
-# This script starts all services
+param(
+    [switch]$DebugBackend
+)
 
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
 . (Join-Path $scriptPath "scripts/powershell/Common.ps1")
@@ -17,6 +16,8 @@ Initialize-RepoRuntime -RepoPaths $repoPaths
 $frontendPidFile = Get-PidFilePath -RepoPaths $repoPaths -Name "frontend"
 
 Refresh-UserPath
+Write-JavaVersionSummary
+$composeArgs = Get-ComposeArgs -RepoPaths $repoPaths -IncludeDebug:$DebugBackend
 
 # Check if Docker is running
 Write-Host "Checking Docker..." -ForegroundColor Yellow
@@ -38,7 +39,7 @@ if (-not (Assert-PortAvailable -Port 5173 -Label "Frontend")) {
 # Start Backend with Docker Compose (includes PostgreSQL and Kafka)
 Write-Host ""
 Write-Host "[1/2] Starting Backend + Database + Kafka..." -ForegroundColor Yellow
-docker compose @($repoPaths.ComposeArgs) up -d
+docker compose @($composeArgs) up -d
 $dockerResult = $LASTEXITCODE
 
 if ($dockerResult -ne 0) {
@@ -80,5 +81,8 @@ Write-Host "Access your application:" -ForegroundColor Cyan
 Write-Host "  Frontend:  http://localhost:5173" -ForegroundColor White
 Write-Host "  Backend:   http://localhost:8080" -ForegroundColor White
 Write-Host "  API Docs:  http://localhost:8080/swagger-ui.html" -ForegroundColor White
+if ($DebugBackend) {
+    Write-Host "  Backend JDWP: localhost:5005" -ForegroundColor White
+}
 Write-Host ""
 Write-Host "To stop all services, run: .\stop-all.ps1" -ForegroundColor Yellow

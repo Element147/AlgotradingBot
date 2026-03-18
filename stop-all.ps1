@@ -14,13 +14,14 @@ Write-Host ""
 Set-Location $scriptPath
 $repoPaths = Get-RepoPaths -ScriptPath $scriptPath
 $frontendPidFile = Get-PidFilePath -RepoPaths $repoPaths -Name "frontend"
+$composeArgs = Get-ComposeArgs -RepoPaths $repoPaths -IncludeDebug
 
 Refresh-UserPath
 
 # Stop Backend Docker Containers
 Write-Host "Stopping Backend services..." -ForegroundColor Yellow
 if (Test-DockerRunning) {
-    docker compose @($repoPaths.ComposeArgs) down
+    docker compose @($composeArgs) down
     Write-Host "[OK] Backend services stopped" -ForegroundColor Green
 } else {
     Write-Host "[SKIP] Docker not running - backend containers already stopped" -ForegroundColor DarkYellow

@@ -1,14 +1,16 @@
 # PROJECT_STATUS.md
 
-Status updated: March 14, 2026
+Status updated: March 18, 2026
 
 ## Current State
 
 The repository is in an operational local-first MVP state:
 
 - Backend and frontend are integrated for core research workflows.
+- Backend runtime, build, Docker image, CI, and local scripts are now aligned on Java 25.
 - Default operating posture remains `test`/`paper`.
 - Local runtime uses Docker PostgreSQL; backend tests/build run on H2 `test` profile.
+- Fresh PostgreSQL databases now bootstrap through Liquibase without falling back to Hibernate table creation; runtime default schema mode is `validate`.
 - Local Docker runtime now uses the explicit Compose project name `algotradingbot`, keeping container/network naming stable across scripts and manual runs.
 - Kafka runtime storage now uses reusable named volumes, including a named secrets volume, instead of creating new anonymous secrets volumes on repeated full-stack runs.
 - Saved exchange connection profiles are now persisted per user in the runtime database instead of browser storage.
@@ -17,6 +19,7 @@ The repository is in an operational local-first MVP state:
 - Canonical docs now use a slim core plus task-specific optional guides so Codex and humans can load only the workflow detail relevant to the current task.
 - Local script-driven runtime now keeps backend file logs under repo-local untracked `.runtime/logs` instead of tracked source paths.
 - Local developer memory behavior now keeps reclaim-friendly build defaults while giving backend runtime more headroom: no-daemon `bootRun`, a larger 2 GB backend heap, and ZGC for lower-pause local/container startup and runtime behavior.
+- Local and container backend debug flows now expose JDWP on demand instead of keeping debug ports open by default.
 - Docker Desktop AI and inference UI features are disabled locally because this workflow does not use them.
 - No default real-money execution path is enabled.
 - Cross-stack CI verification gates now exist in `.github/workflows/ci.yml`.
@@ -42,6 +45,7 @@ Implemented product slices:
 17. Virtual-thread-backed background execution plus parsed backtest dataset candle caching to improve repeat-run throughput
 18. Startup recovery orchestration for unfinished long-running work so interrupted backtests restart automatically and market-data imports resume from saved cursor state after restart
 19. Live WebSocket cache streaming for backtest and market-data import progress so operator pages update from backend push events instead of guessed client polling alone
+20. Java 25 migration hardening: Gradle toolchain, Docker runtime, CI, runtime validation, virtual-thread metrics, and stronger secret encryption defaults
 
 ## Active Design Decisions (Source of Truth)
 
@@ -102,11 +106,16 @@ Implemented product slices:
 44. Added a dedicated virtual-thread async executor, moved market-data job dispatch onto async background workers, reduced backtest progress-write frequency, and reused parsed candles for repeated dataset-backed backtests.
 45. Added startup recovery participants that scan for unfinished long-running work and restart interrupted or queued backtests while resuming market-data imports from saved cursor state after server restart.
 46. Mounted the frontend WebSocket runtime in the production app shell, subscribed Redux cache updates to `backtest.progress` and `marketData.import.progress`, and exposed live transport/fallback telemetry directly in the backtest and market-data operator pages.
+47. Migrated backend build/runtime/container paths from Java 21 to Java 25, including Gradle toolchains, Docker images, GitHub Actions, IntelliJ Gradle JVM metadata, and local PowerShell orchestration.
+48. Added a Java migration audit task (`jdeps` + `jdeprscan`), wired it into CI, and verified the backend against Java 25 with no remaining deprecated API hits in the audit report.
+49. Added a pre-bootstrap Liquibase changelog for the remaining core trading tables so fresh PostgreSQL environments start with `spring.jpa.hibernate.ddl-auto=validate` instead of relying on Hibernate schema updates.
+50. Standardized virtual-thread execution on Spring Boot's Java 25 support, added runtime scheduler configuration, and published Micrometer gauges for scheduler pressure plus local workload gauges for backtests/import jobs/dataset cache entries.
+51. Replaced legacy validation `HttpURLConnection` usage with the JDK HTTP client, streamed CSV parsing instead of line-splitting whole payloads, removed repeated backtest `saveAndFlush` calls, and upgraded secret encryption writes to PBKDF2-based versioned payloads with legacy-read compatibility.
 
 ## Remaining Work (Current Priorities)
 
-1. No blocking items remain in the March 12, 2026 current-priority technical-debt set.
-2. The March 12, 2026 research-quality, operator-alerting, audit-review, and migration-hardening set is complete end to end.
+1. No blocking items remain in the Java 25 migration path for normal local runtime, CI, or Docker deployment.
+2. Structured concurrency remains intentionally deferred because it is still preview-only in JDK 25 and is not enabled by default in this repository.
 3. Next priorities move to multi-channel alert delivery plus deeper experiment governance/review automation on top of the now-hardened research workflow.
 4. Additional market-data providers should only be added when they cover a concrete stock/crypto history gap not already served by the current free-provider set.
 
@@ -146,6 +155,7 @@ Phase 5 (implemented now):
 - Strategy outcomes are simulation artifacts and must not be presented as guaranteed returns.
 - Short exposure is now supported only in `test`/`paper` research flows and remains disabled for live execution, leverage, and margin expansion.
 - Strict auth is the default; local override remains explicit via `ALGOTRADING_RELAXED_AUTH=true`.
+- Java 25 preview features such as structured concurrency are not enabled by default; production runtime stays on stable GA features only.
 
 ## Verification Baseline
 
@@ -162,15 +172,24 @@ Last verified baseline (local):
   - only named project data volumes remained after cleanup
 - Runtime/memory workflow verified:
   - shared PowerShell helpers now back `build*.ps1`, `run*.ps1`, and `stop*.ps1`
+  - `build.ps1` / `build-all.ps1` print the detected local Java version before building
   - local runtime logs now write to `.runtime/logs`
   - Gradle daemon heap is reduced from 2 GB to 1 GB and the idle timeout is 15 minutes
   - backend runtime defaults now use `-Xms512m -Xmx2g -XX:+UseZGC -XX:+ZGenerational -XX:MaxMetaspaceSize=512m` in local script and container entrypoints
+  - fast local debug attach uses `.\run.ps1 -DebugBackend [-DebugPort 5005] [-SuspendBackend]`
+  - full-stack Docker debug attach uses `.\run-all.ps1 -DebugBackend` and `AlgotradingBot/compose.debug.yaml`
   - user-level WSL config now enables `autoMemoryReclaim=gradual` with page reporting and 2 GB swap
   - after `wsl --shutdown`, `vmmemWSL` dropped to roughly 1.1 GB working set / 1.24 GB private memory
 - Security workflow verified:
   - `.\security-scan.ps1` now excludes generated/build/runtime directories so the scan remains practical on this workstation
   - `.\security-scan.ps1 -FailOnFindings` now completes successfully with `0 findings`
   - Semgrep cleanup notes and resolved-rule summaries are recorded in `docs/SEMGREP_TRIAGE.md`
+- Java 25 verification:
+  - backend `.\gradlew.bat javaMigrationAudit --no-daemon` completed successfully
+  - backend `jdeprscan` report is clean on the compiled application classes
+  - fresh PostgreSQL bootstrap succeeded with Liquibase-only table creation and runtime `spring.jpa.hibernate.ddl-auto=validate`
+  - `.\run.ps1 -DebugBackend` exposed JDWP on `localhost:5005` while the backend stayed healthy
+  - `.\run-all.ps1 -DebugBackend` exposed JDWP on `localhost:5005` through `compose.debug.yaml` while the container health check stayed green
 - Local runtime verification:
   - `.\run.ps1` starts PostgreSQL plus local backend/frontend; backend health returned `UP` and frontend responded on `5173`
   - `.\stop.ps1` stops backend, frontend, and PostgreSQL cleanly

@@ -10,6 +10,7 @@ Write-Host ""
 
 Set-Location $scriptPath
 Refresh-UserPath
+Write-JavaVersionSummary
 
 Write-Host "[1/2] Building Backend (Spring Boot)..." -ForegroundColor Yellow
 Push-Location AlgotradingBot
