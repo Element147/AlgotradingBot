@@ -3,47 +3,28 @@ package com.algotrader.bot.validation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.util.concurrent.locks.LockSupport;
 
 public class ApiValidator {
     private static final Logger logger = LoggerFactory.getLogger(ApiValidator.class);
     private static final String BASE_URL = "http://localhost:8080";
-    private static final int TIMEOUT_MS = 10000;
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
+    private static final ValidationHttpClient HTTP = new ValidationHttpClient(BASE_URL, REQUEST_TIMEOUT);
 
     public ValidationResult validateHealthEndpoint() {
         logger.info("Validating health endpoint");
         try {
-            HttpURLConnection conn = openConnection("/actuator/health", "GET");
-            conn.setRequestMethod("GET");
-            conn.setConnectTimeout(TIMEOUT_MS);
-            conn.setReadTimeout(TIMEOUT_MS);
-            
-            int responseCode = conn.getResponseCode();
-            
-            if (responseCode == 200) {
-                BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                StringBuilder response = new StringBuilder();
-                String line;
-                while ((line = in.readLine()) != null) {
-                    response.append(line);
-                }
-                in.close();
-                
-                return validateHealthResponse(response.toString());
+            ValidationHttpClient.ValidationHttpResponse response = HTTP.get("/actuator/health");
+            if (response.hasStatus(200)) {
+                return validateHealthResponse(response.body());
             } else {
-                logger.error("Health endpoint returned status: {}", responseCode);
+                logger.error("Health endpoint returned status: {}", response.statusCode());
                 return new ValidationResult(
                     "REQ-9.1", 
                     "Health Endpoint", 
                     ValidationStatus.FAILED, 
-                    "Health endpoint returned status: " + responseCode
+                    "Health endpoint returned status: " + response.statusCode()
                 );
             }
         } catch (Exception e) {
@@ -81,24 +62,10 @@ public class ApiValidator {
     public ValidationResult validateStrategyStatus() {
         logger.info("Validating strategy status endpoint");
         try {
-            HttpURLConnection conn = openConnection("/api/strategy/status", "GET");
-            conn.setRequestMethod("GET");
-            conn.setConnectTimeout(TIMEOUT_MS);
-            conn.setReadTimeout(TIMEOUT_MS);
-            
-            int responseCode = conn.getResponseCode();
-            
-            if (responseCode == 200) {
-                BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                StringBuilder response = new StringBuilder();
-                String line;
-                while ((line = in.readLine()) != null) {
-                    response.append(line);
-                }
-                in.close();
-                
+            ValidationHttpClient.ValidationHttpResponse response = HTTP.get("/api/strategy/status");
+            if (response.hasStatus(200)) {
                 // Validate JSON
-                String responseStr = response.toString();
+                String responseStr = response.body();
                 if (responseStr.startsWith("{") && responseStr.endsWith("}")) {
                     logger.info("Strategy status endpoint returned valid JSON");
                     return new ValidationResult(
@@ -117,12 +84,12 @@ public class ApiValidator {
                     );
                 }
             } else {
-                logger.error("Strategy status endpoint returned status: {}", responseCode);
+                logger.error("Strategy status endpoint returned status: {}", response.statusCode());
                 return new ValidationResult(
                     "REQ-9.3", 
                     "Strategy Status", 
                     ValidationStatus.FAILED, 
-                    "Strategy status returned status: " + responseCode
+                    "Strategy status returned status: " + response.statusCode()
                 );
             }
         } catch (Exception e) {
@@ -144,14 +111,8 @@ public class ApiValidator {
         if (startResult.isFailed()) {
             return startResult;
         }
-        
-        // Wait a bit
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-        
+
+        pause(Duration.ofSeconds(2));
         // Test stop
         return validateStrategyStop();
     }
@@ -159,22 +120,9 @@ public class ApiValidator {
     public ValidationResult validateStrategyStart() {
         logger.info("Validating strategy start");
         try {
-            HttpURLConnection conn = openConnection("/api/strategy/start", "POST");
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setConnectTimeout(TIMEOUT_MS);
-            conn.setReadTimeout(TIMEOUT_MS);
-            conn.setDoOutput(true);
-            
             String jsonInput = "{\"symbol\":\"BTCUSDT\",\"initialBalance\":100.0}";
-            try (OutputStream os = conn.getOutputStream()) {
-                byte[] input = jsonInput.getBytes(StandardCharsets.UTF_8);
-                os.write(input, 0, input.length);
-            }
-            
-            int responseCode = conn.getResponseCode();
-            
-            if (responseCode == 200 || responseCode == 201) {
+            ValidationHttpClient.ValidationHttpResponse response = HTTP.postJson("/api/strategy/start", jsonInput);
+            if (response.hasStatus(200, 201)) {
                 logger.info("Strategy start successful");
                 return new ValidationResult(
                     "REQ-9.5", 
@@ -183,12 +131,12 @@ public class ApiValidator {
                     "Strategy started successfully"
                 );
             } else {
-                logger.error("Strategy start returned status: {}", responseCode);
+                logger.error("Strategy start returned status: {}", response.statusCode());
                 return new ValidationResult(
                     "REQ-9.5", 
                     "Strategy Start", 
                     ValidationStatus.FAILED, 
-                    "Strategy start returned status: " + responseCode
+                    "Strategy start returned status: " + response.statusCode()
                 );
             }
         } catch (Exception e) {
@@ -205,14 +153,8 @@ public class ApiValidator {
     public ValidationResult validateStrategyStop() {
         logger.info("Validating strategy stop");
         try {
-            HttpURLConnection conn = openConnection("/api/strategy/stop", "POST");
-            conn.setRequestMethod("POST");
-            conn.setConnectTimeout(TIMEOUT_MS);
-            conn.setReadTimeout(TIMEOUT_MS);
-            
-            int responseCode = conn.getResponseCode();
-            
-            if (responseCode == 200) {
+            ValidationHttpClient.ValidationHttpResponse response = HTTP.post("/api/strategy/stop");
+            if (response.hasStatus(200)) {
                 logger.info("Strategy stop successful");
                 return new ValidationResult(
                     "REQ-9.7", 
@@ -221,12 +163,12 @@ public class ApiValidator {
                     "Strategy stopped successfully"
                 );
             } else {
-                logger.error("Strategy stop returned status: {}", responseCode);
+                logger.error("Strategy stop returned status: {}", response.statusCode());
                 return new ValidationResult(
                     "REQ-9.7", 
                     "Strategy Stop", 
                     ValidationStatus.FAILED, 
-                    "Strategy stop returned status: " + responseCode
+                    "Strategy stop returned status: " + response.statusCode()
                 );
             }
         } catch (Exception e) {
@@ -240,11 +182,10 @@ public class ApiValidator {
         }
     }
 
-    private HttpURLConnection openConnection(String path, String method) throws Exception {
-        HttpURLConnection connection = (HttpURLConnection) URI.create(BASE_URL + path).toURL().openConnection();
-        connection.setRequestMethod(method);
-        connection.setConnectTimeout(TIMEOUT_MS);
-        connection.setReadTimeout(TIMEOUT_MS);
-        return connection;
+    private void pause(Duration duration) {
+        LockSupport.parkNanos(duration.toNanos());
+        if (Thread.currentThread().isInterrupted()) {
+            Thread.currentThread().interrupt();
+        }
     }
 }

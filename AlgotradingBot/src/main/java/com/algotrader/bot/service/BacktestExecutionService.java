@@ -199,7 +199,7 @@ public class BacktestExecutionService {
             result.setCurrentDataTimestamp(null);
             result.setStatusMessage("Validation passed. Preparing execution.");
             result.setErrorMessage(null);
-            backtestResultRepository.saveAndFlush(result);
+            backtestResultRepository.save(result);
             publishProgress(result);
 
             return new BacktestExecutionContext(
@@ -269,7 +269,7 @@ public class BacktestExecutionService {
             result.setCurrentDataTimestamp(currentDataTimestamp);
             result.setStatusMessage(statusMessage);
             result.setLastProgressAt(LocalDateTime.now());
-            backtestResultRepository.saveAndFlush(result);
+            backtestResultRepository.save(result);
             publishProgress(result);
         });
     }
@@ -294,7 +294,7 @@ public class BacktestExecutionService {
             result.setLastProgressAt(now);
             result.setCompletedAt(now);
             result.setErrorMessage(null);
-            backtestResultRepository.saveAndFlush(result);
+            backtestResultRepository.save(result);
             publishProgress(result);
         });
     }
@@ -312,9 +312,13 @@ public class BacktestExecutionService {
             result.setErrorMessage(exception.getMessage());
             result.setLastProgressAt(now);
             result.setCompletedAt(now);
-            backtestResultRepository.saveAndFlush(result);
+            backtestResultRepository.save(result);
             publishProgress(result);
         });
+    }
+
+    public int getInFlightBacktestCount() {
+        return inFlightBacktests.size();
     }
 
     private void publishProgress(BacktestResult result) {

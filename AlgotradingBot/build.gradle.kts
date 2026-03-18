@@ -7,16 +7,36 @@ plugins {
 
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.compile.JavaCompile
+import org.gradle.api.tasks.Exec
+import org.gradle.kotlin.dsl.withType
+import org.springframework.boot.gradle.tasks.run.BootRun
 import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
 
 group = "com.algotrader"
 version = "0.0.1-SNAPSHOT"
 
+val targetJavaVersion = JavaLanguageVersion.of(25)
+val reportsDir = layout.buildDirectory.dir("reports/java-migration")
+val mainRuntimeClasspath = providers.provider { sourceSets["main"].runtimeClasspath.asPath }
+val mainClassesPath = providers.provider { sourceSets["main"].output.classesDirs.asPath }
+
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = targetJavaVersion
     }
 }
+
+fun osExecutable(name: String): String =
+    if (System.getProperty("os.name").lowercase().contains("win")) "$name.exe" else name
+
+val java25Launcher = javaToolchains.launcherFor {
+    languageVersion = targetJavaVersion
+}
+
+fun jdkBinary(name: String) =
+    java25Launcher.map { launcher ->
+        launcher.metadata.installationPath.file("bin/${osExecutable(name)}").asFile.absolutePath
+    }
 
 configurations {
     compileOnly {
@@ -58,11 +78,7 @@ dependencies {
     
     // Logging
     implementation("net.logstash.logback:logstash-logback-encoder:9.0")
-    
-    // Lombok (optional, for reducing boilerplate)
-    compileOnly("org.projectlombok:lombok:1.18.42")
-    annotationProcessor("org.projectlombok:lombok:1.18.42")
-    
+
     // Testing
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
@@ -77,6 +93,7 @@ tasks.withType<Test>().configureEach {
     val jacocoExecFile = layout.buildDirectory.file("jacoco/${name}.exec")
 
     useJUnitPlatform()
+    javaLauncher.set(java25Launcher)
     // Enforce H2-backed test profile for all unit/integration tests
     systemProperty("spring.profiles.active", "test")
 
@@ -92,6 +109,22 @@ tasks.withType<Test>().configureEach {
 
 tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
     archiveFileName.set("algotrading-bot.jar")
+}
+
+tasks.withType<JavaExec>().configureEach {
+    javaLauncher.set(java25Launcher)
+}
+
+tasks.named<BootRun>("bootRun") {
+    val backendDebug = providers.gradleProperty("backendDebug").map(String::toBoolean).orElse(false)
+    val backendDebugPort = providers.gradleProperty("backendDebugPort").orElse("5005")
+    val backendDebugSuspend = providers.gradleProperty("backendDebugSuspend").orElse("n")
+
+    if (backendDebug.get()) {
+        jvmArgs(
+            "-agentlib:jdwp=transport=dt_socket,server=y,suspend=${backendDebugSuspend.get()},address=*:${backendDebugPort.get()}"
+        )
+    }
 }
 
 // JaCoCo Configuration
@@ -130,6 +163,7 @@ tasks.register<Test>("exportOpenApiContract") {
     description = "Export the generated OpenAPI contract to build/openapi/openapi.json"
 
     useJUnitPlatform()
+    javaLauncher.set(java25Launcher)
     testClassesDirs = sourceSets["test"].output.classesDirs
     classpath = sourceSets["test"].runtimeClasspath
     systemProperty("spring.profiles.active", "test")
@@ -143,5 +177,56 @@ tasks.register<Test>("exportOpenApiContract") {
 }
 
 tasks.withType<JavaCompile>().configureEach {
+    options.release.set(targetJavaVersion.asInt())
     options.compilerArgs.add("-Xlint:deprecation")
+}
+
+tasks.register<Exec>("jdepsMain") {
+    group = "verification"
+    description = "Run jdeps against the compiled backend classes using the Java 25 toolchain."
+    dependsOn(tasks.named("classes"))
+    notCompatibleWithConfigurationCache("Writes audit reports with toolchain-resolved executables at execution time.")
+
+    val outputFile = reportsDir.map { it.file("jdeps.txt").asFile }
+    val errorFile = reportsDir.map { it.file("jdeps.stderr.txt").asFile }
+    doFirst {
+        outputFile.get().parentFile.mkdirs()
+        standardOutput = outputFile.get().outputStream()
+        errorOutput = errorFile.get().outputStream()
+        executable = jdkBinary("jdeps").get()
+        args(
+            "--multi-release", targetJavaVersion.asInt().toString(),
+            "--ignore-missing-deps",
+            "--recursive",
+            "--class-path", mainRuntimeClasspath.get(),
+            mainClassesPath.get()
+        )
+    }
+}
+
+tasks.register<Exec>("jdeprscanMain") {
+    group = "verification"
+    description = "Run jdeprscan against the compiled backend classes using the Java 25 toolchain."
+    dependsOn(tasks.named("classes"))
+    notCompatibleWithConfigurationCache("Writes audit reports with toolchain-resolved executables at execution time.")
+
+    val outputFile = reportsDir.map { it.file("jdeprscan.txt").asFile }
+    val errorFile = reportsDir.map { it.file("jdeprscan.stderr.txt").asFile }
+    doFirst {
+        outputFile.get().parentFile.mkdirs()
+        standardOutput = outputFile.get().outputStream()
+        errorOutput = errorFile.get().outputStream()
+        executable = jdkBinary("jdeprscan").get()
+        args(
+            "--release", targetJavaVersion.asInt().toString(),
+            "--class-path", mainRuntimeClasspath.get(),
+            mainClassesPath.get()
+        )
+    }
+}
+
+tasks.register("javaMigrationAudit") {
+    group = "verification"
+    description = "Run the Java 25 migration audit toolchain (jdeps + jdeprscan)."
+    dependsOn("jdepsMain", "jdeprscanMain")
 }

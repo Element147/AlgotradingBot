@@ -18,15 +18,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set Up Java 21
+      - name: Set Up Java 25
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "21"
+          java-version: "25"
           cache: gradle
 
       - name: Make Gradle Wrapper Executable
         run: chmod +x gradlew
+
+      - name: Run Java Migration Audit
+        run: ./gradlew javaMigrationAudit --no-daemon --no-configuration-cache
 
       - name: Run Backend Tests
         run: ./gradlew test --no-daemon

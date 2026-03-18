@@ -58,7 +58,9 @@ services:
       - algotrading-network
 
   algotrading-app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: algotrading-app
     depends_on:
       postgres:
@@ -72,7 +74,8 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      JAVA_OPTS: -Xms512m -Xmx2g -XX:+UseZGC -XX:+ZGenerational -XX:MaxMetaspaceSize=512m
+      JAVA_OPTS: -Xms512m -Xmx2g -XX:+UseZGC -XX:+ZGenerational -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError
+      JAVA_DEBUG_OPTS: ${JAVA_DEBUG_OPTS:-}
     restart: unless-stopped
     stop_grace_period: 30s
     networks:

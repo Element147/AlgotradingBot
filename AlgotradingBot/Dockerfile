@@ -1,11 +1,16 @@
 # Build stage
-FROM gradle:8.5-jdk21 AS build
+FROM eclipse-temurin:25-jdk-jammy AS build
 WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends unzip \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy Gradle wrapper and build files first for better caching
 COPY gradlew gradlew.bat ./
 COPY gradle ./gradle
 COPY build.gradle.kts settings.gradle.kts ./
+RUN chmod +x gradlew
 
 # Download dependencies (cached layer)
 RUN ./gradlew dependencies --no-daemon || true
@@ -17,10 +22,14 @@ COPY src ./src
 RUN ./gradlew bootJar --no-daemon
 
 # Runtime stage
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-jammy
 
 # Create non-root user for security
-RUN addgroup -S spring && adduser -S spring -G spring
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --system spring \
+    && useradd --system --gid spring --create-home spring
 
 WORKDIR /app
 
@@ -38,13 +47,15 @@ USER spring:spring
 
 # Expose application port
 EXPOSE 8080
+EXPOSE 5005
 
 # Set JVM options for container runtime
-ENV JAVA_OPTS="-Xms512m -Xmx2g -XX:+UseZGC -XX:+ZGenerational -XX:MaxMetaspaceSize=512m"
+ENV JAVA_OPTS="-Xms512m -Xmx2g -XX:+UseZGC -XX:+ZGenerational -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError"
+ENV JAVA_DEBUG_OPTS=""
 
 # Health check configuration
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1
+  CMD curl --fail --silent http://localhost:8080/actuator/health > /dev/null || exit 1
 
 # Run the application
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS $JAVA_DEBUG_OPTS -jar app.jar"]

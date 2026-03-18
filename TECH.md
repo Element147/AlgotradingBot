@@ -8,7 +8,7 @@ Slim technical index for stack, standard commands, and deeper runbooks.
 
 ### Backend
 
-- Java 21
+- Java 25
 - Spring Boot 4.0.3
 - Gradle Kotlin DSL
 - PostgreSQL (runtime)
@@ -38,8 +38,16 @@ Backend verification:
 
 ```powershell
 cd AlgotradingBot
+.\gradlew.bat javaMigrationAudit --no-daemon
 .\gradlew.bat test
 .\gradlew.bat build
+```
+
+Backend debug:
+
+```powershell
+.\run.ps1 -DebugBackend
+.\run-all.ps1 -DebugBackend
 ```
 
 Frontend verification:

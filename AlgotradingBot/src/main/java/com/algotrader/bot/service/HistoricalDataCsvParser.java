@@ -3,13 +3,17 @@ package com.algotrader.bot.service;
 import com.algotrader.bot.backtest.OHLCVData;
 import org.springframework.stereotype.Component;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.nio.charset.StandardCharsets;
 
 @Component
 public class HistoricalDataCsvParser {
@@ -19,56 +23,64 @@ public class HistoricalDataCsvParser {
             throw new IllegalArgumentException("CSV data is empty");
         }
 
-        String csv = new String(csvBytes, StandardCharsets.UTF_8);
-        String[] rawLines = csv.replace("\r", "").split("\n");
-        if (rawLines.length < 2) {
-            throw new IllegalArgumentException("CSV must contain header and at least one data row");
-        }
-
-        CsvIndexes indexes = resolveIndexes(rawLines[0]);
-        List<OHLCVData> candles = new ArrayList<>(Math.max(1, rawLines.length - 1));
-        LocalDateTime previousTimestamp = null;
-        boolean alreadySorted = true;
-
-        for (int i = 1; i < rawLines.length; i++) {
-            String line = rawLines[i].trim();
-            if (line.isEmpty()) {
-                continue;
+        try (BufferedReader reader = new BufferedReader(
+            new InputStreamReader(new ByteArrayInputStream(csvBytes), StandardCharsets.UTF_8)
+        )) {
+            String headerLine = reader.readLine();
+            if (headerLine == null) {
+                throw new IllegalArgumentException("CSV must contain header and at least one data row");
             }
 
-            String[] columns = line.split(",");
-            if (columns.length <= indexes.maxIndex()) {
-                throw new IllegalArgumentException("Invalid CSV row at line " + (i + 1));
-            }
+            CsvIndexes indexes = resolveIndexes(headerLine);
+            List<OHLCVData> candles = new ArrayList<>();
+            LocalDateTime previousTimestamp = null;
+            boolean alreadySorted = true;
+            String rawLine;
+            int lineNumber = 1;
 
-            try {
-                LocalDateTime timestamp = LocalDateTime.parse(columns[indexes.timestamp()].trim());
-                if (previousTimestamp != null && timestamp.isBefore(previousTimestamp)) {
-                    alreadySorted = false;
+            while ((rawLine = reader.readLine()) != null) {
+                lineNumber++;
+                String line = rawLine.trim();
+                if (line.isEmpty()) {
+                    continue;
                 }
-                previousTimestamp = timestamp;
-                candles.add(new OHLCVData(
-                    timestamp,
-                    columns[indexes.symbol()].trim(),
-                    new BigDecimal(columns[indexes.open()].trim()),
-                    new BigDecimal(columns[indexes.high()].trim()),
-                    new BigDecimal(columns[indexes.low()].trim()),
-                    new BigDecimal(columns[indexes.close()].trim()),
-                    new BigDecimal(columns[indexes.volume()].trim())
-                ));
-            } catch (Exception ex) {
-                throw new IllegalArgumentException("Unable to parse CSV at line " + (i + 1) + ": " + ex.getMessage());
+
+                String[] columns = line.split(",");
+                if (columns.length <= indexes.maxIndex()) {
+                    throw new IllegalArgumentException("Invalid CSV row at line " + lineNumber);
+                }
+
+                try {
+                    LocalDateTime timestamp = LocalDateTime.parse(columns[indexes.timestamp()].trim());
+                    if (previousTimestamp != null && timestamp.isBefore(previousTimestamp)) {
+                        alreadySorted = false;
+                    }
+                    previousTimestamp = timestamp;
+                    candles.add(new OHLCVData(
+                        timestamp,
+                        columns[indexes.symbol()].trim(),
+                        new BigDecimal(columns[indexes.open()].trim()),
+                        new BigDecimal(columns[indexes.high()].trim()),
+                        new BigDecimal(columns[indexes.low()].trim()),
+                        new BigDecimal(columns[indexes.close()].trim()),
+                        new BigDecimal(columns[indexes.volume()].trim())
+                    ));
+                } catch (Exception ex) {
+                    throw new IllegalArgumentException("Unable to parse CSV at line " + lineNumber + ": " + ex.getMessage());
+                }
             }
-        }
 
-        if (!alreadySorted) {
-            candles.sort(Comparator.comparing(OHLCVData::getTimestamp));
-        }
-        if (candles.isEmpty()) {
-            throw new IllegalArgumentException("CSV does not contain valid OHLCV rows");
-        }
+            if (!alreadySorted) {
+                candles.sort(Comparator.comparing(OHLCVData::getTimestamp));
+            }
+            if (candles.isEmpty()) {
+                throw new IllegalArgumentException("CSV does not contain valid OHLCV rows");
+            }
 
-        return candles;
+            return candles;
+        } catch (IOException exception) {
+            throw new IllegalArgumentException("Unable to read CSV payload", exception);
+        }
     }
 
     private CsvIndexes resolveIndexes(String headerLine) {

@@ -2,7 +2,6 @@ package com.algotrader.bot.controller;
 
 import com.algotrader.bot.service.BacktestManagementService;
 import com.algotrader.bot.service.BacktestDatasetService;
-import com.algotrader.bot.entity.BacktestDataset;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -69,15 +68,15 @@ public class BacktestManagementController {
     @GetMapping("/datasets/{datasetId}/download")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<byte[]> downloadDataset(@PathVariable Long datasetId) {
-        BacktestDataset dataset = backtestDatasetService.getDataset(datasetId);
-        String safeFilename = dataset.getOriginalFilename().replace("\"", "");
+        BacktestDatasetDownloadResponse dataset = backtestDatasetService.downloadDataset(datasetId);
+        String safeFilename = dataset.originalFilename().replace("\"", "");
 
         return ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + safeFilename + "\"")
-            .header("X-Dataset-Checksum-Sha256", dataset.getChecksumSha256())
-            .header("X-Dataset-Schema-Version", dataset.getSchemaVersion())
+            .header("X-Dataset-Checksum-Sha256", dataset.checksumSha256())
+            .header("X-Dataset-Schema-Version", dataset.schemaVersion())
             .contentType(MediaType.parseMediaType("text/csv"))
-            .body(dataset.getCsvData());
+            .body(dataset.csvData());
     }
 
     @GetMapping

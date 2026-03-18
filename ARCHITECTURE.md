@@ -4,7 +4,7 @@
 
 This monorepo has:
 
-- Backend: `AlgotradingBot/` (Spring Boot, Java 21)
+- Backend: `AlgotradingBot/` (Spring Boot, Java 25)
 - Frontend: `frontend/` (React + TypeScript + Vite)
 
 The architecture is optimized for local research and paper-trading workflows, not high-frequency execution.
@@ -35,7 +35,7 @@ Primary packages in `com.algotrader.bot`:
 - Experiment seam: backtest runs carry repeatable experiment labels/keys so related runs can be summarized without losing per-run provenance.
 - Analytics persistence seam: backtest details include persisted equity-curve and trade-series records for reproducible UI charts/exports.
 - Execution-observability seam: backtest runs persist stage/progress/current-candle telemetry so operators can distinguish slow execution from stalled execution.
-- Execution-runtime seam: long-running backtests and import workers execute on dedicated async infrastructure, and repeated backtests can reuse parsed dataset candles instead of re-decoding the same CSV each run.
+- Execution-runtime seam: long-running backtests and import workers execute on Java 25 virtual-thread infrastructure, repeated backtests can reuse parsed dataset candles instead of re-decoding the same CSV each run, and scheduler pressure is surfaced through Micrometer/runtime MXBean metrics.
 - Recovery seam: startup recovery participants re-queue unfinished long-running tasks after restart; market-data imports continue from their persisted cursor, while backtests restart the interrupted run from the saved configuration.
 - Comparison seam: dedicated compare API provides side-by-side metric deltas plus dataset provenance for selected backtests.
 - Reporting seam: frontend exports fail closed when dataset provenance is incomplete, and experiment labels flow into report packaging for clearer multi-run review.
@@ -82,13 +82,14 @@ Key frontend design rules:
 
 ## Runtime and Data Boundaries
 
-- Runtime app: PostgreSQL (Docker) with Liquibase migrations.
+- Runtime app: PostgreSQL (Docker) with Liquibase migrations plus `spring.jpa.hibernate.ddl-auto=validate` as the default runtime safety check.
 - Local Docker Compose uses the explicit project name `algotradingbot` so container and volume naming remain stable across scripts and manual runs.
+- Docker deployment uses Temurin Java 25 builder/runtime images, and an opt-in debug overlay (`compose.debug.yaml`) exposes JDWP when requested.
 - Script-driven local runtime writes backend file logs into repo-local untracked `.runtime/logs` storage instead of tracked source paths.
 - Backend test/build: H2 in-memory via Spring `test` profile.
 - Backup path uses real database-native exports: H2 `SCRIPT` in tests and PostgreSQL `pg_dump` with Docker-container fallback in runtime.
 - Historical download path uses provider-specific fetch adapters but normalizes everything into the same backtest dataset catalog used by upload/import workflows.
-- Keyed historical-data providers can resolve API keys from either backend environment variables or encrypted PostgreSQL credentials managed through the admin UI; stored secrets depend on a backend master key and keep operator notes alongside the provider setting.
+- Keyed historical-data providers can resolve API keys from either backend environment variables or encrypted PostgreSQL credentials managed through the admin UI; stored secrets now write PBKDF2-derived versioned ciphertext and keep backward-compatible reads for older payloads.
 - Repair/orchestration automation resolves repo-local paths and uses `run.ps1`, `stop.ps1`, shared PowerShell helpers, `.pids`, `.runtime`, and `compose.yaml` rather than ad-hoc global Docker commands.
 - Kafka runtime mounts use a reusable named secrets volume so repeated runs do not create anonymous volume churn.
 - Keep runtime and test data concerns strictly separated.
@@ -110,9 +111,10 @@ Key frontend design rules:
 13. Historical market-data acquisition runs as persistent import jobs with explicit `QUEUED/RUNNING/WAITING_RETRY/COMPLETED/FAILED/CANCELLED` states so provider waits and retries stay observable and resumable.
 14. Provider credential storage for the downloader stays backend-owned: the frontend submits secrets only to authenticated admin endpoints, PostgreSQL stores only encrypted ciphertext, and runtime resolution can fall back to environment variables when needed.
 15. Frontend progress views for backtests and market-data imports are fed by backend WebSocket snapshots first and retain slower polling only as an operator-visible safety fallback.
+16. Java 25 is the backend baseline across build, CI, Docker, and local workflows; preview-only JDK features remain opt-in and are not enabled in default runtime paths.
 
 ## Near-Term Architecture Work
 
 1. Extend operator alert delivery beyond in-app/dashboard surfacing into broader notification channels when justified.
 2. Extend experiment-review workflows on top of the new experiment summary seam.
-3. Continue expanding operational recovery coverage beyond the current port/network/script-aligned repair set.
+3. Benchmark Java 25 preview features such as structured concurrency only behind explicit opt-in profiles, not in the default runtime.

@@ -1,4 +1,8 @@
-param()
+param(
+    [switch]$DebugBackend,
+    [int]$DebugPort = 5005,
+    [switch]$SuspendBackend
+)
 
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
 . (Join-Path $scriptPath "scripts/powershell/Common.ps1")
@@ -12,6 +16,7 @@ Set-Location $scriptPath
 $repoPaths = Get-RepoPaths -ScriptPath $scriptPath
 Initialize-RepoRuntime -RepoPaths $repoPaths
 Refresh-UserPath
+Write-JavaVersionSummary
 
 $backendPidFile = Get-PidFilePath -RepoPaths $repoPaths -Name "backend"
 $frontendPidFile = Get-PidFilePath -RepoPaths $repoPaths -Name "frontend"
@@ -42,7 +47,8 @@ if (-not (Assert-PortAvailable -Port 5173 -Label "Frontend")) {
 
 Write-Host ""
 Write-Host "[1/3] Starting PostgreSQL container..." -ForegroundColor Yellow
-docker compose @($repoPaths.ComposeArgs) up -d postgres
+$composeArgs = Get-ComposeArgs -RepoPaths $repoPaths
+docker compose @($composeArgs) up -d postgres
 if ($LASTEXITCODE -ne 0) {
     Write-Host "[X] Failed to start PostgreSQL container!" -ForegroundColor Red
     exit 1
@@ -61,12 +67,20 @@ Write-Host "[OK] PostgreSQL is healthy" -ForegroundColor Green
 Write-Host ""
 Write-Host "[2/3] Starting Backend (local bootRun, reclaim-friendly mode)..." -ForegroundColor Yellow
 $backendEnvironment = Get-LowMemoryBackendEnvironment -RepoPaths $repoPaths
+$backendCommand = ".\gradlew.bat --no-daemon bootRun"
+if ($DebugBackend) {
+    $debugSuspend = if ($SuspendBackend) { "y" } else { "n" }
+    $backendCommand = ".\gradlew.bat --no-daemon bootRun -PbackendDebug=true -PbackendDebugPort=$DebugPort -PbackendDebugSuspend=$debugSuspend"
+}
 $backendProc = Start-DetachedPowerShellProcess `
     -WorkingDirectory (Join-Path $scriptPath "AlgotradingBot") `
-    -Command ".\gradlew.bat --no-daemon bootRun" `
+    -Command $backendCommand `
     -PidFile $backendPidFile `
     -Environment $backendEnvironment
 Write-Host "[OK] Backend process started (PID $($backendProc.Id))" -ForegroundColor Green
+if ($DebugBackend) {
+    Write-Host "      JVM debug port: $DebugPort" -ForegroundColor Gray
+}
 
 Write-Host ""
 Write-Host "Waiting for backend to be ready..." -ForegroundColor Yellow
@@ -100,5 +114,8 @@ Write-Host "  Frontend:  http://localhost:5173" -ForegroundColor White
 Write-Host "  Backend:   http://localhost:8080" -ForegroundColor White
 Write-Host "  API Docs:  http://localhost:8080/swagger-ui.html" -ForegroundColor White
 Write-Host "  Backend logs: $($repoPaths.RuntimeLogDir)" -ForegroundColor White
+if ($DebugBackend) {
+    Write-Host "  Backend JDWP: localhost:$DebugPort" -ForegroundColor White
+}
 Write-Host ""
 Write-Host "To stop all services, run: .\stop.ps1" -ForegroundColor Yellow

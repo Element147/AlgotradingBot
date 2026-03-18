@@ -6,17 +6,16 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.util.concurrent.locks.LockSupport;
 
 public class DataPersistenceValidator {
     private static final Logger logger = LoggerFactory.getLogger(DataPersistenceValidator.class);
     private static final String BASE_URL = "http://localhost:8080";
-    private static final int TIMEOUT_MS = 10000;
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
+    private static final Duration HEALTH_CHECK_INTERVAL = Duration.ofSeconds(2);
+    private static final ValidationHttpClient HTTP = new ValidationHttpClient(BASE_URL, REQUEST_TIMEOUT);
     private final RepairWorkspaceSupport workspaceSupport = RepairWorkspaceSupport.detect();
     private String testTradeId;
 
@@ -65,22 +64,9 @@ public class DataPersistenceValidator {
     public ValidationResult insertTestTradeData() {
         logger.info("Inserting test trade data");
         try {
-            HttpURLConnection conn = openConnection("/api/strategy/start", "POST");
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setConnectTimeout(TIMEOUT_MS);
-            conn.setReadTimeout(TIMEOUT_MS);
-            conn.setDoOutput(true);
-            
             String jsonInput = "{\"symbol\":\"TESTBTC\",\"initialBalance\":1000.0}";
-            try (OutputStream os = conn.getOutputStream()) {
-                byte[] input = jsonInput.getBytes(StandardCharsets.UTF_8);
-                os.write(input, 0, input.length);
-            }
-            
-            int responseCode = conn.getResponseCode();
-            
-            if (responseCode == 200 || responseCode == 201) {
+            ValidationHttpClient.ValidationHttpResponse response = HTTP.postJson("/api/strategy/start", jsonInput);
+            if (response.hasStatus(200, 201)) {
                 testTradeId = "test-" + System.currentTimeMillis();
                 logger.info("Test trade data inserted");
                 return new ValidationResult(
@@ -90,12 +76,12 @@ public class DataPersistenceValidator {
                     "Test data inserted"
                 );
             } else {
-                logger.error("Failed to insert test data, status: {}", responseCode);
+                logger.error("Failed to insert test data, status: {}", response.statusCode());
                 return new ValidationResult(
                     "REQ-14.1", 
                     "Insert Test Data", 
                     ValidationStatus.FAILED, 
-                    "Failed to insert test data: " + responseCode
+                    "Failed to insert test data: " + response.statusCode()
                 );
             }
         } catch (Exception e) {
@@ -165,28 +151,11 @@ public class DataPersistenceValidator {
 
     public ValidationResult waitForPostgresHealthy() {
         logger.info("Waiting for PostgreSQL to become healthy");
-        LocalDateTime start = LocalDateTime.now();
-        Duration timeout = Duration.ofSeconds(60);
-        
-        while (Duration.between(start, LocalDateTime.now()).compareTo(timeout) < 0) {
+        Instant deadline = Instant.now().plus(Duration.ofSeconds(60));
+
+        while (Instant.now().isBefore(deadline)) {
             try {
-                String containerName = workspaceSupport.containerNameFor("postgres");
-                ProcessBuilder pb = new ProcessBuilder(
-                    "docker",
-                    "inspect",
-                    "--format",
-                    "{{.State.Health.Status}}",
-                    containerName
-                );
-                pb.directory(workspaceSupport.repoRoot().toFile());
-                pb.redirectErrorStream(true);
-                Process process = pb.start();
-                
-                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                String status = reader.readLine();
-                reader.close();
-                process.waitFor();
-                
+                String status = inspectContainerHealth("postgres");
                 if ("healthy".equals(status)) {
                     logger.info("PostgreSQL is healthy");
                     return new ValidationResult(
@@ -196,8 +165,8 @@ public class DataPersistenceValidator {
                         "Postgres healthy after restart"
                     );
                 }
-                
-                Thread.sleep(2000);
+
+                pause(HEALTH_CHECK_INTERVAL);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return new ValidationResult(
@@ -207,7 +176,7 @@ public class DataPersistenceValidator {
                     "Wait interrupted"
                 );
             } catch (Exception e) {
-                logger.error("Error checking Postgres health", e);
+                logger.debug("Error checking Postgres health", e);
             }
         }
         
@@ -223,14 +192,8 @@ public class DataPersistenceValidator {
     public ValidationResult verifyTestDataExists() {
         logger.info("Verifying test data exists after restart");
         try {
-            HttpURLConnection conn = openConnection("/api/strategy/status", "GET");
-            conn.setRequestMethod("GET");
-            conn.setConnectTimeout(TIMEOUT_MS);
-            conn.setReadTimeout(TIMEOUT_MS);
-            
-            int responseCode = conn.getResponseCode();
-            
-            if (responseCode == 200) {
+            ValidationHttpClient.ValidationHttpResponse response = HTTP.get("/api/strategy/status");
+            if (response.hasStatus(200)) {
                 logger.info("Test data verified - API accessible");
                 return new ValidationResult(
                     "REQ-14.4", 
@@ -239,12 +202,12 @@ public class DataPersistenceValidator {
                     "Data persisted after restart"
                 );
             } else {
-                logger.error("Failed to verify data, status: {}", responseCode);
+                logger.error("Failed to verify data, status: {}", response.statusCode());
                 return new ValidationResult(
                     "REQ-14.4", 
                     "Verify Data Exists", 
                     ValidationStatus.FAILED, 
-                    "Failed to verify data: " + responseCode
+                    "Failed to verify data: " + response.statusCode()
                 );
             }
         } catch (Exception e) {
@@ -314,28 +277,11 @@ public class DataPersistenceValidator {
 
     public ValidationResult waitForApplicationHealthy() {
         logger.info("Waiting for application to become healthy");
-        LocalDateTime start = LocalDateTime.now();
-        Duration timeout = Duration.ofSeconds(120);
-        
-        while (Duration.between(start, LocalDateTime.now()).compareTo(timeout) < 0) {
+        Instant deadline = Instant.now().plus(Duration.ofSeconds(120));
+
+        while (Instant.now().isBefore(deadline)) {
             try {
-                String containerName = workspaceSupport.containerNameFor("algotrading-app");
-                ProcessBuilder pb = new ProcessBuilder(
-                    "docker",
-                    "inspect",
-                    "--format",
-                    "{{.State.Health.Status}}",
-                    containerName
-                );
-                pb.directory(workspaceSupport.repoRoot().toFile());
-                pb.redirectErrorStream(true);
-                Process process = pb.start();
-                
-                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                String status = reader.readLine();
-                reader.close();
-                process.waitFor();
-                
+                String status = inspectContainerHealth("algotrading-app");
                 if ("healthy".equals(status)) {
                     logger.info("Application is healthy");
                     return new ValidationResult(
@@ -345,8 +291,8 @@ public class DataPersistenceValidator {
                         "Application healthy after restart"
                     );
                 }
-                
-                Thread.sleep(2000);
+
+                pause(HEALTH_CHECK_INTERVAL);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return new ValidationResult(
@@ -356,7 +302,7 @@ public class DataPersistenceValidator {
                     "Wait interrupted"
                 );
             } catch (Exception e) {
-                logger.error("Error checking application health", e);
+                logger.debug("Error checking application health", e);
             }
         }
         
@@ -434,14 +380,8 @@ public class DataPersistenceValidator {
     public ValidationResult verifyDataQueryable() {
         logger.info("Verifying data is queryable after restart");
         try {
-            HttpURLConnection conn = openConnection("/api/strategy/status", "GET");
-            conn.setRequestMethod("GET");
-            conn.setConnectTimeout(TIMEOUT_MS);
-            conn.setReadTimeout(TIMEOUT_MS);
-            
-            int responseCode = conn.getResponseCode();
-            
-            if (responseCode == 200) {
+            ValidationHttpClient.ValidationHttpResponse response = HTTP.get("/api/strategy/status");
+            if (response.hasStatus(200)) {
                 logger.info("Data is queryable after restart");
                 return new ValidationResult(
                     "REQ-14.8", 
@@ -450,12 +390,12 @@ public class DataPersistenceValidator {
                     "Data queryable after restart"
                 );
             } else {
-                logger.error("Failed to query data, status: {}", responseCode);
+                logger.error("Failed to query data, status: {}", response.statusCode());
                 return new ValidationResult(
                     "REQ-14.8", 
                     "Data Queryable", 
                     ValidationStatus.FAILED, 
-                    "Failed to query data: " + responseCode
+                    "Failed to query data: " + response.statusCode()
                 );
             }
         } catch (Exception e) {
@@ -469,11 +409,29 @@ public class DataPersistenceValidator {
         }
     }
 
-    private HttpURLConnection openConnection(String path, String method) throws Exception {
-        HttpURLConnection connection = (HttpURLConnection) URI.create(BASE_URL + path).toURL().openConnection();
-        connection.setRequestMethod(method);
-        connection.setConnectTimeout(TIMEOUT_MS);
-        connection.setReadTimeout(TIMEOUT_MS);
-        return connection;
+    private String inspectContainerHealth(String serviceName) throws Exception {
+        String containerName = workspaceSupport.containerNameFor(serviceName);
+        ProcessBuilder pb = new ProcessBuilder(
+            "docker",
+            "inspect",
+            "--format",
+            "{{.State.Health.Status}}",
+            containerName
+        );
+        pb.directory(workspaceSupport.repoRoot().toFile());
+        pb.redirectErrorStream(true);
+        Process process = pb.start();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            String status = reader.readLine();
+            process.waitFor();
+            return status;
+        }
+    }
+
+    private void pause(Duration duration) throws InterruptedException {
+        LockSupport.parkNanos(duration.toNanos());
+        if (Thread.interrupted()) {
+            throw new InterruptedException("Interrupted while waiting.");
+        }
     }
 }

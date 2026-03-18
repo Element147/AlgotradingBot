@@ -2,6 +2,7 @@ package com.algotrader.bot.service;
 
 import com.algotrader.bot.backtest.OHLCVData;
 import com.algotrader.bot.controller.BacktestDatasetArchiveRequest;
+import com.algotrader.bot.controller.BacktestDatasetDownloadResponse;
 import com.algotrader.bot.controller.BacktestDatasetResponse;
 import com.algotrader.bot.controller.BacktestDatasetRetentionReportResponse;
 import com.algotrader.bot.entity.BacktestDataset;
@@ -144,6 +145,17 @@ public class BacktestDatasetService {
     public BacktestDataset getDataset(Long datasetId) {
         return backtestDatasetRepository.findById(datasetId)
             .orElseThrow(() -> new EntityNotFoundException("Backtest dataset not found: " + datasetId));
+    }
+
+    @Transactional(readOnly = true)
+    public BacktestDatasetDownloadResponse downloadDataset(Long datasetId) {
+        BacktestDataset dataset = getDataset(datasetId);
+        return new BacktestDatasetDownloadResponse(
+            dataset.getOriginalFilename(),
+            dataset.getChecksumSha256(),
+            dataset.getSchemaVersion(),
+            dataset.getCsvData()
+        );
     }
 
     @Transactional

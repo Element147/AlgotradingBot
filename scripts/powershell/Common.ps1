@@ -9,6 +9,7 @@ function Get-RepoPaths {
     )
 
     $composeFile = Join-Path $ScriptPath "AlgotradingBot/compose.yaml"
+    $composeDebugFile = Join-Path $ScriptPath "AlgotradingBot/compose.debug.yaml"
     $pidDir = Join-Path $ScriptPath ".pids"
     $runtimeDir = Join-Path $ScriptPath ".runtime"
     $runtimeLogDir = Join-Path $runtimeDir "logs"
@@ -17,12 +18,27 @@ function Get-RepoPaths {
     return @{
         ScriptPath = $ScriptPath
         ComposeFile = $composeFile
-        ComposeArgs = @("--project-name", "algotradingbot", "-f", $composeFile)
+        ComposeDebugFile = $composeDebugFile
         PidDir = $pidDir
         RuntimeDir = $runtimeDir
         RuntimeLogDir = $runtimeLogDir
         HoverflyDataDir = $hoverflyDataDir
     }
+}
+
+function Get-ComposeArgs {
+    param(
+        [Parameter(Mandatory = $true)]
+        [hashtable]$RepoPaths,
+        [switch]$IncludeDebug
+    )
+
+    $composeArgs = @("--project-name", "algotradingbot", "-f", $RepoPaths.ComposeFile)
+    if ($IncludeDebug -and (Test-Path $RepoPaths.ComposeDebugFile)) {
+        $composeArgs += @("-f", $RepoPaths.ComposeDebugFile)
+    }
+
+    return $composeArgs
 }
 
 function Ensure-Directory {
@@ -66,6 +82,30 @@ function Test-DockerRunning {
 
 function Test-NodeInstalled {
     return ($null -ne (Get-Command node -ErrorAction SilentlyContinue))
+}
+
+function Get-JavaVersionSummary {
+    $javaCommand = Get-Command java -ErrorAction SilentlyContinue
+    if ($null -eq $javaCommand) {
+        return $null
+    }
+
+    $versionLine = (& java -version 2>&1 | Select-Object -First 1)
+    if (-not $versionLine) {
+        return "java detected but version could not be resolved"
+    }
+
+    return $versionLine.ToString().Trim()
+}
+
+function Write-JavaVersionSummary {
+    $summary = Get-JavaVersionSummary
+    if ($null -eq $summary) {
+        Write-Host "[WARN] Java is not on PATH. Gradle toolchain resolution may still work if JAVA_HOME is set." -ForegroundColor DarkYellow
+        return
+    }
+
+    Write-Host "[OK] Java detected: $summary" -ForegroundColor Green
 }
 
 function Assert-PortAvailable {

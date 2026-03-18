@@ -8,14 +8,15 @@ Local-first full-stack algorithmic trading research platform for strategy resear
 - Live-money trading is never enabled by default.
 - Backtests and paper results are research artifacts, not proof of future profitability.
 
-## Current Capability Snapshot (March 14, 2026)
+## Current Capability Snapshot (March 18, 2026)
 
 Implemented and usable end to end:
 
 - Strategy management APIs and UI workflows
 - Backtest execution, experiment summaries, history, and details
 - Live backtest progress telemetry with persisted stage/progress/current-candle visibility, explicit WebSocket-vs-polling transport status in the UI, and operator result deletion controls
-- Virtual-thread-backed async execution for long-running backtests and market-data import workers, plus parsed-candle reuse for repeated dataset-backed backtests
+- Java 25 runtime/toolchain migration across Gradle, Docker, CI, and local scripts, with fresh PostgreSQL bootstrap now handled by Liquibase plus runtime `ddl-auto=validate`
+- Virtual-thread-backed async execution for long-running backtests and market-data import workers, virtual-thread scheduler/runtime metrics, and parsed-candle reuse for repeated dataset-backed backtests
 - Startup recovery for unfinished long-running work: queued or interrupted backtests are automatically restarted, and market-data imports continue from their saved cursor after the next server start
 - Backtest replay and side-by-side comparison APIs
 - Dataset lifecycle inventory (`checksumSha256`, schema version, retention, archive/restore) plus dataset download endpoint
@@ -28,7 +29,9 @@ Implemented and usable end to end:
 - Database-persisted exchange connection profiles with per-user active selection in the settings UI
 - Operator audit-event trail for critical actions (`/api/system/audit-events`)
 - System backup endpoint with real database dump artifacts
+- PBKDF2-backed credential encryption for exchange and market-data secrets, with backward-compatible reads for legacy ciphertext already stored in PostgreSQL
 - CI verification gates for backend and frontend (`.github/workflows/ci.yml`)
+- Java migration audit task (`jdeps` + `jdeprscan`) wired into local verification and CI
 - Generated OpenAPI contract export and frontend contract drift check
 - Provenance-guarded backtest PDF/CSV exports
 - Small-account strategy catalog in backend backtest engine
@@ -56,7 +59,7 @@ Backtest strategy catalog:
 
 ## Stack
 
-- Backend: Java 21, Spring Boot 4.0.3, Gradle Kotlin DSL
+- Backend: Java 25, Spring Boot 4.0.3, Gradle Kotlin DSL
 - Frontend: React 19, TypeScript, Vite, Redux Toolkit, RTK Query, React Router 7, MUI 7
 - Runtime DB: PostgreSQL via Docker Compose (`AlgotradingBot/compose.yaml`)
 - Backend tests/build: H2 in-memory (`test` profile)
@@ -72,12 +75,25 @@ Fast local developer flow (recommended):
 .\stop.ps1
 ```
 
+Backend debug attach is built in:
+
+```powershell
+.\run.ps1 -DebugBackend
+.\run.ps1 -DebugBackend -SuspendBackend
+```
+
 Legacy full-stack wrappers are still available:
 
 ```powershell
 .\build-all.ps1
 .\run-all.ps1
 .\stop-all.ps1
+```
+
+Docker full-stack backend debug:
+
+```powershell
+.\run-all.ps1 -DebugBackend
 ```
 
 Server hygiene:
@@ -93,6 +109,13 @@ Optional security scan:
 
 ```powershell
 .\security-scan.ps1
+```
+
+Backend migration audit:
+
+```powershell
+cd AlgotradingBot
+.\gradlew.bat javaMigrationAudit --no-daemon
 ```
 
 ## Optional Task Guides
