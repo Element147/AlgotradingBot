@@ -80,6 +80,35 @@ If a task touches a planned feature, cite the relevant planning document and kee
   - `hoverfly-mcp-server` for optional provider/exchange API mocking
 - Docker MCP path and host conventions are documented in `docs/guides/LOCAL_DEV_DOCKER_MCP.md`.
 
+## Project Codex Agents
+
+Project-local Codex agents live in `.codex/agents/` and are part of the standard tooling for this repository.
+
+- Use the matching project-local agent proactively when a task clearly fits, even if the user does not mention the agent by name.
+- Prefer one primary agent and at most two supporting agents so context stays tight.
+- Announce which agent or agents you are using and why in one short line.
+- If agent delegation is unavailable in the current Codex environment, follow the same specialist lens directly instead of skipping it.
+
+Routing rules:
+
+- `quant-trader` for strategy implementation, backtest workflow changes, market-data realism, paper-trading behavior, and experiment reproducibility.
+- `quant-analyst` for performance interpretation, leakage checks, robustness analysis, and simulation-quality review.
+- `risk-manager` for risk controls, drawdown logic, kill switches, operator overrides, and incident posture.
+- `fintech-engineer` for money movement, reconciliation, balance integrity, precision, and audit-sensitive financial flows.
+- `java-architect` for cross-module backend design, JVM/runtime concerns, concurrency, and structural refactors.
+- `spring-boot-engineer` for controllers, services, repositories, security filters, transactions, DTOs, and profile behavior.
+- `api-designer` for HTTP contract design, error model review, backward compatibility, and OpenAPI-facing changes.
+- `postgres-pro` for PostgreSQL schema design, indexing, locking, Liquibase-heavy data changes, and runtime query behavior.
+- `websocket-engineer` for real-time events, reconnect behavior, subscription/auth state, and progress-streaming flows.
+- `react-specialist` for React route surfaces, component behavior, hooks, async rendering, and MUI interaction flows.
+- `typescript-pro` for generated contract drift, API typing, strictness issues, and type-safe frontend refactors.
+- `powershell-5.1-expert` for repo root scripts, Windows automation behavior, process control, and local orchestration fixes.
+- `docker-expert` for Dockerfiles, Compose behavior, image/runtime debugging, and container hardening.
+- `architect-reviewer` for architecture reviews, coupling analysis, and long-term boundary decisions.
+- `reviewer` for PR-style review focused on correctness, regressions, security, and missing tests.
+- `security-auditor` for JWT/auth, secrets, request-boundary changes, script/infrastructure exposure, and sensitive config paths.
+- `docs-researcher` for version-specific framework or library questions that should be verified against primary documentation.
+
 ## Preferred Workflow
 
 1. Read the slim core docs and the single most relevant optional guide.

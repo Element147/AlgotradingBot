@@ -97,6 +97,14 @@ The documented free Docker MCP set for this repo is:
 - `semgrep`
 - `hoverfly-mcp-server`
 
+## Project Codex Agents
+
+The repo also ships project-local Codex agents in `.codex/agents/`.
+
+- Keep trading-specific agents project-local so repo guardrails travel with the codebase.
+- Use `AGENTS.md` as the routing source of truth for when Codex should apply each agent.
+- Restart or refresh Codex after adding or changing agent files so new sessions load the updated pack.
+
 Useful checks:
 
 ```powershell

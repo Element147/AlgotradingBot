@@ -43,6 +43,7 @@ The repository is an operational local-first MVP for research and paper-trading 
 - Full-stack mode runs app, PostgreSQL, and Kafka in Docker with the frontend locally.
 - Compose identity is fixed to `algotradingbot`, with reusable named volumes for PostgreSQL, Kafka, and Kafka secrets.
 - Script-driven backend logs go to `.runtime/logs`.
+- Project-local Codex agents under `.codex/agents/` cover quant, Java/Spring, frontend, risk, security, and local ops workflows for this repository.
 - CI checks backend build and tests, frontend lint and tests, and OpenAPI contract drift.
 - MCP support is documented for `context7`, `database-server`, `openapi-schema`, `playwright`, `semgrep`, and `hoverfly-mcp-server`.
 
