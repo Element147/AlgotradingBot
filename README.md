@@ -1,42 +1,24 @@
 # AlgoTrading Bot
 
-Local-first full-stack algorithmic trading research platform for strategy research, backtesting, risk controls, and paper-trading workflows.
+Local-first research platform for strategy design, backtesting, market-data imports, paper trading, and operator controls.
 
-## Safety First
+## Safety Model
 
-- Default behavior is `test`/`paper`.
-- Live-money trading is never enabled by default.
-- Backtests and paper results are research artifacts, not proof of future profitability.
+- Default mode is `test`.
+- Paper workflows stay simulated.
+- Live trading is not enabled by default.
+- Backtests and paper results are research artifacts, not proof of profitability.
 
-## Current Capability Snapshot (March 18, 2026)
+## What The System Does Now
 
-Implemented and usable end to end:
+- Authenticated Spring Boot backend with JWT, Liquibase-managed PostgreSQL runtime, Kafka, WebSocket events, and audited system operations
+- React/Vite dashboard for login, dashboard, strategies, backtests, market-data imports, trades, risk controls, and settings
+- Backtest engine with modular strategy registry, experiment grouping, replay and compare flows, persisted equity and trade series, and provenance-aware exports
+- Market-data import pipeline with provider-specific download adapters, retry-aware persistent jobs, encrypted provider credentials, and direct dataset ingestion into the backtest catalog
+- Paper-trading and operator oversight flows with circuit-breaker controls, audit history, incident alerts, exchange connection profiles, and environment-aware UI state
+- Local scripts for fast development mode and Docker-backed full-stack mode, plus CI-aligned contract and verification workflows
 
-- Strategy management APIs and UI workflows
-- Backtest execution, experiment summaries, history, and details
-- Live backtest progress telemetry with persisted stage/progress/current-candle visibility, explicit WebSocket-vs-polling transport status in the UI, and operator result deletion controls
-- Java 25 runtime/toolchain migration across Gradle, Docker, CI, and local scripts, with fresh PostgreSQL bootstrap now handled by Liquibase plus runtime `ddl-auto=validate`
-- Virtual-thread-backed async execution for long-running backtests and market-data import workers, virtual-thread scheduler/runtime metrics, and parsed-candle reuse for repeated dataset-backed backtests
-- Startup recovery for unfinished long-running work: queued or interrupted backtests are automatically restarted, and market-data imports continue from their saved cursor after the next server start
-- Backtest replay and side-by-side comparison APIs
-- Dataset lifecycle inventory (`checksumSha256`, schema version, retention, archive/restore) plus dataset download endpoint
-- Provider-backed historical market data downloader with automated retry/wait handling, direct dataset imports into the backtest catalog, and live import-progress telemetry streamed into the operator UI
-- Persisted backtest equity/trade series with chart/export support in the UI
-- Strategy configuration version history plus typed preset guidance in API and UI
-- Paper/backtest short-selling enablement with saved strategy-level toggles and explicit `LONG`/`SHORT` state in dashboard and trade views
-- Risk configuration and circuit-breaker controls
-- Paper-trading lifecycle, recovery-aware dashboard state, and in-app incident alerts
-- Database-persisted exchange connection profiles with per-user active selection in the settings UI
-- Operator audit-event trail for critical actions (`/api/system/audit-events`)
-- System backup endpoint with real database dump artifacts
-- PBKDF2-backed credential encryption for exchange and market-data secrets, with backward-compatible reads for legacy ciphertext already stored in PostgreSQL
-- CI verification gates for backend and frontend (`.github/workflows/ci.yml`)
-- Java migration audit task (`jdeps` + `jdeprscan`) wired into local verification and CI
-- Generated OpenAPI contract export and frontend contract drift check
-- Provenance-guarded backtest PDF/CSV exports
-- Small-account strategy catalog in backend backtest engine
-
-Backtest strategy catalog:
+Current backtest strategy catalog:
 
 - `BUY_AND_HOLD`
 - `DUAL_MOMENTUM_ROTATION`
@@ -47,27 +29,9 @@ Backtest strategy catalog:
 - `SMA_CROSSOVER`
 - `BOLLINGER_BANDS`
 
-## Backtest Execution Model
+## Quick Start
 
-- Strategies are isolated classes behind `BacktestStrategy` and discovered via `BacktestStrategyRegistry`.
-- Execution modes:
-  - `SINGLE_SYMBOL`
-  - `DATASET_UNIVERSE`
-- Repeatable experiment labels group related runs into multi-run summaries while keeping per-run provenance intact.
-- Action model records explicit `BUY` / `SELL` / `SHORT` / `COVER` actions plus `LONG` / `SHORT` exposure state.
-- Direct short exposure is available only in `test`/`paper` research flows when enabled per strategy; live shorting, margin, and leverage remain disabled.
-
-## Stack
-
-- Backend: Java 25, Spring Boot 4.0.3, Gradle Kotlin DSL
-- Frontend: React 19, TypeScript, Vite, Redux Toolkit, RTK Query, React Router 7, MUI 7
-- Runtime DB: PostgreSQL via Docker Compose (`AlgotradingBot/compose.yaml`)
-- Backend tests/build: H2 in-memory (`test` profile)
-- UI display/notification preferences remain browser-local; saved exchange API connections are persisted in PostgreSQL
-
-## Local Commands
-
-Fast local developer flow (recommended):
+Recommended local flow:
 
 ```powershell
 .\build.ps1
@@ -75,82 +39,53 @@ Fast local developer flow (recommended):
 .\stop.ps1
 ```
 
-Backend debug attach is built in:
+Useful variants:
 
 ```powershell
 .\run.ps1 -DebugBackend
 .\run.ps1 -DebugBackend -SuspendBackend
-```
-
-Legacy full-stack wrappers are still available:
-
-```powershell
-.\build-all.ps1
 .\run-all.ps1
-.\stop-all.ps1
-```
-
-Docker full-stack backend debug:
-
-```powershell
 .\run-all.ps1 -DebugBackend
-```
-
-Server hygiene:
-
-- Never start a frontend or backend dev server until existing instances are checked and stopped first.
-- If you start a frontend or backend server while working, stop it before you finish the session.
-
-Runtime logs:
-
-- Local script-driven backend logs go to `.runtime/logs/` and stay untracked.
-
-Optional security scan:
-
-```powershell
 .\security-scan.ps1
 ```
 
-Backend migration audit:
+Local URLs:
 
-```powershell
-cd AlgotradingBot
-.\gradlew.bat javaMigrationAudit --no-daemon
-```
+- Frontend: `http://localhost:5173`
+- Backend health: `http://localhost:8080/actuator/health`
+- Swagger UI: `http://localhost:8080/swagger-ui.html`
 
-## Optional Task Guides
+## Documentation Map
 
-Open only the guides that match the task:
+Canonical current-state docs:
+
+- `README.md`: entry point and documentation map
+- `PRODUCT.md`: product purpose, operator surfaces, and scope boundaries
+- `PROJECT_STATUS.md`: current capabilities, verified baseline, active gaps
+- `ARCHITECTURE.md`: how backend, frontend, and runtime fit together
+- `TRADING_GUARDRAILS.md`: safety and reporting rules
+- `PLAN.md`: current priorities and sequencing
+- `TECH.md`: stack, commands, and verification matrix
+- `STRUCTURE.md`: repo and module boundaries
+
+Implementation guides:
 
 - `docs/guides/README.md`
-- `docs/guides/FRONTEND_IMPLEMENTATION.md`
 - `docs/guides/BACKEND_IMPLEMENTATION.md`
+- `docs/guides/FRONTEND_IMPLEMENTATION.md`
 - `docs/guides/LOCAL_DEV_DOCKER_MCP.md`
 - `docs/guides/TESTING_AND_CONTRACTS.md`
 - `docs/guides/MARKET_DATA_RESEARCH.md`
 
-## Canonical Documentation
+Supporting references:
 
-Slim core docs:
-
-- `AGENTS.md`
-- `README.md`
-- `PLAN.md`
-- `PRODUCT.md`
-- `PROJECT_STATUS.md`
-- `ARCHITECTURE.md`
-- `TRADING_GUARDRAILS.md`
-
-Optional task-specific docs:
-
-- `TECH.md`
-- `STRUCTURE.md`
+- `QUICK_START.md`
 - `GRADLE_AUTOMATION.md`
+- `docs/USER_WORKFLOW_GUIDE.md`
 - `docs/ROADMAP.md`
 - `docs/ACCEPTANCE_CRITERIA.md`
-- `docs/guides/README.md`
+- `docs/SEMGREP_TRIAGE.md`
 - `docs/GREENFIELD_SMALL_ACCOUNT_STRATEGY_BLUEPRINT.md`
 - `docs/SMALL_ACCOUNT_STRATEGY_RESEARCH.md`
-- `docs/USER_WORKFLOW_GUIDE.md`
 
-Repository policy: completed one-off implementation logs are removed after their key decisions are merged into the canonical docs above.
+Research appendices stay separate from the canonical docs so day-to-day context stays focused on how the product works now.

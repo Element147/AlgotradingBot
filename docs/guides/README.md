@@ -1,34 +1,35 @@
 # Optional Guides
 
-These guides are intentionally task-specific. Open only the ones relevant to the task so Codex and human readers do not load unnecessary context.
+Read the slim core docs first:
+
+1. `README.md`
+2. `PROJECT_STATUS.md`
+3. `ARCHITECTURE.md`
+4. `TRADING_GUARDRAILS.md`
+5. `PLAN.md`
+6. `PRODUCT.md`
+
+Then open only the guide that matches the task.
 
 ## Guide Index
 
 - `FRONTEND_IMPLEMENTATION.md`
-  Tags: `frontend`, `react`, `vite`, `rtk-query`, `mui`
-  Open for: component work, feature modules, API-slice adaptation, dashboard/settings UX
-  Example: "Add a new backtest chart control without changing the backend"
+  Use for: React routes, feature modules, RTK Query adaptation, UI state, dashboard or settings work
 - `BACKEND_IMPLEMENTATION.md`
-  Tags: `backend`, `spring`, `service`, `repository`, `dto`, `precision`
-  Open for: controller/service/repository work, DTO boundaries, persistence behavior, risk logic
-  Example: "Add a new dataset summary field to a backend response"
+  Use for: controllers, services, repositories, DTOs, persistence, risk logic, and execution services
 - `LOCAL_DEV_DOCKER_MCP.md`
-  Tags: `runtime`, `docker`, `wsl`, `powershell`, `mcp`, `memory`
-  Open for: local start/stop issues, Docker volume behavior, WSL reclaim, MCP setup, script changes
-  Example: "Why is Docker holding memory after the stack is idle?"
+  Use for: scripts, Docker, Compose, WSL, MCP setup, logs, ports, or debug flows
 - `TESTING_AND_CONTRACTS.md`
-  Tags: `verification`, `ci`, `openapi`, `contract`, `security-scan`
-  Open for: backend/frontend verification, contract drift, local CI parity, optional Semgrep scans
-  Example: "The frontend type contract changed after a controller update"
+  Use for: verification strategy, CI parity, OpenAPI generation, contract drift, and Semgrep usage
 - `MARKET_DATA_RESEARCH.md`
-  Tags: `market-data`, `providers`, `imports`, `research`, `mocking`
-  Open for: provider credentials, download/import jobs, dataset research workflow, mock-provider planning
-  Example: "Add a new free data provider or simulate an exchange dependency"
+  Use for: providers, import jobs, credentials, dataset ingestion, and mock-provider workflows
 
-## Task Shortcuts
+## Quick Routing
 
 - Frontend-only UI change: `FRONTEND_IMPLEMENTATION.md`
-- Backend API change: `BACKEND_IMPLEMENTATION.md` and `TESTING_AND_CONTRACTS.md`
+- Backend API or service change: `BACKEND_IMPLEMENTATION.md`
+- Contract boundary change: `BACKEND_IMPLEMENTATION.md` and `TESTING_AND_CONTRACTS.md`
 - Runtime or Docker issue: `LOCAL_DEV_DOCKER_MCP.md`
-- Contract drift or generated types: `TESTING_AND_CONTRACTS.md`
-- Provider/import/mocking work: `MARKET_DATA_RESEARCH.md` and `LOCAL_DEV_DOCKER_MCP.md`
+- Market-data provider or import work: `MARKET_DATA_RESEARCH.md`
+
+Research appendices such as `docs/GREENFIELD_SMALL_ACCOUNT_STRATEGY_BLUEPRINT.md` and `docs/SMALL_ACCOUNT_STRATEGY_RESEARCH.md` are intentionally separate from the default implementation context.

@@ -1,137 +1,33 @@
-# Redux Store Configuration
+# App Store
 
-This directory contains the Redux store configuration with RTK Query integration.
+This directory contains the shared Redux store and typed hooks.
 
-## Files
+## Current Files
 
 ### `store.ts`
-Main Redux store configuration using `configureStore` from Redux Toolkit.
 
-**Features:**
-- Centralized state management
-- RTK Query middleware integration
-- Redux DevTools (development only)
-- Automatic refetch on focus/reconnect
+Owns the app-wide Redux configuration.
 
-**Usage:**
-```typescript
-import { store } from './app/store';
-import type { RootState, AppDispatch } from './app/store';
-```
+Current store contents:
+
+- Redux slices: `auth`, `environment`, `settings`, `websocket`
+- RTK Query slices: `authApi`, `accountApi`, `backtestApi`, `marketDataApi`, `riskApi`, `exchangeApi`, `paperApi`, `strategiesApi`, `tradesApi`
+- WebSocket middleware for live cache updates
+
+The store enables Redux DevTools in development and sets up refetch-on-focus and refetch-on-reconnect behavior.
 
 ### `hooks.ts`
-Typed Redux hooks for use throughout the application.
 
-**Exports:**
-- `useAppDispatch` - Typed version of `useDispatch`
-- `useAppSelector` - Typed version of `useSelector`
+Provides typed hooks:
 
-**Usage:**
-```typescript
-import { useAppDispatch, useAppSelector } from './app/hooks';
+- `useAppDispatch`
+- `useAppSelector`
 
-function MyComponent() {
-  const dispatch = useAppDispatch();
-  const value = useAppSelector((state) => state.someSlice.value);
-  
-  // ...
-}
-```
+Use these instead of the untyped React Redux hooks.
 
-## Store Structure
+## Working Rules
 
-The Redux store will contain:
-
-1. **UI State Slices** (regular Redux slices):
-   - `auth` - Authentication state (token, user, session)
-   - `environment` - Environment mode (test/live)
-   - `settings` - User preferences (theme, timezone, currency)
-   - `websocket` - WebSocket connection state
-   - `notifications` - Notification queue
-
-2. **API Slices** (RTK Query):
-   - `accountApi` - Account balance and performance
-   - `strategiesApi` - Strategy management
-   - `tradesApi` - Trade history and details
-   - `backtestApi` - Backtest results and execution
-   - `riskApi` - Risk metrics and configuration
-   - `exchangeApi` - Exchange integration
-
-## Adding New Slices
-
-### Regular Redux Slice
-```typescript
-// features/myFeature/mySlice.ts
-import { createSlice } from '@reduxjs/toolkit';
-
-const mySlice = createSlice({
-  name: 'myFeature',
-  initialState: { /* ... */ },
-  reducers: { /* ... */ },
-});
-
-export const { actions } = mySlice;
-export default mySlice.reducer;
-
-// Add to store.ts
-import myReducer from '../features/myFeature/mySlice';
-
-export const store = configureStore({
-  reducer: {
-    myFeature: myReducer,
-    // ...
-  },
-});
-```
-
-### RTK Query API Slice
-```typescript
-// features/myFeature/myApi.ts
-import { createApi } from '@reduxjs/toolkit/query/react';
-import { baseQueryWithEnvironment } from '../../services/api';
-
-export const myApi = createApi({
-  reducerPath: 'myApi',
-  baseQuery: baseQueryWithEnvironment,
-  tagTypes: ['MyData'],
-  endpoints: (builder) => ({
-    getData: builder.query({
-      query: () => '/api/my-data',
-      providesTags: ['MyData'],
-    }),
-  }),
-});
-
-export const { useGetDataQuery } = myApi;
-
-// Add to store.ts
-import { myApi } from '../features/myFeature/myApi';
-
-export const store = configureStore({
-  reducer: {
-    [myApi.reducerPath]: myApi.reducer,
-    // ...
-  },
-  middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(myApi.middleware),
-});
-```
-
-## Environment Variables
-
-Required environment variables (defined in `.env`):
-- `VITE_API_BASE_URL` - Backend API base URL (default: http://localhost:8080)
-- `VITE_WS_URL` - WebSocket URL (default: ws://localhost:8080/ws)
-
-## Redux DevTools
-
-Redux DevTools are enabled in development mode only. Install the browser extension:
-- [Chrome](https://chrome.google.com/webstore/detail/redux-devtools/lmhkpmbekcpmknklioeibfkpmmfibljd)
-- [Firefox](https://addons.mozilla.org/en-US/firefox/addon/reduxdevtools/)
-
-## Next Steps
-
-1. Task 1.4: Implement authentication slice and API
-2. Task 2.3: Implement environment slice
-3. Task 2.4: Create account API slice
-4. Additional API slices as needed
+- Add new backend contract adaptation in RTK Query slices first.
+- Add new app-wide UI state only when it truly belongs outside a feature module.
+- Keep environment-aware behavior explicit.
+- Update `docs/guides/FRONTEND_IMPLEMENTATION.md` if the store structure changes materially.

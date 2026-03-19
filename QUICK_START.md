@@ -1,34 +1,42 @@
 # Quick Start
 
-## Fast Local Run (Recommended)
+## Prerequisites
 
-From repo root:
+- Java 25
+- Node.js
+- Docker Desktop
+
+## Recommended Local Flow
+
+From the repo root:
 
 ```powershell
 .\build.ps1
 .\run.ps1
 ```
 
-Optional backend debug:
-
-```powershell
-.\run.ps1 -DebugBackend
-```
-
-Stop services:
+Stop the local stack when finished:
 
 ```powershell
 .\stop.ps1
 ```
 
-## URLs
+Optional backend debug:
 
-- Frontend: http://localhost:5173
-- Backend health: http://localhost:8080/actuator/health
-- Swagger UI: http://localhost:8080/swagger-ui.html
+```powershell
+.\run.ps1 -DebugBackend
+.\run.ps1 -DebugBackend -SuspendBackend
+```
 
-## More Detail
+## Local URLs
 
-- Local runtime, Docker, MCP, and cleanup: `docs/guides/LOCAL_DEV_DOCKER_MCP.md`
+- Frontend: `http://localhost:5173`
+- Backend health: `http://localhost:8080/actuator/health`
+- Swagger UI: `http://localhost:8080/swagger-ui.html`
+
+## Where To Look Next
+
+- Runtime, Docker, and MCP details: `docs/guides/LOCAL_DEV_DOCKER_MCP.md`
 - Verification and contract workflow: `docs/guides/TESTING_AND_CONTRACTS.md`
-- Backend logs during local script-driven runs: `.runtime/logs/`
+- Stack and command reference: `TECH.md`
+- Script-driven backend logs: `.runtime/logs/`

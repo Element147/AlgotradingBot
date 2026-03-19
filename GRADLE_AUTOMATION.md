@@ -1,8 +1,8 @@
-# GRADLE_AUTOMATION
+# Gradle Automation
 
-## Backend Command Policy
+## Command Policy
 
-Run Gradle from `AlgotradingBot/` using Windows wrapper commands:
+Run backend Gradle commands from `AlgotradingBot/` with the wrapper:
 
 ```powershell
 cd AlgotradingBot
@@ -12,14 +12,18 @@ cd AlgotradingBot
 .\gradlew.bat bootRun
 ```
 
-## Rules
+## Current Rules
 
-1. Use wrapper commands, not system `gradle`.
-2. Prefer targeted test execution first, then full `build`.
-3. Keep Gradle parallelism enabled unless a task proves it is the bottleneck.
-4. Reusable Gradle daemons are intentionally capped lower and released sooner after 15 minutes idle.
-5. Prefer `.\run.ps1` for long-running local backend development because it uses `--no-daemon` and the repo's untracked runtime log path.
-6. Java 25 is the backend toolchain baseline; use the wrapper so `jdeps`, `jdeprscan`, tests, and `bootRun` all resolve the same JDK.
-7. Use `-PbackendDebug=true -PbackendDebugPort=5005 -PbackendDebugSuspend=n` only when you need direct `bootRun` JDWP attach; otherwise prefer `.\run.ps1 -DebugBackend`.
-8. Report command failures with actionable context.
-9. Use `docs/guides/TESTING_AND_CONTRACTS.md` for cross-stack verification and contract workflow details.
+1. Use the wrapper, not a system `gradle` install.
+2. Prefer the narrowest useful test first, then `build` when the scope justifies it.
+3. Use `javaMigrationAudit` when touching JDK-sensitive or toolchain-sensitive backend code.
+4. Prefer `.\run.ps1` for normal local backend development because it wires the same repo runtime conventions as the rest of the stack.
+5. Use direct `bootRun` only when you need backend-only iteration or a custom Gradle property flow.
+6. Use `-PbackendDebug=true -PbackendDebugPort=5005 -PbackendDebugSuspend=n` only when you explicitly need JDWP through `bootRun`; otherwise prefer `.\run.ps1 -DebugBackend`.
+7. Java 25 is the baseline across tests, build, audit, and runtime.
+
+## Related Files
+
+- Build definition: `AlgotradingBot/build.gradle.kts`
+- Verification guide: `docs/guides/TESTING_AND_CONTRACTS.md`
+- Runtime guide: `docs/guides/LOCAL_DEV_DOCKER_MCP.md`

@@ -1,29 +1,23 @@
 # Frontend
 
-React TypeScript SPA for the AlgoTrading Bot dashboard.
+React/Vite SPA for the operator dashboard.
 
-## Current Stack
+## Primary References
 
-- React 19.2.0
-- TypeScript
-- Vite 8 beta
-- Redux Toolkit + RTK Query
-- React Router 7.13.1
-- MUI 7.3.9
-- Vitest + React Testing Library
+- Root overview: `README.md`
+- Frontend implementation guide: `docs/guides/FRONTEND_IMPLEMENTATION.md`
+- Verification and contract flow: `docs/guides/TESTING_AND_CONTRACTS.md`
+- Store layout: `src/app/README.md`
 
-## Commands
+## Local Commands
 
 ```powershell
 npm install
 npm run dev
 npm run lint
-npm run test
+npm run test -- --watch=false
 npm run build
+npm run contract:check
 ```
 
-## Notes
-
-- Feature modules live under `src/features`.
-- API integration is centralized in RTK Query slices and services.
-- Environment mode handling is safety-critical and should default to non-live behavior.
+For normal full-stack local work, prefer the repo-root scripts so backend, PostgreSQL, and frontend all use the documented runtime flow.

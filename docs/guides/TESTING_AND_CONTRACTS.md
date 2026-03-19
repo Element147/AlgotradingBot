@@ -1,12 +1,12 @@
-# Testing and Contract Guide
+# Testing And Contract Guide
 
-Read this guide when the task touches verification, generated contracts, CI-aligned checks, or backend/frontend boundary work.
+Use this guide when the task touches verification, CI parity, generated contracts, or backend/frontend boundaries.
 
 ## Verification Strategy
 
-- Start with the narrowest useful check first.
-- Expand to broader verification only after the targeted check passes or when the task clearly affects more of the stack.
-- If existing unrelated failures exist, report them instead of hiding them.
+1. Start with the narrowest useful check.
+2. Expand only as far as the change requires.
+3. If unrelated failures already exist, report them instead of hiding them.
 
 ## Frontend Verification
 
@@ -17,75 +17,76 @@ npm run test -- --watch=false
 npm run build
 ```
 
-Use targeted Vitest commands first when possible, then fall back to the full suite.
+Use targeted Vitest execution first when that is enough.
 
 ## Backend Verification
 
 ```powershell
 cd AlgotradingBot
-.\gradlew.bat javaMigrationAudit --no-daemon
 .\gradlew.bat test
 .\gradlew.bat build
 ```
 
+Add the Java audit when toolchain-sensitive code is touched:
+
+```powershell
+.\gradlew.bat javaMigrationAudit --no-daemon
+```
+
+Notes:
+
 - Runtime uses PostgreSQL.
-- Tests and `build` use the H2 `test` profile unless a task explicitly needs runtime services.
-- `javaMigrationAudit` runs `jdeps` and `jdeprscan` with the Java 25 toolchain and writes reports under `AlgotradingBot/build/reports/java-migration/`.
+- Tests and `build` use the H2 `test` profile unless runtime services are explicitly needed.
+- Java audit reports are written under `AlgotradingBot/build/reports/java-migration/`.
 
 ## OpenAPI Contract Workflow
 
-Current checked-in contract artifacts:
+Tracked artifacts:
 
 - `contracts/openapi.json`
 - `frontend/src/generated/openapi.d.ts`
 
-Typical commands:
+Generation script:
+
+- `scripts/sync-openapi-contract.mjs`
+
+Typical check:
 
 ```powershell
 cd frontend
 npm run contract:check
 ```
 
-If the backend API changed and the generated contract is expected to move, regenerate the contract using the repo's current generation flow before running the check.
+If the backend API changed intentionally:
 
-`contract:check` compares generated artifacts with the tracked versions, so it stays non-zero until those generated changes are updated in git.
+```powershell
+cd frontend
+npm run contract:generate
+```
 
-## CI Alignment
+`contract:check` stays non-zero until tracked artifacts match the generated output.
 
-GitHub Actions baseline:
+## CI Order
 
-- Backend: `javaMigrationAudit` + `test` + `build`
-- Frontend: `contract:check` + `lint` + `test` + `build`
+Current CI baseline:
 
-Local verification should mirror that ordering when the task crosses the frontend/backend contract boundary.
+- Backend: `javaMigrationAudit`, `test`, `build`
+- Frontend: `contract:check`, `lint`, `test`, `build`
+
+Mirror that ordering locally when a change crosses the contract boundary.
 
 ## Optional Security Scan
 
-Use the local Semgrep wrapper when a task touches auth, secrets, request parsing, or dependency-facing security-sensitive code:
+Use Semgrep for auth, secrets, request parsing, shell execution, WebSocket handling, or automation changes:
 
 ```powershell
 .\security-scan.ps1
-```
-
-To make findings fail the command:
-
-```powershell
 .\security-scan.ps1 -FailOnFindings
 ```
 
-Run Semgrep by default for:
-
-- auth or session changes
-- secret or credential handling
-- process execution or script orchestration changes
-- WebSocket or HTTP boundary parsing
-- Docker or local automation changes
-
-During a security cleanup, `-FailOnFindings` is the zero-findings gate.
-
 ## Runtime Smoke Checks
 
-When a change affects local orchestration, Docker deployment, or runtime config, mirror the repo runbooks:
+When orchestration, Docker, or runtime config changes, mirror the runbooks:
 
 ```powershell
 .\run.ps1
@@ -93,5 +94,3 @@ When a change affects local orchestration, Docker deployment, or runtime config,
 .\run-all.ps1
 .\stop-all.ps1
 ```
-
-Use the debug variants only when the task explicitly needs JDWP attach verification.

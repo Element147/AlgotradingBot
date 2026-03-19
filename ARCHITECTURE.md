@@ -1,55 +1,65 @@
-# ARCHITECTURE.md
+# Architecture
 
-## Overview
+## System Overview
 
-This monorepo has:
+The monorepo has two primary applications:
 
-- Backend: `AlgotradingBot/` (Spring Boot, Java 25)
-- Frontend: `frontend/` (React + TypeScript + Vite)
+- `AlgotradingBot/`: Spring Boot backend on Java 25
+- `frontend/`: React 19, TypeScript, and Vite SPA
 
-The architecture is optimized for local research and paper-trading workflows, not high-frequency execution.
+The architecture is optimized for local research, reproducible backtests, paper trading, and operator visibility. It is not designed as a low-latency execution stack.
 
 ## Backend Architecture
 
 Primary packages in `com.algotrader.bot`:
 
-- `controller`: HTTP endpoints and DTO boundaries
-- `service`: orchestration and business logic
-- `service/marketdata`: provider adapters, retry-aware import orchestration, CSV normalization, resampling, and session filtering
-- `repository`: Spring Data JPA access
-- `entity`: persistence models
-- `entity` + `repository` include `operator_audit_events` for critical action auditability
-- `backtest`: simulation engine, metrics, validators
-- `backtest/strategy`: strategy interface, implementations, registry, indicator helpers
-- `risk`: risk and execution-cost calculations
-- `security`: auth/token/security components
-- `config`, `websocket`, `validation`, `repair`: platform and operational support, including script-aligned local recovery actions
+- `controller`: HTTP endpoints and DTO contracts
+- `service`: orchestration, domain logic, and external integrations
+- `service.marketdata`: provider adapters, import orchestration, CSV normalization, resampling, and retry behavior
+- `repository`: Spring Data access
+- `entity`: persistence models for runtime state, datasets, credentials, audit events, and long-running jobs
+- `backtest`: execution engine, metrics, validation, and reproducibility plumbing
+- `backtest.strategy`: strategy interfaces, implementations, registry, and strategy-specific helpers
+- `risk`: risk calculations, guardrail state, and execution-cost logic
+- `security`: JWT auth and security support
+- `config`: application, async, metrics, and runtime configuration
+- `repair`: local runtime validation and repair helpers aligned with repo scripts
+- `validation`: production-readiness and system validation helpers
+- `websocket`: event publishing for dashboard and long-running task updates
+- `strategy`: shared or legacy signal helpers outside the newer backtest registry seam
 
-### Backtest Design
+### Key Backend Flows
 
-- Strategy seam: each strategy is a separate Spring bean implementing `BacktestStrategy`.
-- Registry seam: `BacktestStrategyRegistry` resolves strategy metadata and execution routing.
-- Simulation seam: `BacktestSimulationEngine` runs execution loops and position transitions.
-- Metrics seam: `BacktestSimulationMetricsCalculator` computes performance statistics.
-- Reproducibility seam: dataset metadata includes checksum/schema version, retention state, archive/restore controls, and supports download + replay flows.
-- Experiment seam: backtest runs carry repeatable experiment labels/keys so related runs can be summarized without losing per-run provenance.
-- Analytics persistence seam: backtest details include persisted equity-curve and trade-series records for reproducible UI charts/exports.
-- Execution-observability seam: backtest runs persist stage/progress/current-candle telemetry so operators can distinguish slow execution from stalled execution.
-- Execution-runtime seam: long-running backtests and import workers execute on Java 25 virtual-thread infrastructure, repeated backtests can reuse parsed dataset candles instead of re-decoding the same CSV each run, and scheduler pressure is surfaced through Micrometer/runtime MXBean metrics.
-- Recovery seam: startup recovery participants re-queue unfinished long-running tasks after restart; market-data imports continue from their persisted cursor, while backtests restart the interrupted run from the saved configuration.
-- Comparison seam: dedicated compare API provides side-by-side metric deltas plus dataset provenance for selected backtests.
-- Reporting seam: frontend exports fail closed when dataset provenance is incomplete, and experiment labels flow into report packaging for clearer multi-run review.
+- Auth flow: JWT-backed authentication protects `/api/**`, with an explicit local relaxed-auth override for debugging only.
+- Backtest flow: controller DTOs feed service orchestration, the `BacktestSimulationEngine` executes a registry-selected `BacktestStrategy`, and results persist metrics, series data, provenance, and progress telemetry.
+- Market-data flow: provider-specific services normalize downloads into persistent import jobs, then ingest completed data into the same dataset catalog used by manual uploads.
+- Paper-trading and risk flow: risk status, paper-trading state, and operator alerts are surfaced through service and DTO boundaries rather than embedded in UI-only logic.
+- Audit flow: critical operator actions persist durable audit events that can be queried by dashboard and settings surfaces.
+- Runtime recovery flow: unfinished backtests and market-data imports are detected on startup and resumed or restarted from persisted state.
 
-This avoids single-class "all-logic" backtesting and supports extension without rewriting orchestration.
+### Backtest Model
 
-### Execution Modes
-
-- `SINGLE_SYMBOL`: strategy evaluates one selected symbol.
-- `DATASET_UNIVERSE`: strategy can rank/rotate across symbols from the uploaded dataset.
-
-Current model supports one active position at a time with conservative action transitions.
+- Strategies are isolated Spring beans implementing `BacktestStrategy`.
+- `BacktestStrategyRegistry` resolves available strategies and metadata.
+- Execution supports `SINGLE_SYMBOL` and `DATASET_UNIVERSE`.
+- Runs can carry experiment names and keys so related work can be grouped without losing per-run traceability.
+- The action model records explicit `BUY`, `SELL`, `SHORT`, and `COVER` transitions plus `LONG` and `SHORT` exposure state.
+- Direct short exposure is limited to research and paper flows when enabled per strategy. Live shorting, leverage, and margin remain outside the default path.
 
 ## Frontend Architecture
+
+The app is a BrowserRouter-based SPA. `frontend/src/App.tsx` mounts the global theme, error boundaries, route protection, and the shared WebSocket runtime.
+
+Current route surfaces:
+
+- `/login`
+- `/dashboard`
+- `/strategies`
+- `/trades`
+- `/backtest`
+- `/market-data`
+- `/risk`
+- `/settings`
 
 Feature modules under `frontend/src/features/`:
 
@@ -61,60 +71,40 @@ Feature modules under `frontend/src/features/`:
 - `backtest`
 - `marketData`
 - `risk`
-- `trades`
 - `settings`
+- `trades`
 - `websocket`
+- shared `paperApi.ts` for paper-trading data access
 
-Shared infrastructure:
+Shared frontend infrastructure:
 
-- `src/app`: Redux store and hooks
-- `src/services`: API clients and transport helpers
-- `src/components`: shared UI/layout/error boundaries
+- `src/app`: Redux store, typed hooks, app-level state wiring
+- `src/services`: transport helpers, environment-aware API plumbing, WebSocket manager
+- `src/components`: shared layout primitives, route guards, loading states, and error handling
 
-Key frontend design rules:
+### Frontend Data Flow
 
-- Keep API contract adaptation inside API/service layers where possible.
-- Keep environment mode visible and default-safe (`test`).
-- Keep feature boundaries explicit to support independent strategy workflows.
-- Use strategy-profile metadata to keep parameter editing guidance typed and centralized instead of scattering heuristics across components.
-- Keep exchange-connection profile persistence in backend APIs/DB, while non-sensitive display preferences may remain browser-local.
-- Keep long-running-task visibility transport-aware: the app shell mounts a shared WebSocket runtime, RTK Query caches absorb streamed progress events, and pages surface when they are on live push updates versus polling fallback.
+- RTK Query slices own backend contract adaptation.
+- Redux slices handle auth, environment mode, settings, and WebSocket connection state.
+- `WebSocketRuntime` subscribes the app to environment-aware channels and updates RTK Query caches for long-running task progress.
+- Sensitive operational state stays backend-owned; local browser storage is limited to display preferences and similar user-local settings.
 
-## Runtime and Data Boundaries
+## Runtime And Data Boundaries
 
-- Runtime app: PostgreSQL (Docker) with Liquibase migrations plus `spring.jpa.hibernate.ddl-auto=validate` as the default runtime safety check.
-- Local Docker Compose uses the explicit project name `algotradingbot` so container and volume naming remain stable across scripts and manual runs.
-- Docker deployment uses Temurin Java 25 builder/runtime images, and an opt-in debug overlay (`compose.debug.yaml`) exposes JDWP when requested.
-- Script-driven local runtime writes backend file logs into repo-local untracked `.runtime/logs` storage instead of tracked source paths.
-- Backend test/build: H2 in-memory via Spring `test` profile.
-- Backup path uses real database-native exports: H2 `SCRIPT` in tests and PostgreSQL `pg_dump` with Docker-container fallback in runtime.
-- Historical download path uses provider-specific fetch adapters but normalizes everything into the same backtest dataset catalog used by upload/import workflows.
-- Keyed historical-data providers can resolve API keys from either backend environment variables or encrypted PostgreSQL credentials managed through the admin UI; stored secrets now write PBKDF2-derived versioned ciphertext and keep backward-compatible reads for older payloads.
-- Repair/orchestration automation resolves repo-local paths and uses `run.ps1`, `stop.ps1`, shared PowerShell helpers, `.pids`, `.runtime`, and `compose.yaml` rather than ad-hoc global Docker commands.
-- Kafka runtime mounts use a reusable named secrets volume so repeated runs do not create anonymous volume churn.
-- Keep runtime and test data concerns strictly separated.
+- Runtime database is PostgreSQL in Docker.
+- Backend runtime schema creation is Liquibase-first with `ddl-auto=validate`.
+- Backend tests and builds use the H2 `test` profile.
+- Full-stack Docker runtime includes Kafka for the backend's event-driven paths.
+- Compose uses the explicit project name `algotradingbot` and named volumes for stable local reuse.
+- Script-driven local logs live in `.runtime/logs`; managed PID files live under `.pids`.
+- OpenAPI artifacts are generated from the backend and committed in `contracts/openapi.json` plus `frontend/src/generated/openapi.d.ts`.
+- Provider and exchange secrets are stored encrypted in PostgreSQL when saved through the UI, with environment-variable fallback where supported.
 
-## Current Architecture Decisions
+## Architecture Rules
 
-1. Use DTO boundaries for HTTP; do not expose JPA entities directly.
-2. Keep financial precision paths on `BigDecimal`.
-3. Prefer immutable DTOs as Java records where possible.
-4. Isolate exchange/live connectivity behind dedicated service boundaries.
-5. Keep risk/guardrail logic independent from UI concerns.
-6. Persist critical operator actions with durable audit events for post-incident review.
-7. Account endpoints resolve environment from either `env` query params or `X-Environment` header and fail closed when live account reads are not implemented.
-8. Repair automation must align with the repo's real operator entrypoints and fail closed when managed cleanup cannot restore a healthy local runtime.
-9. Backend compilation surfaces deprecated API usage with `-Xlint:deprecation` so modernization regressions are caught during normal builds.
-10. Paper-trading operator alerts are derived from recovery telemetry and surfaced through DTO/service boundaries rather than embedded in dashboard-only logic.
-11. Operator audit-event review uses a filterable summary+timeline API contract so dashboard and settings surfaces can share the same audit model.
-12. Saved exchange API connection profiles are stored per authenticated user in PostgreSQL and exposed through dedicated `/api/exchange/connections` endpoints rather than browser-only state.
-13. Historical market-data acquisition runs as persistent import jobs with explicit `QUEUED/RUNNING/WAITING_RETRY/COMPLETED/FAILED/CANCELLED` states so provider waits and retries stay observable and resumable.
-14. Provider credential storage for the downloader stays backend-owned: the frontend submits secrets only to authenticated admin endpoints, PostgreSQL stores only encrypted ciphertext, and runtime resolution can fall back to environment variables when needed.
-15. Frontend progress views for backtests and market-data imports are fed by backend WebSocket snapshots first and retain slower polling only as an operator-visible safety fallback.
-16. Java 25 is the backend baseline across build, CI, Docker, and local workflows; preview-only JDK features remain opt-in and are not enabled in default runtime paths.
-
-## Near-Term Architecture Work
-
-1. Extend operator alert delivery beyond in-app/dashboard surfacing into broader notification channels when justified.
-2. Extend experiment-review workflows on top of the new experiment summary seam.
-3. Benchmark Java 25 preview features such as structured concurrency only behind explicit opt-in profiles, not in the default runtime.
+1. Keep controller, service, repository, and persistence concerns separated.
+2. Use DTOs at HTTP boundaries; do not expose JPA entities directly.
+3. Keep money and risk paths on `BigDecimal`.
+4. Isolate exchange and live-connected behavior behind dedicated services and environment gates.
+5. Keep guardrail logic independent from UI implementation details.
+6. Prefer current-state documentation over implementation-history narratives.

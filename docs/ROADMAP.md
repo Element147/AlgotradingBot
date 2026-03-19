@@ -1,72 +1,45 @@
-# ROADMAP
-
-Status updated: March 13, 2026
+# Roadmap
 
 ## Planning Principles
 
 - Local-first delivery over infrastructure-heavy complexity
-- Safety-first defaults (`test`/`paper`)
-- Reproducible verification before claiming progress
+- Safety-first defaults
+- Reproducible verification before claims
 - Small, reversible increments
+- Current-state docs instead of progress logs
 
-## Now (0-4 weeks)
+## Now
 
-1. Frontend adoption of newly shipped backend hardening features
-   - completed: operator audit-event visibility
-   - completed: backtest replay and comparison workflow wiring
-2. Complete remaining contract modernization
-   - completed: maintain DTO record style
-   - completed: reduce frontend/backend drift with shared contracts
-3. Risk-elimination migration phase 2
-   - completed: strict-default auth posture shipped
-   - completed: explicit local-dev override guidance and rollout/rollback playbook
-4. Keep docs lean: maintain a slim core plus task-specific optional guides.
-5. Historical research data acquisition
-   - completed: provider-backed stock/crypto downloader/import jobs with automatic wait-and-retry handling
-   - completed: admin-managed encrypted provider credential storage with note support for keyed free providers
+1. Keep documentation lean and canonical.
+2. Deepen experiment review and governance around the backtest workflow.
+3. Extend operator alerting beyond the current in-app baseline where justified.
+4. Keep the market-data import workflow reliable before expanding provider coverage.
 
-## Next (1-2 months)
+## Next
 
-1. Research reproducibility infrastructure
-   - completed: dataset lifecycle tooling beyond upload/download (inventory, retention)
-   - completed: repeatable experiment structure
-   - completed: provider-backed historical dataset acquisition that lands in the same reproducible backtest catalog
-2. Backtest analytics depth
-   - completed: persist equity/trade series
-   - completed: strategy comparison views/exports with provenance guards in frontend
-   - completed: experiment-level multi-run summaries and experiment-aware report packaging
-3. Strategy parameter lifecycle
-   - completed: versioned defaults and changelog
-   - completed: typed parameter editing ergonomics
+1. Multi-channel notification routing for important paper-trading and operational incidents.
+2. Additional contract hardening where new backend surfaces need generated frontend coverage.
+3. Runtime validation and smoke automation around the existing local and Docker entrypoints.
+4. Incremental improvements to research reporting and comparison workflows.
 
-## Later (2+ months)
+## Later
 
-1. Paper-trading hardening
-   - completed: stronger operator alert delivery in dashboard/API
-   - completed: deeper restart/recovery playbooks for port/orphan/network signatures
-   - completed: audit-event UX refinement with shared dashboard/settings review surfaces
-   - next: multi-channel notification routing
-2. Contract stability
-   - completed: generated/shared frontend-backend API contracts
-   - next: export market-data endpoints through the generated contract when downloader workflows need external client reuse
-3. Optional live-readiness evaluation
-   - only after paper stability, audit controls, and guardrail verification
-4. Optional production-readiness automation
-   - container health/startup-order validation
-   - resource and stability checks for long-running local operation
+1. Production-readiness automation for container health, startup order, and longer-running stability.
+2. Optional live-readiness evaluation only after paper evidence, auditability, rollback paths, and guardrails are all strong enough.
+3. Opt-in experiments with preview-only Java features behind explicit non-default profiles.
 
 ## Strategy R&D Focus Order
 
-1. Validate existing trend-first catalog under strict costs.
+1. Validate the current trend-first catalog under realistic costs.
 2. Improve regime handling and cross-strategy comparison.
 3. Add short-proxy behavior only behind explicit safety gates.
-4. Keep leverage and direct margin shorting out of default path.
+4. Keep leverage and direct margin shorting out of the default path.
 
-## Exit Criteria Per Roadmap Stage
+## Exit Criteria
 
-A stage is complete when:
+A roadmap item is only considered complete when:
 
-- relevant tests pass
+- relevant verification passes
 - docs match verified behavior
-- guardrails are unchanged or strengthened
-- open risks are explicitly documented
+- guardrails are unchanged or stronger
+- open risks remain visible

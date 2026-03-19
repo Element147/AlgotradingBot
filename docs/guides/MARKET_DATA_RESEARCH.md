@@ -1,21 +1,21 @@
-# Market Data and Research Guide
+# Market Data And Research Guide
 
-Read this guide when the task touches the downloader, dataset imports, provider credentials, or strategy research workflow.
+Use this guide when the task touches provider coverage, dataset imports, provider credentials, or the research data workflow.
 
 ## Current Provider Coverage
 
-Built-in public providers with no API key:
+Public providers without API keys:
 
 - `Binance`
 - `Kraken`
 
-Built-in free-tier providers with API keys:
+Free-tier providers with API keys:
 
 - `Twelve Data`
 - `Finnhub`
 - `Alpha Vantage`
 
-Supported download/import timeframes:
+Supported import timeframes:
 
 - `1m`
 - `5m`
@@ -25,17 +25,17 @@ Supported download/import timeframes:
 - `4h`
 - `1d`
 
-## Operator Flow
+## Current Workflow
 
-1. Set `ALGOTRADING_MARKET_DATA_CREDENTIALS_MASTER_KEY` if operators should save keyed-provider credentials from the UI.
-2. Start the app.
-3. Open `Settings` -> `API Config` to save a provider key plus note, or rely on backend environment variables.
-4. Open the `Market Data` tab, create an import job, and monitor status there.
-5. Completed jobs import directly into the backtest dataset catalog.
+1. Set `ALGOTRADING_MARKET_DATA_CREDENTIALS_MASTER_KEY` if operators should save keyed credentials from the UI.
+2. Save provider credentials in `Settings` or rely on environment variables.
+3. Create an import job from the `Market Data` page.
+4. Monitor the job until it completes or retries.
+5. Use the resulting dataset from the normal backtest catalog.
 
 ## Import Job Model
 
-Import jobs are persistent and observable:
+Import jobs are persistent and observable with these statuses:
 
 - `QUEUED`
 - `RUNNING`
@@ -44,12 +44,12 @@ Import jobs are persistent and observable:
 - `FAILED`
 - `CANCELLED`
 
-Provider wait windows move a job to `WAITING_RETRY`; the scheduler resumes automatically.
+Provider-enforced wait windows move the job to `WAITING_RETRY`; the scheduler resumes it automatically.
 
 ## Credential Storage Rules
 
-- Frontend-saved provider secrets are stored encrypted in PostgreSQL.
-- Operators can attach notes to saved provider credentials.
+- UI-saved provider secrets are encrypted in PostgreSQL.
+- Operators can attach notes to provider credentials.
 - Runtime resolution can fall back to environment variables when present.
 
 Relevant environment variables:
@@ -59,9 +59,9 @@ Relevant environment variables:
 - `ALGOTRADING_MARKET_DATA_FINNHUB_API_KEY`
 - `ALGOTRADING_MARKET_DATA_ALPHAVANTAGE_API_KEY`
 
-## Research Guardrails
+## Design Rules
 
-- Backtests and paper results remain research artifacts, not proof of profitability.
-- Fees, slippage, and out-of-sample thinking stay mandatory in research claims.
-- Paper/backtest short exposure is optional and explicit.
-- Live direct shorting, leverage, and margin remain out of scope in the default path.
+1. Normalize provider data into the same dataset catalog used by uploads.
+2. Keep provider-specific retry, wait, and pagination behavior visible through job state.
+3. Add providers only when they solve a concrete data gap.
+4. Keep research guardrails intact: results are simulated, fees and slippage matter, and live leverage or live direct shorting stay out of scope by default.

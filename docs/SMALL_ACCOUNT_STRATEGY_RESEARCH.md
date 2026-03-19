@@ -1,6 +1,6 @@
 # Small-Account Strategy Research
 
-Updated: March 11, 2026
+Research appendix only. This document captures strategy research context and does not describe the full current implementation. Use `README.md`, `PROJECT_STATUS.md`, and `ARCHITECTURE.md` for the current product state.
 
 ## Purpose
 

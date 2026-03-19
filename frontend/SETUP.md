@@ -1,27 +1,31 @@
 # Frontend Setup
 
-## Prerequisites
+## Recommended Workflow
 
-- Node.js 18+
-- npm
+Use the repo-root scripts for normal development:
 
-## Install and Run
+```powershell
+.\build.ps1
+.\run.ps1
+.\stop.ps1
+```
+
+This keeps PostgreSQL, backend, frontend, ports, logs, and PID cleanup aligned with the rest of the project.
+
+## Frontend-Only Commands
+
+Run these from `frontend/` when you only need package-local work:
 
 ```powershell
 npm install
 npm run dev
-```
-
-## Verify
-
-```powershell
 npm run lint
-npm run test
+npm run test -- --watch=false
 npm run build
 ```
 
-## Contract Baseline
+## Related Docs
 
-- Routing: React Router 7
-- UI library: MUI 7
-- API client and caching: RTK Query
+- `frontend/README.md`
+- `docs/guides/FRONTEND_IMPLEMENTATION.md`
+- `docs/guides/TESTING_AND_CONTRACTS.md`

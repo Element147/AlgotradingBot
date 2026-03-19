@@ -1,6 +1,6 @@
 # Greenfield Small-Account Strategy Blueprint
 
-Updated: March 11, 2026
+Research appendix only. This document is for strategy ideation and prioritization, not for the current implemented system inventory. Use `README.md`, `PROJECT_STATUS.md`, and `ARCHITECTURE.md` for current product behavior.
 
 ## Purpose
 
