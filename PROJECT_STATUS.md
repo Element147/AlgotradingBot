@@ -88,6 +88,8 @@ Verified on March 20, 2026 against dataset `#12` (`Binance BTC/USDT +2 15m 2024-
 - The frontend contract boundary now uses generated OpenAPI transport types plus feature-owned adapters where transport needs normalization. Backtest, auth, and account flows use this pattern directly, and explicit live-environment overrides now go through one shared helper instead of hand-written `X-Environment` headers in slices.
 - Oversized frontend route files are being retired in favor of orchestration-first containers plus feature-local panels and page-state helpers. `BacktestPage`, `MarketDataPage`, `SettingsPage`, and `TradesPage` now delegate most UI sections into feature modules instead of keeping 600-1000 line routes.
 - Shared visual-system ownership is now explicit: `theme.ts` drives design tokens and dense-data component overrides, while `AppLayout`, `Header`, `Sidebar`, `LoadingFallback`, and `ErrorFallback` own the shell presentation instead of route files improvising their own chrome.
+- The retired `BacktestEngine` plus `strategy/*` seam has been fully removed, so the registry-backed `BacktestSimulationEngine` path is now the only backtest execution seam in the repo.
+- Dataset upload/import catalog behavior now lives behind `BacktestDatasetCatalogService`, while runtime backtest services read `BacktestDatasetStorageService` and `BacktestDatasetLifecycleService` directly instead of routing through a generic passthrough wrapper.
 
 ## Verified Baseline
 
@@ -137,7 +139,7 @@ Verified on March 20, 2026:
 
 ## Contradiction Register
 
-- Backtest seam ownership: docs previously described `backtest` and `strategy` packages at a high level without separating active and legacy ownership. Current verified runtime uses `BacktestManagementController -> BacktestManagementService -> BacktestExecutionService -> BacktestSimulationEngine -> backtest.strategy.*`; `BacktestEngine` and `strategy/*` remain legacy/test-only seams.
+No current contradictions are recorded after the March 20 cleanup pass aligned the backtest and dataset-ownership docs with the verified codebase.
 
 ## Active Priorities
 

@@ -26,18 +26,17 @@ Primary packages in `com.algotrader.bot`:
 - `repair`: local runtime validation and repair helpers aligned with repo scripts
 - `validation`: production-readiness and system validation helpers
 - `websocket`: event publishing for dashboard and long-running task updates
-- `strategy`: shared or legacy signal helpers outside the newer backtest registry seam
 
 ### Key Backend Flows
 
 - Auth flow: JWT-backed authentication protects `/api/**`; only `/api/auth/login` and `/api/auth/refresh` stay public, `/api/auth/me` and `/api/auth/logout` require authentication, and revoked access tokens are denied before controller code relies on them.
 - Backtest flow: `BacktestManagementController` feeds `BacktestManagementService`, which validates run and replay commands, persists queued executions, and dispatches async execution only after the queueing transaction commits. Read-side history, detail, experiment-summary, and comparison mapping now live in `BacktestResultQueryService`, on-demand price or signal or regime telemetry is reconstructed by `BacktestTelemetryService` only for completed runs, transactional execution-state transitions and result persistence live in `BacktestExecutionLifecycleService`, and shared progress publication flows through `BacktestProgressService` before `BacktestExecutionService` scopes or resamples candles to the requested timeframe and the active runtime executes `BacktestSimulationEngine` plus registry-selected beans in `backtest.strategy.*`.
-- Market-data flow: `MarketDataController` feeds `MarketDataImportService` for provider metadata, credential workflows, and import-job commands; scheduled and async download execution now lives in `MarketDataImportExecutionService`, progress publication lives in `MarketDataImportProgressService`, and completed imports land in the same dataset catalog used by uploads through the split `BacktestDatasetStorageService` and `BacktestDatasetLifecycleService` path.
+- Market-data flow: `MarketDataController` feeds `MarketDataImportService` for provider metadata, credential workflows, and import-job commands; scheduled and async download execution now lives in `MarketDataImportExecutionService`, progress publication lives in `MarketDataImportProgressService`, and completed imports land in the same dataset catalog used by uploads through `BacktestDatasetCatalogService`, backed by `BacktestDatasetStorageService` and `BacktestDatasetLifecycleService`.
 - Paper-trading and risk flow: risk status, paper-trading state, and operator alerts are surfaced through service and DTO boundaries rather than embedded in UI-only logic.
 - Audit flow: critical operator actions persist durable audit events that can be queried by dashboard and settings surfaces.
 - Runtime recovery flow: unfinished backtests and market-data imports are detected on startup and resumed or restarted from persisted state.
 
-### Active And Legacy Backtest Seams
+### Active Backtest Seam
 
 - Active runtime seam: `BacktestManagementController -> BacktestManagementService -> BacktestExecutionService -> BacktestSimulationEngine -> backtest.strategy.*`.
 - Active ownership split inside that seam:
@@ -47,18 +46,17 @@ Primary packages in `com.algotrader.bot`:
   - `BacktestExecutionService`: async runtime orchestration, after-commit dispatch, dataset loading, symbol scoping, timeframe resampling, and simulation callbacks
   - `BacktestExecutionLifecycleService`: transactional status changes, result persistence, and failure handling
   - `BacktestProgressService`: shared WebSocket progress publication for queued, running, completed, and failed states
-- Legacy engine seam: `backtest/BacktestEngine` still exists as a Spring component and has direct tests, but no current controller or service dispatches production backtests through it.
-- Legacy signal seam: `strategy/*` remains coupled to `BacktestEngine` and its Bollinger-band-oriented tests.
-- Current disposition: treat `BacktestEngine` and `strategy/*` as quarantined compatibility code until migration or retirement work is completed. New runtime behavior belongs in `backtest/*` and `backtest/strategy/*`.
+- Current disposition: the retired `BacktestEngine` plus `strategy/*` seam has been removed. New backtest/runtime behavior belongs in `backtest/*` and `backtest/strategy/*`.
 
 ### Dataset And Market-Data Service Ownership
 
 - `MarketDataImportService`: provider catalog reads, credential workflows, job creation, retry, cancel, and scheduler dispatch
 - `MarketDataImportExecutionService`: async import execution, provider fetch loops, staged CSV accumulation, retry handling, and completion
 - `MarketDataImportProgressService`: shared WebSocket publication for import-job telemetry
+- `BacktestDatasetCatalogService`: audited upload/import commands plus controller-facing dataset catalog responses
 - `BacktestDatasetStorageService`: CSV parsing, dataset persistence, downloads, and upload-size enforcement
 - `BacktestDatasetLifecycleService`: dataset inventory, retention reporting, archive/restore state, and availability checks for new backtests
-- `BacktestDatasetService`: thin facade kept for controller and backtest consumers while the underlying storage and lifecycle ownership stays split
+- Internal runtime consumers such as `BacktestManagementService` and `BacktestExecutionService` now read storage/lifecycle ownership directly instead of routing through a generic dataset wrapper.
 
 ### Query And Index Posture
 

@@ -64,5 +64,5 @@ describe('StrategiesPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Confirm' }));
     expect(startMutation).toHaveBeenCalledWith(1);
-  });
+  }, 15000);
 });

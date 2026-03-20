@@ -16,14 +16,14 @@ class BacktestExecutionServiceTest {
 
     @Test
     void executeAsync_clearsInFlightStateWhenMarkRunStartedFails() {
-        BacktestDatasetService backtestDatasetService = mock(BacktestDatasetService.class);
+        BacktestDatasetStorageService backtestDatasetStorageService = mock(BacktestDatasetStorageService.class);
         BacktestDatasetCandleCache backtestDatasetCandleCache = mock(BacktestDatasetCandleCache.class);
         BacktestSimulationEngine backtestSimulationEngine = mock(BacktestSimulationEngine.class);
         BacktestStrategyRegistry backtestStrategyRegistry = mock(BacktestStrategyRegistry.class);
         MarketDataResampler marketDataResampler = mock(MarketDataResampler.class);
         BacktestExecutionLifecycleService backtestExecutionLifecycleService = mock(BacktestExecutionLifecycleService.class);
         BacktestExecutionService service = new BacktestExecutionService(
-            backtestDatasetService,
+            backtestDatasetStorageService,
             backtestDatasetCandleCache,
             backtestSimulationEngine,
             backtestStrategyRegistry,

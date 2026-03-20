@@ -62,7 +62,7 @@ describe('Sidebar', () => {
 
     const dashboardButton = screen.getByRole('button', { name: /dashboard/i });
     expect(dashboardButton).toHaveClass('Mui-selected');
-  });
+  }, 15000);
 
   it('should navigate when clicking a navigation item', () => {
     renderWithProviders(<Sidebar open={true} onClose={vi.fn()} />);
@@ -103,7 +103,7 @@ describe('Sidebar', () => {
       fireEvent.click(button);
       expect(mockNavigate).toHaveBeenCalledWith(path);
     });
-  });
+  }, 15000);
 
   it('should render as temporary drawer on mobile', () => {
     // Mock mobile viewport

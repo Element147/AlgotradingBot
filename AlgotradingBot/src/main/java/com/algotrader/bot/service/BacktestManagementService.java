@@ -32,7 +32,8 @@ public class BacktestManagementService {
 
     private final BacktestResultRepository backtestResultRepository;
     private final BacktestExecutionService backtestExecutionService;
-    private final BacktestDatasetService backtestDatasetService;
+    private final BacktestDatasetStorageService backtestDatasetStorageService;
+    private final BacktestDatasetLifecycleService backtestDatasetLifecycleService;
     private final BacktestStrategyRegistry backtestStrategyRegistry;
     private final BacktestResultQueryService backtestResultQueryService;
     private final BacktestProgressService backtestProgressService;
@@ -40,14 +41,16 @@ public class BacktestManagementService {
 
     public BacktestManagementService(BacktestResultRepository backtestResultRepository,
                                      BacktestExecutionService backtestExecutionService,
-                                     BacktestDatasetService backtestDatasetService,
+                                     BacktestDatasetStorageService backtestDatasetStorageService,
+                                     BacktestDatasetLifecycleService backtestDatasetLifecycleService,
                                      BacktestStrategyRegistry backtestStrategyRegistry,
                                      BacktestResultQueryService backtestResultQueryService,
                                      BacktestProgressService backtestProgressService,
                                      OperatorAuditService operatorAuditService) {
         this.backtestResultRepository = backtestResultRepository;
         this.backtestExecutionService = backtestExecutionService;
-        this.backtestDatasetService = backtestDatasetService;
+        this.backtestDatasetStorageService = backtestDatasetStorageService;
+        this.backtestDatasetLifecycleService = backtestDatasetLifecycleService;
         this.backtestStrategyRegistry = backtestStrategyRegistry;
         this.backtestResultQueryService = backtestResultQueryService;
         this.backtestProgressService = backtestProgressService;
@@ -89,11 +92,11 @@ public class BacktestManagementService {
             throw new IllegalArgumentException("Initial balance must be greater than 100");
         }
 
-        backtestDatasetService.validateDatasetAvailableForNewRuns(request.datasetId());
+        backtestDatasetLifecycleService.validateDatasetAvailableForNewRuns(request.datasetId());
         BacktestAlgorithmType algorithmType = BacktestAlgorithmType.from(request.algorithmType());
         var strategyDefinition = backtestStrategyRegistry.getStrategy(algorithmType).definition();
 
-        BacktestDataset dataset = backtestDatasetService.getDataset(request.datasetId());
+        BacktestDataset dataset = backtestDatasetStorageService.getDataset(request.datasetId());
         String effectiveSymbol = resolveRequestedSymbol(
             request.symbol(),
             dataset.getSymbolsCsv(),
@@ -175,7 +178,7 @@ public class BacktestManagementService {
             throw new IllegalArgumentException("Replay requires a dataset-backed backtest");
         }
 
-        BacktestDataset dataset = backtestDatasetService.getDataset(existing.getDatasetId());
+        BacktestDataset dataset = backtestDatasetStorageService.getDataset(existing.getDatasetId());
 
         BacktestResult pending = new BacktestResult(
             existing.getStrategyId(),

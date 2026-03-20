@@ -12,15 +12,15 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @Service
-public class BacktestDatasetService {
+public class BacktestDatasetCatalogService {
 
     private final BacktestDatasetStorageService backtestDatasetStorageService;
     private final BacktestDatasetLifecycleService backtestDatasetLifecycleService;
     private final OperatorAuditService operatorAuditService;
 
-    public BacktestDatasetService(BacktestDatasetStorageService backtestDatasetStorageService,
-                                  BacktestDatasetLifecycleService backtestDatasetLifecycleService,
-                                  OperatorAuditService operatorAuditService) {
+    public BacktestDatasetCatalogService(BacktestDatasetStorageService backtestDatasetStorageService,
+                                         BacktestDatasetLifecycleService backtestDatasetLifecycleService,
+                                         OperatorAuditService operatorAuditService) {
         this.backtestDatasetStorageService = backtestDatasetStorageService;
         this.backtestDatasetLifecycleService = backtestDatasetLifecycleService;
         this.operatorAuditService = operatorAuditService;
@@ -63,11 +63,6 @@ public class BacktestDatasetService {
     }
 
     @Transactional(readOnly = true)
-    public BacktestDataset getDataset(Long datasetId) {
-        return backtestDatasetStorageService.getDataset(datasetId);
-    }
-
-    @Transactional(readOnly = true)
     public BacktestDatasetDownloadResponse downloadDataset(Long datasetId) {
         return backtestDatasetStorageService.downloadDataset(datasetId);
     }
@@ -80,13 +75,5 @@ public class BacktestDatasetService {
     @Transactional
     public BacktestDatasetResponse restoreDataset(Long datasetId) {
         return backtestDatasetLifecycleService.restoreDataset(datasetId);
-    }
-
-    public void validateDatasetAvailableForNewRuns(Long datasetId) {
-        backtestDatasetLifecycleService.validateDatasetAvailableForNewRuns(datasetId);
-    }
-
-    public void validateDatasetSize(long payloadSizeBytes) {
-        backtestDatasetStorageService.validateDatasetSize(payloadSizeBytes);
     }
 }

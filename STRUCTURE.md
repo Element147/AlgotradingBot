@@ -31,9 +31,8 @@ C:\Git\algotradingbot\
 - `repair`: local runtime validation and repair helpers
 - `validation`: explicit validation suites and runtime checks
 - `websocket`: event transport support
-- `strategy`: legacy Bollinger-style signal helpers retained for `BacktestEngine` and its test seam
 
-## Active Vs Legacy Backtest Seams
+## Active Backtest Seam
 
 - Active runtime path: `BacktestManagementController -> BacktestManagementService -> BacktestExecutionService -> BacktestSimulationEngine -> backtest.strategy.*`.
 - Backtest service ownership within `service/`:
@@ -42,14 +41,14 @@ C:\Git\algotradingbot\
   - `BacktestExecutionService`: async runtime orchestration, dataset loading, and simulation progress callbacks
   - `BacktestExecutionLifecycleService`: transactional state transitions and result persistence
   - `BacktestProgressService`: WebSocket progress publication shared by queue, execution, completion, and failure paths
-- Legacy compatibility/test seam: `backtest/BacktestEngine` and `strategy/*` still compile and still have direct unit or integration tests, but no current controller or service dispatches production backtests through them.
-- Ownership rule: new backtest/runtime work should land in `backtest/*` and `backtest/strategy/*`, while the legacy seam should only receive migration, quarantine, or retirement changes.
+- Ownership rule: new backtest/runtime work should land in `backtest/*` and `backtest/strategy/*`; the retired `BacktestEngine` and `strategy/*` seam is no longer part of the repo layout.
 
 ## Dataset And Import Ownership
 
+- `BacktestDatasetCatalogService` owns audited upload/import commands plus controller-facing dataset catalog responses.
 - `BacktestDatasetStorageService` owns CSV parsing, persistence, downloads, and size validation.
 - `BacktestDatasetLifecycleService` owns dataset inventory, retention reporting, archive/restore, and new-run availability checks.
-- `BacktestDatasetService` remains the controller-facing facade over those two dataset services.
+- `BacktestManagementService` and `BacktestExecutionService` now depend directly on dataset storage/lifecycle ownership for runtime reads and validation.
 - `MarketDataImportService` owns provider and job commands, while `MarketDataImportExecutionService` owns async fetch execution and `MarketDataImportProgressService` owns import telemetry publication.
 
 ## Frontend Layout

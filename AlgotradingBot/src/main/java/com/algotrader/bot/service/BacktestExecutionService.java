@@ -30,7 +30,7 @@ public class BacktestExecutionService {
     private static final int PREPARATION_PROGRESS_PERCENT = 20;
     private static final int PERSISTING_PROGRESS_PERCENT = 98;
 
-    private final BacktestDatasetService backtestDatasetService;
+    private final BacktestDatasetStorageService backtestDatasetStorageService;
     private final BacktestDatasetCandleCache backtestDatasetCandleCache;
     private final BacktestSimulationEngine backtestSimulationEngine;
     private final BacktestStrategyRegistry backtestStrategyRegistry;
@@ -38,13 +38,13 @@ public class BacktestExecutionService {
     private final BacktestExecutionLifecycleService backtestExecutionLifecycleService;
     private final ConcurrentMap<Long, Boolean> inFlightBacktests = new ConcurrentHashMap<>();
 
-    public BacktestExecutionService(BacktestDatasetService backtestDatasetService,
+    public BacktestExecutionService(BacktestDatasetStorageService backtestDatasetStorageService,
                                     BacktestDatasetCandleCache backtestDatasetCandleCache,
                                     BacktestSimulationEngine backtestSimulationEngine,
                                     BacktestStrategyRegistry backtestStrategyRegistry,
                                     MarketDataResampler marketDataResampler,
                                     BacktestExecutionLifecycleService backtestExecutionLifecycleService) {
-        this.backtestDatasetService = backtestDatasetService;
+        this.backtestDatasetStorageService = backtestDatasetStorageService;
         this.backtestDatasetCandleCache = backtestDatasetCandleCache;
         this.backtestSimulationEngine = backtestSimulationEngine;
         this.backtestStrategyRegistry = backtestStrategyRegistry;
@@ -83,7 +83,7 @@ public class BacktestExecutionService {
                 "Loading dataset bytes from the catalog."
             );
 
-            BacktestDataset dataset = backtestDatasetService.getDataset(context.datasetId());
+            BacktestDataset dataset = backtestDatasetStorageService.getDataset(context.datasetId());
             logger.info(
                 "Backtest {} loading dataset {} ({}, {} rows, symbols={})",
                 backtestId,

@@ -1,7 +1,7 @@
 package com.algotrader.bot.controller;
 
+import com.algotrader.bot.service.BacktestDatasetCatalogService;
 import com.algotrader.bot.service.BacktestManagementService;
-import com.algotrader.bot.service.BacktestDatasetService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -17,12 +17,12 @@ import java.util.List;
 public class BacktestManagementController {
 
     private final BacktestManagementService backtestManagementService;
-    private final BacktestDatasetService backtestDatasetService;
+    private final BacktestDatasetCatalogService backtestDatasetCatalogService;
 
     public BacktestManagementController(BacktestManagementService backtestManagementService,
-                                        BacktestDatasetService backtestDatasetService) {
+                                        BacktestDatasetCatalogService backtestDatasetCatalogService) {
         this.backtestManagementService = backtestManagementService;
-        this.backtestDatasetService = backtestDatasetService;
+        this.backtestDatasetCatalogService = backtestDatasetCatalogService;
     }
 
     @GetMapping("/algorithms")
@@ -34,20 +34,20 @@ public class BacktestManagementController {
     @GetMapping("/datasets")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<BacktestDatasetResponse>> datasets() {
-        return ResponseEntity.ok(backtestDatasetService.listDatasets());
+        return ResponseEntity.ok(backtestDatasetCatalogService.listDatasets());
     }
 
     @GetMapping("/datasets/retention-report")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<BacktestDatasetRetentionReportResponse> retentionReport() {
-        return ResponseEntity.ok(backtestDatasetService.getRetentionReport());
+        return ResponseEntity.ok(backtestDatasetCatalogService.getRetentionReport());
     }
 
     @PostMapping(value = "/datasets/upload", consumes = "multipart/form-data")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<BacktestDatasetResponse> uploadDataset(@RequestParam(required = false) String name,
                                                                  @RequestPart("file") MultipartFile file) {
-        return ResponseEntity.ok(backtestDatasetService.uploadDataset(name, file));
+        return ResponseEntity.ok(backtestDatasetCatalogService.uploadDataset(name, file));
     }
 
     @PostMapping("/datasets/{datasetId}/archive")
@@ -56,19 +56,19 @@ public class BacktestManagementController {
         @PathVariable Long datasetId,
         @RequestBody(required = false) BacktestDatasetArchiveRequest request
     ) {
-        return ResponseEntity.ok(backtestDatasetService.archiveDataset(datasetId, request));
+        return ResponseEntity.ok(backtestDatasetCatalogService.archiveDataset(datasetId, request));
     }
 
     @PostMapping("/datasets/{datasetId}/restore")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<BacktestDatasetResponse> restoreDataset(@PathVariable Long datasetId) {
-        return ResponseEntity.ok(backtestDatasetService.restoreDataset(datasetId));
+        return ResponseEntity.ok(backtestDatasetCatalogService.restoreDataset(datasetId));
     }
 
     @GetMapping("/datasets/{datasetId}/download")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<byte[]> downloadDataset(@PathVariable Long datasetId) {
-        BacktestDatasetDownloadResponse dataset = backtestDatasetService.downloadDataset(datasetId);
+        BacktestDatasetDownloadResponse dataset = backtestDatasetCatalogService.downloadDataset(datasetId);
         String safeFilename = dataset.originalFilename().replace("\"", "");
 
         return ResponseEntity.ok()

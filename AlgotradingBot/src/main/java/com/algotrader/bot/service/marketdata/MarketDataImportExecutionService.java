@@ -4,7 +4,8 @@ import com.algotrader.bot.backtest.OHLCVData;
 import com.algotrader.bot.controller.BacktestDatasetResponse;
 import com.algotrader.bot.entity.MarketDataImportJob;
 import com.algotrader.bot.repository.MarketDataImportJobRepository;
-import com.algotrader.bot.service.BacktestDatasetService;
+import com.algotrader.bot.service.BacktestDatasetCatalogService;
+import com.algotrader.bot.service.BacktestDatasetStorageService;
 import com.algotrader.bot.service.OperatorAuditService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.scheduling.annotation.Async;
@@ -31,7 +32,8 @@ public class MarketDataImportExecutionService {
     private final MarketDataProviderRegistry marketDataProviderRegistry;
     private final MarketDataCsvSupport marketDataCsvSupport;
     private final MarketDataSessionFilter marketDataSessionFilter;
-    private final BacktestDatasetService backtestDatasetService;
+    private final BacktestDatasetCatalogService backtestDatasetCatalogService;
+    private final BacktestDatasetStorageService backtestDatasetStorageService;
     private final OperatorAuditService operatorAuditService;
     private final MarketDataImportProgressService marketDataImportProgressService;
     private final Set<Long> locallyDispatchedJobIds = ConcurrentHashMap.newKeySet();
@@ -40,14 +42,16 @@ public class MarketDataImportExecutionService {
                                             MarketDataProviderRegistry marketDataProviderRegistry,
                                             MarketDataCsvSupport marketDataCsvSupport,
                                             MarketDataSessionFilter marketDataSessionFilter,
-                                            BacktestDatasetService backtestDatasetService,
+                                            BacktestDatasetCatalogService backtestDatasetCatalogService,
+                                            BacktestDatasetStorageService backtestDatasetStorageService,
                                             OperatorAuditService operatorAuditService,
                                             MarketDataImportProgressService marketDataImportProgressService) {
         this.marketDataImportJobRepository = marketDataImportJobRepository;
         this.marketDataProviderRegistry = marketDataProviderRegistry;
         this.marketDataCsvSupport = marketDataCsvSupport;
         this.marketDataSessionFilter = marketDataSessionFilter;
-        this.backtestDatasetService = backtestDatasetService;
+        this.backtestDatasetCatalogService = backtestDatasetCatalogService;
+        this.backtestDatasetStorageService = backtestDatasetStorageService;
         this.operatorAuditService = operatorAuditService;
         this.marketDataImportProgressService = marketDataImportProgressService;
     }
@@ -147,7 +151,7 @@ public class MarketDataImportExecutionService {
                 : fetchedBars;
 
             byte[] updatedCsv = marketDataCsvSupport.appendRows(job.getStagedCsvData(), filteredBars);
-            backtestDatasetService.validateDatasetSize(updatedCsv.length);
+            backtestDatasetStorageService.validateDatasetSize(updatedCsv.length);
             job.setStagedCsvData(updatedCsv);
             job.setImportedRowCount(job.getImportedRowCount() + filteredBars.size());
             job.setStatusMessage(
@@ -246,7 +250,7 @@ public class MarketDataImportExecutionService {
             + "-" + job.getStartDate()
             + "-" + job.getEndDate()
             + ".csv";
-        BacktestDatasetResponse dataset = backtestDatasetService.importDataset(
+        BacktestDatasetResponse dataset = backtestDatasetCatalogService.importDataset(
             job.getDatasetName(),
             filename,
             job.getStagedCsvData(),
