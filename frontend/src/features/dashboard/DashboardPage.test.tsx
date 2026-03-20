@@ -1,6 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { render, screen } from '@testing-library/react';
 import { Provider } from 'react-redux';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 
 import authReducer from '../auth/authSlice';
@@ -64,22 +65,27 @@ describe('DashboardPage', () => {
       },
     });
 
-  it('should render dashboard page with title', () => {
+  it('should render dashboard page intro content', () => {
     const store = createMockStore();
     render(
       <Provider store={store}>
-        <DashboardPage />
+        <MemoryRouter>
+          <DashboardPage />
+        </MemoryRouter>
       </Provider>
     );
 
-    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Start here')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Open Backtest' })).toBeInTheDocument();
   });
 
   it('should render within AppLayout', () => {
     const store = createMockStore();
     render(
       <Provider store={store}>
-        <DashboardPage />
+        <MemoryRouter>
+          <DashboardPage />
+        </MemoryRouter>
       </Provider>
     );
 
@@ -90,7 +96,9 @@ describe('DashboardPage', () => {
     const store = createMockStore();
     render(
       <Provider store={store}>
-        <DashboardPage />
+        <MemoryRouter>
+          <DashboardPage />
+        </MemoryRouter>
       </Provider>
     );
 
@@ -101,7 +109,9 @@ describe('DashboardPage', () => {
     const store = createMockStore();
     render(
       <Provider store={store}>
-        <DashboardPage />
+        <MemoryRouter>
+          <DashboardPage />
+        </MemoryRouter>
       </Provider>
     );
 
@@ -112,7 +122,9 @@ describe('DashboardPage', () => {
     const store = createMockStore();
     render(
       <Provider store={store}>
-        <DashboardPage />
+        <MemoryRouter>
+          <DashboardPage />
+        </MemoryRouter>
       </Provider>
     );
 

@@ -1,4 +1,4 @@
-import { Alert, Box, Grid } from '@mui/material';
+import { Alert, Chip, Grid } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 
 import {
@@ -29,7 +29,6 @@ import {
 import {
   BacktestDatasetPanel,
   BacktestExperimentSummariesPanel,
-  BacktestHeroPanel,
   BacktestHistoryPanel,
   BacktestRunLauncherPanel,
   BacktestTrackedRunCard,
@@ -39,6 +38,12 @@ import { BacktestResults } from './BacktestResults';
 
 import { useAppSelector } from '@/app/hooks';
 import { AppLayout } from '@/components/layout/AppLayout';
+import {
+  PageContent,
+  PageIntro,
+  type PageMetricItem,
+  PageMetricStrip,
+} from '@/components/layout/PageContent';
 import { selectEnvironmentMode } from '@/features/environment/environmentSlice';
 import { getStrategyProfile } from '@/features/strategies/strategyProfiles';
 import {
@@ -136,6 +141,45 @@ export default function BacktestPage() {
     }
     return history.find((item) => isExecutionActive(item)) ?? history[0] ?? null;
   }, [history, selectedId]);
+  const summaryItems = useMemo<PageMetricItem[]>(
+    () => [
+      {
+        label: 'Active Datasets',
+        value: activeDatasets.length.toString(),
+        detail: `${datasets.length} total datasets in the catalog.`,
+        tone: activeDatasets.length > 0 ? 'success' : 'warning',
+      },
+      {
+        label: 'Algorithm Catalog',
+        value: algorithms.length.toString(),
+        detail: 'Canonical strategy IDs stay aligned with the backtest registry.',
+        tone: 'info',
+      },
+      {
+        label: 'Transport',
+        value: backtestLiveTransportConnected ? 'Live stream' : 'Polling fallback',
+        detail: backtestLiveTransportConnected
+          ? 'Progress arrives through the authenticated WebSocket channel.'
+          : 'Fallback polling keeps run progress visible when the live stream is unavailable.',
+        tone: backtestLiveTransportConnected ? 'success' : 'warning',
+      },
+      {
+        label: 'Tracked Run',
+        value: trackedRun ? `#${trackedRun.id}` : 'None selected',
+        detail: trackedRun
+          ? `${trackedRun.executionStatus} on ${trackedRun.datasetName ?? 'dataset'}`
+          : 'Select a run from history to inspect detailed metrics and charts.',
+        tone: trackedRun ? 'info' : 'default',
+      },
+    ],
+    [
+      activeDatasets.length,
+      algorithms.length,
+      backtestLiveTransportConnected,
+      datasets.length,
+      trackedRun,
+    ]
+  );
 
   const onUploadDataset = async () => {
     if (!datasetFile) {
@@ -318,17 +362,29 @@ export default function BacktestPage() {
 
   return (
     <AppLayout>
-      <Box>
-        <BacktestHeroPanel />
+      <PageContent>
+        <PageIntro
+          eyebrow="Research-only workflow"
+          description="Upload or restore datasets, launch runs with realistic costs, then compare and inspect results without blurring the line between research and live execution."
+          chips={
+            <>
+              <Chip label="Backtests stay research-only" variant="outlined" />
+              <Chip label="Dataset provenance stays visible" variant="outlined" />
+              <Chip label="Costs and slippage remain explicit" variant="outlined" />
+            </>
+          }
+        />
+
+        <PageMetricStrip items={summaryItems} />
 
         {feedback ? (
-          <Alert severity={feedback.severity} sx={{ mb: 2 }} onClose={() => setFeedback(null)}>
+          <Alert severity={feedback.severity} onClose={() => setFeedback(null)}>
             {feedback.message}
           </Alert>
         ) : null}
 
         {environmentMode === 'live' ? (
-          <Alert severity="warning" sx={{ mb: 2 }}>
+          <Alert severity="warning">
             The UI is currently set to `live`, but backtests and dataset operations remain
             research-only workflows. Nothing on this page routes live orders to an exchange.
           </Alert>
@@ -348,7 +404,7 @@ export default function BacktestPage() {
           />
         ) : null}
 
-        <Grid container spacing={2}>
+        <Grid container spacing={2.5}>
           <Grid size={{ xs: 12, md: 6 }}>
             <BacktestDatasetPanel
               datasetName={datasetName}
@@ -426,7 +482,7 @@ export default function BacktestPage() {
             )}
           </Grid>
         </Grid>
-      </Box>
+      </PageContent>
 
       <BacktestConfigModal
         open={configModalOpen}

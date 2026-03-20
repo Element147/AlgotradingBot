@@ -1,5 +1,18 @@
 import DownloadIcon from '@mui/icons-material/Download';
-import { Alert, Button, Card, CardContent, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
+import {
+  Alert,
+  Button,
+  Card,
+  CardContent,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Typography,
+} from '@mui/material';
 
 import type { BacktestComparisonResponse } from './backtestApi';
 import { BacktestComparisonCharts } from './BacktestComparisonCharts';
@@ -130,7 +143,8 @@ export function BacktestComparisonPanel({ comparison }: BacktestComparisonPanelP
           </Alert>
         ) : null}
         <BacktestComparisonCharts comparison={comparison} />
-        <Table size="small">
+        <TableContainer>
+          <Table size="small" sx={{ minWidth: 1180 }}>
           <TableHead>
             <TableRow>
               <TableCell>Run</TableCell>
@@ -183,7 +197,8 @@ export function BacktestComparisonPanel({ comparison }: BacktestComparisonPanelP
               </TableRow>
             ))}
           </TableBody>
-        </Table>
+          </Table>
+        </TableContainer>
       </CardContent>
     </Card>
   );

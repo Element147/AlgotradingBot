@@ -240,7 +240,7 @@ describe('BacktestPage', { timeout: 15000 }, () => {
   it('renders upload section and run form', () => {
     renderPage();
 
-    expect(screen.getByText('Backtest Lab')).toBeInTheDocument();
+    expect(screen.getByText('Research-only workflow')).toBeInTheDocument();
     expect(screen.getByText(/Backtest transport: live WebSocket stream connected/i)).toBeInTheDocument();
     expect(screen.getByText('Current Run Progress')).toBeInTheDocument();
     expect(screen.getAllByText(/Current data date:/).length).toBeGreaterThan(0);

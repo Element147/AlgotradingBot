@@ -17,6 +17,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  TableContainer,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -399,7 +400,8 @@ export function BacktestResults({
                 <Typography variant="h6" gutterBottom>
                   Recorded Trade Series
                 </Typography>
-                <Table size="small">
+                <TableContainer>
+                  <Table size="small" sx={{ minWidth: 1120 }}>
                   <TableHead>
                     <TableRow>
                       <TableCell>Symbol</TableCell>
@@ -435,7 +437,8 @@ export function BacktestResults({
                       </TableRow>
                     ))}
                   </TableBody>
-                </Table>
+                  </Table>
+                </TableContainer>
               </CardContent>
             </Card>
           </Grid>

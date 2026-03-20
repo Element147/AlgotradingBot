@@ -47,9 +47,9 @@ describe('StrategiesPage', () => {
   it('renders strategy management title and rows', () => {
     render(<StrategiesPage />);
 
-    expect(screen.getByText('Strategy Management')).toBeInTheDocument();
+    expect(screen.getByText('Paper-safe strategy desk')).toBeInTheDocument();
     expect(screen.getByText('Bollinger BTC Mean Reversion')).toBeInTheDocument();
-    expect(screen.getByText('Available Strategies')).toBeInTheDocument();
+    expect(screen.getByText('Available strategies')).toBeInTheDocument();
     expect(screen.getByText('BTC/USDT (1h)')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
   });

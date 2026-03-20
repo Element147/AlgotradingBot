@@ -87,7 +87,7 @@ describe('RiskPage', () => {
   it('renders risk sections', () => {
     renderPage();
 
-    expect(screen.getByText('Risk Controls')).toBeInTheDocument();
+    expect(screen.getByText('Protective controls first')).toBeInTheDocument();
     expect(screen.getByText('Risk Status')).toBeInTheDocument();
     expect(screen.getByText('Risk Configuration')).toBeInTheDocument();
     expect(screen.getByText('Circuit Breaker Override')).toBeInTheDocument();

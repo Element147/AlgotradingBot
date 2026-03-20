@@ -37,6 +37,7 @@ const columns: Array<{
 ];
 
 const columnTemplate = columns.map((col) => col.width).join(' ');
+const minTableWidth = 1410;
 
 export function VirtualizedTradeTable({
   rows,
@@ -72,112 +73,114 @@ export function VirtualizedTradeTable({
   );
 
   return (
-    <Box>
-      <Box
-        role="row"
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: columnTemplate,
-          alignItems: 'center',
-          gap: 1,
-          px: 1,
-          py: 1,
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-          fontWeight: 600,
-        }}
-      >
-        {columns.map((column) => (
-          <Stack key={column.key} direction="row" alignItems="center" spacing={0.5}>
-            <Typography variant="caption" sx={{ fontWeight: 700 }}>
-              {column.label}
-            </Typography>
-            <IconButton
-              size="small"
-              onClick={() => onSortChange(column.key)}
-              aria-label={`Sort by ${column.label}`}
-            >
-              {sortField === column.key && sortDirection === 'asc' ? (
-                <ArrowUpward fontSize="inherit" />
-              ) : (
-                <ArrowDownward fontSize="inherit" />
-              )}
-            </IconButton>
-          </Stack>
-        ))}
-      </Box>
-
-      <Box
-        ref={scrollElementRef}
-        sx={{
-          maxHeight: 560,
-          overflow: 'auto',
-          borderRadius: 1,
-          border: '1px solid',
-          borderColor: 'divider',
-        }}
-      >
-        <Box sx={{ height: totalHeight, position: 'relative' }}>
-          {virtualRows.map((virtualRow) => {
-            const row = rows[virtualRow.index];
-            if (!row) {
-              return null;
-            }
-
-            return (
-              <Box
-                key={row.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => onRowSelect(row)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    onRowSelect(row);
-                  }
-                }}
-                sx={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: `${virtualRow.size}px`,
-                  transform: `translateY(${virtualRow.start}px)`,
-                  display: 'grid',
-                  gridTemplateColumns: columnTemplate,
-                  alignItems: 'center',
-                  gap: 1,
-                  px: 1,
-                  cursor: 'pointer',
-                  borderBottom: '1px solid',
-                  borderColor: 'divider',
-                  backgroundColor:
-                    row.id === selectedTradeId ? 'action.selected' : 'background.paper',
-                  '&:hover': {
-                    backgroundColor: 'action.hover',
-                  },
-                }}
+    <Box sx={{ overflowX: 'auto' }}>
+      <Box sx={{ minWidth: minTableWidth }}>
+        <Box
+          role="row"
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: columnTemplate,
+            alignItems: 'center',
+            gap: 1,
+            px: 1,
+            py: 1,
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+            fontWeight: 600,
+          }}
+        >
+          {columns.map((column) => (
+            <Stack key={column.key} direction="row" alignItems="center" spacing={0.5}>
+              <Typography variant="caption" sx={{ fontWeight: 700 }}>
+                {column.label}
+              </Typography>
+              <IconButton
+                size="small"
+                onClick={() => onSortChange(column.key)}
+                aria-label={`Sort by ${column.label}`}
               >
-                <Typography variant="body2">{row.id}</Typography>
-                <Typography variant="body2">{row.pair}</Typography>
-                <Typography variant="body2">{row.positionSide}</Typography>
-                <Typography variant="body2">{row.signal}</Typography>
-                <Typography variant="body2">{row.entryTime}</Typography>
-                <Typography variant="body2">{row.exitTime ?? '-'}</Typography>
-                <Typography variant="body2">{formatters.entryPrice(row)}</Typography>
-                <Typography variant="body2">{formatters.exitPrice(row)}</Typography>
-                <Typography variant="body2">{formatters.positionSize(row)}</Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ color: row.pnl >= 0 ? 'success.main' : 'error.main' }}
+                {sortField === column.key && sortDirection === 'asc' ? (
+                  <ArrowUpward fontSize="inherit" />
+                ) : (
+                  <ArrowDownward fontSize="inherit" />
+                )}
+              </IconButton>
+            </Stack>
+          ))}
+        </Box>
+
+        <Box
+          ref={scrollElementRef}
+          sx={{
+            maxHeight: 560,
+            overflow: 'auto',
+            borderRadius: 1,
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Box sx={{ height: totalHeight, position: 'relative', minWidth: minTableWidth }}>
+            {virtualRows.map((virtualRow) => {
+              const row = rows[virtualRow.index];
+              if (!row) {
+                return null;
+              }
+
+              return (
+                <Box
+                  key={row.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => onRowSelect(row)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      onRowSelect(row);
+                    }
+                  }}
+                  sx={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: `${virtualRow.size}px`,
+                    transform: `translateY(${virtualRow.start}px)`,
+                    display: 'grid',
+                    gridTemplateColumns: columnTemplate,
+                    alignItems: 'center',
+                    gap: 1,
+                    px: 1,
+                    cursor: 'pointer',
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
+                    backgroundColor:
+                      row.id === selectedTradeId ? 'action.selected' : 'background.paper',
+                    '&:hover': {
+                      backgroundColor: 'action.hover',
+                    },
+                  }}
                 >
-                  {formatters.pnl(row)}
-                </Typography>
-                <Typography variant="body2">{formatters.feesActual(row)}</Typography>
-                <Typography variant="body2">{formatters.slippageActual(row)}</Typography>
-              </Box>
-            );
-          })}
+                  <Typography variant="body2">{row.id}</Typography>
+                  <Typography variant="body2">{row.pair}</Typography>
+                  <Typography variant="body2">{row.positionSide}</Typography>
+                  <Typography variant="body2">{row.signal}</Typography>
+                  <Typography variant="body2">{row.entryTime}</Typography>
+                  <Typography variant="body2">{row.exitTime ?? '-'}</Typography>
+                  <Typography variant="body2">{formatters.entryPrice(row)}</Typography>
+                  <Typography variant="body2">{formatters.exitPrice(row)}</Typography>
+                  <Typography variant="body2">{formatters.positionSize(row)}</Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: row.pnl >= 0 ? 'success.main' : 'error.main' }}
+                  >
+                    {formatters.pnl(row)}
+                  </Typography>
+                  <Typography variant="body2">{formatters.feesActual(row)}</Typography>
+                  <Typography variant="body2">{formatters.slippageActual(row)}</Typography>
+                </Box>
+              );
+            })}
+          </Box>
         </Box>
       </Box>
     </Box>

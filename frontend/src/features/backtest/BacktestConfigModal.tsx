@@ -184,8 +184,7 @@ export function BacktestConfigModal({
             sx={{
               p: 2,
               borderRadius: 3,
-              background:
-                'linear-gradient(135deg, rgba(15,118,110,0.10) 0%, rgba(14,165,233,0.08) 55%, rgba(250,204,21,0.08) 100%)',
+              backgroundColor: 'background.paper',
             }}
           >
             <Stack spacing={1.25}>

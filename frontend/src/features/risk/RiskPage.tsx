@@ -1,4 +1,4 @@
-import { Alert, Box, Grid, Typography } from '@mui/material';
+import { Alert, Chip, Grid } from '@mui/material';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { CircuitBreakerPanel } from './CircuitBreakerPanel';
@@ -16,6 +16,12 @@ import { RiskMetrics } from './RiskMetrics';
 
 import { useAppSelector } from '@/app/hooks';
 import { AppLayout } from '@/components/layout/AppLayout';
+import {
+  PageContent,
+  PageIntro,
+  type PageMetricItem,
+  PageMetricStrip,
+} from '@/components/layout/PageContent';
 import { selectEnvironmentMode } from '@/features/environment/environmentSlice';
 
 const playAlertTone = () => {
@@ -48,13 +54,50 @@ export default function RiskPage() {
   });
 
   const [updateConfig, { isLoading: isSavingConfig }] = useUpdateRiskConfigMutation();
-  const [overrideCircuitBreaker, { isLoading: isOverriding }] = useOverrideCircuitBreakerMutation();
-  const [feedback, setFeedback] = useState<{ severity: 'success' | 'error' | 'warning'; message: string } | null>(
-    null
-  );
+  const [overrideCircuitBreaker, { isLoading: isOverriding }] =
+    useOverrideCircuitBreakerMutation();
+  const [feedback, setFeedback] = useState<{
+    severity: 'success' | 'error' | 'warning';
+    message: string;
+  } | null>(null);
 
   const seenAlertIds = useRef<Set<number>>(new Set());
-  const highAlerts = useMemo(() => alerts.filter((alert) => alert.severity === 'HIGH'), [alerts]);
+  const highAlerts = useMemo(
+    () => alerts.filter((alert) => alert.severity === 'HIGH'),
+    [alerts]
+  );
+  const summaryItems = useMemo<PageMetricItem[]>(
+    () => [
+      {
+        label: 'Environment',
+        value: environmentMode.toUpperCase(),
+        detail:
+          environmentMode === 'live'
+            ? 'Live overrides remain blocked here.'
+            : 'Controls currently guard test and paper workflows.',
+        tone: environmentMode === 'live' ? 'error' : 'success',
+      },
+      {
+        label: 'Circuit Breaker',
+        value: status?.circuitBreakerActive ? 'Active' : 'Inactive',
+        detail: status?.circuitBreakerReason ?? 'No breaker reason currently reported.',
+        tone: status?.circuitBreakerActive ? 'error' : 'success',
+      },
+      {
+        label: 'Alerts',
+        value: alerts.length.toString(),
+        detail: `${highAlerts.length} high-priority alert${highAlerts.length === 1 ? '' : 's'} in the recent window.`,
+        tone: highAlerts.length > 0 ? 'warning' : 'info',
+      },
+      {
+        label: 'Breaker Inventory',
+        value: circuitBreakers.length.toString(),
+        detail: 'Manual overrides stay audit-gated and paper-only.',
+        tone: 'info',
+      },
+    ],
+    [alerts.length, circuitBreakers.length, environmentMode, highAlerts.length, status]
+  );
 
   useEffect(() => {
     const newHighAlert = highAlerts.find((alert) => !seenAlertIds.current.has(alert.id));
@@ -84,7 +127,10 @@ export default function RiskPage() {
     }
   };
 
-  const overrideBreaker = async (payload: { confirmationCode: string; reason: string }) => {
+  const overrideBreaker = async (payload: {
+    confirmationCode: string;
+    reason: string;
+  }) => {
     try {
       await overrideCircuitBreaker(payload).unwrap();
       setFeedback({ severity: 'success', message: 'Circuit breaker override accepted.' });
@@ -98,21 +144,28 @@ export default function RiskPage() {
 
   return (
     <AppLayout>
-      <Box>
-        <Typography variant="h4" gutterBottom>
-          Risk Controls
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Protective controls are active for test/paper workflows; live override is blocked.
-        </Typography>
+      <PageContent>
+        <PageIntro
+          eyebrow="Protective controls first"
+          description="Review breaker posture, active alerts, and saved limits before you touch overrides or position-sizing assumptions."
+          chips={
+            <>
+              <Chip label="Test and paper protected" variant="outlined" />
+              <Chip label="Live override blocked" variant="outlined" />
+              <Chip label="Manual override requires audit context" variant="outlined" />
+            </>
+          }
+        />
+
+        <PageMetricStrip items={summaryItems} />
 
         {feedback ? (
-          <Alert severity={feedback.severity} onClose={() => setFeedback(null)} sx={{ mb: 2 }}>
+          <Alert severity={feedback.severity} onClose={() => setFeedback(null)}>
             {feedback.message}
           </Alert>
         ) : null}
 
-        <Grid container spacing={2}>
+        <Grid container spacing={2.5}>
           <Grid size={{ xs: 12, lg: 6 }}>
             <RiskMetrics status={status} loading={isStatusLoading} />
           </Grid>
@@ -140,7 +193,7 @@ export default function RiskPage() {
             <PositionSizingCalculator />
           </Grid>
         </Grid>
-      </Box>
+      </PageContent>
     </AppLayout>
   );
 }

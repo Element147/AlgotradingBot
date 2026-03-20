@@ -113,10 +113,10 @@ describe('PaperTradingPage', () => {
   it('renders paper state and order queue', () => {
     renderPage();
 
-    expect(screen.getByText('Paper Trading Desk')).toBeInTheDocument();
+    expect(screen.getByText('Paper-only execution')).toBeInTheDocument();
     expect(screen.getByText('Place Paper Order')).toBeInTheDocument();
     expect(screen.getByText('Paper Orders')).toBeInTheDocument();
-    expect(screen.getByText('No paper incidents detected.')).toBeInTheDocument();
+    expect(screen.getAllByText('No paper incidents detected.').length).toBeGreaterThan(0);
     expect(screen.getByText('#11')).toBeInTheDocument();
   });
 

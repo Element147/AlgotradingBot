@@ -15,7 +15,6 @@ import {
   Checkbox,
   Chip,
   Divider,
-  Grid,
   LinearProgress,
   Stack,
   Table,
@@ -23,6 +22,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  TableContainer,
   TextField,
   Tooltip,
   Typography,
@@ -70,57 +70,6 @@ function HeaderCellWithTooltip({ label, description }: HeaderCellProps) {
         <InfoOutlinedIcon fontSize="inherit" color="action" sx={{ cursor: 'help' }} />
       </Tooltip>
     </Stack>
-  );
-}
-
-export function BacktestHeroPanel() {
-  return (
-    <Card
-      sx={{
-        mb: 3,
-        borderRadius: 4,
-        color: 'text.primary',
-        background:
-          'linear-gradient(135deg, rgba(15,23,42,0.98) 0%, rgba(8,47,73,0.96) 45%, rgba(21,128,61,0.90) 100%)',
-      }}
-    >
-      <CardContent sx={{ p: 3 }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid size={{ xs: 12, md: 8 }}>
-            <Typography variant="h4" gutterBottom sx={{ color: '#f8fafc' }}>
-              Backtest Lab
-            </Typography>
-            <Typography variant="body1" sx={{ color: 'rgba(248,250,252,0.82)', maxWidth: 760 }}>
-              Upload historical data, choose a strategy, and run safe research simulations in `test`
-              mode. The flow now guides you toward supported choices, shows run-stage progress, and
-              keeps beginner explanations close to each step.
-            </Typography>
-          </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Stack
-              direction="row"
-              spacing={1}
-              flexWrap="wrap"
-              useFlexGap
-              justifyContent={{ xs: 'flex-start', md: 'flex-end' }}
-            >
-              <Chip
-                label="Default-safe: test"
-                sx={{ bgcolor: 'rgba(255,255,255,0.12)', color: '#f8fafc' }}
-              />
-              <Chip
-                label="Research only"
-                sx={{ bgcolor: 'rgba(255,255,255,0.12)', color: '#f8fafc' }}
-              />
-              <Chip
-                label="Realistic costs enabled"
-                sx={{ bgcolor: 'rgba(255,255,255,0.12)', color: '#f8fafc' }}
-              />
-            </Stack>
-          </Grid>
-        </Grid>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -615,7 +564,8 @@ export function BacktestHistoryPanel({
         {isError ? <Alert severity="error">Unable to load backtest history.</Alert> : null}
 
         {!isLoading && history.length > 0 ? (
-          <Table size="small">
+          <TableContainer>
+            <Table size="small" sx={{ minWidth: 1220 }}>
             <TableHead>
               <TableRow>
                 <TableCell>
@@ -779,7 +729,8 @@ export function BacktestHistoryPanel({
                 </TableRow>
               ))}
             </TableBody>
-          </Table>
+            </Table>
+          </TableContainer>
         ) : null}
 
         {comparison ? <BacktestComparisonPanel comparison={comparison} /> : null}

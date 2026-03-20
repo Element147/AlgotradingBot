@@ -46,7 +46,8 @@ describe('Sidebar', () => {
   it('should render application title', () => {
     renderWithProviders(<Sidebar open={true} onClose={vi.fn()} />);
 
-    expect(screen.getByText('AlgoTrading')).toBeInTheDocument();
+    expect(screen.getByText('AlgoTrading Bot')).toBeInTheDocument();
+    expect(screen.getByText('Research Workstation')).toBeInTheDocument();
   });
 
   it('should render navigation icons', () => {

@@ -145,7 +145,7 @@ describe('MarketDataPage', { timeout: 15000 }, () => {
   it('renders provider setup and waiting job information', () => {
     renderPage();
 
-    expect(screen.getByText('Market Data Downloader')).toBeInTheDocument();
+    expect(screen.getByText('Provider-backed imports')).toBeInTheDocument();
     expect(screen.getByText(/Import transport: live WebSocket stream connected/i)).toBeInTheDocument();
     expect(screen.getByText('Current Import Telemetry')).toBeInTheDocument();
     expect(screen.getByText(/This provider works without an API key/i)).toBeInTheDocument();

@@ -126,6 +126,7 @@ Shared frontend infrastructure:
 - `src/app`: Redux store, typed hooks, app-level state wiring
 - `src/services`: transport helpers, environment-aware API plumbing, OpenAPI path helpers, WebSocket manager
 - `src/components`: shared layout primitives, route guards, loading states, and error handling
+- `src/components/layout/PageContent.tsx`: shared page intro, metric-strip, and section-header primitives used to keep route spacing, section rhythm, and primary-action placement consistent across the SPA
 
 ### Frontend Data Flow
 
@@ -137,6 +138,7 @@ Shared frontend infrastructure:
 - The frontend now treats connection-open and channel subscription as separate states: pages only consider live telemetry active after the backend acknowledges the requested channels.
 - Polling fallback remains available for progress views when the browser cannot establish or maintain the WebSocket connection.
 - Sensitive operational state stays backend-owned; local browser storage is limited to display preferences and similar user-local settings.
+- Route surfaces now treat the shell header as the primary page-context surface. Page components should keep safety-critical chips and workflow meaning intact, but avoid reintroducing duplicate hero banners or route-local chrome when shared shell context already covers that role.
 
 ## Runtime And Data Boundaries
 

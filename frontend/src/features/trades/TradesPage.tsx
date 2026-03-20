@@ -1,4 +1,4 @@
-import { Alert, Box, Grid, Typography } from '@mui/material';
+import { Alert, Box, Chip, Grid } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useSearchParams } from 'react-router-dom';
@@ -21,6 +21,12 @@ import {
 } from './tradeUtils';
 
 import { AppLayout } from '@/components/layout/AppLayout';
+import {
+  PageContent,
+  PageIntro,
+  type PageMetricItem,
+  PageMetricStrip,
+} from '@/components/layout/PageContent';
 import { selectCurrency, selectTimezone } from '@/features/settings/settingsSlice';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
@@ -45,9 +51,10 @@ export default function TradesPage() {
   });
   const [query, setQuery] = useState<TradeHistoryQuery>({ limit: 200 });
   const [selectedTradeId, setSelectedTradeId] = useState<number | null>(null);
-  const [feedback, setFeedback] = useState<{ severity: 'success' | 'error'; message: string } | null>(
-    null
-  );
+  const [feedback, setFeedback] = useState<{
+    severity: 'success' | 'error';
+    message: string;
+  } | null>(null);
   const [page, setPage] = useState(1);
   const [sortField, setSortField] = useState<TradeSortField>('entryTime');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -118,6 +125,35 @@ export default function TradesPage() {
   }, [trades]);
 
   const stats = useMemo(() => calculateTradeStats(filteredTrades), [filteredTrades]);
+  const summaryItems = useMemo<PageMetricItem[]>(
+    () => [
+      {
+        label: 'Filtered Trades',
+        value: stats.totalTrades.toString(),
+        detail: `Current page ${page} of ${totalPages}.`,
+        tone: stats.totalTrades > 0 ? 'info' : 'default',
+      },
+      {
+        label: 'Win Rate',
+        value: `${stats.winRate.toFixed(1)}%`,
+        detail: `Profit factor ${stats.profitFactor.toFixed(2)}.`,
+        tone: stats.winRate >= 50 ? 'success' : 'warning',
+      },
+      {
+        label: 'Timezone',
+        value: timezone,
+        detail: 'Trade timestamps use this display timezone.',
+        tone: 'default',
+      },
+      {
+        label: 'Currency View',
+        value: currency,
+        detail: 'Formatting preference only; backend trade data is unchanged.',
+        tone: 'default',
+      },
+    ],
+    [currency, page, stats.profitFactor, stats.totalTrades, stats.winRate, timezone, totalPages]
+  );
 
   const formatAmount = (amount: number): string => {
     if (currency === 'BTC') {
@@ -192,7 +228,11 @@ export default function TradesPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `trades_${new Date().toISOString().replaceAll(':', '').replaceAll('-', '').slice(0, 15)}.csv`;
+    link.download = `trades_${new Date()
+      .toISOString()
+      .replaceAll(':', '')
+      .replaceAll('-', '')
+      .slice(0, 15)}.csv`;
     link.click();
     URL.revokeObjectURL(url);
 
@@ -213,36 +253,45 @@ export default function TradesPage() {
 
   return (
     <AppLayout>
-      <Box>
-        <Typography variant="h4" gutterBottom>
-          Trade History
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Analyze completed trades, validate strategy behavior, and export research data for deeper review.
-        </Typography>
+      <PageContent>
+        <PageIntro
+          eyebrow="Review and export"
+          description="Use a lighter filter flow to narrow the trade set, inspect fills, and export clean evidence without losing timezone or account context."
+          chips={
+            <>
+              <Chip label="Timezone-aware review" variant="outlined" />
+              <Chip label="CSV export stays available" variant="outlined" />
+              <Chip label="Paper and research history only" variant="outlined" />
+            </>
+          }
+        />
+
+        <PageMetricStrip items={summaryItems} />
 
         {feedback ? (
-          <Alert severity={feedback.severity} onClose={() => setFeedback(null)} sx={{ mb: 2 }}>
+          <Alert severity={feedback.severity} onClose={() => setFeedback(null)}>
             {feedback.message}
           </Alert>
         ) : null}
 
-        <Grid container spacing={2}>
+        <Grid container spacing={2.5}>
           <Grid size={{ xs: 12, lg: 4 }}>
-            <TradesFiltersPanel
-              draft={draft}
-              symbols={symbols}
-              validationError={validationError}
-              isFetching={isFetching}
-              onDraftChange={setDraft}
-              onSearchIdChange={(value) => {
-                setDraft((prev) => ({ ...prev, searchId: value }));
-                setPage(1);
-              }}
-              onApply={applyFilters}
-              onReset={resetFilters}
-              onRefresh={() => void refetch()}
-            />
+            <Box sx={{ position: { lg: 'sticky' }, top: { lg: 16 } }}>
+              <TradesFiltersPanel
+                draft={draft}
+                symbols={symbols}
+                validationError={validationError}
+                isFetching={isFetching}
+                onDraftChange={setDraft}
+                onSearchIdChange={(value) => {
+                  setDraft((prev) => ({ ...prev, searchId: value }));
+                  setPage(1);
+                }}
+                onApply={applyFilters}
+                onReset={resetFilters}
+                onRefresh={() => void refetch()}
+              />
+            </Box>
           </Grid>
 
           <Grid size={{ xs: 12, lg: 8 }}>
@@ -266,7 +315,7 @@ export default function TradesPage() {
             />
           </Grid>
         </Grid>
-      </Box>
+      </PageContent>
 
       <TradeDetailsModal
         tradeId={selectedTradeId}

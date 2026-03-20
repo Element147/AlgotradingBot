@@ -60,6 +60,8 @@ Verified on March 20, 2026 against dataset `#12` (`Binance BTC/USDT +2 15m 2024-
 - Risk UI now shows circuit-breaker inventory alongside override controls so operators can see the active breaker context before attempting an audited override.
 - Strategy-management tables now lean on canonical strategy profile metadata instead of only raw type IDs, and backtest configuration now explains whether the selected algorithm uses one symbol or the full dataset universe.
 - The frontend shell now uses a centralized research-workstation theme with grouped navigation, route-aware operator context in the header, and stronger loading and error states so safety and environment cues stay legible on desktop and mobile.
+- The shell polish pass now keeps route context in one place: the header provides the page title plus explicit mode, exchange-profile, telemetry, risk, and role chips, while route surfaces avoid duplicating hero chrome and instead use shared intro, metric-strip, and section-header primitives.
+- Dashboard, Paper Trading, Strategies, Trades, Backtest, Market Data, Risk, and Settings now share the same spacing, max-width, card density, and responsive stacking rules so dense workflows stay readable without overlapping or clipped UI.
 - Backtest research views now include price-action, exposure, regime, indicator, equity, drawdown, and comparison visuals so operators can inspect what a strategy actually did instead of relying only on summary metrics.
 - New/default strategy configurations are long-only unless short exposure is explicitly enabled; existing explicit short settings are preserved for operator review.
 - Paper-trading state includes recovery-aware telemetry, stale-order and stale-position visibility, and in-app incident alerts.

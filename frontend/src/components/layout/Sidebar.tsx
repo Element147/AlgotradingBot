@@ -33,30 +33,27 @@ interface SidebarProps {
   onClose: () => void;
 }
 
-const DRAWER_WIDTH = 272;
+const DRAWER_WIDTH = 264;
 
 const navigationSections = [
   {
     heading: 'Command',
-    caption: 'Keep the operator view anchored in safe execution defaults.',
     items: [
-      { text: 'Dashboard', detail: 'Overview and signals', icon: <DashboardIcon />, path: '/dashboard' },
+      { text: 'Dashboard', detail: 'Overview and system signals', icon: <DashboardIcon />, path: '/dashboard' },
       { text: 'Paper', detail: 'Simulated order desk', icon: <PaperIcon />, path: '/paper' },
     ],
   },
   {
     heading: 'Research',
-    caption: 'Inspect strategies, trade outcomes, and backtest evidence.',
     items: [
-      { text: 'Strategies', detail: 'Profiles and readiness', icon: <StrategyIcon />, path: '/strategies' },
-      { text: 'Trades', detail: 'Execution review', icon: <TradesIcon />, path: '/trades' },
-      { text: 'Backtest', detail: 'Simulation lab', icon: <BacktestIcon />, path: '/backtest' },
-      { text: 'Market Data', detail: 'Dataset intake', icon: <MarketDataIcon />, path: '/market-data' },
+      { text: 'Strategies', detail: 'Profiles and configs', icon: <StrategyIcon />, path: '/strategies' },
+      { text: 'Trades', detail: 'History and exports', icon: <TradesIcon />, path: '/trades' },
+      { text: 'Backtest', detail: 'Runs and results', icon: <BacktestIcon />, path: '/backtest' },
+      { text: 'Market Data', detail: 'Provider imports', icon: <MarketDataIcon />, path: '/market-data' },
     ],
   },
   {
     heading: 'Operations',
-    caption: 'Protect controls, overrides, and workstation behavior.',
     items: [
       { text: 'Risk', detail: 'Breakers and limits', icon: <RiskIcon />, path: '/risk' },
       { text: 'Settings', detail: 'Connections and preferences', icon: <SettingsIcon />, path: '/settings' },
@@ -66,7 +63,7 @@ const navigationSections = [
 
 export const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md')); // < 960px
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -77,101 +74,83 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
 
   const drawerContent = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Toolbar sx={{ alignItems: 'flex-start', pt: 2, pb: 1 }}>
-        <Box
-          sx={{
-            width: '100%',
-            p: 2.25,
-            borderRadius: 4,
-            background: `linear-gradient(155deg, ${alpha(theme.palette.primary.main, 0.18)} 0%, ${alpha(theme.palette.secondary.main, 0.12)} 100%)`,
-            border: `1px solid ${theme.palette.divider}`,
-            boxShadow:
-              theme.palette.mode === 'light'
-                ? '0 18px 36px rgba(18, 35, 42, 0.08)'
-                : '0 18px 36px rgba(0, 8, 10, 0.22)',
-          }}
-        >
-          <Typography variant="overline" sx={{ color: 'text.secondary' }}>
-            Local-First
-          </Typography>
-          <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 700 }}>
-            AlgoTrading
-          </Typography>
-          <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>
-            Research Workstation
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Research workstation for backtests, paper flow, and operator controls.
-          </Typography>
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mt: 2 }}>
-            <Chip label="Default-safe: test" size="small" />
-            <Chip label="Paper-first" size="small" />
+      <Toolbar sx={{ alignItems: 'stretch', px: 2.5, pt: 3, pb: 2 }}>
+        <Stack spacing={2}>
+          <Box>
+            <Typography variant="overline" color="text.secondary">
+              AlgoTrading Bot
+            </Typography>
+            <Typography variant="h6" sx={{ mt: 0.25 }}>
+              Research Workstation
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Simple, test-first access to backtests, paper orders, risk controls, and operator settings.
+            </Typography>
+          </Box>
+
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            <Chip label="Mode starts in test" size="small" variant="outlined" />
+            <Chip label="Paper actions stay simulated" size="small" variant="outlined" />
           </Stack>
-        </Box>
+        </Stack>
       </Toolbar>
 
       <Divider />
 
-      <Box sx={{ flexGrow: 1, overflowY: 'auto', pt: 2, px: 1.25, pb: 2 }}>
+      <Box sx={{ flexGrow: 1, overflowY: 'auto', px: 1.25, py: 1.5 }}>
         {navigationSections.map((section) => (
           <Box key={section.heading} sx={{ mb: 2.5 }}>
-            <Box sx={{ px: 1.25, mb: 1 }}>
-              <Typography variant="overline" sx={{ color: 'text.secondary' }}>
-                {section.heading}
-              </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                {section.caption}
-              </Typography>
-            </Box>
+            <Typography
+              variant="overline"
+              color="text.secondary"
+              sx={{ px: 1.25, display: 'block', mb: 1 }}
+            >
+              {section.heading}
+            </Typography>
 
             <List disablePadding>
               {section.items.map((item) => {
                 const isActive = location.pathname === item.path;
 
                 return (
-                  <ListItem key={item.text} disablePadding sx={{ mb: 0.75 }}>
+                  <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
                     <ListItemButton
                       onClick={() => handleNavigation(item.path)}
                       selected={isActive}
                       sx={{
-                        borderRadius: 3,
                         px: 1.5,
-                        py: 1.15,
+                        py: 1.2,
                         alignItems: 'flex-start',
-                        '&.Mui-selected': {
-                          background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                          color: theme.palette.primary.contrastText,
-                          boxShadow: `0 18px 32px ${alpha(theme.palette.primary.main, 0.26)}`,
-                          '&:hover': {
-                            background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
-                          },
-                          '& .MuiListItemIcon-root': {
-                            color: theme.palette.primary.contrastText,
-                          },
-                          '& .MuiTypography-body2': {
-                            color: alpha(theme.palette.primary.contrastText, 0.82),
-                          },
+                        border: `1px solid ${
+                          isActive
+                            ? alpha(theme.palette.primary.main, 0.2)
+                            : 'transparent'
+                        }`,
+                        backgroundColor: isActive
+                          ? alpha(theme.palette.primary.main, 0.11)
+                          : 'transparent',
+                        '&:hover': {
+                          backgroundColor: isActive
+                            ? alpha(theme.palette.primary.main, 0.15)
+                            : alpha(theme.palette.primary.main, 0.05),
+                        },
+                        '& .MuiListItemIcon-root': {
+                          color: isActive
+                            ? theme.palette.primary.main
+                            : theme.palette.text.secondary,
                         },
                       }}
                     >
-                      <ListItemIcon
-                        sx={{
-                          minWidth: 42,
-                          mt: 0.15,
-                          color: isActive ? 'inherit' : theme.palette.text.secondary,
-                        }}
-                      >
+                      <ListItemIcon sx={{ minWidth: 42, mt: 0.15 }}>
                         {item.icon}
                       </ListItemIcon>
                       <ListItemText
                         primary={item.text}
                         secondary={item.detail}
-                        primaryTypographyProps={{
-                          fontWeight: 700,
-                        }}
+                        primaryTypographyProps={{ fontWeight: 700 }}
                         secondaryTypographyProps={{
                           variant: 'body2',
-                          color: isActive ? 'inherit' : 'text.secondary',
+                          color: 'text.secondary',
                         }}
                       />
                     </ListItemButton>
@@ -183,21 +162,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
         ))}
       </Box>
 
-      <Box sx={{ p: 1.5, pt: 0 }}>
+      <Box sx={{ p: 2, pt: 0 }}>
         <Box
           sx={{
-            borderRadius: 4,
-            p: 1.75,
+            borderRadius: 3,
+            p: 2,
             border: `1px solid ${theme.palette.divider}`,
-            backgroundColor: alpha(
-              theme.palette.background.paper,
-              theme.palette.mode === 'light' ? 0.62 : 0.32
-            ),
+            backgroundColor: alpha(theme.palette.primary.main, 0.05),
           }}
         >
-          <Typography variant="subtitle2">Safety Posture</Typography>
-          <Typography variant="body2" color="text.secondary">
-            Test and paper behavior stay visible throughout the workstation shell.
+          <Typography variant="subtitle2">Safe next step</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
+            Start with Backtest or Dashboard, then move into paper workflows only after the evidence is clear.
           </Typography>
         </Box>
       </Box>
@@ -211,9 +187,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
           variant="temporary"
           open={open}
           onClose={onClose}
-          ModalProps={{
-            keepMounted: true, // Better mobile performance
-          }}
+          ModalProps={{ keepMounted: true }}
           sx={{
             '& .MuiDrawer-paper': {
               width: DRAWER_WIDTH,

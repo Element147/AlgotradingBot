@@ -167,9 +167,9 @@ describe('SettingsPage', { timeout: 15000 }, () => {
   it('renders tab navigation and api section', () => {
     render(<SettingsPage />);
 
-    expect(screen.getByText('Settings')).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'API Config' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Audit Trail' })).toBeInTheDocument();
+    expect(screen.getByText('Reference surface')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /API Config/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Audit Trail/i })).toBeInTheDocument();
     expect(screen.getByText('API Configuration')).toBeInTheDocument();
     expect(screen.getByText('Market Data Provider Credentials')).toBeInTheDocument();
     expect(screen.getByLabelText('Saved Connection')).toBeInTheDocument();
@@ -203,14 +203,14 @@ describe('SettingsPage', { timeout: 15000 }, () => {
   it('switches to notifications tab', () => {
     render(<SettingsPage />);
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Notifications' }));
+    fireEvent.click(screen.getByRole('tab', { name: /Notifications/i }));
     expect(screen.getByText('Notification Settings')).toBeInTheDocument();
   });
 
   it('renders enriched audit trail panel', () => {
     render(<SettingsPage />);
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Audit Trail' }));
+    fireEvent.click(screen.getByRole('tab', { name: /Audit Trail/i }));
 
     expect(screen.getByText('Current Audit Window')).toBeInTheDocument();
     expect(screen.getByText('Backtest Run Started')).toBeInTheDocument();
@@ -221,7 +221,7 @@ describe('SettingsPage', { timeout: 15000 }, () => {
     render(<SettingsPage />);
     mockDispatch.mockClear();
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Display' }));
+    fireEvent.click(screen.getByRole('tab', { name: /Display/i }));
     fireEvent.change(screen.getByLabelText('Text Scale'), { target: { value: '1.5' } });
 
     expect(mockDispatch).not.toHaveBeenCalled();
@@ -236,7 +236,11 @@ describe('SettingsPage', { timeout: 15000 }, () => {
   it('shows backend capability message for exchange balance errors', () => {
     render(<SettingsPage />);
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Exchange' }));
+    fireEvent.click(
+      screen
+        .getAllByRole('tab')
+        .find((tab) => tab.textContent?.startsWith('Exchange')) as HTMLElement
+    );
 
     expect(screen.getByText('Live account reads are unavailable on this backend.')).toBeInTheDocument();
   });

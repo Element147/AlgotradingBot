@@ -1,12 +1,13 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
-import { BrowserRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import authReducer from '../../features/auth/authSlice';
 import environmentReducer from '../../features/environment/environmentSlice';
 import settingsReducer from '../../features/settings/settingsSlice';
+import websocketReducer from '../../features/websocket/websocketSlice';
 
 import { Header } from './Header';
 
@@ -40,11 +41,21 @@ vi.mock('../../features/settings/exchangeApi', () => ({
   }),
 }));
 
+vi.mock('../../features/risk/riskApi', () => ({
+  useGetRiskStatusQuery: () => ({
+    data: {
+      circuitBreakerActive: false,
+      circuitBreakerReason: '',
+    },
+  }),
+}));
+
 const createMockStore = (user = { id: '1', username: 'testuser', email: 'test@example.com', role: 'trader' as const }) => configureStore({
     reducer: {
       auth: authReducer,
       environment: environmentReducer,
       settings: settingsReducer,
+      websocket: websocketReducer,
     },
     preloadedState: {
       auth: {
@@ -75,6 +86,16 @@ const createMockStore = (user = { id: '1', username: 'testuser', email: 'test@ex
           riskThreshold: 75,
         },
       },
+      websocket: {
+        connected: true,
+        connecting: false,
+        error: null,
+        lastReconnectAttempt: null,
+        reconnectAttempts: 0,
+        subscribedChannels: ['test.backtests'],
+        lastEventTime: '2026-03-20T09:00:00',
+        lastEventByType: {},
+      },
     },
   });
 
@@ -85,9 +106,9 @@ describe('Header', () => {
 
   const renderHeader = (props = defaultProps, store = createMockStore()) => render(
       <Provider store={store}>
-        <BrowserRouter>
+        <MemoryRouter initialEntries={['/dashboard']}>
           <Header {...props} />
-        </BrowserRouter>
+        </MemoryRouter>
       </Provider>
     );
 
@@ -120,19 +141,18 @@ describe('Header', () => {
     expect(notificationsButton).toBeInTheDocument();
   });
 
-  it('renders settings shortcut and bot mode chip', () => {
+  it('renders route context and operator chips', () => {
     renderHeader();
 
-    expect(screen.getByLabelText('Open settings')).toBeInTheDocument();
-    expect(screen.getByText('Paper - Binance Paper')).toBeInTheDocument();
-  });
-
-  it('navigates to settings when the shortcut button is clicked', () => {
-    renderHeader();
-
-    fireEvent.click(screen.getByLabelText('Open settings'));
-
-    expect(mockNavigate).toHaveBeenCalledWith('/settings');
+    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(
+      screen.getByText('Start here for mode, health, paper activity, and current operator signals.')
+    ).toBeInTheDocument();
+    expect(screen.getByText('Mode TEST')).toBeInTheDocument();
+    expect(screen.getByText('BINANCE TESTNET')).toBeInTheDocument();
+    expect(screen.getByText('Telemetry connected')).toBeInTheDocument();
+    expect(screen.getByText('Risk posture guarded')).toBeInTheDocument();
+    expect(screen.getByText('Role TRADER')).toBeInTheDocument();
   });
 
   it('renders user avatar with first letter of username', () => {
@@ -208,7 +228,7 @@ describe('Header', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Notifications')).toBeInTheDocument();
-      expect(screen.getByText('No new notifications')).toBeInTheDocument();
+      expect(screen.getByText(/no new notifications/i)).toBeInTheDocument();
     });
   });
 

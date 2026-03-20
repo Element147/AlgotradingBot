@@ -3,26 +3,25 @@ import {
   Alert,
   Box,
   Button,
-  Card,
-  CardContent,
   Chip,
-  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
   Grid,
+  Paper,
   Stack,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableRow,
+  TableContainer,
   Tooltip,
   Typography,
 } from '@mui/material';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import {
   type Strategy,
@@ -36,6 +35,13 @@ import { getAllStrategyProfiles, getStrategyProfile } from './strategyProfiles';
 import type { StrategyConfigOutput } from './strategyValidation';
 
 import { AppLayout } from '@/components/layout/AppLayout';
+import {
+  PageContent,
+  PageIntro,
+  type PageMetricItem,
+  PageMetricStrip,
+  PageSectionHeader,
+} from '@/components/layout/PageContent';
 
 type ActionDialogState = {
   strategy: Strategy;
@@ -69,22 +75,62 @@ function HeaderCellWithTooltip({ label, description }: HeaderCellProps) {
 }
 
 export default function StrategiesPage() {
-  const { data: strategies = [], isLoading, isError, error } = useGetStrategiesQuery(undefined, {
+  const {
+    data: strategies = [],
+    isLoading,
+    isError,
+    error,
+  } = useGetStrategiesQuery(undefined, {
     pollingInterval: 30000,
     skipPollingIfUnfocused: true,
   });
   const [startStrategy, { isLoading: isStarting }] = useStartStrategyMutation();
   const [stopStrategy, { isLoading: isStopping }] = useStopStrategyMutation();
-  const [updateConfig, { isLoading: isSavingConfig }] = useUpdateStrategyConfigMutation();
+  const [updateConfig, { isLoading: isSavingConfig }] =
+    useUpdateStrategyConfigMutation();
 
   const [selectedStrategy, setSelectedStrategy] = useState<Strategy | null>(null);
   const [actionDialog, setActionDialog] = useState<ActionDialogState>(null);
-  const [feedback, setFeedback] = useState<{ severity: 'success' | 'error'; message: string } | null>(
-    null
-  );
+  const [feedback, setFeedback] = useState<{
+    severity: 'success' | 'error';
+    message: string;
+  } | null>(null);
 
   const isBusy = isStarting || isStopping || isSavingConfig;
   const strategyProfiles = getAllStrategyProfiles();
+  const summaryItems = useMemo<PageMetricItem[]>(() => {
+    const runningCount = strategies.filter((strategy) => strategy.status === 'RUNNING').length;
+    const longOnlyCount = strategies.filter(
+      (strategy) => !strategy.shortSellingEnabled
+    ).length;
+
+    return [
+      {
+        label: 'Catalog Coverage',
+        value: `${strategyProfiles.length} templates`,
+        detail: 'Canonical strategy profiles stay aligned with the backtest catalog.',
+        tone: 'info',
+      },
+      {
+        label: 'Running Now',
+        value: `${runningCount} active`,
+        detail: 'Running strategies stay in paper mode only.',
+        tone: runningCount > 0 ? 'success' : 'default',
+      },
+      {
+        label: 'Long-Only Default',
+        value: `${longOnlyCount} configs`,
+        detail: 'Short exposure remains opt-in per saved strategy config.',
+        tone: 'success',
+      },
+      {
+        label: 'Beginner Rule',
+        value: 'Edit before Start',
+        detail: 'Review risk per trade, symbol, timeframe, and shorting before you enable a strategy.',
+        tone: 'warning',
+      },
+    ];
+  }, [strategies, strategyProfiles.length]);
 
   const runAction = async () => {
     if (!actionDialog) {
@@ -103,7 +149,9 @@ export default function StrategiesPage() {
       setFeedback({
         severity: 'error',
         message:
-          actionDialog.action === 'start' ? 'Failed to start strategy.' : 'Failed to stop strategy.',
+          actionDialog.action === 'start'
+            ? 'Failed to start strategy.'
+            : 'Failed to stop strategy.',
       });
     } finally {
       setActionDialog(null);
@@ -125,78 +173,94 @@ export default function StrategiesPage() {
 
   return (
     <AppLayout>
-      <Box>
-        <Typography variant="h4" gutterBottom>
-          Strategy Management
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          All strategy execution is paper-mode only by default, and short exposure remains limited to research and paper workflows.
-        </Typography>
+      <PageContent>
+        <PageIntro
+          eyebrow="Paper-safe strategy desk"
+          description="Pick a template, review how it behaves, then edit configuration before you start or stop anything in the paper workflow."
+          chips={
+            <>
+              <Chip label="Start and stop remain paper-only" variant="outlined" />
+              <Chip label="Short exposure is opt-in" variant="outlined" />
+              <Chip label="Config history stays visible" variant="outlined" />
+            </>
+          }
+        />
 
-        <Card sx={{ mb: 2 }}>
-          <CardContent>
-            <Typography variant="h6" sx={{ mb: 1 }}>
-              Strategy Guide
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Use this quick guide when choosing strategy behavior for backtesting and paper trading.
-            </Typography>
-            <Grid container spacing={2}>
-              {strategyProfiles.map((profile) => (
-                <Grid key={profile.key} size={{ xs: 12, md: 4 }}>
-                  <Card variant="outlined">
-                    <CardContent>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-                        {profile.title}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {profile.shortDescription}
-                      </Typography>
-                      <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-                        Entry: {profile.entryRule}
-                      </Typography>
-                      <Typography variant="caption" display="block">
-                        Exit: {profile.exitRule}
-                      </Typography>
-                      <Typography variant="caption" display="block">
-                        Best for: {profile.bestFor}
-                      </Typography>
-                      <Typography variant="caption" display="block">
-                        Risk note: {profile.riskNotes}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
-          </CardContent>
-        </Card>
+        <PageMetricStrip items={summaryItems} />
 
         {feedback ? (
-          <Alert severity={feedback.severity} sx={{ mb: 2 }} onClose={() => setFeedback(null)}>
+          <Alert severity={feedback.severity} onClose={() => setFeedback(null)}>
             {feedback.message}
           </Alert>
         ) : null}
 
-        {isLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-            <CircularProgress />
-          </Box>
-        ) : null}
+        {isLoading ? <Alert severity="info">Loading strategy catalog...</Alert> : null}
 
         {isError ? (
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Alert severity="error">
             Failed to load strategies. {String((error as { status?: string })?.status ?? '')}
           </Alert>
         ) : null}
 
+        <Stack spacing={2}>
+          <PageSectionHeader
+            title="Strategy guide"
+            description="Use these quick notes when you are learning what each profile is trying to do. The table below remains the place to start, stop, and edit saved configs."
+          />
+
+          <Grid container spacing={1.5}>
+            {strategyProfiles.map((profile) => (
+              <Grid key={profile.key} size={{ xs: 12, md: 6, xl: 4 }}>
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    height: '100%',
+                    p: 2,
+                    borderRadius: 3,
+                  }}
+                >
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.75 }}>
+                    {profile.title}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                    {profile.shortDescription}
+                  </Typography>
+                  <Typography variant="caption" display="block">
+                    Entry: {profile.entryRule}
+                  </Typography>
+                  <Typography variant="caption" display="block">
+                    Exit: {profile.exitRule}
+                  </Typography>
+                  <Typography variant="caption" display="block">
+                    Best for: {profile.bestFor}
+                  </Typography>
+                  <Typography variant="caption" display="block">
+                    Risk note: {profile.riskNotes}
+                  </Typography>
+                </Paper>
+              </Grid>
+            ))}
+          </Grid>
+        </Stack>
+
         {!isLoading && !isError ? (
-          <Card>
-            <CardContent>
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                Available Strategies
-              </Typography>
-              <Table size="small">
+          <Paper variant="outlined" sx={{ p: 0.25 }}>
+            <Box sx={{ p: 2 }}>
+              <PageSectionHeader
+                title="Available strategies"
+                description="Use Start only after the config is reviewed. Edit keeps advanced and destructive changes lower in the visual hierarchy."
+                actions={
+                  <Chip
+                    label={isBusy ? 'Updating strategy state' : 'Paper mode only'}
+                    color={isBusy ? 'warning' : 'success'}
+                    variant="outlined"
+                  />
+                }
+              />
+            </Box>
+
+            <TableContainer>
+              <Table size="small" sx={{ minWidth: 1120 }}>
                 <TableHead>
                   <TableRow>
                     <TableCell>
@@ -208,7 +272,7 @@ export default function StrategiesPage() {
                     <TableCell>
                       <HeaderCellWithTooltip
                         label="Type"
-                        description="Underlying strategy model (for example mean reversion or trend-following logic)."
+                        description="Underlying strategy model, such as mean reversion or trend following."
                       />
                     </TableCell>
                     <TableCell>
@@ -232,7 +296,7 @@ export default function StrategiesPage() {
                     <TableCell>
                       <HeaderCellWithTooltip
                         label="P&L"
-                        description="Current strategy profit or loss value as reported by backend metrics."
+                        description="Current strategy profit or loss as reported by backend metrics."
                       />
                     </TableCell>
                     <TableCell>
@@ -244,19 +308,19 @@ export default function StrategiesPage() {
                     <TableCell>
                       <HeaderCellWithTooltip
                         label="Drawdown"
-                        description="Current decline from recent equity peak. Lower is generally safer."
+                        description="Current decline from recent equity peak."
                       />
                     </TableCell>
                     <TableCell>
                       <HeaderCellWithTooltip
                         label="Config"
-                        description="Current configuration version. Open edit to review the full parameter history."
+                        description="Current configuration version and last config update."
                       />
                     </TableCell>
                     <TableCell align="right">
                       <HeaderCellWithTooltip
                         label="Actions"
-                        description="Start/stop execution and open configuration edit dialog."
+                        description="Start or stop execution and open the configuration editor."
                       />
                     </TableCell>
                   </TableRow>
@@ -266,84 +330,96 @@ export default function StrategiesPage() {
                     const strategyProfile = getStrategyProfile(strategy.type);
 
                     return (
-                    <TableRow key={strategy.id} hover>
-                      <TableCell>
-                        {strategy.name}
-                        {strategyProfile ? (
-                          <Typography variant="caption" display="block" color="text.secondary">
-                            {strategyProfile.shortDescription}
-                          </Typography>
-                        ) : null}
-                      </TableCell>
-                      <TableCell>
-                        {strategyProfile?.title ?? strategy.type}
-                        <Typography variant="caption" display="block" color="text.secondary">
-                          Canonical ID: {strategy.type}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip label={strategy.status} size="small" color={statusColor(strategy.status)} />
-                      </TableCell>
-                      <TableCell>
-                        {strategy.symbol} ({strategy.timeframe})
-                        <Typography variant="caption" display="block" color="text.secondary">
-                          {strategy.shortSellingEnabled ? 'Long + short enabled' : 'Long only'}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>{(strategy.riskPerTrade * 100).toFixed(2)}%</TableCell>
-                      <TableCell>{strategy.profitLoss.toFixed(2)}</TableCell>
-                      <TableCell>{strategy.tradeCount}</TableCell>
-                      <TableCell>{strategy.currentDrawdown.toFixed(2)}%</TableCell>
-                      <TableCell>
-                        v{strategy.configVersion}
-                        {strategy.lastConfigChangedAt ? (
-                          <Typography variant="caption" display="block" color="text.secondary">
-                            {strategy.lastConfigChangedAt}
-                          </Typography>
-                        ) : null}
-                      </TableCell>
-                      <TableCell align="right">
-                        <Stack direction="row" spacing={1} justifyContent="flex-end">
-                          {strategy.status === 'RUNNING' ? (
-                            <Button
-                              size="small"
-                              variant="contained"
-                              color="warning"
-                              disabled={isBusy}
-                              onClick={() => setActionDialog({ strategy, action: 'stop' })}
+                      <TableRow key={strategy.id} hover>
+                        <TableCell>
+                          {strategy.name}
+                          {strategyProfile ? (
+                            <Typography
+                              variant="caption"
+                              display="block"
+                              color="text.secondary"
                             >
-                              Stop
-                            </Button>
-                          ) : (
-                            <Button
-                              size="small"
-                              variant="contained"
-                              color="success"
-                              disabled={isBusy}
-                              onClick={() => setActionDialog({ strategy, action: 'start' })}
-                            >
-                              Start
-                            </Button>
-                          )}
-                          <Button
+                              {strategyProfile.shortDescription}
+                            </Typography>
+                          ) : null}
+                        </TableCell>
+                        <TableCell>
+                          {strategyProfile?.title ?? strategy.type}
+                          <Typography variant="caption" display="block" color="text.secondary">
+                            Canonical ID: {strategy.type}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={strategy.status}
                             size="small"
-                            variant="outlined"
-                            disabled={isBusy}
-                            onClick={() => setSelectedStrategy(strategy)}
+                            color={statusColor(strategy.status)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {strategy.symbol} ({strategy.timeframe})
+                          <Typography variant="caption" display="block" color="text.secondary">
+                            {strategy.shortSellingEnabled ? 'Long + short enabled' : 'Long only'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>{(strategy.riskPerTrade * 100).toFixed(2)}%</TableCell>
+                        <TableCell>{strategy.profitLoss.toFixed(2)}</TableCell>
+                        <TableCell>{strategy.tradeCount}</TableCell>
+                        <TableCell>{strategy.currentDrawdown.toFixed(2)}%</TableCell>
+                        <TableCell>
+                          v{strategy.configVersion}
+                          {strategy.lastConfigChangedAt ? (
+                            <Typography variant="caption" display="block" color="text.secondary">
+                              {strategy.lastConfigChangedAt}
+                            </Typography>
+                          ) : null}
+                        </TableCell>
+                        <TableCell align="right">
+                          <Stack
+                            direction={{ xs: 'column', md: 'row' }}
+                            spacing={1}
+                            justifyContent="flex-end"
                           >
-                            Edit
-                          </Button>
-                        </Stack>
-                      </TableCell>
-                    </TableRow>
+                            {strategy.status === 'RUNNING' ? (
+                              <Button
+                                size="small"
+                                variant="contained"
+                                color="warning"
+                                disabled={isBusy}
+                                onClick={() => setActionDialog({ strategy, action: 'stop' })}
+                              >
+                                Stop
+                              </Button>
+                            ) : (
+                              <Button
+                                size="small"
+                                variant="contained"
+                                color="success"
+                                disabled={isBusy}
+                                onClick={() => setActionDialog({ strategy, action: 'start' })}
+                              >
+                                Start
+                              </Button>
+                            )}
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              disabled={isBusy}
+                              onClick={() => setSelectedStrategy(strategy)}
+                            >
+                              Edit
+                            </Button>
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
                     );
                   })}
                 </TableBody>
               </Table>
-            </CardContent>
-          </Card>
+            </TableContainer>
+          </Paper>
         ) : null}
-      </Box>
+      </PageContent>
 
       <Dialog open={Boolean(actionDialog)} onClose={() => setActionDialog(null)}>
         <DialogTitle>

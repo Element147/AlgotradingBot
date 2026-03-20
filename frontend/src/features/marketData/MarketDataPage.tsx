@@ -1,4 +1,4 @@
-import { Alert, Box, Grid, Typography } from '@mui/material';
+import { Alert, Chip, Grid } from '@mui/material';
 import { useMemo, useState } from 'react';
 
 import {
@@ -28,6 +28,12 @@ import {
 
 import { useAppSelector } from '@/app/hooks';
 import { AppLayout } from '@/components/layout/AppLayout';
+import {
+  PageContent,
+  PageIntro,
+  type PageMetricItem,
+  PageMetricStrip,
+} from '@/components/layout/PageContent';
 import { selectEnvironmentMode } from '@/features/environment/environmentSlice';
 import {
   selectConnectionError,
@@ -51,9 +57,10 @@ export default function MarketDataPage() {
   const marketDataPollingInterval = marketDataLiveTransportConnected ? 30000 : 5000;
 
   const [form, setForm] = useState<MarketDataFormState>(defaultMarketDataForm);
-  const [feedback, setFeedback] = useState<{ severity: 'success' | 'error'; message: string } | null>(
-    null
-  );
+  const [feedback, setFeedback] = useState<{
+    severity: 'success' | 'error';
+    message: string;
+  } | null>(null);
 
   const { data: providers = [] } = useGetMarketDataProvidersQuery();
   const { data: jobs = [] } = useGetMarketDataJobsQuery(undefined, {
@@ -70,15 +77,61 @@ export default function MarketDataPage() {
   );
   const effectiveAssetType = resolveAssetType(selectedProvider, form.assetType);
   const effectiveTimeframe = resolveTimeframe(selectedProvider, form.timeframe);
-  const adjustedEnabled = Boolean(selectedProvider?.supportsAdjusted) && effectiveAssetType === 'STOCK';
+  const adjustedEnabled =
+    Boolean(selectedProvider?.supportsAdjusted) && effectiveAssetType === 'STOCK';
   const regularSessionEnabled =
-    Boolean(selectedProvider?.supportsRegularSessionOnly) && effectiveAssetType === 'STOCK';
+    Boolean(selectedProvider?.supportsRegularSessionOnly) &&
+    effectiveAssetType === 'STOCK';
 
   const waitingJobs = jobs.filter((job) => job.status === 'WAITING_RETRY');
-  const activeJobs = jobs.filter((job) => job.status === 'RUNNING' || job.status === 'QUEUED');
+  const activeJobs = jobs.filter(
+    (job) => job.status === 'RUNNING' || job.status === 'QUEUED'
+  );
   const trackedJob = useMemo(
     () => activeJobs[0] ?? waitingJobs[0] ?? jobs[0] ?? null,
     [activeJobs, jobs, waitingJobs]
+  );
+  const summaryItems = useMemo<PageMetricItem[]>(
+    () => [
+      {
+        label: 'Providers',
+        value: providers.length.toString(),
+        detail: selectedProvider
+          ? `Current provider: ${selectedProvider.label}`
+          : 'Choose a provider to see requirements and examples.',
+        tone: 'info',
+      },
+      {
+        label: 'Active Jobs',
+        value: activeJobs.length.toString(),
+        detail: `${waitingJobs.length} waiting for retry windows.`,
+        tone: activeJobs.length > 0 ? 'success' : 'default',
+      },
+      {
+        label: 'Transport',
+        value: marketDataLiveTransportConnected ? 'Live stream' : 'Polling fallback',
+        detail: marketDataLiveTransportConnected
+          ? 'Job progress is being pushed live.'
+          : 'Fallback polling remains active so imports stay visible.',
+        tone: marketDataLiveTransportConnected ? 'success' : 'warning',
+      },
+      {
+        label: 'Latest Focus',
+        value: trackedJob ? `Job #${trackedJob.id}` : 'No jobs yet',
+        detail: trackedJob
+          ? `${trackedJob.providerLabel} on ${trackedJob.symbolsCsv}`
+          : 'Create a job to begin building datasets for the backtest catalog.',
+        tone: trackedJob ? 'info' : 'default',
+      },
+    ],
+    [
+      activeJobs.length,
+      marketDataLiveTransportConnected,
+      providers.length,
+      selectedProvider,
+      trackedJob,
+      waitingJobs.length,
+    ]
   );
 
   const onSubmit = async () => {
@@ -108,7 +161,10 @@ export default function MarketDataPage() {
   const onRetry = async (jobId: number) => {
     try {
       await retryJob(jobId).unwrap();
-      setFeedback({ severity: 'success', message: `Job #${jobId} restarted from the beginning.` });
+      setFeedback({
+        severity: 'success',
+        message: `Job #${jobId} restarted from the beginning.`,
+      });
     } catch (error) {
       setFeedback({ severity: 'error', message: getApiErrorMessage(error) });
     }
@@ -160,17 +216,23 @@ export default function MarketDataPage() {
 
   return (
     <AppLayout>
-      <Box>
-        <Typography variant="h4" gutterBottom>
-          Market Data Downloader
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Create provider-backed import jobs that fetch historical bars, wait through provider
-          limits, and import completed datasets directly into the backtest catalog.
-        </Typography>
+      <PageContent>
+        <PageIntro
+          eyebrow="Provider-backed imports"
+          description="Create download jobs, watch retries, and move completed datasets into the backtest catalog without guesswork about provider requirements or job state."
+          chips={
+            <>
+              <Chip label="Jobs retry automatically" variant="outlined" />
+              <Chip label="Provider requirements stay visible" variant="outlined" />
+              <Chip label="Completed datasets flow into Backtest" variant="outlined" />
+            </>
+          }
+        />
+
+        <PageMetricStrip items={summaryItems} />
 
         {feedback ? (
-          <Alert severity={feedback.severity} sx={{ mb: 2 }} onClose={() => setFeedback(null)}>
+          <Alert severity={feedback.severity} onClose={() => setFeedback(null)}>
             {feedback.message}
           </Alert>
         ) : null}
@@ -190,7 +252,7 @@ export default function MarketDataPage() {
           />
         ) : null}
 
-        <Grid container spacing={2}>
+        <Grid container spacing={2.5}>
           <Grid size={{ xs: 12, lg: 7 }}>
             <MarketDataJobFormPanel
               providers={providers}
@@ -232,7 +294,7 @@ export default function MarketDataPage() {
           </Grid>
 
           <Grid size={{ xs: 12, lg: 5 }}>
-            <Grid container spacing={2}>
+            <Grid container spacing={2.5}>
               <Grid size={{ xs: 12 }}>
                 <MarketDataProviderSetupPanel selectedProvider={selectedProvider} />
               </Grid>
@@ -253,7 +315,7 @@ export default function MarketDataPage() {
             />
           </Grid>
         </Grid>
-      </Box>
+      </PageContent>
     </AppLayout>
   );
 }

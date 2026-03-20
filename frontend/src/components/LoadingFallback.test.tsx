@@ -23,17 +23,17 @@ describe('LoadingFallback', () => {
   it('should render sidebar skeleton on desktop', () => {
     const { container } = render(<LoadingFallback />);
 
-    // Sidebar should have rectangular skeletons for navigation items
-    const rectangularSkeletons = container.querySelectorAll('.MuiSkeleton-rectangular');
-    expect(rectangularSkeletons.length).toBeGreaterThan(0);
+    const roundedSkeletons = container.querySelectorAll('.MuiSkeleton-rounded');
+    expect(roundedSkeletons.length).toBeGreaterThan(0);
   });
 
   it('should render content area skeleton', () => {
     const { container } = render(<LoadingFallback />);
 
-    // Content area should have text and rectangular skeletons
     const textSkeletons = container.querySelectorAll('.MuiSkeleton-text');
+    const roundedSkeletons = container.querySelectorAll('.MuiSkeleton-rounded');
     expect(textSkeletons.length).toBeGreaterThan(0);
+    expect(roundedSkeletons.length).toBeGreaterThan(0);
   });
 
   it('should have proper layout structure', () => {

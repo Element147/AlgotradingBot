@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import ErrorBoundary from './ErrorBoundary';
@@ -39,7 +39,7 @@ describe('ErrorBoundary', { timeout: 15000 }, () => {
       </ErrorBoundary>
     );
 
-    expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
+    expect(screen.getByText(/rendering error/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /reload page/i })).toBeInTheDocument();
   });
 
@@ -51,7 +51,7 @@ describe('ErrorBoundary', { timeout: 15000 }, () => {
     );
 
     expect(screen.getByText('No error')).toBeInTheDocument();
-    expect(screen.queryByText(/something went wrong/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/rendering error/i)).not.toBeInTheDocument();
   });
 
   it('calls onError callback when error is caught', () => {
@@ -86,32 +86,29 @@ describe('ErrorBoundary', { timeout: 15000 }, () => {
   });
 
   it('resets error state when reset button is clicked', async () => {
+    let shouldThrow = true;
+    const RecoverableError = () => {
+      if (shouldThrow) {
+        throw new Error('Recoverable error');
+      }
+
+      return <div>Recovered after retry</div>;
+    };
+
     render(
       <ErrorBoundary>
-        <ThrowError shouldThrow={true} />
+        <RecoverableError />
       </ErrorBoundary>
     );
 
-    // Error fallback should be visible
-    expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
+    expect(screen.getByText(/rendering error/i)).toBeInTheDocument();
 
-    // Click reload button - this will trigger window.location.reload() after 100ms
-    const reloadButton = screen.getByRole('button', { name: /reload page/i });
-    
-    // Mock window.location.reload to prevent actual reload in tests
-    const reloadMock = vi.fn();
-    Object.defineProperty(window, 'location', {
-      value: { reload: reloadMock },
-      writable: true,
+    shouldThrow = false;
+    fireEvent.click(screen.getByRole('button', { name: /retry rendering/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Recovered after retry')).toBeInTheDocument();
     });
-
-    fireEvent.click(reloadButton);
-
-    // Wait for the setTimeout to execute
-    await new Promise(resolve => setTimeout(resolve, 150));
-
-    // Verify reload was called
-    expect(reloadMock).toHaveBeenCalled();
   });
 
   it('logs error to console in development', () => {
@@ -150,11 +147,10 @@ describe('ErrorBoundary', { timeout: 15000 }, () => {
     );
 
     // First error
-    expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
+    expect(screen.getByText(/rendering error/i)).toBeInTheDocument();
 
-    // Reset
-    const reloadButton = screen.getByRole('button', { name: /reload page/i });
-    fireEvent.click(reloadButton);
+    const retryButton = screen.getByRole('button', { name: /retry rendering/i });
+    fireEvent.click(retryButton);
 
     // Rerender with another error
     rerender(
@@ -164,7 +160,7 @@ describe('ErrorBoundary', { timeout: 15000 }, () => {
     );
 
     // Should still show error fallback
-    expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
+    expect(screen.getByText(/rendering error/i)).toBeInTheDocument();
   });
 
   it('preserves error information in state', () => {

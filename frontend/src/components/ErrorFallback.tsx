@@ -1,6 +1,16 @@
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import { Alert, Box, Button, Chip, Container, Paper, Stack, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Container,
+  Stack,
+  Typography,
+} from '@mui/material';
 import type { ErrorInfo } from 'react';
 
 interface ErrorFallbackProps {
@@ -9,156 +19,138 @@ interface ErrorFallbackProps {
   onReset: () => void;
 }
 
-/**
- * ErrorFallback UI component displayed when ErrorBoundary catches an error.
- * Provides user-friendly error message and reload functionality.
- * 
- * Requirements: 18.8, 27.2
- */
-const ErrorFallback: React.FC<ErrorFallbackProps> = ({ error, errorInfo, onReset }) => {
+const ErrorFallback: React.FC<ErrorFallbackProps> = ({
+  error,
+  errorInfo,
+  onReset,
+}) => {
   const isDevelopment = import.meta.env.DEV;
 
   const handleReload = (): void => {
-    // Try to reset the error boundary first
     onReset();
-    
-    // If that doesn't work, reload the page
     setTimeout(() => {
       window.location.reload();
     }, 100);
   };
 
   return (
-    <Container maxWidth="md">
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          py: 4,
-        }}
-      >
-        <Paper
-          sx={{
-            p: { xs: 3, md: 4 },
-            width: '100%',
-            textAlign: 'center',
-            borderRadius: 5,
-            background:
-              'linear-gradient(180deg, rgba(255,250,243,0.92) 0%, rgba(255,255,255,0.82) 100%)',
-          }}
-        >
-          <Stack direction="row" spacing={1} justifyContent="center" flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
-            <Chip label="Safe default maintained" color="success" variant="outlined" />
-            <Chip label="Reload to recover" color="warning" variant="outlined" />
-          </Stack>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        bgcolor: 'background.default',
+        display: 'flex',
+        alignItems: 'center',
+        py: { xs: 4, md: 6 },
+      }}
+    >
+      <Container maxWidth="md">
+        <Card>
+          <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+            <Stack spacing={2.5}>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                <Chip label="Safe default preserved" color="success" variant="outlined" />
+                <Chip label="Reload to recover" color="warning" variant="outlined" />
+              </Stack>
 
-          <ErrorOutlineIcon
-            sx={{
-              fontSize: 80,
-              color: 'error.main',
-              mb: 2,
-            }}
-          />
-          
-          <Typography variant="h4" component="h1" gutterBottom>
-            Oops! Something went wrong
-          </Typography>
-          
-          <Typography variant="body1" color="text.secondary" paragraph>
-            We encountered an unexpected rendering error. The safest next step is to reload the
-            workstation and re-enter the affected flow.
-          </Typography>
+              <Box>
+                <ErrorOutlineIcon sx={{ fontSize: 56, color: 'error.main', mb: 1.5 }} />
+                <Typography variant="h4" component="h1" sx={{ mb: 1 }}>
+                  The workstation hit a rendering error
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                  Reload the page, then re-check the affected route before taking any follow-up
+                  action. Safety-critical state stays backend owned, so this error does not imply
+                  orders or risk settings were silently changed.
+                </Typography>
+              </Box>
 
-          <Alert severity="warning" sx={{ textAlign: 'left', mb: 2.5 }}>
-            In-flight operator actions should be re-checked after reload before taking any follow-up
-            action.
-          </Alert>
+              <Alert severity="warning">
+                Re-open the route and confirm environment mode, breaker posture, and recent action
+                results before proceeding.
+              </Alert>
 
-          <Button
-            variant="contained"
-            color="primary"
-            size="large"
-            startIcon={<RefreshIcon />}
-            onClick={handleReload}
-            sx={{ mt: 2 }}
-          >
-            Reload Page
-          </Button>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+                <Button
+                  variant="contained"
+                  startIcon={<RefreshIcon />}
+                  onClick={handleReload}
+                >
+                  Reload Page
+                </Button>
+                <Button variant="outlined" onClick={onReset}>
+                  Retry Rendering
+                </Button>
+              </Stack>
 
-          {isDevelopment && error && (
-            <Box
-              sx={{
-                mt: 4,
-                p: 2,
-                bgcolor: 'grey.100',
-                borderRadius: 3,
-                textAlign: 'left',
-                overflow: 'auto',
-              }}
-            >
-              <Typography variant="h6" gutterBottom>
-                Error Details (Development Only)
-              </Typography>
-              
-              <Typography
-                variant="body2"
-                component="pre"
-                sx={{
-                  fontFamily: 'monospace',
-                  fontSize: '0.875rem',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
-                  color: 'error.main',
-                }}
-              >
-                {error.toString()}
-              </Typography>
-
-              {error.stack && (
-                <Typography
-                  variant="body2"
-                  component="pre"
+              {isDevelopment && error ? (
+                <Box
                   sx={{
-                    fontFamily: 'monospace',
-                    fontSize: '0.75rem',
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
-                    mt: 2,
-                    color: 'text.secondary',
+                    p: 2,
+                    bgcolor: 'background.paper',
+                    borderRadius: 3,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    overflow: 'auto',
                   }}
                 >
-                  {error.stack}
-                </Typography>
-              )}
-
-              {errorInfo?.componentStack && (
-                <>
-                  <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                    Component Stack
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                    Error details
                   </Typography>
+
                   <Typography
                     variant="body2"
                     component="pre"
                     sx={{
-                      fontFamily: 'monospace',
-                      fontSize: '0.75rem',
+                      fontFamily: 'Consolas, "Courier New", monospace',
+                      fontSize: '0.875rem',
                       whiteSpace: 'pre-wrap',
                       wordBreak: 'break-word',
-                      color: 'text.secondary',
+                      color: 'error.main',
                     }}
                   >
-                    {errorInfo.componentStack}
+                    {error.toString()}
                   </Typography>
-                </>
-              )}
-            </Box>
-          )}
-        </Paper>
-      </Box>
-    </Container>
+
+                  {error.stack ? (
+                    <Typography
+                      variant="body2"
+                      component="pre"
+                      sx={{
+                        fontFamily: 'Consolas, "Courier New", monospace',
+                        fontSize: '0.75rem',
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word',
+                        mt: 2,
+                        color: 'text.secondary',
+                      }}
+                    >
+                      {error.stack}
+                    </Typography>
+                  ) : null}
+
+                  {errorInfo?.componentStack ? (
+                    <Typography
+                      variant="body2"
+                      component="pre"
+                      sx={{
+                        fontFamily: 'Consolas, "Courier New", monospace',
+                        fontSize: '0.75rem',
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word',
+                        mt: 2,
+                        color: 'text.secondary',
+                      }}
+                    >
+                      {errorInfo.componentStack}
+                    </Typography>
+                  ) : null}
+                </Box>
+              ) : null}
+            </Stack>
+          </CardContent>
+        </Card>
+      </Container>
+    </Box>
   );
 };
 

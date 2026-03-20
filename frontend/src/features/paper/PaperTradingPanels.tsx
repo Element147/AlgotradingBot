@@ -19,6 +19,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  TableContainer,
   TextField,
   Typography,
 } from '@mui/material';
@@ -251,7 +252,8 @@ export function PaperOrdersPanel({
             transitions.
           </Alert>
         ) : (
-          <Table size="small">
+          <TableContainer>
+            <Table size="small" sx={{ minWidth: 1040 }}>
             <TableHead>
               <TableRow>
                 <TableCell>ID</TableCell>
@@ -310,7 +312,8 @@ export function PaperOrdersPanel({
                 </TableRow>
               ))}
             </TableBody>
-          </Table>
+            </Table>
+          </TableContainer>
         )}
       </CardContent>
     </Card>
