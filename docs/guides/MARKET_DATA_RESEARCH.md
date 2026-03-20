@@ -33,6 +33,14 @@ Supported import timeframes:
 4. Monitor the job until it completes or retries.
 5. Use the resulting dataset from the normal backtest catalog.
 
+## Current Service Ownership
+
+- `MarketDataImportService` owns provider metadata, credential workflows, and import-job commands.
+- `MarketDataImportExecutionService` owns the async provider fetch loop, staged CSV accumulation, retry handling, and dataset handoff.
+- `MarketDataImportProgressService` owns import-job telemetry publication for WebSocket and polling-compatible consumers.
+- `BacktestDatasetStorageService` owns dataset parsing, persistence, downloads, and upload-size validation.
+- `BacktestDatasetLifecycleService` owns dataset inventory, retention reporting, archive, restore, and active-use availability checks.
+
 ## Import Job Model
 
 Import jobs are persistent and observable with these statuses:

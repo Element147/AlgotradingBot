@@ -94,6 +94,18 @@ export interface WebSocketEvent<T extends WebSocketEventType = WebSocketEventTyp
   data: WebSocketEventDataMap[T];
 }
 
+export interface WebSocketAckMessage {
+  type: 'ack';
+  action: 'subscribed' | 'unsubscribed';
+  channels: string[];
+}
+
+export interface WebSocketErrorMessage {
+  type: 'error';
+  message: string;
+  channels?: string[];
+}
+
 export type WebSocketEventHandler = (event: WebSocketEvent) => void;
 export type WebSocketConnectionState = 'connecting' | 'open' | 'closing' | 'closed';
 
@@ -104,6 +116,15 @@ export interface WebSocketConnectionStateEvent {
 
 export type WebSocketConnectionStateHandler = (event: WebSocketConnectionStateEvent) => void;
 export type WebSocketReconnectHandler = (attempt: number, maxAttempts: number) => void;
+export interface WebSocketSubscriptionStateEvent {
+  action: 'subscribed' | 'unsubscribed' | 'error';
+  channels: string[];
+  error: string | null;
+  rejectedChannels: string[];
+}
+export type WebSocketSubscriptionStateHandler = (
+  event: WebSocketSubscriptionStateEvent
+) => void;
 
 interface SubscriptionHandlers {
   [channel: string]: Set<WebSocketEventHandler>;
@@ -219,6 +240,7 @@ export class WebSocketManager {
   private connectionError: string | null = null;
   private connectionStateHandlers = new Set<WebSocketConnectionStateHandler>();
   private reconnectHandlers = new Set<WebSocketReconnectHandler>();
+  private subscriptionStateHandlers = new Set<WebSocketSubscriptionStateHandler>();
 
   constructor(url: string, webSocketConstructor?: WebSocketLikeConstructor) {
     this.url = url;
@@ -380,6 +402,13 @@ export class WebSocketManager {
     };
   }
 
+  subscribeSubscriptionState(handler: WebSocketSubscriptionStateHandler): () => void {
+    this.subscriptionStateHandlers.add(handler);
+    return () => {
+      this.subscriptionStateHandlers.delete(handler);
+    };
+  }
+
   /**
    * Handle incoming WebSocket messages
    */
@@ -387,7 +416,31 @@ export class WebSocketManager {
     try {
       const rawMessage =
         typeof event.data === 'string' ? event.data : JSON.stringify(event.data);
-      const message = JSON.parse(rawMessage) as WebSocketEvent;
+      const message = JSON.parse(rawMessage) as
+        | WebSocketEvent
+        | WebSocketAckMessage
+        | WebSocketErrorMessage;
+
+      if (message.type === 'ack') {
+        this.notifySubscriptionState({
+          action: message.action,
+          channels: message.channels,
+          error: null,
+          rejectedChannels: [],
+        });
+        return;
+      }
+
+      if (message.type === 'error') {
+        const rejectedChannels = Array.isArray(message.channels) ? message.channels : [];
+        this.notifySubscriptionState({
+          action: 'error',
+          channels: [],
+          error: message.message,
+          rejectedChannels,
+        });
+        return;
+      }
 
       // Route event to subscribed handlers
       const handlers = this.subscriptions[message.type];
@@ -434,7 +487,7 @@ export class WebSocketManager {
       })
     );
 
-    console.warn('[WebSocket] Subscribed to channels:', channels);
+    console.warn('[WebSocket] Requested channel subscription:', channels);
   }
 
   /**
@@ -482,6 +535,16 @@ export class WebSocketManager {
         handler({ error, state });
       } catch (handlerError) {
         console.error('[WebSocket] Connection-state handler error:', handlerError);
+      }
+    });
+  }
+
+  private notifySubscriptionState(event: WebSocketSubscriptionStateEvent): void {
+    this.subscriptionStateHandlers.forEach((handler) => {
+      try {
+        handler(event);
+      } catch (handlerError) {
+        console.error('[WebSocket] Subscription-state handler error:', handlerError);
       }
     });
   }

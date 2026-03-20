@@ -93,3 +93,9 @@ Debug and security helpers:
 4. Keep environment defaults conservative.
 5. Keep runtime and test data paths separate.
 6. Prefer one current-state technical source per topic instead of duplicating the same rules in multiple docs.
+
+## Query And Schema Notes
+
+- Liquibase is the source of truth for runtime indexes; do not rely on JPA annotations alone to create production query paths.
+- Backtest experiment summaries are expected to come from repository aggregation queries, not full-table entity grouping in service code.
+- Current hot-path indexes cover dataset listing by `uploaded_at`, backtest experiment or dataset or execution-status scans, and market-data ready-job scheduling by `status`, `next_retry_at`, and `created_at`.

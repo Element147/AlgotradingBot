@@ -18,7 +18,10 @@ import java.util.List;
 @Table(name = "backtest_results", indexes = {
     @Index(name = "idx_backtest_strategy", columnList = "strategy_id"),
     @Index(name = "idx_backtest_symbol", columnList = "symbol"),
-    @Index(name = "idx_backtest_timestamp", columnList = "timestamp")
+    @Index(name = "idx_backtest_timestamp", columnList = "timestamp"),
+    @Index(name = "idx_backtest_experiment_key_timestamp", columnList = "experiment_key,timestamp"),
+    @Index(name = "idx_backtest_dataset_timestamp", columnList = "dataset_id,timestamp"),
+    @Index(name = "idx_backtest_execution_status_timestamp", columnList = "execution_status,timestamp")
 })
 public class BacktestResult {
 

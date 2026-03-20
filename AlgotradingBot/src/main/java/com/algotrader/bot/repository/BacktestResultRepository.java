@@ -62,4 +62,100 @@ public interface BacktestResultRepository extends JpaRepository<BacktestResult, 
         group by r.datasetId
         """)
     List<BacktestDatasetUsageSummary> summarizeDatasetUsage();
+
+    @Query(value = """
+        with keyed_runs as (
+            select
+                id,
+                dataset_id,
+                strategy_id,
+                dataset_name,
+                symbol,
+                timeframe,
+                execution_status,
+                validation_status,
+                "timestamp" as run_timestamp,
+                initial_balance,
+                final_balance,
+                max_drawdown,
+                coalesce(
+                    nullif(trim(experiment_key), ''),
+                    lower(
+                        replace(
+                            replace(
+                                replace(
+                                    replace(
+                                        replace(
+                                            coalesce(
+                                                nullif(trim(experiment_name), ''),
+                                                strategy_id || ' | ' || coalesce(dataset_name, 'dataset-' || coalesce(cast(dataset_id as varchar), 'unknown')) || ' | ' || symbol || ' | ' || timeframe
+                                            ),
+                                            ' | ',
+                                            '-'
+                                        ),
+                                        ' ',
+                                        '-'
+                                    ),
+                                    '/',
+                                    '-'
+                                ),
+                                '_',
+                                '-'
+                            ),
+                            '--',
+                            '-'
+                        )
+                    )
+                ) as normalized_experiment_key,
+                coalesce(
+                    nullif(trim(experiment_name), ''),
+                    strategy_id || ' | ' || coalesce(dataset_name, 'dataset-' || coalesce(cast(dataset_id as varchar), 'unknown')) || ' | ' || symbol || ' | ' || timeframe
+                ) as resolved_experiment_name
+            from backtest_results
+        ),
+        aggregated as (
+            select
+                normalized_experiment_key,
+                count(*) as run_count,
+                avg(
+                    case
+                        when initial_balance is null or initial_balance = 0 or final_balance is null then 0
+                        else ((final_balance - initial_balance) / initial_balance) * 100
+                    end
+                ) as average_return_percent,
+                max(final_balance) as best_final_balance,
+                max(max_drawdown) as worst_max_drawdown
+            from keyed_runs
+            group by normalized_experiment_key
+        ),
+        ranked as (
+            select
+                *,
+                row_number() over (
+                    partition by normalized_experiment_key
+                    order by run_timestamp desc, id desc
+                ) as row_num
+            from keyed_runs
+        )
+        select
+            ranked.normalized_experiment_key as experimentKey,
+            ranked.resolved_experiment_name as experimentName,
+            ranked.id as latestBacktestId,
+            ranked.strategy_id as strategyId,
+            ranked.dataset_name as datasetName,
+            ranked.symbol as symbol,
+            ranked.timeframe as timeframe,
+            ranked.execution_status as executionStatus,
+            ranked.validation_status as validationStatus,
+            aggregated.run_count as runCount,
+            ranked.run_timestamp as latestRunAt,
+            cast(round(aggregated.average_return_percent, 4) as decimal(20,4)) as averageReturnPercent,
+            aggregated.best_final_balance as bestFinalBalance,
+            aggregated.worst_max_drawdown as worstMaxDrawdown
+        from ranked
+        join aggregated on aggregated.normalized_experiment_key = ranked.normalized_experiment_key
+        where ranked.row_num = 1
+        order by ranked.run_timestamp desc, ranked.id desc
+        """, nativeQuery = true)
+    List<BacktestExperimentSummaryProjection> findExperimentSummaries();
 }

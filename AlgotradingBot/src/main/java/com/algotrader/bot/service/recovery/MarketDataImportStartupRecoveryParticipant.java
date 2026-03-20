@@ -3,8 +3,8 @@ package com.algotrader.bot.service.recovery;
 import com.algotrader.bot.entity.MarketDataImportJob;
 import com.algotrader.bot.repository.MarketDataImportJobRepository;
 import com.algotrader.bot.service.OperatorAuditService;
+import com.algotrader.bot.service.marketdata.MarketDataImportExecutionService;
 import com.algotrader.bot.service.marketdata.MarketDataImportJobStatus;
-import com.algotrader.bot.service.marketdata.MarketDataImportService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -18,14 +18,14 @@ public class MarketDataImportStartupRecoveryParticipant implements StartupRecove
     private static final Logger logger = LoggerFactory.getLogger(MarketDataImportStartupRecoveryParticipant.class);
 
     private final MarketDataImportJobRepository marketDataImportJobRepository;
-    private final MarketDataImportService marketDataImportService;
+    private final MarketDataImportExecutionService marketDataImportExecutionService;
     private final OperatorAuditService operatorAuditService;
 
     public MarketDataImportStartupRecoveryParticipant(MarketDataImportJobRepository marketDataImportJobRepository,
-                                                      MarketDataImportService marketDataImportService,
+                                                      MarketDataImportExecutionService marketDataImportExecutionService,
                                                       OperatorAuditService operatorAuditService) {
         this.marketDataImportJobRepository = marketDataImportJobRepository;
-        this.marketDataImportService = marketDataImportService;
+        this.marketDataImportExecutionService = marketDataImportExecutionService;
         this.operatorAuditService = operatorAuditService;
     }
 
@@ -78,7 +78,7 @@ public class MarketDataImportStartupRecoveryParticipant implements StartupRecove
                 job.getCurrentSymbolIndex(),
                 job.getCurrentChunkStart()
             );
-            marketDataImportService.processJobAsync(job.getId());
+            marketDataImportExecutionService.processJobAsync(job.getId());
             operatorAuditService.recordSuccess(
                 "MARKET_DATA_IMPORT_RECOVERED_ON_STARTUP",
                 "test",

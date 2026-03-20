@@ -1,7 +1,11 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { BacktestComparisonPanel } from './BacktestComparisonPanel';
+
+vi.mock('./BacktestComparisonCharts', () => ({
+  BacktestComparisonCharts: () => <div>comparison charts</div>,
+}));
 
 describe('BacktestComparisonPanel', () => {
   it('blocks comparison export when provenance is incomplete', () => {

@@ -2,6 +2,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 import { Alert, Button, Card, CardContent, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 
 import type { BacktestComparisonResponse } from './backtestApi';
+import { BacktestComparisonCharts } from './BacktestComparisonCharts';
 
 import { formatCurrency, formatDateTime, formatNumber, formatPercentage } from '@/utils/formatters';
 
@@ -128,6 +129,7 @@ export function BacktestComparisonPanel({ comparison }: BacktestComparisonPanelP
             Comparison export is blocked until every selected run includes dataset checksum, schema version, and upload timestamp metadata.
           </Alert>
         ) : null}
+        <BacktestComparisonCharts comparison={comparison} />
         <Table size="small">
           <TableHead>
             <TableRow>

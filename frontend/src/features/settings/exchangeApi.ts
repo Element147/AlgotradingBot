@@ -1,6 +1,7 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 
-import { baseQueryWithEnvironment } from '@/services/api';
+import { normalizeBalanceData, normalizeRecentTrades } from '@/features/account/accountContract';
+import { baseQueryWithEnvironment, withEnvironmentMode } from '@/services/api';
 
 export interface ExchangeBalanceResponse {
   total: string;
@@ -118,30 +119,30 @@ export const exchangeApi = createApi({
   keepUnusedDataFor: 300,
   endpoints: (builder) => ({
     getExchangeBalance: builder.query<ExchangeBalanceResponse, void>({
-      query: () => ({
-        url: '/api/account/balance',
-        headers: { 'X-Environment': 'live' },
-      }),
-      transformResponse: (response: ExchangeBalanceResponse) => ({
-        ...response,
-        exchange: response.exchange ?? 'Live Exchange',
+      query: () => withEnvironmentMode('/api/account/balance', 'live'),
+      transformResponse: (response: Parameters<typeof normalizeBalanceData>[0]) => ({
+        ...normalizeBalanceData(response),
+        exchange: 'Live Exchange',
       }),
       providesTags: ['Exchange'],
     }),
     getExchangeOrders: builder.query<ExchangeOrder[], void>({
-      query: () => ({
+      query: () =>
+        withEnvironmentMode(
+          {
         url: '/api/trades/recent',
-        headers: { 'X-Environment': 'live' },
         params: { limit: 20 },
-      }),
-      transformResponse: (response: Array<Record<string, unknown>>) =>
-        response.map((item) => ({
-          id: asText(item.id),
-          symbol: asText(item.symbol),
-          side: asText(item.side),
-          entryPrice: asText(item.entryPrice),
-          quantity: asText(item.quantity ?? item.positionSize),
-          status: asText(item.status, 'OPEN'),
+          },
+          'live'
+        ),
+      transformResponse: (response: Parameters<typeof normalizeRecentTrades>[0]) =>
+        normalizeRecentTrades(response).map((trade) => ({
+          id: asText(trade.id),
+          symbol: trade.symbol,
+          side: trade.side,
+          entryPrice: trade.entryPrice,
+          quantity: trade.quantity,
+          status: trade.status,
         })),
       providesTags: ['Exchange'],
     }),

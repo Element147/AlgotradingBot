@@ -74,6 +74,7 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET or run the repo PowerShell helpers that provision a local dev secret automatically}
       JAVA_OPTS: -Xms512m -Xmx2g -XX:+UseZGC -XX:+ZGenerational -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError
       JAVA_DEBUG_OPTS: ${JAVA_DEBUG_OPTS:-}
     restart: unless-stopped

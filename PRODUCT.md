@@ -6,7 +6,7 @@ Build a local-first platform for safe strategy research, backtesting, market-dat
 
 ## Primary Operator Jobs
 
-1. Configure and review strategies without leaving the safe `test` default.
+1. Configure and review catalog-backed strategy templates without leaving the safe `test` default.
 2. Run reproducible backtests against uploaded or provider-imported datasets.
 3. Compare experiments, inspect equity and trade series, and export evidence-backed reports.
 4. Monitor paper-trading behavior, risk posture, and incident signals.
@@ -14,12 +14,13 @@ Build a local-first platform for safe strategy research, backtesting, market-dat
 
 ## Product Surfaces
 
-- `Dashboard`: system health, environment posture, paper-trading state, and alerts
-- `Strategies`: strategy status, configuration, presets, and version history
-- `Backtest`: dataset management, run execution, progress, replay, compare, and export
+- `Dashboard`: system health, environment posture, paper-trading state, alerts, and workstation-level research context
+- `Paper`: paper-order entry, fill/cancel controls, state review, and order history
+- `Strategies`: canonical catalog-backed paper templates, configuration, presets, and version history
+- `Backtest`: dataset management, run execution, progress, telemetry-rich details, replay, compare, and export
 - `Market Data`: provider selection, import job creation, progress tracking, and dataset ingestion
 - `Trades`: trade history, trade details, and export-oriented review
-- `Risk`: risk configuration, alerts, and circuit-breaker state
+- `Risk`: risk configuration, alerts, circuit-breaker inventory, and override context
 - `Settings`: exchange profiles, provider credentials, audit review, and system tools
 
 ## Product Principles
@@ -29,6 +30,13 @@ Build a local-first platform for safe strategy research, backtesting, market-dat
 3. Operational clarity: environment, risk posture, and overrides must stay visible.
 4. Reproducibility: datasets, parameters, experiments, and exports should be traceable.
 5. Incremental delivery: prefer small, verified changes over broad rewrites.
+6. Operator trust: the shell should make safety-critical state readable at a glance on both desktop and mobile.
+
+## Strategy Catalog Posture
+
+- The built-in backtest catalog currently includes `BUY_AND_HOLD`, `DUAL_MOMENTUM_ROTATION`, `VOLATILITY_MANAGED_DONCHIAN_BREAKOUT`, `TREND_PULLBACK_CONTINUATION`, `REGIME_FILTERED_MEAN_REVERSION`, `TREND_FIRST_ADAPTIVE_ENSEMBLE`, `SMA_CROSSOVER`, `BOLLINGER_BANDS`, and `ICHIMOKU_TREND`.
+- `ICHIMOKU_TREND` is implemented as a conservative long/cash strategy with look-ahead-safe cloud handling and chart overlays, but it is still a research surface rather than a promoted operating strategy.
+- March 20, 2026 validation on the current crypto dataset kept the overall posture conservative: only `VOLATILITY_MANAGED_DONCHIAN_BREAKOUT` passed the present full-sample validator, while holdout evidence for the rest of the shortlist was mixed or flat.
 
 ## Environment Model
 
@@ -37,6 +45,8 @@ Build a local-first platform for safe strategy research, backtesting, market-dat
 - `live`: explicit live-connected context for monitoring or future gated capabilities
 
 Live connectivity does not imply live trading is enabled.
+Live connectivity also does not imply live account reads are fully wired; unsupported live reads must fail explicitly with capability messaging.
+Research surfaces such as backtests and paper-order tools must keep warning copy explicit when the UI is set to `live`.
 
 ## Product Boundaries
 

@@ -1,114 +1,17 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 
+import type { BalanceData, PerformanceMetrics, PerformanceTimeframe } from './accountContract';
+import {
+  normalizeBalanceData,
+  normalizeOpenPositions,
+  normalizePerformanceMetrics,
+  normalizeRecentTrades,
+} from './accountContract';
+
 import { baseQueryWithEnvironment } from '@/services/api';
 import type { Position, Trade } from '@/types/domain.types';
 
-/**
- * Balance data structure
- */
-export interface BalanceData {
-  total: string;
-  available: string;
-  locked: string;
-  assets: Array<{
-    symbol: string;
-    amount: string;
-    valueUSD: string;
-  }>;
-  lastSync: string;
-}
-
-/**
- * Performance metrics structure
- */
-export interface PerformanceMetrics {
-  totalProfitLoss: string;
-  profitLossPercentage: string;
-  winRate: string;
-  tradeCount: number;
-  cashRatio: string;
-}
-
-interface RawOpenPosition {
-  id: string | number;
-  strategyId?: string;
-  strategyName?: string;
-  symbol: string;
-  side?: string;
-  entryPrice: string;
-  currentPrice?: string;
-  quantity?: string;
-  positionSize?: string;
-  entryTime: string;
-  unrealizedPnL: string;
-  unrealizedPnLPercentage: string;
-  status?: string;
-}
-
-interface RawRecentTrade {
-  id: string | number;
-  strategyId?: string;
-  strategyName?: string;
-  symbol: string;
-  side?: string;
-  entryPrice: string;
-  exitPrice: string;
-  quantity?: string;
-  positionSize?: string;
-  entryTime: string;
-  exitTime: string;
-  duration?: string;
-  profitLoss: string;
-  profitLossPercentage: string;
-  fees?: string;
-  slippage?: string;
-  status?: string;
-}
-
-/**
- * Timeframe options for performance queries
- */
-export type PerformanceTimeframe = 'today' | 'week' | 'month' | 'all';
-
-const normalizePositionSide = (side?: string): Position['side'] =>
-  side?.toUpperCase() === 'SHORT' ? 'SHORT' : 'LONG';
-
-const normalizePosition = (position: RawOpenPosition): Position => ({
-  id: String(position.id),
-  strategyId: position.strategyId ?? 'unknown',
-  strategyName: position.strategyName ?? 'N/A',
-  symbol: position.symbol,
-  side: normalizePositionSide(position.side),
-  entryPrice: position.entryPrice,
-  currentPrice: position.currentPrice ?? position.entryPrice,
-  quantity: position.quantity ?? position.positionSize ?? '0',
-  entryTime: position.entryTime,
-  unrealizedPnL: position.unrealizedPnL,
-  unrealizedPnLPercentage: position.unrealizedPnLPercentage,
-  status: 'OPEN',
-});
-
-const normalizeTradeStatus = (status?: string): Trade['status'] =>
-  status?.toUpperCase() === 'CANCELLED' ? 'CANCELLED' : 'CLOSED';
-
-const normalizeTrade = (trade: RawRecentTrade): Trade => ({
-  id: String(trade.id),
-  strategyId: trade.strategyId ?? 'unknown',
-  strategyName: trade.strategyName ?? 'N/A',
-  symbol: trade.symbol,
-  side: normalizePositionSide(trade.side),
-  entryPrice: trade.entryPrice,
-  exitPrice: trade.exitPrice,
-  quantity: trade.quantity ?? trade.positionSize ?? '0',
-  entryTime: trade.entryTime,
-  exitTime: trade.exitTime,
-  duration: trade.duration ?? 'N/A',
-  profitLoss: trade.profitLoss,
-  profitLossPercentage: trade.profitLossPercentage,
-  fees: trade.fees ?? '0',
-  slippage: trade.slippage ?? '0',
-  status: normalizeTradeStatus(trade.status),
-});
+export type { BalanceData, PerformanceMetrics, PerformanceTimeframe } from './accountContract';
 
 /**
  * Account API slice for balance and performance data
@@ -135,6 +38,7 @@ export const accountApi = createApi({
      */
     getBalance: builder.query<BalanceData, void>({
       query: () => '/api/account/balance',
+      transformResponse: normalizeBalanceData,
       providesTags: ['Balance'],
     }),
 
@@ -150,6 +54,7 @@ export const accountApi = createApi({
         url: '/api/account/performance',
         params: { timeframe },
       }),
+      transformResponse: normalizePerformanceMetrics,
       providesTags: ['Performance'],
     }),
 
@@ -161,8 +66,7 @@ export const accountApi = createApi({
      */
     getOpenPositions: builder.query<Position[], void>({
       query: () => '/api/positions/open',
-      transformResponse: (response: RawOpenPosition[]): Position[] =>
-        response.map(normalizePosition),
+      transformResponse: normalizeOpenPositions,
       providesTags: ['Positions'],
     }),
 
@@ -178,8 +82,7 @@ export const accountApi = createApi({
         url: '/api/trades/recent',
         params: { limit },
       }),
-      transformResponse: (response: RawRecentTrade[]): Trade[] =>
-        response.map(normalizeTrade),
+      transformResponse: normalizeRecentTrades,
       providesTags: ['Trades'],
     }),
   }),

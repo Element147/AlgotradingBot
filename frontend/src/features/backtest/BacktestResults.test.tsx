@@ -19,6 +19,24 @@ vi.mock('./TradeDistributionHistogram', () => ({
   TradeDistributionHistogram: () => <div>trade distribution</div>,
 }));
 
+vi.mock('./BacktestPriceActionChart', () => ({
+  BacktestPriceActionChart: ({ series }: { series: { symbol: string } }) => (
+    <div>price action {series.symbol}</div>
+  ),
+}));
+
+vi.mock('./BacktestExposureChart', () => ({
+  BacktestExposureChart: ({ series }: { series: { symbol: string } }) => (
+    <div>exposure chart {series.symbol}</div>
+  ),
+}));
+
+vi.mock('./BacktestIndicatorChart', () => ({
+  BacktestIndicatorChart: ({ series }: { series: { symbol: string } }) => (
+    <div>indicator chart {series.symbol}</div>
+  ),
+}));
+
 const baseDetails = {
   id: 42,
   strategyId: 'BOLLINGER_BANDS',
@@ -74,6 +92,52 @@ const baseDetails = {
       returnPct: 8,
     },
   ],
+  telemetry: [
+    {
+      symbol: 'BTC/USDT',
+      points: [
+        {
+          timestamp: '2025-01-01T00:00:00',
+          open: 100,
+          high: 101,
+          low: 99,
+          close: 100,
+          volume: 1000,
+          exposurePct: 0,
+          regime: 'WARMUP' as const,
+        },
+        {
+          timestamp: '2025-01-02T00:00:00',
+          open: 108,
+          high: 109,
+          low: 107,
+          close: 108,
+          volume: 1200,
+          exposurePct: 95,
+          regime: 'TREND_UP' as const,
+        },
+      ],
+      actions: [
+        {
+          timestamp: '2025-01-01T00:00:00',
+          action: 'BUY' as const,
+          price: 100,
+          label: 'Long entry',
+        },
+      ],
+      indicators: [
+        {
+          key: 'bb_middle_20',
+          label: 'Bollinger Mid (20)',
+          pane: 'PRICE' as const,
+          points: [
+            { timestamp: '2025-01-01T00:00:00', value: null },
+            { timestamp: '2025-01-02T00:00:00', value: 104 },
+          ],
+        },
+      ],
+    },
+  ],
 };
 
 describe('BacktestResults', () => {
@@ -89,5 +153,14 @@ describe('BacktestResults', () => {
 
     expect(screen.getByText(/missing full dataset provenance/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Export PDF/i })).toBeDisabled();
+  });
+
+  it('renders telemetry review charts when telemetry is available', () => {
+    render(<BacktestResults details={baseDetails} />);
+
+    expect(screen.getByText(/price, signal, and telemetry review/i)).toBeInTheDocument();
+    expect(screen.getByText('price action BTC/USDT')).toBeInTheDocument();
+    expect(screen.getByText('exposure chart BTC/USDT')).toBeInTheDocument();
+    expect(screen.getByText('indicator chart BTC/USDT')).toBeInTheDocument();
   });
 });

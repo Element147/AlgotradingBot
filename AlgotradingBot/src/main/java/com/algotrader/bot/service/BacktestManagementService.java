@@ -1,69 +1,57 @@
 package com.algotrader.bot.service;
 
 import com.algotrader.bot.backtest.strategy.BacktestStrategyRegistry;
-import com.algotrader.bot.controller.BacktestComparisonItemResponse;
+import com.algotrader.bot.controller.BacktestAlgorithmResponse;
 import com.algotrader.bot.controller.BacktestComparisonResponse;
 import com.algotrader.bot.controller.BacktestDetailsResponse;
 import com.algotrader.bot.controller.BacktestExperimentSummaryResponse;
-import com.algotrader.bot.controller.BacktestEquityPointResponse;
 import com.algotrader.bot.controller.BacktestHistoryItemResponse;
 import com.algotrader.bot.controller.BacktestRunResponse;
-import com.algotrader.bot.controller.BacktestAlgorithmResponse;
-import com.algotrader.bot.controller.BacktestTradeSeriesItemResponse;
 import com.algotrader.bot.controller.RunBacktestRequest;
 import com.algotrader.bot.entity.BacktestDataset;
 import com.algotrader.bot.entity.BacktestResult;
-import com.algotrader.bot.repository.BacktestDatasetRepository;
 import com.algotrader.bot.repository.BacktestResultRepository;
-import com.algotrader.bot.websocket.WebSocketEventPublisher;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 public class BacktestManagementService {
 
     private static final Logger logger = LoggerFactory.getLogger(BacktestManagementService.class);
-    private static final int DEFAULT_HISTORY_LIMIT = 20;
-    private static final int MAX_HISTORY_LIMIT = 500;
     private static final String DATASET_UNIVERSE_LABEL = "DATASET_UNIVERSE";
 
     private final BacktestResultRepository backtestResultRepository;
-    private final BacktestDatasetRepository backtestDatasetRepository;
     private final BacktestExecutionService backtestExecutionService;
     private final BacktestDatasetService backtestDatasetService;
     private final BacktestStrategyRegistry backtestStrategyRegistry;
+    private final BacktestResultQueryService backtestResultQueryService;
+    private final BacktestProgressService backtestProgressService;
     private final OperatorAuditService operatorAuditService;
-    private final WebSocketEventPublisher webSocketEventPublisher;
 
     public BacktestManagementService(BacktestResultRepository backtestResultRepository,
-                                     BacktestDatasetRepository backtestDatasetRepository,
                                      BacktestExecutionService backtestExecutionService,
                                      BacktestDatasetService backtestDatasetService,
                                      BacktestStrategyRegistry backtestStrategyRegistry,
-                                     OperatorAuditService operatorAuditService,
-                                     WebSocketEventPublisher webSocketEventPublisher) {
+                                     BacktestResultQueryService backtestResultQueryService,
+                                     BacktestProgressService backtestProgressService,
+                                     OperatorAuditService operatorAuditService) {
         this.backtestResultRepository = backtestResultRepository;
-        this.backtestDatasetRepository = backtestDatasetRepository;
         this.backtestExecutionService = backtestExecutionService;
         this.backtestDatasetService = backtestDatasetService;
         this.backtestStrategyRegistry = backtestStrategyRegistry;
+        this.backtestResultQueryService = backtestResultQueryService;
+        this.backtestProgressService = backtestProgressService;
         this.operatorAuditService = operatorAuditService;
-        this.webSocketEventPublisher = webSocketEventPublisher;
     }
 
     @Transactional(readOnly = true)
@@ -79,31 +67,17 @@ public class BacktestManagementService {
 
     @Transactional(readOnly = true)
     public List<BacktestHistoryItemResponse> getHistory(int limit) {
-        int boundedLimit = sanitizeLimit(limit);
-        return backtestResultRepository.findAllByOrderByTimestampDesc(PageRequest.of(0, boundedLimit)).stream()
-            .map(this::toHistoryItem)
-            .toList();
+        return backtestResultQueryService.getHistory(limit);
     }
 
     @Transactional(readOnly = true)
     public List<BacktestExperimentSummaryResponse> getExperimentSummaries() {
-        Map<String, List<BacktestResult>> grouped = new LinkedHashMap<>();
-
-        backtestResultRepository.findAllByOrderByTimestampDesc().forEach(result -> grouped
-            .computeIfAbsent(resolveExperimentKey(result), ignored -> new ArrayList<>())
-            .add(result));
-
-        return grouped.entrySet().stream()
-            .map(entry -> toExperimentSummary(entry.getKey(), entry.getValue()))
-            .toList();
+        return backtestResultQueryService.getExperimentSummaries();
     }
 
     @Transactional(readOnly = true)
     public BacktestDetailsResponse getDetails(Long backtestId) {
-        BacktestResult result = backtestResultRepository.findById(backtestId)
-            .orElseThrow(() -> new EntityNotFoundException("Backtest not found: " + backtestId));
-
-        return toDetails(result);
+        return backtestResultQueryService.getDetails(backtestId);
     }
 
     @Transactional
@@ -114,12 +88,17 @@ public class BacktestManagementService {
         if (request.initialBalance().compareTo(new BigDecimal("100.00")) <= 0) {
             throw new IllegalArgumentException("Initial balance must be greater than 100");
         }
+
         backtestDatasetService.validateDatasetAvailableForNewRuns(request.datasetId());
         BacktestAlgorithmType algorithmType = BacktestAlgorithmType.from(request.algorithmType());
         var strategyDefinition = backtestStrategyRegistry.getStrategy(algorithmType).definition();
 
         BacktestDataset dataset = backtestDatasetService.getDataset(request.datasetId());
-        String effectiveSymbol = resolveRequestedSymbol(request.symbol(), dataset.getSymbolsCsv(), strategyDefinition.selectionMode());
+        String effectiveSymbol = resolveRequestedSymbol(
+            request.symbol(),
+            dataset.getSymbolsCsv(),
+            strategyDefinition.selectionMode()
+        );
         String experimentName = resolveRequestedExperimentName(
             request.experimentName(),
             algorithmType.name(),
@@ -164,7 +143,7 @@ public class BacktestManagementService {
         pending.setTimestamp(LocalDateTime.now());
 
         BacktestResult saved = backtestResultRepository.save(pending);
-        publishProgress(saved);
+        backtestProgressService.publish(saved);
         logger.info(
             "Queued backtest {}: strategy={}, datasetId={}, symbol={}, timeframe={}, experiment={}",
             saved.getId(),
@@ -175,7 +154,7 @@ public class BacktestManagementService {
             saved.getExperimentName()
         );
 
-        backtestExecutionService.executeAsync(saved.getId());
+        dispatchAfterCommit(saved.getId());
         operatorAuditService.recordSuccess(
             "BACKTEST_RUN_STARTED",
             "test",
@@ -233,14 +212,14 @@ public class BacktestManagementService {
         pending.setTimestamp(LocalDateTime.now());
 
         BacktestResult saved = backtestResultRepository.save(pending);
-        publishProgress(saved);
+        backtestProgressService.publish(saved);
         logger.info(
             "Queued replay backtest {} from source {} using dataset {}",
             saved.getId(),
             backtestId,
             dataset.getId()
         );
-        backtestExecutionService.executeAsync(saved.getId());
+        dispatchAfterCommit(saved.getId());
         operatorAuditService.recordSuccess(
             "BACKTEST_REPLAY_STARTED",
             "test",
@@ -275,295 +254,57 @@ public class BacktestManagementService {
 
     @Transactional(readOnly = true)
     public BacktestComparisonResponse compareBacktests(List<Long> requestedIds) {
-        if (requestedIds == null || requestedIds.size() < 2) {
-            throw new IllegalArgumentException("At least two backtest IDs are required for comparison");
-        }
-
-        List<Long> orderedIds = requestedIds.stream()
-            .filter(id -> id != null && id > 0)
-            .collect(Collectors.collectingAndThen(Collectors.toCollection(LinkedHashSet::new), List::copyOf));
-
-        if (orderedIds.size() < 2) {
-            throw new IllegalArgumentException("At least two unique valid backtest IDs are required for comparison");
-        }
-        if (orderedIds.size() > 10) {
-            throw new IllegalArgumentException("Comparison supports up to 10 backtests at once");
-        }
-
-        List<BacktestResult> fetched = backtestResultRepository.findAllById(orderedIds);
-        Map<Long, BacktestResult> resultById = fetched.stream()
-            .collect(Collectors.toMap(BacktestResult::getId, Function.identity()));
-
-        List<Long> missingIds = orderedIds.stream()
-            .filter(id -> !resultById.containsKey(id))
-            .toList();
-        if (!missingIds.isEmpty()) {
-            throw new EntityNotFoundException("Backtests not found: " + missingIds);
-        }
-
-        List<BacktestResult> orderedResults = orderedIds.stream()
-            .map(resultById::get)
-            .toList();
-        Map<Long, BacktestDataset> datasetById = backtestDatasetRepository.findAllById(
-                orderedResults.stream()
-                    .map(BacktestResult::getDatasetId)
-                    .filter(id -> id != null && id > 0)
-                    .collect(Collectors.toCollection(LinkedHashSet::new))
-            ).stream()
-            .collect(Collectors.toMap(BacktestDataset::getId, Function.identity()));
-
-        BacktestResult baseline = orderedResults.get(0);
-        BigDecimal baselineReturnPercent = totalReturnPercent(baseline);
-
-        List<BacktestComparisonItemResponse> items = orderedResults.stream()
-            .map(result -> {
-                BigDecimal returnPercent = totalReturnPercent(result);
-                DatasetProvenance provenance = datasetProvenance(result, datasetById);
-                return new BacktestComparisonItemResponse(
-                    result.getId(),
-                    result.getStrategyId(),
-                    result.getDatasetName(),
-                    provenance.checksumSha256(),
-                    provenance.schemaVersion(),
-                    provenance.uploadedAt(),
-                    provenance.archived(),
-                    result.getSymbol(),
-                    result.getTimeframe(),
-                    result.getExecutionStatus().name(),
-                    result.getValidationStatus().name(),
-                    result.getFeesBps(),
-                    result.getSlippageBps(),
-                    result.getTimestamp(),
-                    result.getInitialBalance(),
-                    result.getFinalBalance(),
-                    returnPercent,
-                    result.getSharpeRatio(),
-                    result.getProfitFactor(),
-                    result.getWinRate(),
-                    result.getMaxDrawdown(),
-                    result.getTotalTrades(),
-                    result.getFinalBalance().subtract(baseline.getFinalBalance()),
-                    returnPercent.subtract(baselineReturnPercent)
-                );
-            })
-            .toList();
-
-        return new BacktestComparisonResponse(baseline.getId(), items);
+        return backtestResultQueryService.compareBacktests(requestedIds);
     }
 
     private String resolveRequestedSymbol(String requestedSymbol,
                                          String datasetSymbolsCsv,
                                          com.algotrader.bot.backtest.strategy.BacktestStrategySelectionMode selectionMode) {
         List<String> supportedSymbols = parseSymbols(datasetSymbolsCsv);
+        String normalizedRequestedSymbol = requestedSymbol == null ? null : requestedSymbol.trim();
 
         if (selectionMode == com.algotrader.bot.backtest.strategy.BacktestStrategySelectionMode.DATASET_UNIVERSE) {
-            if (requestedSymbol != null && !requestedSymbol.isBlank() && !supportedSymbols.contains(requestedSymbol)) {
-                throw new IllegalArgumentException("Selected primary symbol is not present in dataset: " + requestedSymbol);
+            if (normalizedRequestedSymbol != null
+                && !normalizedRequestedSymbol.isBlank()
+                && !supportedSymbols.contains(normalizedRequestedSymbol)) {
+                throw new IllegalArgumentException("Selected primary symbol is not present in dataset: " + normalizedRequestedSymbol);
             }
             return DATASET_UNIVERSE_LABEL;
         }
 
-        if (!supportedSymbols.contains(requestedSymbol)) {
-            throw new IllegalArgumentException("Selected symbol is not present in dataset: " + requestedSymbol);
+        if (normalizedRequestedSymbol == null || normalizedRequestedSymbol.isBlank()) {
+            throw new IllegalArgumentException("Selected symbol is required for single-symbol strategies");
         }
 
-        return requestedSymbol;
+        if (!supportedSymbols.contains(normalizedRequestedSymbol)) {
+            throw new IllegalArgumentException("Selected symbol is not present in dataset: " + normalizedRequestedSymbol);
+        }
+
+        return normalizedRequestedSymbol;
     }
 
     private List<String> parseSymbols(String datasetSymbolsCsv) {
         return List.of(datasetSymbolsCsv.split(",")).stream()
             .map(String::trim)
             .filter(symbol -> !symbol.isBlank())
-            .toList();
-    }
-
-    private BacktestHistoryItemResponse toHistoryItem(BacktestResult result) {
-        return new BacktestHistoryItemResponse(
-            result.getId(),
-            result.getStrategyId(),
-            result.getDatasetName(),
-            resolveExperimentName(result),
-            result.getSymbol(),
-            result.getTimeframe(),
-            result.getExecutionStatus().name(),
-            result.getValidationStatus().name(),
-            result.getFeesBps(),
-            result.getSlippageBps(),
-            result.getTimestamp(),
-            result.getInitialBalance(),
-            result.getFinalBalance(),
-            result.getExecutionStage().name(),
-            result.getProgressPercent(),
-            result.getProcessedCandles(),
-            result.getTotalCandles(),
-            result.getCurrentDataTimestamp(),
-            result.getStatusMessage(),
-            result.getLastProgressAt(),
-            result.getStartedAt(),
-            result.getCompletedAt()
-        );
-    }
-
-    private void publishProgress(BacktestResult result) {
-        webSocketEventPublisher.publishBacktestProgress(
-            "test",
-            result.getId(),
-            result.getStrategyId(),
-            result.getDatasetName(),
-            result.getExperimentName(),
-            result.getSymbol(),
-            result.getTimeframe(),
-            result.getExecutionStatus().name(),
-            result.getValidationStatus().name(),
-            result.getFeesBps(),
-            result.getSlippageBps(),
-            result.getTimestamp(),
-            result.getInitialBalance(),
-            result.getFinalBalance(),
-            result.getExecutionStage().name(),
-            result.getProgressPercent(),
-            result.getProcessedCandles(),
-            result.getTotalCandles(),
-            result.getCurrentDataTimestamp(),
-            result.getLastProgressAt(),
-            result.getStatusMessage(),
-            result.getStartedAt(),
-            result.getCompletedAt(),
-            result.getErrorMessage()
-        );
-    }
-
-    private int sanitizeLimit(int limit) {
-        if (limit <= 0) {
-            return DEFAULT_HISTORY_LIMIT;
-        }
-        return Math.min(limit, MAX_HISTORY_LIMIT);
-    }
-
-    private BacktestDetailsResponse toDetails(BacktestResult result) {
-        DatasetProvenance provenance = datasetProvenance(result);
-        return new BacktestDetailsResponse(
-            result.getId(),
-            result.getStrategyId(),
-            result.getDatasetId(),
-            result.getDatasetName(),
-            resolveExperimentName(result),
-            resolveExperimentKey(result),
-            provenance.checksumSha256(),
-            provenance.schemaVersion(),
-            provenance.uploadedAt(),
-            provenance.archived(),
-            result.getSymbol(),
-            result.getTimeframe(),
-            result.getExecutionStatus().name(),
-            result.getValidationStatus().name(),
-            result.getInitialBalance(),
-            result.getFinalBalance(),
-            result.getSharpeRatio(),
-            result.getProfitFactor(),
-            result.getWinRate(),
-            result.getMaxDrawdown(),
-            result.getTotalTrades(),
-            result.getFeesBps(),
-            result.getSlippageBps(),
-            result.getStartDate(),
-            result.getEndDate(),
-            result.getTimestamp(),
-            result.getExecutionStage().name(),
-            result.getProgressPercent(),
-            result.getProcessedCandles(),
-            result.getTotalCandles(),
-            result.getCurrentDataTimestamp(),
-            result.getStatusMessage(),
-            result.getLastProgressAt(),
-            result.getStartedAt(),
-            result.getCompletedAt(),
-            result.getErrorMessage(),
-            result.getEquityPoints().stream()
-                .map(point -> new BacktestEquityPointResponse(
-                    point.getPointTimestamp(),
-                    point.getEquity(),
-                    point.getDrawdownPct()
-                ))
-                .toList(),
-            result.getTradeSeries().stream()
-                .map(item -> new BacktestTradeSeriesItemResponse(
-                    item.getSymbol(),
-                    item.getPositionSide().name(),
-                    item.getEntryTime(),
-                    item.getExitTime(),
-                    item.getEntryPrice(),
-                    item.getExitPrice(),
-                    item.getQuantity(),
-                    item.getEntryValue(),
-                    item.getExitValue(),
-                    item.getReturnPct()
-                ))
-                .toList()
-        );
-    }
-
-    private BacktestExperimentSummaryResponse toExperimentSummary(String experimentKey, List<BacktestResult> runs) {
-        BacktestResult latest = runs.get(0);
-        BigDecimal averageReturnPercent = runs.stream()
-            .map(this::totalReturnPercent)
-            .reduce(BigDecimal.ZERO, BigDecimal::add)
-            .divide(BigDecimal.valueOf(runs.size()), 4, RoundingMode.HALF_UP);
-        BigDecimal bestFinalBalance = runs.stream()
-            .map(BacktestResult::getFinalBalance)
-            .filter(balance -> balance != null)
-            .max(BigDecimal::compareTo)
-            .orElse(BigDecimal.ZERO);
-        BigDecimal worstMaxDrawdown = runs.stream()
-            .map(BacktestResult::getMaxDrawdown)
-            .filter(drawdown -> drawdown != null)
-            .max(BigDecimal::compareTo)
-            .orElse(BigDecimal.ZERO);
-
-        return new BacktestExperimentSummaryResponse(
-            experimentKey,
-            resolveExperimentName(latest),
-            latest.getId(),
-            latest.getStrategyId(),
-            latest.getDatasetName(),
-            latest.getSymbol(),
-            latest.getTimeframe(),
-            latest.getExecutionStatus().name(),
-            latest.getValidationStatus().name(),
-            runs.size(),
-            latest.getTimestamp(),
-            averageReturnPercent,
-            bestFinalBalance,
-            worstMaxDrawdown
-        );
-    }
-
-    private BigDecimal totalReturnPercent(BacktestResult result) {
-        if (result.getInitialBalance() == null
-            || result.getFinalBalance() == null
-            || result.getInitialBalance().compareTo(BigDecimal.ZERO) == 0) {
-            return BigDecimal.ZERO;
-        }
-
-        return result.getFinalBalance()
-            .subtract(result.getInitialBalance())
-            .divide(result.getInitialBalance(), 8, RoundingMode.HALF_UP)
-            .multiply(BigDecimal.valueOf(100))
-            .setScale(4, RoundingMode.HALF_UP);
+            .collect(java.util.stream.Collectors.collectingAndThen(
+                java.util.stream.Collectors.toCollection(LinkedHashSet::new),
+                List::copyOf
+            ));
     }
 
     private String resolveRequestedExperimentName(String requestedExperimentName,
-                                                 String strategyId,
-                                                 String datasetName,
-                                                 String effectiveSymbol,
-                                                 String timeframe,
-                                                 com.algotrader.bot.backtest.strategy.BacktestStrategySelectionMode selectionMode) {
+                                                  String strategyId,
+                                                  String datasetName,
+                                                  String effectiveSymbol,
+                                                  String timeframe,
+                                                  com.algotrader.bot.backtest.strategy.BacktestStrategySelectionMode selectionMode) {
         if (requestedExperimentName != null && !requestedExperimentName.isBlank()) {
             return requestedExperimentName.trim();
         }
 
         String marketLabel = selectionMode == com.algotrader.bot.backtest.strategy.BacktestStrategySelectionMode.DATASET_UNIVERSE
-            ? "DATASET_UNIVERSE"
+            ? DATASET_UNIVERSE_LABEL
             : effectiveSymbol;
         return strategyId + " | " + datasetName + " | " + marketLabel + " | " + timeframe;
     }
@@ -594,45 +335,18 @@ public class BacktestManagementService {
             .replaceAll("(^-|-$)", "");
     }
 
-    private DatasetProvenance datasetProvenance(BacktestResult result) {
-        if (result.getDatasetId() == null) {
-            return DatasetProvenance.empty();
+    private void dispatchAfterCommit(Long backtestId) {
+        if (TransactionSynchronizationManager.isActualTransactionActive()
+            && TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    backtestExecutionService.executeAsync(backtestId);
+                }
+            });
+            return;
         }
 
-        return backtestDatasetRepository.findById(result.getDatasetId())
-            .map(BacktestManagementService::toDatasetProvenance)
-            .orElseGet(DatasetProvenance::empty);
-    }
-
-    private DatasetProvenance datasetProvenance(BacktestResult result, Map<Long, BacktestDataset> datasetById) {
-        if (result.getDatasetId() == null) {
-            return DatasetProvenance.empty();
-        }
-
-        return toDatasetProvenance(datasetById.get(result.getDatasetId()));
-    }
-
-    private static DatasetProvenance toDatasetProvenance(BacktestDataset dataset) {
-        if (dataset == null) {
-            return DatasetProvenance.empty();
-        }
-
-        return new DatasetProvenance(
-            dataset.getChecksumSha256(),
-            dataset.getSchemaVersion(),
-            dataset.getUploadedAt(),
-            dataset.getArchived()
-        );
-    }
-
-    private record DatasetProvenance(
-        String checksumSha256,
-        String schemaVersion,
-        LocalDateTime uploadedAt,
-        Boolean archived
-    ) {
-        private static DatasetProvenance empty() {
-            return new DatasetProvenance(null, null, null, null);
-        }
+        backtestExecutionService.executeAsync(backtestId);
     }
 }

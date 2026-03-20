@@ -84,7 +84,7 @@ public class StrategyConfig {
 
     @NotNull
     @Column(nullable = false)
-    private Boolean shortSellingEnabled = Boolean.TRUE;
+    private Boolean shortSellingEnabled = Boolean.FALSE;
 
     @Column
     private LocalDateTime startedAt;
@@ -125,7 +125,7 @@ public class StrategyConfig {
             paperMode = Boolean.TRUE;
         }
         if (shortSellingEnabled == null) {
-            shortSellingEnabled = Boolean.TRUE;
+            shortSellingEnabled = Boolean.FALSE;
         }
     }
 
@@ -156,7 +156,7 @@ public class StrategyConfig {
         this.tradeCount = 0;
         this.currentDrawdown = BigDecimal.ZERO;
         this.paperMode = Boolean.TRUE;
-        this.shortSellingEnabled = Boolean.TRUE;
+        this.shortSellingEnabled = Boolean.FALSE;
     }
 
     public Long getId() {

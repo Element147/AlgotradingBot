@@ -26,7 +26,9 @@ Required controls:
 - Separate config and credentials by mode
 - Clear UI/API mode visibility
 - Safe default to `test`
+- New/default strategy configs must start long/cash; short exposure is opt-in and must stay visible in configuration history
 - Explicit confirmation before any `live` action
+- Unsupported `live` reads or writes must fail explicitly with capability messaging instead of silently falling back to paper data
 - Dev-only auth override (`ALGOTRADING_RELAXED_AUTH=true`) is local debugging only and must be removed before standard verification
 
 ## Risk Baseline Defaults
@@ -64,6 +66,8 @@ All should be reproducible:
 - Versioned strategy parameters
 - Versioned/identifiable datasets (checksum and schema metadata)
 - Fees and slippage included in analysis
+- Requested timeframe honored through explicit aggregation or resampling; never label a run as `4h` or `1d` if it executed on finer raw candles
+- Signal timing assumptions made explicit; if fills are not next-bar-open or another clearly documented model, the report must say so
 - Out-of-sample or walk-forward validation
 - Sufficient trade count for interpretation
 - Paper-trading soak period with stable behavior
@@ -76,6 +80,7 @@ All should be reproducible:
 Every strategy report should state:
 
 - data period and instruments
+- dataset ID or name plus checksum or schema identity and requested timeframe
 - fees/slippage assumptions
 - in-sample vs out-of-sample split
 - trade count, drawdown, Sharpe, profit factor, win rate

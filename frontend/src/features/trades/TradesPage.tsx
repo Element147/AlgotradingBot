@@ -1,18 +1,4 @@
-import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import {
-  Alert,
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Grid,
-  MenuItem,
-  Pagination,
-  Stack,
-  TextField,
-  Typography,
-} from '@mui/material';
+import { Alert, Box, Grid, Typography } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useSearchParams } from 'react-router-dom';
@@ -20,66 +6,23 @@ import { useSearchParams } from 'react-router-dom';
 import { TradeDetailsModal } from './TradeDetailsModal';
 import { useGetTradeHistoryQuery, type TradeHistoryQuery } from './tradesApi';
 import {
+  defaultTradeFilterDraft,
+  persistTradeFilterDraft,
+  readStoredTradeFilterDraft,
+  toDateTimeParam,
+  type TradeFilterDraft,
+} from './tradesPageState';
+import { TradesFiltersPanel, TradesResultsPanel } from './TradesPanels';
+import {
   buildTradesCsv,
   calculateTradeStats,
   sortTrades,
   type TradeSortField,
 } from './tradeUtils';
-import { VirtualizedTradeTable } from './VirtualizedTradeTable';
 
 import { AppLayout } from '@/components/layout/AppLayout';
-import { FieldTooltip } from '@/components/ui/FieldTooltip';
 import { selectCurrency, selectTimezone } from '@/features/settings/settingsSlice';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
-
-const STORAGE_KEY = 'trades_page_filters_v2';
-
-interface TradeFilterDraft {
-  accountId: string;
-  symbol: string;
-  startDate: string;
-  endDate: string;
-  limit: string;
-  searchId: string;
-}
-
-const defaultDraft: TradeFilterDraft = {
-  accountId: '',
-  symbol: '',
-  startDate: '',
-  endDate: '',
-  limit: '200',
-  searchId: '',
-};
-
-const toDateTimeParam = (value: string): string | undefined => {
-  if (!value.trim()) {
-    return undefined;
-  }
-
-  return value.length === 16 ? `${value}:00` : value;
-};
-
-const readStoredDraft = (): TradeFilterDraft => {
-  const raw = sessionStorage.getItem(STORAGE_KEY);
-  if (!raw) {
-    return defaultDraft;
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as Partial<TradeFilterDraft>;
-    return {
-      accountId: parsed.accountId ?? '',
-      symbol: parsed.symbol ?? '',
-      startDate: parsed.startDate ?? '',
-      endDate: parsed.endDate ?? '',
-      limit: parsed.limit ?? '200',
-      searchId: parsed.searchId ?? '',
-    };
-  } catch {
-    return defaultDraft;
-  }
-};
 
 export default function TradesPage() {
   const timezone = useSelector(selectTimezone);
@@ -87,7 +30,7 @@ export default function TradesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [draft, setDraft] = useState<TradeFilterDraft>(() => {
-    const fromStorage = readStoredDraft();
+    const fromStorage = readStoredTradeFilterDraft();
     if (Array.from(searchParams.keys()).length === 0) {
       return fromStorage;
     }
@@ -189,7 +132,7 @@ export default function TradesPage() {
   };
 
   useEffect(() => {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
+    persistTradeFilterDraft(draft);
   }, [draft]);
 
   useEffect(() => {
@@ -232,7 +175,7 @@ export default function TradesPage() {
   };
 
   const resetFilters = () => {
-    setDraft(defaultDraft);
+    setDraft(defaultTradeFilterDraft);
     setQuery({ limit: 200 });
     setPage(1);
     setFeedback({ severity: 'success', message: 'Filters reset.' });
@@ -286,171 +229,41 @@ export default function TradesPage() {
 
         <Grid container spacing={2}>
           <Grid size={{ xs: 12, lg: 4 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" sx={{ mb: 2 }}>
-                  Filters
-                </Typography>
-                <Stack spacing={2}>
-                  <FieldTooltip title="Optional account scope. Leaving empty queries all visible accounts.">
-                    <TextField
-                      label="Account ID"
-                      value={draft.accountId}
-                      onChange={(event) =>
-                        setDraft((prev) => ({ ...prev, accountId: event.target.value }))
-                      }
-                      placeholder="e.g. 1"
-                      helperText="Optional: load only trades from one account."
-                    />
-                  </FieldTooltip>
-                  <FieldTooltip title="Optional symbol filter. Narrowing too much can hide correlated behavior in review.">
-                    <TextField
-                      select
-                      label="Symbol"
-                      value={draft.symbol}
-                      onChange={(event) => setDraft((prev) => ({ ...prev, symbol: event.target.value }))}
-                      helperText="Optional: narrow history to one market pair."
-                    >
-                      <MenuItem value="">All symbols</MenuItem>
-                      {symbols.map((symbol) => (
-                        <MenuItem key={symbol} value={symbol}>
-                          {symbol}
-                        </MenuItem>
-                      ))}
-                    </TextField>
-                  </FieldTooltip>
-                  <FieldTooltip title="Lower date boundary for trade inclusion. Wrong timezone assumptions can shift results.">
-                    <TextField
-                      label="Start Date"
-                      type="datetime-local"
-                      value={draft.startDate}
-                      onChange={(event) =>
-                        setDraft((prev) => ({ ...prev, startDate: event.target.value }))
-                      }
-                      helperText="Optional: include trades opened after this date/time."
-                      slotProps={{ inputLabel: { shrink: true } }}
-                    />
-                  </FieldTooltip>
-                  <FieldTooltip title="Upper date boundary for trade inclusion. End before start returns empty/invalid slices.">
-                    <TextField
-                      label="End Date"
-                      type="datetime-local"
-                      value={draft.endDate}
-                      onChange={(event) => setDraft((prev) => ({ ...prev, endDate: event.target.value }))}
-                      helperText="Optional: include trades opened before this date/time."
-                      slotProps={{ inputLabel: { shrink: true } }}
-                    />
-                  </FieldTooltip>
-                  <FieldTooltip title="Backend fetch size. Very high limits increase payload size and response time.">
-                    <TextField
-                      label="Result Limit"
-                      type="number"
-                      value={draft.limit}
-                      onChange={(event) => setDraft((prev) => ({ ...prev, limit: event.target.value }))}
-                      helperText="Number of rows to request from backend (1-1000)."
-                      inputProps={{ min: 1, max: 1000, step: 1 }}
-                    />
-                  </FieldTooltip>
-                  <FieldTooltip title="Client-side trade ID lookup. Non-numeric values are rejected by validation.">
-                    <TextField
-                      label="Search Trade ID"
-                      value={draft.searchId}
-                      onChange={(event) => {
-                        setDraft((prev) => ({ ...prev, searchId: event.target.value }));
-                        setPage(1);
-                      }}
-                      helperText="Debounced by 300ms."
-                    />
-                  </FieldTooltip>
-
-                  {validationError ? <Alert severity="error">{validationError}</Alert> : null}
-
-                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-                    <Button
-                      variant="contained"
-                      onClick={applyFilters}
-                      disabled={isFetching || Boolean(validationError)}
-                    >
-                      Apply
-                    </Button>
-                    <Button variant="outlined" onClick={resetFilters} disabled={isFetching}>
-                      Reset
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      startIcon={<RefreshIcon />}
-                      onClick={() => void refetch()}
-                      disabled={isFetching}
-                    >
-                      Refresh
-                    </Button>
-                  </Stack>
-                </Stack>
-              </CardContent>
-            </Card>
+            <TradesFiltersPanel
+              draft={draft}
+              symbols={symbols}
+              validationError={validationError}
+              isFetching={isFetching}
+              onDraftChange={setDraft}
+              onSearchIdChange={(value) => {
+                setDraft((prev) => ({ ...prev, searchId: value }));
+                setPage(1);
+              }}
+              onApply={applyFilters}
+              onReset={resetFilters}
+              onRefresh={() => void refetch()}
+            />
           </Grid>
 
           <Grid size={{ xs: 12, lg: 8 }}>
-            <Card sx={{ mb: 2 }}>
-              <CardContent>
-                <Stack
-                  direction={{ xs: 'column', md: 'row' }}
-                  justifyContent="space-between"
-                  spacing={2}
-                  sx={{ mb: 2 }}
-                >
-                  <Box>
-                    <Typography variant="h6">Results</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Trades: {stats.totalTrades} | Win rate: {stats.winRate.toFixed(1)}% | Profit
-                      factor: {stats.profitFactor.toFixed(2)}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Avg win: {formatAmount(stats.averageWin)} | Avg loss: {formatAmount(stats.averageLoss)}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      PnL: {formatAmount(stats.totalPnl)} | Fees: {formatAmount(stats.totalFees)} |
-                      Slippage: {formatAmount(stats.totalSlippage)}
-                    </Typography>
-                  </Box>
-                  <Button variant="outlined" startIcon={<FileDownloadIcon />} onClick={exportCsv}>
-                    Export CSV
-                  </Button>
-                </Stack>
-
-                {isError ? <Alert severity="error">Failed to load trade history from backend.</Alert> : null}
-                {!isError && isFetching ? <Typography>Loading trade history...</Typography> : null}
-
-                {!isFetching && !isError && filteredTrades.length === 0 ? (
-                  <Alert severity="info">No trades found for selected filters.</Alert>
-                ) : null}
-
-                {filteredTrades.length > 0 ? (
-                  <>
-                    <VirtualizedTradeTable
-                      rows={pagedTrades}
-                      selectedTradeId={selectedTradeId}
-                      sortField={sortField}
-                      sortDirection={sortDirection}
-                      onSortChange={changeSort}
-                      onRowSelect={(trade) => setSelectedTradeId(trade.id)}
-                    />
-
-                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 2 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Page {page} of {totalPages} | Timezone: {timezone}
-                      </Typography>
-                      <Pagination
-                        count={totalPages}
-                        page={page}
-                        onChange={(_, nextPage) => setPage(nextPage)}
-                        color="primary"
-                      />
-                    </Stack>
-                  </>
-                ) : null}
-              </CardContent>
-            </Card>
+            <TradesResultsPanel
+              stats={stats}
+              filteredTrades={filteredTrades}
+              pagedTrades={pagedTrades}
+              selectedTradeId={selectedTradeId}
+              sortField={sortField}
+              sortDirection={sortDirection}
+              page={page}
+              totalPages={totalPages}
+              timezone={timezone}
+              isError={isError}
+              isFetching={isFetching}
+              onSortChange={changeSort}
+              onRowSelect={(trade) => setSelectedTradeId(trade.id)}
+              onPageChange={setPage}
+              onExport={exportCsv}
+              formatAmount={formatAmount}
+            />
           </Grid>
         </Grid>
       </Box>

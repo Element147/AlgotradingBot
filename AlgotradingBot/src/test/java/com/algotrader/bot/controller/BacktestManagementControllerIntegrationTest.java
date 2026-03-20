@@ -25,6 +25,7 @@ import java.time.LocalDateTime;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -316,7 +317,7 @@ class BacktestManagementControllerIntegrationTest {
     }
 
     @Test
-    void runBacktest_datasetUniverseStoresSafeMarketLabel() throws Exception {
+    void runBacktest_datasetUniverseAcceptsMissingSymbolAndStoresSafeMarketLabel() throws Exception {
         Long universeDatasetId = backtestDatasetRepository.findAll().stream()
             .filter(dataset -> "multi-asset-universe".equals(dataset.getName()))
             .findFirst()
@@ -326,7 +327,7 @@ class BacktestManagementControllerIntegrationTest {
         RunBacktestRequest request = new RunBacktestRequest(
             "DUAL_MOMENTUM_ROTATION",
             universeDatasetId,
-            "BTC/USDT",
+            null,
             "1h",
             java.time.LocalDate.parse("2025-01-01"),
             java.time.LocalDate.parse("2025-01-02"),
@@ -348,6 +349,29 @@ class BacktestManagementControllerIntegrationTest {
             .findFirst()
             .orElseThrow();
         org.junit.jupiter.api.Assertions.assertEquals("DATASET_UNIVERSE", saved.getSymbol());
+    }
+
+    @Test
+    void runBacktest_singleSymbolRejectsMissingSymbol() throws Exception {
+        RunBacktestRequest request = new RunBacktestRequest(
+            "SMA_CROSSOVER",
+            datasetId,
+            null,
+            "1h",
+            java.time.LocalDate.parse("2025-01-01"),
+            java.time.LocalDate.parse("2025-01-02"),
+            new BigDecimal("2000"),
+            10,
+            3,
+            null
+        );
+
+        mockMvc.perform(post("/api/backtests/run")
+                .header("Authorization", "Bearer " + authToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isUnprocessableContent())
+            .andExpect(jsonPath("$.message").value("Selected symbol is required for single-symbol strategies"));
     }
 
     @Test
@@ -417,6 +441,61 @@ class BacktestManagementControllerIntegrationTest {
             .andExpect(jsonPath("$[0].experimentName").value("BTC Mean Reversion Retest"))
             .andExpect(jsonPath("$[0].runCount").value(2))
             .andExpect(jsonPath("$[0].latestBacktestId").exists());
+    }
+
+    @Test
+    void experiments_groupsLegacyRunsWithoutExperimentKey() throws Exception {
+        BacktestResult legacyFirst = new BacktestResult(
+            "SMA_CROSSOVER",
+            "BTC/USDT",
+            LocalDateTime.now().minusDays(10),
+            LocalDateTime.now().minusDays(9),
+            new BigDecimal("1000"),
+            new BigDecimal("1015"),
+            new BigDecimal("1.0"),
+            new BigDecimal("1.3"),
+            new BigDecimal("51.0"),
+            new BigDecimal("12.0"),
+            18,
+            BacktestResult.ValidationStatus.PASSED
+        );
+        legacyFirst.setExecutionStatus(BacktestResult.ExecutionStatus.COMPLETED);
+        legacyFirst.setTimeframe("1h");
+        legacyFirst.setDatasetId(datasetId);
+        legacyFirst.setDatasetName("sample-btc");
+        legacyFirst.setExperimentName("Legacy Momentum Review");
+        legacyFirst.setExperimentKey(null);
+        legacyFirst.setTimestamp(LocalDateTime.now().minusHours(2));
+        backtestResultRepository.save(legacyFirst);
+
+        BacktestResult legacySecond = new BacktestResult(
+            "SMA_CROSSOVER",
+            "BTC/USDT",
+            LocalDateTime.now().minusDays(8),
+            LocalDateTime.now().minusDays(7),
+            new BigDecimal("1000"),
+            new BigDecimal("990"),
+            new BigDecimal("0.8"),
+            new BigDecimal("1.1"),
+            new BigDecimal("47.0"),
+            new BigDecimal("14.0"),
+            16,
+            BacktestResult.ValidationStatus.FAILED
+        );
+        legacySecond.setExecutionStatus(BacktestResult.ExecutionStatus.COMPLETED);
+        legacySecond.setTimeframe("1h");
+        legacySecond.setDatasetId(datasetId);
+        legacySecond.setDatasetName("sample-btc");
+        legacySecond.setExperimentName("Legacy Momentum Review");
+        legacySecond.setExperimentKey(null);
+        legacySecond.setTimestamp(LocalDateTime.now().minusHours(1));
+        backtestResultRepository.save(legacySecond);
+
+        mockMvc.perform(get("/api/backtests/experiments")
+                .header("Authorization", "Bearer " + authToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[?(@.experimentKey == 'legacy-momentum-review')].runCount").value(hasItem(2)))
+            .andExpect(jsonPath("$[?(@.experimentKey == 'legacy-momentum-review')].experimentName").value(hasItem("Legacy Momentum Review")));
     }
 
     @Test

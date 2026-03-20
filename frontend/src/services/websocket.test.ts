@@ -17,6 +17,7 @@ class MockWebSocket {
   static OPEN = 1;
   static CLOSING = 2;
   static CLOSED = 3;
+  static instances: MockWebSocket[] = [];
 
   readyState = MockWebSocket.CONNECTING;
   url: string;
@@ -24,9 +25,11 @@ class MockWebSocket {
   onclose: ((event: CloseEvent) => void) | null = null;
   onerror: ((event: Event) => void) | null = null;
   onmessage: ((event: MessageEvent) => void) | null = null;
+  sentMessages: string[] = [];
 
   constructor(url: string) {
     this.url = url;
+    MockWebSocket.instances.push(this);
     // Simulate async connection
     setTimeout(() => {
       this.readyState = MockWebSocket.OPEN;
@@ -37,7 +40,7 @@ class MockWebSocket {
   }
 
   send(_data: string) {
-    // Mock send
+    this.sentMessages.push(_data);
   }
 
   close(code?: number, reason?: string) {
@@ -45,6 +48,10 @@ class MockWebSocket {
     if (this.onclose) {
       this.onclose(new CloseEvent('close', { code, reason }));
     }
+  }
+
+  simulateMessage(data: string) {
+    this.onmessage?.(new MessageEvent('message', { data }));
   }
 }
 
@@ -54,6 +61,7 @@ describe('WebSocketManager', () => {
 
   beforeEach(() => {
     vi.useRealTimers();
+    MockWebSocket.instances = [];
     manager = new WebSocketManager(
       localDevWsUrl(),
       MockWebSocket as unknown as WebSocketLikeConstructor
@@ -163,6 +171,52 @@ describe('WebSocketManager', () => {
       manager.subscribe('balance.updated', handler2);
 
       // Both handlers should be registered
+    });
+  });
+
+  describe('subscription control messages', () => {
+    it('should notify subscription-state handlers when the server acknowledges channels', async () => {
+      await manager.connect('token', 'test');
+      const handler = vi.fn();
+      const socket = MockWebSocket.instances[0];
+
+      manager.subscribeSubscriptionState(handler);
+      socket.simulateMessage(
+        JSON.stringify({
+          type: 'ack',
+          action: 'subscribed',
+          channels: ['test.backtests'],
+        })
+      );
+
+      expect(handler).toHaveBeenCalledWith({
+        action: 'subscribed',
+        channels: ['test.backtests'],
+        error: null,
+        rejectedChannels: [],
+      });
+    });
+
+    it('should notify subscription-state handlers when the server rejects channels', async () => {
+      await manager.connect('token', 'test');
+      const handler = vi.fn();
+      const socket = MockWebSocket.instances[0];
+
+      manager.subscribeSubscriptionState(handler);
+      socket.simulateMessage(
+        JSON.stringify({
+          type: 'error',
+          message: 'Rejected unauthorized or unknown channels',
+          channels: ['live.balance'],
+        })
+      );
+
+      expect(handler).toHaveBeenCalledWith({
+        action: 'error',
+        channels: [],
+        error: 'Rejected unauthorized or unknown channels',
+        rejectedChannels: ['live.balance'],
+      });
     });
   });
 

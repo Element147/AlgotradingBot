@@ -60,6 +60,47 @@ public class BacktestIndicatorCalculator {
         return mean.add(standardDeviation(candles, endIndex, period).multiply(multiplier, MC), MC);
     }
 
+    public BigDecimal midpointChannel(List<OHLCVData> candles, int endIndex, int period) {
+        return highestHigh(candles, endIndex, period)
+            .add(lowestLow(candles, endIndex, period), MC)
+            .divide(TWO, MC);
+    }
+
+    public BigDecimal ichimokuConversionLine(List<OHLCVData> candles, int endIndex) {
+        return midpointChannel(candles, endIndex, 9);
+    }
+
+    public BigDecimal ichimokuBaseLine(List<OHLCVData> candles, int endIndex) {
+        return midpointChannel(candles, endIndex, 26);
+    }
+
+    public BigDecimal ichimokuLeadingSpanA(List<OHLCVData> candles, int sourceIndex) {
+        return ichimokuConversionLine(candles, sourceIndex)
+            .add(ichimokuBaseLine(candles, sourceIndex), MC)
+            .divide(TWO, MC);
+    }
+
+    public BigDecimal ichimokuLeadingSpanB(List<OHLCVData> candles, int sourceIndex) {
+        return midpointChannel(candles, sourceIndex, 52);
+    }
+
+    public BigDecimal ichimokuLeadingSpanAAtCurrent(List<OHLCVData> candles, int currentIndex) {
+        return ichimokuLeadingSpanAAtCurrent(candles, currentIndex, 26);
+    }
+
+    public BigDecimal ichimokuLeadingSpanAAtCurrent(List<OHLCVData> candles, int currentIndex, int displacement) {
+        // The visible cloud at the current bar must come from a historical source index, not the current bar.
+        return ichimokuLeadingSpanA(candles, currentIndex - displacement);
+    }
+
+    public BigDecimal ichimokuLeadingSpanBAtCurrent(List<OHLCVData> candles, int currentIndex) {
+        return ichimokuLeadingSpanBAtCurrent(candles, currentIndex, 26);
+    }
+
+    public BigDecimal ichimokuLeadingSpanBAtCurrent(List<OHLCVData> candles, int currentIndex, int displacement) {
+        return ichimokuLeadingSpanB(candles, currentIndex - displacement);
+    }
+
     public BigDecimal highestHigh(List<OHLCVData> candles, int endIndex, int period) {
         BigDecimal highest = candles.get(endIndex - period + 1).getHigh();
         for (int i = endIndex - period + 1; i <= endIndex; i++) {

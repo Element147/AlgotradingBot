@@ -1,197 +1,54 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 
+import {
+  normalizeBacktestAlgorithms,
+  normalizeBacktestComparisonResponse,
+  normalizeBacktestDataset,
+  normalizeBacktestDatasetRetentionReport,
+  normalizeBacktestDatasets,
+  normalizeBacktestDetails,
+  normalizeBacktestExperimentSummaries,
+  normalizeBacktestHistory,
+  normalizeBacktestRunSubmission,
+  toRunBacktestRequest,
+} from './backtestContract';
+import type {
+  BacktestAlgorithm,
+  BacktestComparisonResponse,
+  BacktestDataset,
+  BacktestDatasetRetentionReport,
+  BacktestDetails,
+  BacktestExperimentSummary,
+  BacktestHistoryItem,
+  BacktestRunSubmission,
+  RunBacktestPayload,
+} from './backtestTypes';
+
 import { baseQueryWithEnvironment } from '@/services/api';
 
-export interface BacktestAlgorithm {
-  id: string;
-  label: string;
-  description: string;
-  selectionMode: 'SINGLE_SYMBOL' | 'DATASET_UNIVERSE';
-}
-
-export interface BacktestDataset {
-  id: number;
-  name: string;
-  originalFilename: string;
-  rowCount: number;
-  symbolsCsv: string;
-  dataStart: string;
-  dataEnd: string;
-  uploadedAt: string;
-  checksumSha256: string;
-  schemaVersion: string;
-  archived: boolean;
-  archivedAt: string | null;
-  archiveReason: string | null;
-  usageCount: number;
-  lastUsedAt: string | null;
-  usedByBacktests: boolean;
-  duplicateCount: number;
-  retentionStatus:
-    | 'ACTIVE'
-    | 'ACTIVE_DUPLICATE_RETAINED'
-    | 'ACTIVE_STALE_RETAINED'
-    | 'ARCHIVE_CANDIDATE_DUPLICATE'
-    | 'ARCHIVE_CANDIDATE_UNUSED'
-    | 'ARCHIVED';
-}
-
-export interface BacktestDatasetRetentionReport {
-  totalDatasets: number;
-  activeDatasets: number;
-  archivedDatasets: number;
-  archiveCandidateDatasets: number;
-  duplicateDatasetCount: number;
-  referencedDatasetCount: number;
-  oldestActiveUploadedAt: string | null;
-  newestUploadedAt: string | null;
-}
-
-export interface BacktestHistoryItem {
-  id: number;
-  strategyId: string;
-  datasetName: string | null;
-  experimentName: string;
-  symbol: string;
-  timeframe: string;
-  executionStatus: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
-  validationStatus: 'PENDING' | 'PASSED' | 'FAILED' | 'PRODUCTION_READY';
-  feesBps: number;
-  slippageBps: number;
-  timestamp: string;
-  initialBalance: number;
-  finalBalance: number;
-  executionStage:
-    | 'QUEUED'
-    | 'VALIDATING_REQUEST'
-    | 'LOADING_DATASET'
-    | 'FILTERING_CANDLES'
-    | 'SIMULATING'
-    | 'PERSISTING_RESULTS'
-    | 'COMPLETED'
-    | 'FAILED';
-  progressPercent: number;
-  processedCandles: number;
-  totalCandles: number;
-  currentDataTimestamp: string | null;
-  statusMessage: string | null;
-  lastProgressAt: string | null;
-  startedAt: string | null;
-  completedAt: string | null;
-}
-
-export interface BacktestDetails extends BacktestHistoryItem {
-  datasetId: number | null;
-  experimentKey: string;
-  datasetChecksumSha256: string | null;
-  datasetSchemaVersion: string | null;
-  datasetUploadedAt: string | null;
-  datasetArchived: boolean | null;
-  sharpeRatio: number;
-  profitFactor: number;
-  winRate: number;
-  maxDrawdown: number;
-  totalTrades: number;
-  startDate: string;
-  endDate: string;
-  executionStage:
-    | 'QUEUED'
-    | 'VALIDATING_REQUEST'
-    | 'LOADING_DATASET'
-    | 'FILTERING_CANDLES'
-    | 'SIMULATING'
-    | 'PERSISTING_RESULTS'
-    | 'COMPLETED'
-    | 'FAILED';
-  progressPercent: number;
-  processedCandles: number;
-  totalCandles: number;
-  currentDataTimestamp: string | null;
-  statusMessage: string | null;
-  lastProgressAt: string | null;
-  startedAt: string | null;
-  completedAt: string | null;
-  errorMessage: string | null;
-  equityCurve: Array<{
-    timestamp: string;
-    equity: number;
-    drawdownPct: number;
-  }>;
-  tradeSeries: Array<{
-    symbol: string;
-    side: 'LONG' | 'SHORT';
-    entryTime: string;
-    exitTime: string;
-    entryPrice: number;
-    exitPrice: number;
-    quantity: number;
-    entryValue: number;
-    exitValue: number;
-    returnPct: number;
-  }>;
-}
-
-export interface BacktestComparisonItem {
-  id: number;
-  strategyId: string;
-  datasetName: string | null;
-  datasetChecksumSha256: string | null;
-  datasetSchemaVersion: string | null;
-  datasetUploadedAt: string | null;
-  datasetArchived: boolean | null;
-  symbol: string;
-  timeframe: string;
-  executionStatus: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
-  validationStatus: 'PENDING' | 'PASSED' | 'FAILED' | 'PRODUCTION_READY';
-  feesBps: number;
-  slippageBps: number;
-  timestamp: string;
-  initialBalance: number;
-  finalBalance: number;
-  totalReturnPercent: number;
-  sharpeRatio: number;
-  profitFactor: number;
-  winRate: number;
-  maxDrawdown: number;
-  totalTrades: number;
-  finalBalanceDelta: number;
-  totalReturnDeltaPercent: number;
-}
-
-export interface BacktestComparisonResponse {
-  baselineBacktestId: number;
-  items: BacktestComparisonItem[];
-}
-
-export interface BacktestExperimentSummary {
-  experimentKey: string;
-  experimentName: string;
-  latestBacktestId: number;
-  strategyId: string;
-  datasetName: string | null;
-  symbol: string;
-  timeframe: string;
-  latestExecutionStatus: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
-  latestValidationStatus: 'PENDING' | 'PASSED' | 'FAILED' | 'PRODUCTION_READY';
-  runCount: number;
-  latestRunAt: string;
-  averageReturnPercent: number;
-  bestFinalBalance: number;
-  worstMaxDrawdown: number;
-}
-
-export interface RunBacktestPayload {
-  algorithmType: string;
-  datasetId: number;
-  symbol: string;
-  timeframe: string;
-  startDate: string;
-  endDate: string;
-  initialBalance: number;
-  feesBps: number;
-  slippageBps: number;
-  experimentName?: string;
-}
+export type {
+  BacktestAlgorithm,
+  BacktestComparisonItem,
+  BacktestComparisonResponse,
+  BacktestDataset,
+  BacktestDatasetRetentionReport,
+  BacktestDatasetRetentionStatus,
+  BacktestDetails,
+  BacktestExecutionStage,
+  BacktestExecutionStatus,
+  BacktestExperimentSummary,
+  BacktestHistoryItem,
+  BacktestRunSubmission,
+  BacktestSelectionMode,
+  BacktestIndicatorPane,
+  BacktestIndicatorSeries,
+  BacktestRegime,
+  BacktestSymbolTelemetry,
+  BacktestTelemetryPoint,
+  BacktestTradeSide,
+  BacktestValidationStatus,
+  RunBacktestPayload,
+} from './backtestTypes';
 
 export const backtestApi = createApi({
   reducerPath: 'backtestApi',
@@ -201,25 +58,31 @@ export const backtestApi = createApi({
   endpoints: (builder) => ({
     getBacktests: builder.query<BacktestHistoryItem[], void>({
       query: () => '/api/backtests?limit=20',
+      transformResponse: normalizeBacktestHistory,
       providesTags: ['Backtests'],
     }),
     getBacktestExperimentSummaries: builder.query<BacktestExperimentSummary[], void>({
       query: () => '/api/backtests/experiments',
+      transformResponse: normalizeBacktestExperimentSummaries,
       providesTags: ['Backtests'],
     }),
     getBacktestDetails: builder.query<BacktestDetails, number>({
       query: (id) => `/api/backtests/${id}`,
+      transformResponse: normalizeBacktestDetails,
       providesTags: (_result, _error, id) => [{ type: 'Backtests', id }],
     }),
     getBacktestAlgorithms: builder.query<BacktestAlgorithm[], void>({
       query: () => '/api/backtests/algorithms',
+      transformResponse: normalizeBacktestAlgorithms,
     }),
     getBacktestDatasets: builder.query<BacktestDataset[], void>({
       query: () => '/api/backtests/datasets',
+      transformResponse: normalizeBacktestDatasets,
       providesTags: ['BacktestDatasets'],
     }),
     getBacktestDatasetRetentionReport: builder.query<BacktestDatasetRetentionReport, void>({
       query: () => '/api/backtests/datasets/retention-report',
+      transformResponse: normalizeBacktestDatasetRetentionReport,
       providesTags: ['BacktestDatasets'],
     }),
     uploadBacktestDataset: builder.mutation<BacktestDataset, { file: File; name?: string }>({
@@ -236,6 +99,7 @@ export const backtestApi = createApi({
           body: formData,
         };
       },
+      transformResponse: normalizeBacktestDataset,
       invalidatesTags: ['BacktestDatasets'],
     }),
     archiveBacktestDataset: builder.mutation<
@@ -247,6 +111,7 @@ export const backtestApi = createApi({
         method: 'POST',
         body: reason?.trim() ? { reason: reason.trim() } : {},
       }),
+      transformResponse: normalizeBacktestDataset,
       invalidatesTags: ['BacktestDatasets'],
     }),
     restoreBacktestDataset: builder.mutation<BacktestDataset, number>({
@@ -254,21 +119,24 @@ export const backtestApi = createApi({
         url: `/api/backtests/datasets/${datasetId}/restore`,
         method: 'POST',
       }),
+      transformResponse: normalizeBacktestDataset,
       invalidatesTags: ['BacktestDatasets'],
     }),
-    runBacktest: builder.mutation<{ id: number; status: string }, RunBacktestPayload>({
+    runBacktest: builder.mutation<BacktestRunSubmission, RunBacktestPayload>({
       query: (body) => ({
         url: '/api/backtests/run',
         method: 'POST',
-        body,
+        body: toRunBacktestRequest(body),
       }),
+      transformResponse: normalizeBacktestRunSubmission,
       invalidatesTags: ['Backtests'],
     }),
-    replayBacktest: builder.mutation<{ id: number; status: string; timestamp: string }, number>({
+    replayBacktest: builder.mutation<BacktestRunSubmission, number>({
       query: (backtestId) => ({
         url: `/api/backtests/${backtestId}/replay`,
         method: 'POST',
       }),
+      transformResponse: normalizeBacktestRunSubmission,
       invalidatesTags: ['Backtests'],
     }),
     deleteBacktest: builder.mutation<void, number>({
@@ -283,6 +151,7 @@ export const backtestApi = createApi({
         const params = ids.map((id) => `ids=${encodeURIComponent(String(id))}`).join('&');
         return `/api/backtests/compare?${params}`;
       },
+      transformResponse: normalizeBacktestComparisonResponse,
     }),
   }),
 });

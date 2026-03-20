@@ -4,12 +4,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,6 +26,19 @@ import java.util.concurrent.CopyOnWriteArraySet;
 public class WebSocketHandler extends TextWebSocketHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(WebSocketHandler.class);
+    static final String AUTHENTICATED_ATTRIBUTE = "websocket.authenticated";
+    static final String ENVIRONMENT_ATTRIBUTE = "websocket.environment";
+    static final String USERNAME_ATTRIBUTE = "websocket.username";
+    static final String ROLE_ATTRIBUTE = "websocket.role";
+    private static final Set<String> ALLOWED_CHANNEL_SUFFIXES = Set.of(
+            "balance",
+            "trades",
+            "positions",
+            "strategies",
+            "risk",
+            "backtests",
+            "marketData"
+    );
 
     private final ObjectMapper objectMapper;
     
@@ -42,7 +58,25 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        logger.info("WebSocket connection established: {}", session.getId());
+        if (!Boolean.TRUE.equals(session.getAttributes().get(AUTHENTICATED_ATTRIBUTE))) {
+            logger.warn("Rejecting unauthenticated WebSocket session {}", session.getId());
+            session.close(policyViolation("Authentication required"));
+            return;
+        }
+
+        String environment = getSessionEnvironment(session);
+        if (!isSupportedEnvironment(environment)) {
+            logger.warn("Rejecting WebSocket session {} with invalid environment {}", session.getId(), environment);
+            session.close(policyViolation("Invalid environment"));
+            return;
+        }
+
+        logger.info(
+                "WebSocket connection established: {} user={} env={}",
+                session.getId(),
+                session.getAttributes().get(USERNAME_ATTRIBUTE),
+                environment
+        );
         sessions.add(session);
         subscriptions.put(session.getId(), new CopyOnWriteArraySet<>());
     }
@@ -70,6 +104,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 handleUnsubscribe(session, data);
             } else {
                 logger.warn("Unknown message type: {}", type);
+                sendError(session, "Unknown message type");
             }
         } catch (Exception e) {
             logger.error("Error processing WebSocket message", e);
@@ -82,15 +117,37 @@ public class WebSocketHandler extends TextWebSocketHandler {
      * Expected format: {"type": "subscribe", "channels": ["test.balance", "test.trades"]}
      */
     private void handleSubscribe(WebSocketSession session, Map<String, Object> data) {
-        @SuppressWarnings("unchecked")
-        java.util.List<String> channels = (java.util.List<String>) data.get("channels");
-        
-        if (channels != null) {
-            Set<String> sessionSubs = subscriptions.get(session.getId());
-            sessionSubs.addAll(channels);
-            logger.info("Session {} subscribed to channels: {}", session.getId(), channels);
-            
-            sendAck(session, "subscribed", channels);
+        List<String> channels = parseChannels(data.get("channels"));
+        if (channels.isEmpty()) {
+            sendError(session, "Subscription request must include at least one valid channel");
+            return;
+        }
+
+        Set<String> sessionSubs = subscriptions.get(session.getId());
+        if (sessionSubs == null) {
+            sendError(session, "Session is not ready for subscriptions");
+            return;
+        }
+
+        String environment = getSessionEnvironment(session);
+        List<String> acceptedChannels = channels.stream()
+                .filter(channel -> isChannelAllowedForEnvironment(environment, channel))
+                .distinct()
+                .toList();
+        List<String> rejectedChannels = channels.stream()
+                .filter(channel -> !isChannelAllowedForEnvironment(environment, channel))
+                .distinct()
+                .toList();
+
+        if (!acceptedChannels.isEmpty()) {
+            sessionSubs.addAll(acceptedChannels);
+            logger.info("Session {} subscribed to channels: {}", session.getId(), acceptedChannels);
+            sendAck(session, "subscribed", acceptedChannels);
+        }
+
+        if (!rejectedChannels.isEmpty()) {
+            logger.warn("Session {} attempted unauthorized channel subscription: {}", session.getId(), rejectedChannels);
+            sendError(session, "Rejected unauthorized or unknown channels", rejectedChannels);
         }
     }
 
@@ -99,15 +156,37 @@ public class WebSocketHandler extends TextWebSocketHandler {
      * Expected format: {"type": "unsubscribe", "channels": ["test.balance"]}
      */
     private void handleUnsubscribe(WebSocketSession session, Map<String, Object> data) {
-        @SuppressWarnings("unchecked")
-        java.util.List<String> channels = (java.util.List<String>) data.get("channels");
-        
-        if (channels != null) {
-            Set<String> sessionSubs = subscriptions.get(session.getId());
-            sessionSubs.removeAll(channels);
-            logger.info("Session {} unsubscribed from channels: {}", session.getId(), channels);
-            
-            sendAck(session, "unsubscribed", channels);
+        List<String> channels = parseChannels(data.get("channels"));
+        if (channels.isEmpty()) {
+            sendError(session, "Unsubscribe request must include at least one valid channel");
+            return;
+        }
+
+        Set<String> sessionSubs = subscriptions.get(session.getId());
+        if (sessionSubs == null) {
+            sendError(session, "Session is not ready for subscriptions");
+            return;
+        }
+
+        String environment = getSessionEnvironment(session);
+        List<String> removableChannels = channels.stream()
+                .filter(channel -> isChannelAllowedForEnvironment(environment, channel))
+                .distinct()
+                .toList();
+        List<String> rejectedChannels = channels.stream()
+                .filter(channel -> !isChannelAllowedForEnvironment(environment, channel))
+                .distinct()
+                .toList();
+
+        if (!removableChannels.isEmpty()) {
+            sessionSubs.removeAll(removableChannels);
+            logger.info("Session {} unsubscribed from channels: {}", session.getId(), removableChannels);
+            sendAck(session, "unsubscribed", removableChannels);
+        }
+
+        if (!rejectedChannels.isEmpty()) {
+            logger.warn("Session {} attempted unauthorized channel unsubscribe: {}", session.getId(), rejectedChannels);
+            sendError(session, "Rejected unauthorized or unknown channels", rejectedChannels);
         }
     }
 
@@ -124,7 +203,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
         for (WebSocketSession session : sessions) {
             if (session.isOpen()) {
                 Set<String> sessionSubs = subscriptions.get(session.getId());
-                if (sessionSubs != null && sessionSubs.contains(channel)) {
+                if (sessionSubs != null
+                        && sessionSubs.contains(channel)
+                        && isChannelAllowedForEnvironment(getSessionEnvironment(session), channel)) {
                     try {
                         String json = objectMapper.writeValueAsString(event);
                         session.sendMessage(new TextMessage(json));
@@ -140,6 +221,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
      * Send acknowledgment message to session.
      */
     private void sendAck(WebSocketSession session, String action, java.util.List<String> channels) {
+        if (!session.isOpen()) {
+            return;
+        }
+
         try {
             Map<String, Object> ack = Map.of(
                     "type", "ack",
@@ -157,16 +242,66 @@ public class WebSocketHandler extends TextWebSocketHandler {
      * Send error message to session.
      */
     private void sendError(WebSocketSession session, String errorMessage) {
+        sendError(session, errorMessage, List.of());
+    }
+
+    private void sendError(WebSocketSession session, String errorMessage, List<String> channels) {
+        if (!session.isOpen()) {
+            return;
+        }
+
         try {
-            Map<String, Object> error = Map.of(
-                    "type", "error",
-                    "message", errorMessage
-            );
+            Map<String, Object> error = new LinkedHashMap<>();
+            error.put("type", "error");
+            error.put("message", errorMessage);
+            if (!channels.isEmpty()) {
+                error.put("channels", channels);
+            }
             String json = objectMapper.writeValueAsString(error);
             session.sendMessage(new TextMessage(json));
         } catch (IOException e) {
             logger.error("Error sending error message to session {}", session.getId(), e);
         }
+    }
+
+    static boolean isSupportedEnvironment(String environment) {
+        return "test".equals(environment) || "live".equals(environment);
+    }
+
+    static boolean isChannelAllowedForEnvironment(String environment, String channel) {
+        if (!StringUtils.hasText(environment) || !StringUtils.hasText(channel)) {
+            return false;
+        }
+
+        String expectedPrefix = environment + ".";
+        if (!channel.startsWith(expectedPrefix)) {
+            return false;
+        }
+
+        String suffix = channel.substring(expectedPrefix.length());
+        return ALLOWED_CHANNEL_SUFFIXES.contains(suffix);
+    }
+
+    private List<String> parseChannels(Object rawChannels) {
+        if (!(rawChannels instanceof List<?> channelList)) {
+            return List.of();
+        }
+
+        return channelList.stream()
+                .filter(String.class::isInstance)
+                .map(String.class::cast)
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .toList();
+    }
+
+    private String getSessionEnvironment(WebSocketSession session) {
+        Object environment = session.getAttributes().get(ENVIRONMENT_ATTRIBUTE);
+        return environment instanceof String value ? value : null;
+    }
+
+    private CloseStatus policyViolation(String reason) {
+        return new CloseStatus(CloseStatus.POLICY_VIOLATION.getCode(), reason);
     }
 
     /**

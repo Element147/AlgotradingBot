@@ -44,6 +44,21 @@ const websocketSlice = createSlice({
       state.reconnectAttempts = 0;
       state.subscribedChannels = action.payload;
     },
+    subscriptionsUpdated: (state, action: PayloadAction<string[]>) => {
+      state.subscribedChannels = Array.from(
+        new Set([...state.subscribedChannels, ...action.payload])
+      );
+      state.error = null;
+    },
+    subscriptionsRemoved: (state, action: PayloadAction<string[]>) => {
+      const removedChannels = new Set(action.payload);
+      state.subscribedChannels = state.subscribedChannels.filter(
+        (channel) => !removedChannels.has(channel)
+      );
+    },
+    subscriptionFailed: (state, action: PayloadAction<string>) => {
+      state.error = action.payload;
+    },
     connectionFailed: (state, action: PayloadAction<string>) => {
       state.connected = false;
       state.connecting = false;
@@ -72,6 +87,9 @@ const websocketSlice = createSlice({
 export const {
   connectionStarted,
   connectionEstablished,
+  subscriptionsUpdated,
+  subscriptionsRemoved,
+  subscriptionFailed,
   connectionFailed,
   connectionClosed,
   reconnectAttempted,

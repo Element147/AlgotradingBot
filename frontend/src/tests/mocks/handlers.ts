@@ -320,6 +320,12 @@ export const handlers = [
         description: 'Baseline hold from first to last candle',
         selectionMode: 'SINGLE_SYMBOL',
       },
+      {
+        id: 'ICHIMOKU_TREND',
+        label: 'Ichimoku Trend',
+        description: 'Long/cash Ichimoku cloud trend filter',
+        selectionMode: 'SINGLE_SYMBOL',
+      },
     ])
   ),
   http.get(`${API_BASE_URL}/api/backtests/datasets`, () =>

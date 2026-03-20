@@ -15,11 +15,31 @@ Write-Host ""
 Set-Location $scriptPath
 $repoPaths = Get-RepoPaths -ScriptPath $scriptPath
 Initialize-RepoRuntime -RepoPaths $repoPaths
+Set-LocalDockerComposeEnvironment -RepoPaths $repoPaths
 Refresh-UserPath
 Write-JavaVersionSummary
+$composeArgs = Get-ComposeArgs -RepoPaths $repoPaths
 
 $backendPidFile = Get-PidFilePath -RepoPaths $repoPaths -Name "backend"
 $frontendPidFile = Get-PidFilePath -RepoPaths $repoPaths -Name "frontend"
+
+function Cleanup-FastModeStartup {
+    Write-Host ""
+    Write-Host "[CLEANUP] Rolling back partial fast-mode startup..." -ForegroundColor Yellow
+
+    Stop-FromPidFile -PidFile $frontendPidFile -Label "frontend"
+    Stop-FromPidFile -PidFile $backendPidFile -Label "backend"
+    Stop-ListeningProcess -Port 5173 -Label "frontend"
+    Stop-ListeningProcess -Port 8080 -Label "backend"
+
+    if (Test-DockerRunning) {
+        docker compose @($composeArgs) stop postgres > $null 2>&1
+        Write-Host "[OK] PostgreSQL container stopped after startup failure" -ForegroundColor Green
+    }
+
+    Remove-PidFile -PidFile $backendPidFile
+    Remove-PidFile -PidFile $frontendPidFile
+}
 
 Write-Host "Checking Docker..." -ForegroundColor Yellow
 if (-not (Test-DockerRunning)) {
@@ -47,7 +67,6 @@ if (-not (Assert-PortAvailable -Port 5173 -Label "Frontend")) {
 
 Write-Host ""
 Write-Host "[1/3] Starting PostgreSQL container..." -ForegroundColor Yellow
-$composeArgs = Get-ComposeArgs -RepoPaths $repoPaths
 docker compose @($composeArgs) up -d postgres
 if ($LASTEXITCODE -ne 0) {
     Write-Host "[X] Failed to start PostgreSQL container!" -ForegroundColor Red
@@ -60,6 +79,7 @@ Write-Host "Waiting for PostgreSQL to be healthy..." -ForegroundColor Yellow
 if (-not (Wait-ContainerHealthy -ContainerName "algotrading-postgres" -MaxAttempts 30 -DelaySeconds 2)) {
     Write-Host "[X] PostgreSQL did not become healthy in time" -ForegroundColor Red
     Write-Host "Check logs with: docker compose --project-name algotradingbot -f AlgotradingBot/compose.yaml logs postgres" -ForegroundColor Yellow
+    Cleanup-FastModeStartup
     exit 1
 }
 Write-Host "[OK] PostgreSQL is healthy" -ForegroundColor Green
@@ -87,6 +107,7 @@ Write-Host "Waiting for backend to be ready..." -ForegroundColor Yellow
 if (-not (Wait-HttpOk -Uri "http://localhost:8080/actuator/health" -MaxAttempts 45 -DelaySeconds 2)) {
     Write-Host "[X] Backend did not become healthy in time" -ForegroundColor Red
     Write-Host "Inspect the backend PowerShell window or logs in $($repoPaths.RuntimeLogDir)." -ForegroundColor Yellow
+    Cleanup-FastModeStartup
     exit 1
 }
 Write-Host "[OK] Backend is ready" -ForegroundColor Green
@@ -95,6 +116,7 @@ Write-Host ""
 Write-Host "[3/3] Starting Frontend dev server..." -ForegroundColor Yellow
 if (-not (Test-NodeInstalled)) {
     Write-Host "[X] Node.js is not installed - cannot start the frontend" -ForegroundColor Red
+    Cleanup-FastModeStartup
     exit 1
 }
 
@@ -103,6 +125,16 @@ $frontendProc = Start-DetachedPowerShellProcess `
     -Command "npm run dev" `
     -PidFile $frontendPidFile
 Write-Host "[OK] Frontend process started (PID $($frontendProc.Id))" -ForegroundColor Green
+
+Write-Host ""
+Write-Host "Waiting for frontend to be ready..." -ForegroundColor Yellow
+if (-not (Wait-HttpOk -Uri "http://localhost:5173" -MaxAttempts 30 -DelaySeconds 2)) {
+    Write-Host "[X] Frontend did not become healthy in time" -ForegroundColor Red
+    Write-Host "Inspect the frontend PowerShell window and retry after fixing the dev-server error." -ForegroundColor Yellow
+    Cleanup-FastModeStartup
+    exit 1
+}
+Write-Host "[OK] Frontend is ready" -ForegroundColor Green
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green

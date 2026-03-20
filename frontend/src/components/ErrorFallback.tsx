@@ -1,6 +1,6 @@
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import { Box, Button, Container, Paper, Typography } from '@mui/material';
+import { Alert, Box, Button, Chip, Container, Paper, Stack, Typography } from '@mui/material';
 import type { ErrorInfo } from 'react';
 
 interface ErrorFallbackProps {
@@ -41,13 +41,20 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({ error, errorInfo, onReset
         }}
       >
         <Paper
-          elevation={3}
           sx={{
-            p: 4,
+            p: { xs: 3, md: 4 },
             width: '100%',
             textAlign: 'center',
+            borderRadius: 5,
+            background:
+              'linear-gradient(180deg, rgba(255,250,243,0.92) 0%, rgba(255,255,255,0.82) 100%)',
           }}
         >
+          <Stack direction="row" spacing={1} justifyContent="center" flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
+            <Chip label="Safe default maintained" color="success" variant="outlined" />
+            <Chip label="Reload to recover" color="warning" variant="outlined" />
+          </Stack>
+
           <ErrorOutlineIcon
             sx={{
               fontSize: 80,
@@ -61,8 +68,14 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({ error, errorInfo, onReset
           </Typography>
           
           <Typography variant="body1" color="text.secondary" paragraph>
-            We encountered an unexpected error. Please try reloading the page.
+            We encountered an unexpected rendering error. The safest next step is to reload the
+            workstation and re-enter the affected flow.
           </Typography>
+
+          <Alert severity="warning" sx={{ textAlign: 'left', mb: 2.5 }}>
+            In-flight operator actions should be re-checked after reload before taking any follow-up
+            action.
+          </Alert>
 
           <Button
             variant="contained"
@@ -81,7 +94,7 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({ error, errorInfo, onReset
                 mt: 4,
                 p: 2,
                 bgcolor: 'grey.100',
-                borderRadius: 1,
+                borderRadius: 3,
                 textAlign: 'left',
                 overflow: 'auto',
               }}

@@ -1,17 +1,25 @@
 package com.algotrader.bot.service;
 
+import com.algotrader.bot.entity.AuthTokenRevocation;
 import com.algotrader.bot.entity.User;
+import com.algotrader.bot.repository.AuthTokenRevocationRepository;
 import com.algotrader.bot.repository.UserRepository;
 import com.algotrader.bot.security.JwtTokenProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.HexFormat;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Service for authentication operations including login, logout, and token management.
@@ -22,16 +30,16 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
-    
-    // In-memory token blacklist (in production, use Redis or database)
-    private final Map<String, Long> tokenBlacklist = new ConcurrentHashMap<>();
+    private final AuthTokenRevocationRepository authTokenRevocationRepository;
 
     public AuthService(UserRepository userRepository, 
                       PasswordEncoder passwordEncoder,
-                      JwtTokenProvider jwtTokenProvider) {
+                      JwtTokenProvider jwtTokenProvider,
+                      AuthTokenRevocationRepository authTokenRevocationRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
+        this.authTokenRevocationRepository = authTokenRevocationRepository;
     }
 
     /**
@@ -72,9 +80,16 @@ public class AuthService {
      */
     public void logout(String token) {
         if (token != null && jwtTokenProvider.validateToken(token)) {
-            tokenBlacklist.put(token, System.currentTimeMillis());
-            // Clean up old tokens (older than 7 days)
-            cleanupBlacklist();
+            String tokenHash = hashToken(token);
+            if (!authTokenRevocationRepository.existsByTokenHash(tokenHash)) {
+                AuthTokenRevocation revocation = new AuthTokenRevocation();
+                revocation.setTokenHash(tokenHash);
+                revocation.setExpiresAt(LocalDateTime.ofInstant(jwtTokenProvider.getExpirationFromToken(token), ZoneOffset.UTC));
+                revocation.setRevokedAt(LocalDateTime.now(ZoneOffset.UTC));
+                authTokenRevocationRepository.save(revocation);
+            }
+
+            cleanupRevocations();
         }
     }
 
@@ -122,6 +137,10 @@ public class AuthService {
             throw new BadCredentialsException("Invalid token");
         }
 
+        if (isTokenBlacklisted(token)) {
+            throw new BadCredentialsException("Token has been revoked");
+        }
+
         String username = jwtTokenProvider.getUsernameFromToken(token);
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
@@ -135,7 +154,7 @@ public class AuthService {
      * @return true if blacklisted
      */
     public boolean isTokenBlacklisted(String token) {
-        return tokenBlacklist.containsKey(token);
+        return StringUtils.hasText(token) && authTokenRevocationRepository.existsByTokenHash(hashToken(token));
     }
 
     /**
@@ -180,11 +199,16 @@ public class AuthService {
         return userMap;
     }
 
-    /**
-     * Clean up old blacklisted tokens (older than 7 days).
-     */
-    private void cleanupBlacklist() {
-        long sevenDaysAgo = System.currentTimeMillis() - (7L * 24 * 60 * 60 * 1000);
-        tokenBlacklist.entrySet().removeIf(entry -> entry.getValue() < sevenDaysAgo);
+    private void cleanupRevocations() {
+        authTokenRevocationRepository.deleteByExpiresAtBefore(LocalDateTime.now(ZoneOffset.UTC));
+    }
+
+    private String hashToken(String token) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return HexFormat.of().formatHex(digest.digest(token.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is not available for token hashing", e);
+        }
     }
 }

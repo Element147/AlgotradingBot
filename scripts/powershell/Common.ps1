@@ -153,6 +153,50 @@ function Get-BackendLogEnvironment {
     }
 }
 
+function New-Base64Secret {
+    param(
+        [int]$ByteLength = 48
+    )
+
+    $bytes = New-Object byte[] $ByteLength
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    try {
+        $rng.GetBytes($bytes)
+    } finally {
+        $rng.Dispose()
+    }
+    return [Convert]::ToBase64String($bytes)
+}
+
+function Get-LocalJwtSecret {
+    param(
+        [Parameter(Mandatory = $true)]
+        [hashtable]$RepoPaths
+    )
+
+    $secretPath = Join-Path $RepoPaths.RuntimeDir "local-jwt-secret.txt"
+    if (Test-Path $secretPath) {
+        $existingSecret = (Get-Content -Path $secretPath -Raw).Trim()
+        if ($existingSecret) {
+            return $existingSecret
+        }
+    }
+
+    Ensure-Directory $RepoPaths.RuntimeDir
+    $generatedSecret = New-Base64Secret
+    Set-Content -Path $secretPath -Value $generatedSecret -NoNewline
+    return $generatedSecret
+}
+
+function Set-LocalDockerComposeEnvironment {
+    param(
+        [Parameter(Mandatory = $true)]
+        [hashtable]$RepoPaths
+    )
+
+    $env:JWT_SECRET = Get-LocalJwtSecret -RepoPaths $RepoPaths
+}
+
 function Get-LowMemoryBackendEnvironment {
     param(
         [Parameter(Mandatory = $true)]
@@ -160,6 +204,7 @@ function Get-LowMemoryBackendEnvironment {
     )
 
     $environment = Get-BackendLogEnvironment $RepoPaths
+    $environment["JWT_SECRET"] = Get-LocalJwtSecret -RepoPaths $RepoPaths
     $environment["JAVA_TOOL_OPTIONS"] = "-Xms512m -Xmx2g -XX:+UseZGC -XX:+ZGenerational -XX:MaxMetaspaceSize=512m"
 
     return $environment

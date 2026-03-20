@@ -495,7 +495,7 @@ export interface paths {
         };
         /**
          * Get recent trades
-         * @description Returns recent completed trades with entry/exit details and P&L.
+         * @description Returns recent completed trades with entry/exit details and P&L. Requests are environment-aware, but live-mode reads currently return a capability error until live exchange trade history is wired.
          */
         get: operations["getRecentTrades"];
         put?: never;
@@ -671,7 +671,7 @@ export interface paths {
         };
         /**
          * Get open positions
-         * @description Returns all open positions with unrealized P&L.
+         * @description Returns all open positions with unrealized P&L. Requests are environment-aware, but live-mode reads currently return a capability error until live exchange positions are wired.
          */
         get: operations["getOpenPositions"];
         put?: never;
@@ -924,7 +924,7 @@ export interface paths {
         };
         /**
          * Get performance metrics
-         * @description Returns performance metrics for specified timeframe: today, week, month, or all-time.
+         * @description Returns performance metrics for specified timeframe: today, week, month, or all-time. Requests are environment-aware, but live-mode reads currently return a capability error until live exchange performance reads are wired.
          */
         get: operations["getPerformance"];
         put?: never;
@@ -944,7 +944,7 @@ export interface paths {
         };
         /**
          * Get account balance
-         * @description Returns account balance with asset breakdown. Supports test and live environments.
+         * @description Returns account balance with asset breakdown. Requests are environment-aware, but live-mode reads currently return a capability error until live exchange balances are wired.
          */
         get: operations["getBalance"];
         put?: never;
@@ -1254,21 +1254,64 @@ export interface components {
             /** Format: date-time */
             submittedAt?: string;
         };
+        /** @description Backtest run request. Provide `symbol` for single-symbol strategies. Omit `symbol` for dataset-universe strategies to evaluate the whole dataset universe. */
         RunBacktestRequest: {
+            /**
+             * @description Canonical backtest strategy ID from /api/backtests/algorithms
+             * @example BUY_AND_HOLD
+             */
             algorithmType: string;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Dataset ID from /api/backtests/datasets
+             * @example 7
+             */
             datasetId: number;
-            symbol: string;
+            /**
+             * @description Required for SINGLE_SYMBOL strategies. Optional for DATASET_UNIVERSE strategies; omit it to let the engine use the whole dataset universe.
+             * @example BTC/USDT
+             */
+            symbol?: string;
+            /**
+             * @description Requested simulation timeframe
+             * @example 1h
+             */
             timeframe: string;
-            /** Format: date */
+            /**
+             * Format: date
+             * @description Inclusive backtest start date
+             * @example 2025-01-01
+             */
             startDate: string;
-            /** Format: date */
+            /**
+             * Format: date
+             * @description Exclusive backtest end date boundary
+             * @example 2025-01-02
+             */
             endDate: string;
+            /**
+             * @description Initial paper balance used by the simulation
+             * @example 1000
+             */
             initialBalance: number;
-            /** Format: int32 */
+            /**
+             * Format: int32
+             * @description Trading fees in basis points
+             * @default 10
+             * @example 10
+             */
             feesBps: number;
-            /** Format: int32 */
+            /**
+             * Format: int32
+             * @description Execution slippage in basis points
+             * @default 3
+             * @example 3
+             */
             slippageBps: number;
+            /**
+             * @description Optional experiment label used to group related runs
+             * @example Q1 Momentum Review
+             */
             experimentName?: string;
         };
         BacktestDatasetResponse: {
@@ -1653,6 +1696,13 @@ export interface components {
             /** Format: date-time */
             completedAt?: string;
         };
+        BacktestActionMarkerResponse: {
+            /** Format: date-time */
+            timestamp?: string;
+            action?: string;
+            price?: number;
+            label?: string;
+        };
         BacktestDetailsResponse: {
             /** Format: int64 */
             id?: number;
@@ -1708,12 +1758,41 @@ export interface components {
             errorMessage?: string;
             equityCurve?: components["schemas"]["BacktestEquityPointResponse"][];
             tradeSeries?: components["schemas"]["BacktestTradeSeriesItemResponse"][];
+            telemetry?: components["schemas"]["BacktestSymbolTelemetryResponse"][];
         };
         BacktestEquityPointResponse: {
             /** Format: date-time */
             timestamp?: string;
             equity?: number;
             drawdownPct?: number;
+        };
+        BacktestIndicatorPointResponse: {
+            /** Format: date-time */
+            timestamp?: string;
+            value?: number;
+        };
+        BacktestIndicatorSeriesResponse: {
+            key?: string;
+            label?: string;
+            pane?: string;
+            points?: components["schemas"]["BacktestIndicatorPointResponse"][];
+        };
+        BacktestSymbolTelemetryResponse: {
+            symbol?: string;
+            points?: components["schemas"]["BacktestTelemetryPointResponse"][];
+            actions?: components["schemas"]["BacktestActionMarkerResponse"][];
+            indicators?: components["schemas"]["BacktestIndicatorSeriesResponse"][];
+        };
+        BacktestTelemetryPointResponse: {
+            /** Format: date-time */
+            timestamp?: string;
+            open?: number;
+            high?: number;
+            low?: number;
+            close?: number;
+            volume?: number;
+            exposurePct?: number;
+            regime?: string;
         };
         BacktestTradeSeriesItemResponse: {
             symbol?: string;

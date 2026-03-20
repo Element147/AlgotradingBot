@@ -11,44 +11,73 @@ import { Box, Skeleton, Stack } from '@mui/material';
 export default function LoadingFallback() {
   return (
     <Box sx={{ width: '100%', minHeight: '100vh', bgcolor: 'background.default' }}>
-      {/* Header skeleton */}
-      <Box sx={{ height: 64, borderBottom: 1, borderColor: 'divider', px: 2, display: 'flex', alignItems: 'center' }}>
-        <Skeleton variant="circular" width={40} height={40} sx={{ mr: 2 }} />
-        <Skeleton variant="text" width={150} height={32} />
-        <Box sx={{ flexGrow: 1 }} />
-        <Skeleton variant="circular" width={40} height={40} sx={{ mr: 1 }} />
-        <Skeleton variant="circular" width={40} height={40} />
+      <Box
+        sx={{
+          height: 84,
+          borderBottom: 1,
+          borderColor: 'divider',
+          px: { xs: 2, md: 3 },
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2,
+          backdropFilter: 'blur(12px)',
+        }}
+      >
+        <Skeleton variant="circular" width={42} height={42} />
+        <Box sx={{ flexGrow: 1, maxWidth: 560 }}>
+          <Skeleton variant="text" width={120} height={18} />
+          <Skeleton variant="text" width="72%" height={34} />
+          <Skeleton variant="text" width="100%" height={20} />
+        </Box>
+        <Skeleton variant="rounded" width={120} height={32} />
+        <Skeleton variant="circular" width={42} height={42} />
+        <Skeleton variant="circular" width={42} height={42} />
       </Box>
 
-      {/* Main content skeleton */}
-      <Box sx={{ display: 'flex', minHeight: 'calc(100vh - 64px)' }}>
-        {/* Sidebar skeleton */}
+      <Box sx={{ display: 'flex', minHeight: 'calc(100vh - 84px)' }}>
         <Box
           sx={{
-            width: 240,
+            width: 272,
             borderRight: 1,
             borderColor: 'divider',
             p: 2,
             display: { xs: 'none', md: 'block' },
           }}
         >
-          <Stack spacing={2}>
-            <Skeleton variant="rectangular" height={40} />
-            <Skeleton variant="rectangular" height={40} />
-            <Skeleton variant="rectangular" height={40} />
-            <Skeleton variant="rectangular" height={40} />
-            <Skeleton variant="rectangular" height={40} />
-            <Skeleton variant="rectangular" height={40} />
+          <Stack spacing={2.5}>
+            <Skeleton variant="rectangular" height={144} />
+            <Box>
+              <Skeleton variant="text" width={84} height={18} sx={{ mb: 1 }} />
+              <Stack spacing={1}>
+                <Skeleton variant="rectangular" height={56} />
+                <Skeleton variant="rectangular" height={56} />
+              </Stack>
+            </Box>
+            <Box>
+              <Skeleton variant="text" width={84} height={18} sx={{ mb: 1 }} />
+              <Stack spacing={1}>
+                <Skeleton variant="rectangular" height={56} />
+                <Skeleton variant="rectangular" height={56} />
+                <Skeleton variant="rectangular" height={56} />
+              </Stack>
+            </Box>
+            <Skeleton variant="rectangular" height={92} />
           </Stack>
         </Box>
 
-        {/* Content area skeleton */}
-        <Box sx={{ flexGrow: 1, p: 3 }}>
-          <Skeleton variant="text" width={200} height={40} sx={{ mb: 3 }} />
-          <Stack spacing={2}>
-            <Skeleton variant="rectangular" height={120} />
-            <Skeleton variant="rectangular" height={120} />
-            <Skeleton variant="rectangular" height={200} />
+        <Box sx={{ flexGrow: 1, p: { xs: 2, md: 3 } }}>
+          <Stack spacing={2.5}>
+            <Skeleton variant="rectangular" height={220} />
+            <Stack direction={{ xs: 'column', lg: 'row' }} spacing={2}>
+              <Skeleton variant="rectangular" height={160} sx={{ flex: 1 }} />
+              <Skeleton variant="rectangular" height={160} sx={{ flex: 1 }} />
+              <Skeleton variant="rectangular" height={160} sx={{ flex: 1 }} />
+            </Stack>
+            <Stack direction={{ xs: 'column', xl: 'row' }} spacing={2}>
+              <Skeleton variant="rectangular" height={280} sx={{ flex: 1.1 }} />
+              <Skeleton variant="rectangular" height={280} sx={{ flex: 0.9 }} />
+            </Stack>
+            <Skeleton variant="rectangular" height={320} />
           </Stack>
         </Box>
       </Box>

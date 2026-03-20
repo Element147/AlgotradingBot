@@ -4,6 +4,7 @@ import com.algotrader.bot.entity.StrategyConfig;
 import com.algotrader.bot.repository.StrategyConfigRepository;
 import com.algotrader.bot.repository.StrategyConfigVersionRepository;
 import com.algotrader.bot.security.JwtTokenProvider;
+import com.algotrader.bot.service.BacktestAlgorithmType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -71,11 +73,12 @@ class StrategyManagementControllerIntegrationTest {
         mockMvc.perform(get("/api/strategies")
                 .header("Authorization", "Bearer " + authToken))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(1))))
-            .andExpect(jsonPath("$[0].name").exists())
-            .andExpect(jsonPath("$[0].status").exists())
-            .andExpect(jsonPath("$[0].configVersion").value(1))
-            .andExpect(jsonPath("$[0].lastConfigChangedAt").exists());
+            .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(BacktestAlgorithmType.values().length))))
+            .andExpect(jsonPath("$[*].type", hasItem("BOLLINGER_BANDS")))
+            .andExpect(jsonPath("$[?(@.name=='Test Strategy')].type", hasItem("BOLLINGER_BANDS")))
+            .andExpect(jsonPath("$[?(@.name=='Test Strategy')].configVersion", hasItem(1)))
+            .andExpect(jsonPath("$[?(@.name=='Test Strategy')].shortSellingEnabled", hasItem(false)))
+            .andExpect(jsonPath("$[?(@.name=='Test Strategy')].lastConfigChangedAt").exists());
     }
 
     @Test

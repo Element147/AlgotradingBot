@@ -72,7 +72,7 @@ public class StrategyConfigVersion {
 
     @NotNull
     @Column(name = "short_selling_enabled", nullable = false)
-    private Boolean shortSellingEnabled = Boolean.TRUE;
+    private Boolean shortSellingEnabled = Boolean.FALSE;
 
     @NotNull
     @Column(name = "changed_at", nullable = false)

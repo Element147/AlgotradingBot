@@ -2,11 +2,14 @@ package com.algotrader.bot.security;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Date;
 
 /**
@@ -15,7 +18,10 @@ import java.util.Date;
 @Component
 public class JwtTokenProvider {
 
-    @Value("${jwt.secret:mySecretKeyForJWTTokenGenerationThatIsAtLeast256BitsLongForHS256Algorithm}")
+    private static final String LEGACY_INSECURE_DEFAULT_SECRET =
+            "mySecretKeyForJWTTokenGenerationThatIsAtLeast256BitsLongForHS256Algorithm";
+
+    @Value("${jwt.secret:}")
     private String jwtSecret;
 
     @Value("${jwt.expiration:3600000}") // 1 hour in milliseconds
@@ -23,6 +29,21 @@ public class JwtTokenProvider {
 
     @Value("${jwt.refresh-expiration:604800000}") // 7 days in milliseconds
     private long refreshExpiration;
+
+    @PostConstruct
+    void validateConfiguration() {
+        if (!StringUtils.hasText(jwtSecret)) {
+            throw new IllegalStateException("JWT secret must be configured via the JWT_SECRET environment variable");
+        }
+
+        if (LEGACY_INSECURE_DEFAULT_SECRET.equals(jwtSecret)) {
+            throw new IllegalStateException("JWT secret must not use the legacy insecure placeholder value");
+        }
+
+        if (jwtSecret.getBytes(StandardCharsets.UTF_8).length < 32) {
+            throw new IllegalStateException("JWT secret must be at least 32 bytes long");
+        }
+    }
 
     /**
      * Generate JWT access token for user.
@@ -125,6 +146,16 @@ public class JwtTokenProvider {
         } catch (JwtException e) {
             return true;
         }
+    }
+
+    public Instant getExpirationFromToken(String token) {
+        Claims claims = Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+
+        return claims.getExpiration().toInstant();
     }
 
     /**

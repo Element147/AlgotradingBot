@@ -9,6 +9,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { accountApi } from './features/account/accountApi';
 import { backtestApi } from './features/backtest/backtestApi';
 import { marketDataApi } from './features/marketData/marketDataApi';
+import { paperApi } from './features/paperApi';
 import { riskApi } from './features/risk/riskApi';
 import { selectTextScale, selectTheme } from './features/settings/settingsSlice';
 import { strategiesApi } from './features/strategies/strategiesApi';
@@ -20,6 +21,7 @@ import './App.css';
 // Lazy load page components for code splitting and performance
 const LoginPage = lazy(() => import('./features/auth/LoginPage'));
 const DashboardPage = lazy(() => import('./features/dashboard/DashboardPage'));
+const PaperTradingPage = lazy(() => import('./features/paper/PaperTradingPage'));
 const StrategiesPage = lazy(() => import('./features/strategies/StrategiesPage'));
 const TradesPage = lazy(() => import('./features/trades/TradesPage'));
 const BacktestPage = lazy(() => import('./features/backtest/BacktestPage'));
@@ -48,6 +50,8 @@ function App() {
     dispatch(accountApi.util.prefetch('getPerformance', 'today', { force: false }));
     dispatch(accountApi.util.prefetch('getOpenPositions', undefined, { force: false }));
     dispatch(accountApi.util.prefetch('getRecentTrades', 10, { force: false }));
+    dispatch(paperApi.util.prefetch('getPaperTradingState', undefined, { force: false }));
+    dispatch(paperApi.util.prefetch('getPaperOrders', undefined, { force: false }));
     dispatch(strategiesApi.util.prefetch('getStrategies', undefined, { force: false }));
     dispatch(tradesApi.util.prefetch('getTradeHistory', { limit: 200 }, { force: false }));
     dispatch(backtestApi.util.prefetch('getBacktests', undefined, { force: false }));
@@ -83,6 +87,16 @@ function App() {
                   <ErrorBoundary>
                     <ProtectedRoute>
                       <DashboardPage />
+                    </ProtectedRoute>
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="/paper"
+                element={
+                  <ErrorBoundary>
+                    <ProtectedRoute>
+                      <PaperTradingPage />
                     </ProtectedRoute>
                   </ErrorBoundary>
                 }

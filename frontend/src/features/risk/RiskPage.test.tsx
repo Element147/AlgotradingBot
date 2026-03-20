@@ -1,5 +1,9 @@
+import { configureStore } from '@reduxjs/toolkit';
 import { render, screen } from '@testing-library/react';
+import { Provider } from 'react-redux';
 import { describe, expect, it, vi } from 'vitest';
+
+import environmentReducer from '../environment/environmentSlice';
 
 import RiskPage from './RiskPage';
 
@@ -44,6 +48,9 @@ vi.mock('./riskApi', () => ({
     data: mockRiskConfig,
     isLoading: false,
   }),
+  useGetCircuitBreakersQuery: () => ({
+    data: [mockRiskConfig],
+  }),
   useGetRiskAlertsQuery: () => ({
     data: mockRiskAlerts,
   }),
@@ -56,17 +63,39 @@ vi.mock('@/components/layout/AppLayout', () => ({
 }));
 
 describe('RiskPage', () => {
+  const renderPage = () => {
+    const store = configureStore({
+      reducer: {
+        environment: environmentReducer,
+      },
+      preloadedState: {
+        environment: {
+          mode: 'test',
+          connectedExchange: null,
+          lastSyncTime: null,
+        },
+      },
+    });
+
+    return render(
+      <Provider store={store}>
+        <RiskPage />
+      </Provider>
+    );
+  };
+
   it('renders risk sections', () => {
-    render(<RiskPage />);
+    renderPage();
 
     expect(screen.getByText('Risk Controls')).toBeInTheDocument();
     expect(screen.getByText('Risk Status')).toBeInTheDocument();
     expect(screen.getByText('Risk Configuration')).toBeInTheDocument();
     expect(screen.getByText('Circuit Breaker Override')).toBeInTheDocument();
+    expect(screen.getByText(/Configured breakers: 1/)).toBeInTheDocument();
   });
 
   it('renders risk alert entries', () => {
-    render(<RiskPage />);
+    renderPage();
 
     expect(screen.getByText('[CIRCUIT_BREAKER] Drawdown limit reached (Trading halted)')).toBeInTheDocument();
   });

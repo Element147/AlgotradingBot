@@ -116,6 +116,20 @@ const PROFILES: StrategyProfile[] = [
     timeframeOptions: ['15m', '1h', '4h'],
     configPreset: { timeframe: '1h', riskPerTrade: 0.015, minPositionSize: 10, maxPositionSize: 90 },
   },
+  {
+    key: 'ICHIMOKU_TREND',
+    title: 'Ichimoku Trend Filter',
+    shortDescription:
+      'Uses a long/cash Ichimoku cloud filter with historically projected spans so the signal stays trend-focused without look-ahead bias.',
+    entryRule:
+      'Enter when price is above the historical cloud, the conversion line is above the base line, and the current close is stronger than the 26-bar lagging reference.',
+    exitRule:
+      'Exit when price loses cloud/base support or the ATR fail-safe stop is breached.',
+    bestFor: 'Lower-turnover directional regimes where trend confirmation matters more than early entries.',
+    riskNotes: 'Can lag after sharp reversals, and the shifted-cloud logic must stay explicitly bias-free in tests and telemetry.',
+    timeframeOptions: ['4h', '1d'],
+    configPreset: { timeframe: '1d', riskPerTrade: 0.015, minPositionSize: 20, maxPositionSize: 120 },
+  },
 ];
 
 const normalize = (value: string): string => value.trim().replace(/-/g, '_').toUpperCase();

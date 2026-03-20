@@ -28,6 +28,10 @@ Current backtest strategy catalog:
 - `TREND_FIRST_ADAPTIVE_ENSEMBLE`
 - `SMA_CROSSOVER`
 - `BOLLINGER_BANDS`
+- `ICHIMOKU_TREND`
+
+Operator-managed strategy configurations now normalize to these same canonical IDs and seed missing paper-safe templates from the catalog. New/default strategy configs remain long-only unless short exposure is explicitly enabled.
+The catalog remains research-only. On the March 20, 2026 crypto rerun against dataset `#12`, only `VOLATILITY_MANAGED_DONCHIAN_BREAKOUT` passed the current full-sample validator, holdout results stayed mixed, and no strategy is being treated as production-ready or live-ready.
 
 ## Quick Start
 
@@ -48,6 +52,12 @@ Useful variants:
 .\run-all.ps1 -DebugBackend
 .\security-scan.ps1
 ```
+
+Runtime script behavior:
+
+- `.\run.ps1` and `.\run-all.ps1` now wait for both backend and frontend readiness before declaring success.
+- Both startup scripts roll back partial startup if a later stage fails, so PostgreSQL, Docker services, or detached dev servers are not left running silently.
+- `.\run-all.ps1` also checks for a leftover local backend from fast mode before Docker startup.
 
 Local URLs:
 

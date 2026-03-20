@@ -12,8 +12,7 @@ This document is aligned with:
 
 - `TRADING_GUARDRAILS.md`
 - `PRODUCT.md`
-- the current built-in backtest algorithms in `BacktestAlgorithmType`: `BOLLINGER_BANDS`, `SMA_CROSSOVER`, and `BUY_AND_HOLD`
-- the proposed next trend addition in this document: `ICHIMOKU_TREND`
+- the current built-in backtest algorithms in `BacktestAlgorithmType`: `BUY_AND_HOLD`, `DUAL_MOMENTUM_ROTATION`, `VOLATILITY_MANAGED_DONCHIAN_BREAKOUT`, `TREND_PULLBACK_CONTINUATION`, `REGIME_FILTERED_MEAN_REVERSION`, `TREND_FIRST_ADAPTIVE_ENSEMBLE`, `SMA_CROSSOVER`, `BOLLINGER_BANDS`, and `ICHIMOKU_TREND`
 
 ## Executive View
 
@@ -27,11 +26,11 @@ If you start with around EUR 150 and stay conservative, the realistic path is:
 The best candidates for this repo right now are:
 
 1. `BUY_AND_HOLD` as the benchmark
-2. `SMA_CROSSOVER` / slow trend following as the first primary research strategy
-3. `DONCHIAN_BREAKOUT` as the next clean trend strategy to add
-4. `ICHIMOKU_TREND` as a strong trend filter or later standalone trend strategy
-5. `BOLLINGER_BANDS` mean reversion, but only as a secondary, range-market strategy
-6. small-basket relative-strength rotation as a later addition
+2. `VOLATILITY_MANAGED_DONCHIAN_BREAKOUT` as the strongest current built-in trend candidate on the March 20, 2026 crypto reruns
+3. `SMA_CROSSOVER` as the clearest immediate paper-watch candidate after the valid holdout split
+4. `DUAL_MOMENTUM_ROTATION` as a multi-symbol candidate that still needs more active out-of-sample signal coverage
+5. `ICHIMOKU_TREND` as an implemented but still research-only trend filter
+6. `BOLLINGER_BANDS` only as a constrained range-market baseline
 
 ## What EUR 150 Means In Practice
 
@@ -186,11 +185,11 @@ Best use here:
 
 ### 4. Donchian Breakout / Price Breakout Trend Following
 
-Status for this repo: `best next strategy to add`
+Status for this repo: `implemented and currently the strongest built-in full-sample trend candidate`
 
 Implementation fit:
 
-- not built in yet, but simpler than many alternatives
+- already built in as `VOLATILITY_MANAGED_DONCHIAN_BREAKOUT`
 - compatible with the same local OHLCV pipeline and guardrails
 - naturally supports `long/cash`
 
@@ -214,11 +213,11 @@ Main risks:
 
 ### 5. Ichimoku Cloud Trend / Regime Filter
 
-Status for this repo: `strong second-wave candidate`
+Status for this repo: `implemented research-only candidate`
 
 Implementation fit:
 
-- not built in today, but it fits the current backtest model if added as a conservative `long/cash` trend strategy
+- now built in as `ICHIMOKU_TREND`, implemented as a conservative `long/cash` trend strategy
 - best suited to `4h` and `1d` bars, which matches the repo's local-first workflow better than fast intraday trading
 - more expressive than a simple moving-average crossover, but also more fragile to implement honestly because some lines are shifted in time
 
@@ -228,7 +227,7 @@ Why it fits:
 - It can be used as a `long/cash` system for both stocks and crypto.
 - It is especially useful as a regime filter: trade only when the broader cloud structure agrees with the trend.
 
-Why it is not the first strategy to implement:
+Why it is still not the first strategy to trust:
 
 - The evidence base for trend following as a family is stronger than the evidence for Ichimoku specifically as a standalone edge.
 - It is easier to backtest incorrectly than SMA or Donchian because Senkou spans are plotted forward and Chikou is plotted backward.
@@ -239,7 +238,7 @@ Best use here:
 - crypto: `BTC/USDT`, `ETH/USDT` on `4h` or `1d`
 - stocks: liquid ETFs or a few large-cap names on `1d`
 - operating mode: `long` above the cloud, `cash` when structure deteriorates
-- first deployment role: trend filter for `SMA_CROSSOVER` or a later standalone `ICHIMOKU_TREND` algorithm
+- first deployment role: a research-only standalone trend strategy or a future filter for `SMA_CROSSOVER`
 
 Main risks:
 
@@ -292,22 +291,21 @@ Why they do not fit:
 - some depend on borrow, margin interest, derivatives, or exchange-specific liquidation behavior
 - many are harder to simulate honestly than they look
 
-## `ICHIMOKU_TREND` Backend Design
+## `ICHIMOKU_TREND` Implemented Design Note
 
-Goal:
+Current goal and posture:
 
-- add a conservative `long/cash` trend strategy that works on the same OHLCV pipeline as the current backtester
-- keep the first version simple enough to audit and hard to misuse
+- keep `ICHIMOKU_TREND` conservative, `long/cash`, and auditable on the same OHLCV pipeline as the active backtester
+- keep the visible-cloud logic explicitly bias-safe and easy to explain in tests, telemetry, and docs
+- treat the current implementation as research-only until a broader out-of-sample record exists
 
-Recommended code touch points:
+Implemented code touch points:
 
-- `AlgotradingBot/src/main/java/com/algotrader/bot/service/BacktestAlgorithmType.java`: add `ICHIMOKU_TREND`
-- `AlgotradingBot/src/main/java/com/algotrader/bot/controller/BacktestManagementController.java`: add the algorithm to `/api/backtests/algorithms`
-- `AlgotradingBot/src/main/java/com/algotrader/bot/strategy/IchimokuCloudSnapshot.java`: immutable value object for Tenkan, Kijun, visible Senkou A/B, Chikou confirmation, and cloud state
-- `AlgotradingBot/src/main/java/com/algotrader/bot/strategy/IchimokuCloudIndicator.java`: compute Ichimoku values from OHLCV candles
-- `AlgotradingBot/src/main/java/com/algotrader/bot/strategy/IchimokuTrendStrategy.java`: generate `TradeSignal`
-- `AlgotradingBot/src/main/java/com/algotrader/bot/service/BacktestExecutionService.java`: route buy/sell logic to the new strategy or refactor strategy selection into dedicated evaluators
-- `frontend/src/features/strategies/strategyProfiles.ts`: add the new profile copy after backend support exists
+- `AlgotradingBot/src/main/java/com/algotrader/bot/service/BacktestAlgorithmType.java`: includes `ICHIMOKU_TREND`
+- `AlgotradingBot/src/main/java/com/algotrader/bot/backtest/strategy/BacktestIndicatorCalculator.java`: computes Tenkan, Kijun, and historically projected Senkou A/B values
+- `AlgotradingBot/src/main/java/com/algotrader/bot/backtest/strategy/IchimokuTrendBacktestStrategy.java`: executes the long/cash decision rules on the active backtest seam
+- `AlgotradingBot/src/main/java/com/algotrader/bot/service/BacktestTelemetryService.java`: exposes Ichimoku overlays for the backtest detail charts
+- `frontend/src/features/strategies/strategyProfiles.ts`: documents the strategy in the operator-facing catalog
 
 Default windows:
 
@@ -366,6 +364,12 @@ Recommended first instruments and timeframes:
 
 - crypto: `BTC/USDT`, `ETH/USDT` on `4h` and `1d`
 - stocks: `SPY`, `QQQ`, `VTI`, `VT` on `1d`
+
+March 20, 2026 snapshot:
+
+- full-sample dataset `#12` result: `+7.64%`, `1.2737` Sharpe, `1.4141` profit factor, `21.62%` max drawdown, `14` trades
+- valid holdout out-of-sample result (`2025-07-01` to `2026-03-13`): `-1.49%`, `1` trade, failed validation
+- interpretation: implemented honestly and worth keeping in the catalog, but not yet strong enough for promotion beyond research
 
 ## Ichimoku vs SMA vs Bollinger For A EUR 150 Account
 

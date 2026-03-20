@@ -89,6 +89,27 @@ const getHeaderValue = (headers: FetchArgs['headers'], headerName: string): stri
   return headers[headerName] ?? headers[headerName.toLowerCase()] ?? null;
 };
 
+export type EnvironmentOverride = 'test' | 'live';
+
+export const withEnvironmentMode = (
+  request: string | FetchArgs,
+  environment: EnvironmentOverride
+): FetchArgs => {
+  const headers = new Headers(
+    typeof request === 'string' ? undefined : (request.headers as HeadersInit | undefined)
+  );
+  headers.set('X-Environment', environment);
+
+  if (typeof request === 'string') {
+    return { url: request, headers };
+  }
+
+  return {
+    ...request,
+    headers,
+  };
+};
+
 /**
  * Base query with automatic retry logic
  * 

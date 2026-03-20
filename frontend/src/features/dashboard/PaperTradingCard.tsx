@@ -1,4 +1,5 @@
-import { Alert, Card, CardContent, Stack, Typography } from '@mui/material';
+import { Alert, Button, Card, CardContent, Stack, Typography } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
 
 import { useGetPaperTradingStateQuery } from '@/features/paperApi';
 
@@ -35,6 +36,9 @@ export const PaperTradingCard: React.FC = () => {
               Recovery status: {data.recoveryStatus} | Stale open orders: {data.staleOpenOrderCount} | Stale positions:{' '}
               {data.stalePositionCount}
             </Typography>
+            <Button component={RouterLink} to="/paper" size="small" sx={{ alignSelf: 'flex-start', mt: 0.5 }}>
+              Open Paper Desk
+            </Button>
             {data.alerts.map((alert) => (
               <Alert
                 key={alert.code}

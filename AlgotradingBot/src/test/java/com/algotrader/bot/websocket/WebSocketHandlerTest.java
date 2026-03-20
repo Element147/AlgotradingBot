@@ -36,12 +36,28 @@ class WebSocketHandlerTest {
     private WebSocketSession session2;
 
     private WebSocketHandler webSocketHandler;
+    private Map<String, Object> session1Attributes;
+    private Map<String, Object> session2Attributes;
 
     @BeforeEach
     void setUp() {
         webSocketHandler = new WebSocketHandler(new ObjectMapper().findAndRegisterModules());
+        session1Attributes = new HashMap<>();
+        session1Attributes.put(WebSocketHandler.AUTHENTICATED_ATTRIBUTE, Boolean.TRUE);
+        session1Attributes.put(WebSocketHandler.ENVIRONMENT_ATTRIBUTE, "test");
+        session1Attributes.put(WebSocketHandler.USERNAME_ATTRIBUTE, "session-user-1");
+        session1Attributes.put(WebSocketHandler.ROLE_ATTRIBUTE, "TRADER");
+        session2Attributes = new HashMap<>();
+        session2Attributes.put(WebSocketHandler.AUTHENTICATED_ATTRIBUTE, Boolean.TRUE);
+        session2Attributes.put(WebSocketHandler.ENVIRONMENT_ATTRIBUTE, "test");
+        session2Attributes.put(WebSocketHandler.USERNAME_ATTRIBUTE, "session-user-2");
+        session2Attributes.put(WebSocketHandler.ROLE_ATTRIBUTE, "TRADER");
         when(session1.getId()).thenReturn("session-1");
         when(session2.getId()).thenReturn("session-2");
+        when(session1.getAttributes()).thenReturn(session1Attributes);
+        when(session2.getAttributes()).thenReturn(session2Attributes);
+        when(session1.isOpen()).thenReturn(true);
+        when(session2.isOpen()).thenReturn(true);
     }
 
     @Test
@@ -80,7 +96,6 @@ class WebSocketHandlerTest {
     void testSubscribeToChannels() throws Exception {
         // Arrange
         webSocketHandler.afterConnectionEstablished(session1);
-        when(session1.isOpen()).thenReturn(true);
         String subscribeMessage = "{\"type\":\"subscribe\",\"channels\":[\"test.balance\",\"test.trades\"]}";
 
         // Act
@@ -99,7 +114,6 @@ class WebSocketHandlerTest {
     void testUnsubscribeFromChannels() throws Exception {
         // Arrange
         webSocketHandler.afterConnectionEstablished(session1);
-        when(session1.isOpen()).thenReturn(true);
         String subscribeMessage = "{\"type\":\"subscribe\",\"channels\":[\"test.balance\"]}";
         webSocketHandler.handleTextMessage(session1, new TextMessage(subscribeMessage));
         
@@ -121,7 +135,6 @@ class WebSocketHandlerTest {
     void testPublishEventToSubscribedSession() throws Exception {
         // Arrange
         webSocketHandler.afterConnectionEstablished(session1);
-        when(session1.isOpen()).thenReturn(true);
         String subscribeMessage = "{\"type\":\"subscribe\",\"channels\":[\"test.balance\"]}";
         webSocketHandler.handleTextMessage(session1, new TextMessage(subscribeMessage));
 
@@ -167,9 +180,6 @@ class WebSocketHandlerTest {
         // Arrange
         webSocketHandler.afterConnectionEstablished(session1);
         webSocketHandler.afterConnectionEstablished(session2);
-        when(session1.isOpen()).thenReturn(true);
-        when(session2.isOpen()).thenReturn(true);
-        
         String subscribeMessage = "{\"type\":\"subscribe\",\"channels\":[\"test.balance\"]}";
         webSocketHandler.handleTextMessage(session1, new TextMessage(subscribeMessage));
         webSocketHandler.handleTextMessage(session2, new TextMessage(subscribeMessage));
@@ -191,7 +201,6 @@ class WebSocketHandlerTest {
     void testInvalidMessageFormat() throws Exception {
         // Arrange
         webSocketHandler.afterConnectionEstablished(session1);
-        when(session1.isOpen()).thenReturn(true);
         String invalidMessage = "invalid json";
 
         // Act
@@ -210,24 +219,21 @@ class WebSocketHandlerTest {
     void testUnknownMessageType() throws Exception {
         // Arrange
         webSocketHandler.afterConnectionEstablished(session1);
-        when(session1.isOpen()).thenReturn(true);
         String unknownMessage = "{\"type\":\"unknown\",\"data\":{}}";
 
         // Act
         webSocketHandler.handleTextMessage(session1, new TextMessage(unknownMessage));
 
-        // Assert - should handle gracefully without error
-        verify(session1, never()).sendMessage(argThat((TextMessage msg) -> {
-            String payload = msg.getPayload();
-            return payload != null && payload.contains("error");
-        }));
+        // Assert
+        ArgumentCaptor<TextMessage> messageCaptor = ArgumentCaptor.forClass(TextMessage.class);
+        verify(session1).sendMessage(messageCaptor.capture());
+        assertTrue(messageCaptor.getValue().getPayload().contains("Unknown message type"));
     }
 
     @Test
     void testPublishEventToClosedSession() throws Exception {
         // Arrange
         webSocketHandler.afterConnectionEstablished(session1);
-        when(session1.isOpen()).thenReturn(true);
         String subscribeMessage = "{\"type\":\"subscribe\",\"channels\":[\"test.balance\"]}";
         webSocketHandler.handleTextMessage(session1, new TextMessage(subscribeMessage));
         
@@ -244,5 +250,51 @@ class WebSocketHandlerTest {
         // Assert
         // Should not attempt to send to closed session
         verify(session1, atMost(1)).sendMessage(any(TextMessage.class)); // Only the subscribe ack
+    }
+
+    @Test
+    void testRejectsUnauthenticatedSession() throws Exception {
+        session1Attributes.put(WebSocketHandler.AUTHENTICATED_ATTRIBUTE, Boolean.FALSE);
+
+        webSocketHandler.afterConnectionEstablished(session1);
+
+        verify(session1).close(argThat(status ->
+                status != null
+                        && status.getCode() == CloseStatus.POLICY_VIOLATION.getCode()
+                        && status.getReason() != null
+                        && status.getReason().contains("Authentication required")));
+        assertEquals(0, webSocketHandler.getActiveSessionCount());
+    }
+
+    @Test
+    void testRejectsCrossEnvironmentSubscription() throws Exception {
+        webSocketHandler.afterConnectionEstablished(session1);
+        String subscribeMessage = "{\"type\":\"subscribe\",\"channels\":[\"live.balance\"]}";
+
+        webSocketHandler.handleTextMessage(session1, new TextMessage(subscribeMessage));
+
+        ArgumentCaptor<TextMessage> messageCaptor = ArgumentCaptor.forClass(TextMessage.class);
+        verify(session1).sendMessage(messageCaptor.capture());
+        String payload = messageCaptor.getValue().getPayload();
+        assertTrue(payload.contains("\"type\":\"error\""));
+        assertTrue(payload.contains("Rejected unauthorized or unknown channels"));
+        assertTrue(payload.contains("live.balance"));
+    }
+
+    @Test
+    void testPartiallyAcceptsMixedEnvironmentSubscription() throws Exception {
+        webSocketHandler.afterConnectionEstablished(session1);
+        String subscribeMessage = "{\"type\":\"subscribe\",\"channels\":[\"test.balance\",\"live.balance\"]}";
+
+        webSocketHandler.handleTextMessage(session1, new TextMessage(subscribeMessage));
+
+        ArgumentCaptor<TextMessage> messageCaptor = ArgumentCaptor.forClass(TextMessage.class);
+        verify(session1, times(2)).sendMessage(messageCaptor.capture());
+
+        List<TextMessage> messages = messageCaptor.getAllValues();
+        assertTrue(messages.get(0).getPayload().contains("\"type\":\"ack\""));
+        assertTrue(messages.get(0).getPayload().contains("test.balance"));
+        assertTrue(messages.get(1).getPayload().contains("\"type\":\"error\""));
+        assertTrue(messages.get(1).getPayload().contains("live.balance"));
     }
 }

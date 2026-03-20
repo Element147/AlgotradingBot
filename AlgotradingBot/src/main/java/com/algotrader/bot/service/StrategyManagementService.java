@@ -1,5 +1,7 @@
 package com.algotrader.bot.service;
 
+import com.algotrader.bot.backtest.strategy.BacktestStrategyDefinition;
+import com.algotrader.bot.backtest.strategy.BacktestStrategyRegistry;
 import com.algotrader.bot.controller.StrategyActionResponse;
 import com.algotrader.bot.controller.StrategyConfigHistoryResponse;
 import com.algotrader.bot.controller.StrategyDetailsResponse;
@@ -18,7 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class StrategyManagementService {
@@ -27,22 +31,25 @@ public class StrategyManagementService {
 
     private final StrategyConfigRepository strategyConfigRepository;
     private final StrategyConfigVersionRepository strategyConfigVersionRepository;
+    private final BacktestStrategyRegistry backtestStrategyRegistry;
     private final WebSocketEventPublisher webSocketEventPublisher;
     private final OperatorAuditService operatorAuditService;
 
     public StrategyManagementService(StrategyConfigRepository strategyConfigRepository,
                                      StrategyConfigVersionRepository strategyConfigVersionRepository,
+                                     BacktestStrategyRegistry backtestStrategyRegistry,
                                      WebSocketEventPublisher webSocketEventPublisher,
                                      OperatorAuditService operatorAuditService) {
         this.strategyConfigRepository = strategyConfigRepository;
         this.strategyConfigVersionRepository = strategyConfigVersionRepository;
+        this.backtestStrategyRegistry = backtestStrategyRegistry;
         this.webSocketEventPublisher = webSocketEventPublisher;
         this.operatorAuditService = operatorAuditService;
     }
 
     @Transactional
     public List<StrategyDetailsResponse> listStrategies() {
-        ensureDefaultStrategies();
+        ensureStrategyCatalogCoverage();
         ensureVersionHistoryForExistingStrategies();
 
         return strategyConfigRepository.findAllByOrderByNameAsc().stream()
@@ -183,7 +190,7 @@ public class StrategyManagementService {
         return new StrategyDetailsResponse(
             strategy.getId(),
             strategy.getName(),
-            strategy.getType(),
+            canonicalTypeOrOriginal(strategy.getType()),
             strategy.getStatus().name(),
             strategy.getSymbol(),
             strategy.getTimeframe(),
@@ -200,35 +207,39 @@ public class StrategyManagementService {
         );
     }
 
-    private void ensureDefaultStrategies() {
-        if (strategyConfigRepository.count() > 0) {
+    private void ensureStrategyCatalogCoverage() {
+        List<StrategyConfig> existingStrategies = strategyConfigRepository.findAll();
+        Set<String> coveredTypes = new HashSet<>();
+        Set<String> usedNames = new HashSet<>();
+        boolean normalizedExistingRows = false;
+
+        for (StrategyConfig strategy : existingStrategies) {
+            usedNames.add(strategy.getName());
+            String canonicalType = canonicalTypeOrOriginal(strategy.getType());
+            coveredTypes.add(canonicalType);
+            if (!canonicalType.equals(strategy.getType())) {
+                strategy.setType(canonicalType);
+                normalizedExistingRows = true;
+            }
+        }
+
+        if (normalizedExistingRows) {
+            logger.info("Normalizing persisted strategy types to canonical backtest catalog identifiers");
+            strategyConfigRepository.saveAll(existingStrategies);
+        }
+
+        List<StrategyConfig> missingStrategies = backtestStrategyRegistry.getDefinitions().stream()
+            .filter(definition -> !coveredTypes.contains(definition.type().name()))
+            .map(definition -> createSeedStrategy(definition, usedNames))
+            .toList();
+
+        if (missingStrategies.isEmpty()) {
             return;
         }
 
-        logger.info("Seeding default paper strategies");
-
-        StrategyConfig bollinger = new StrategyConfig(
-            "Bollinger BTC Mean Reversion",
-            "bollinger-bands",
-            "BTC/USDT",
-            "1h",
-            new BigDecimal("0.02"),
-            new BigDecimal("10.00"),
-            new BigDecimal("100.00")
-        );
-
-        StrategyConfig bollingerEth = new StrategyConfig(
-            "Bollinger ETH Mean Reversion",
-            "bollinger-bands",
-            "ETH/USDT",
-            "1h",
-            new BigDecimal("0.02"),
-            new BigDecimal("10.00"),
-            new BigDecimal("100.00")
-        );
-
-        List<StrategyConfig> savedStrategies = strategyConfigRepository.saveAll(List.of(bollinger, bollingerEth));
-        savedStrategies.forEach(strategy -> recordVersion(strategy, "Seeded default strategy configuration"));
+        logger.info("Seeding {} missing strategy catalog entries for paper-mode management", missingStrategies.size());
+        List<StrategyConfig> savedStrategies = strategyConfigRepository.saveAll(missingStrategies);
+        savedStrategies.forEach(strategy -> recordVersion(strategy, "Seeded strategy catalog entry"));
     }
 
     private void ensureVersionHistoryForExistingStrategies() {
@@ -273,5 +284,76 @@ public class StrategyManagementService {
         }
 
         return "Updated " + String.join(", ", changedFields);
+    }
+
+    private String canonicalTypeOrOriginal(String type) {
+        try {
+            return BacktestAlgorithmType.from(type).name();
+        } catch (IllegalArgumentException ignored) {
+            return type;
+        }
+    }
+
+    private StrategyConfig createSeedStrategy(BacktestStrategyDefinition definition, Set<String> usedNames) {
+        StrategySeedPreset preset = seedPreset(definition.type());
+        String name = resolveSeedName(definition.label(), usedNames);
+        return new StrategyConfig(
+            name,
+            definition.type().name(),
+            preset.symbol(),
+            preset.timeframe(),
+            preset.riskPerTrade(),
+            preset.minPositionSize(),
+            preset.maxPositionSize()
+        );
+    }
+
+    private String resolveSeedName(String label, Set<String> usedNames) {
+        String candidate = label;
+        if (!usedNames.contains(candidate)) {
+            usedNames.add(candidate);
+            return candidate;
+        }
+
+        int suffix = 1;
+        while (usedNames.contains(candidate + " Paper " + suffix)) {
+            suffix++;
+        }
+
+        String resolved = candidate + " Paper " + suffix;
+        usedNames.add(resolved);
+        return resolved;
+    }
+
+    private StrategySeedPreset seedPreset(BacktestAlgorithmType type) {
+        return switch (type) {
+            case BUY_AND_HOLD -> new StrategySeedPreset("BTC/USDT", "1d", new BigDecimal("0.02"),
+                new BigDecimal("10.00"), new BigDecimal("100.00"));
+            case DUAL_MOMENTUM_ROTATION -> new StrategySeedPreset("BTC/USDT", "1d", new BigDecimal("0.02"),
+                new BigDecimal("25.00"), new BigDecimal("150.00"));
+            case VOLATILITY_MANAGED_DONCHIAN_BREAKOUT -> new StrategySeedPreset("BTC/USDT", "4h",
+                new BigDecimal("0.02"), new BigDecimal("20.00"), new BigDecimal("120.00"));
+            case TREND_PULLBACK_CONTINUATION -> new StrategySeedPreset("BTC/USDT", "4h",
+                new BigDecimal("0.02"), new BigDecimal("15.00"), new BigDecimal("100.00"));
+            case REGIME_FILTERED_MEAN_REVERSION -> new StrategySeedPreset("BTC/USDT", "1h",
+                new BigDecimal("0.015"), new BigDecimal("10.00"), new BigDecimal("80.00"));
+            case TREND_FIRST_ADAPTIVE_ENSEMBLE -> new StrategySeedPreset("BTC/USDT", "4h",
+                new BigDecimal("0.015"), new BigDecimal("20.00"), new BigDecimal("120.00"));
+            case SMA_CROSSOVER -> new StrategySeedPreset("BTC/USDT", "4h", new BigDecimal("0.02"),
+                new BigDecimal("15.00"), new BigDecimal("110.00"));
+            case BOLLINGER_BANDS -> new StrategySeedPreset("BTC/USDT", "1h", new BigDecimal("0.015"),
+                new BigDecimal("10.00"), new BigDecimal("90.00"));
+            case ICHIMOKU_TREND -> new StrategySeedPreset("BTC/USDT", "1d", new BigDecimal("0.015"),
+                new BigDecimal("20.00"), new BigDecimal("120.00"));
+        };
+    }
+
+    private record StrategySeedPreset(
+        String symbol,
+        String timeframe,
+        BigDecimal riskPerTrade,
+        BigDecimal minPositionSize,
+        BigDecimal maxPositionSize
+    ) {
     }
 }

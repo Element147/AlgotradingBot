@@ -26,6 +26,7 @@ Every change is done only when all of the following are true:
 - Loading, empty, error, and success states are handled.
 - Environment mode impact stays visible and correct.
 - Contract adaptation remains centralized in API or transport layers.
+- Backend-supported operator workflows are surfaced intentionally in the UI, or any remaining gap is documented explicitly.
 - Tests cover the key user interactions or regressions affected by the change.
 
 ## Strategy And Backtest Change

@@ -5,21 +5,16 @@ import com.algotrader.bot.backtest.BacktestSimulationProgress;
 import com.algotrader.bot.backtest.BacktestSimulationRequest;
 import com.algotrader.bot.backtest.BacktestSimulationResult;
 import com.algotrader.bot.backtest.OHLCVData;
+import com.algotrader.bot.backtest.strategy.BacktestStrategyRegistry;
+import com.algotrader.bot.backtest.strategy.BacktestStrategySelectionMode;
 import com.algotrader.bot.entity.BacktestDataset;
-import com.algotrader.bot.entity.BacktestEquityPoint;
 import com.algotrader.bot.entity.BacktestResult;
-import com.algotrader.bot.entity.BacktestTradeSeriesItem;
-import com.algotrader.bot.repository.BacktestResultRepository;
-import com.algotrader.bot.websocket.WebSocketEventPublisher;
-import jakarta.persistence.EntityNotFoundException;
+import com.algotrader.bot.service.marketdata.MarketDataResampler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
@@ -35,26 +30,26 @@ public class BacktestExecutionService {
     private static final int PREPARATION_PROGRESS_PERCENT = 20;
     private static final int PERSISTING_PROGRESS_PERCENT = 98;
 
-    private final BacktestResultRepository backtestResultRepository;
     private final BacktestDatasetService backtestDatasetService;
     private final BacktestDatasetCandleCache backtestDatasetCandleCache;
     private final BacktestSimulationEngine backtestSimulationEngine;
-    private final WebSocketEventPublisher webSocketEventPublisher;
-    private final TransactionTemplate transactionTemplate;
+    private final BacktestStrategyRegistry backtestStrategyRegistry;
+    private final MarketDataResampler marketDataResampler;
+    private final BacktestExecutionLifecycleService backtestExecutionLifecycleService;
     private final ConcurrentMap<Long, Boolean> inFlightBacktests = new ConcurrentHashMap<>();
 
-    public BacktestExecutionService(BacktestResultRepository backtestResultRepository,
-                                    BacktestDatasetService backtestDatasetService,
+    public BacktestExecutionService(BacktestDatasetService backtestDatasetService,
                                     BacktestDatasetCandleCache backtestDatasetCandleCache,
                                     BacktestSimulationEngine backtestSimulationEngine,
-                                    WebSocketEventPublisher webSocketEventPublisher,
-                                    PlatformTransactionManager transactionManager) {
-        this.backtestResultRepository = backtestResultRepository;
+                                    BacktestStrategyRegistry backtestStrategyRegistry,
+                                    MarketDataResampler marketDataResampler,
+                                    BacktestExecutionLifecycleService backtestExecutionLifecycleService) {
         this.backtestDatasetService = backtestDatasetService;
         this.backtestDatasetCandleCache = backtestDatasetCandleCache;
         this.backtestSimulationEngine = backtestSimulationEngine;
-        this.webSocketEventPublisher = webSocketEventPublisher;
-        this.transactionTemplate = new TransactionTemplate(transactionManager);
+        this.backtestStrategyRegistry = backtestStrategyRegistry;
+        this.marketDataResampler = marketDataResampler;
+        this.backtestExecutionLifecycleService = backtestExecutionLifecycleService;
     }
 
     @Async("virtualThreadTaskExecutor")
@@ -64,9 +59,9 @@ public class BacktestExecutionService {
             return CompletableFuture.completedFuture(null);
         }
 
-        BacktestExecutionContext context = markRunStarted(backtestId);
-
         try {
+            BacktestExecutionLifecycleService.BacktestExecutionContext context =
+                backtestExecutionLifecycleService.markRunStarted(backtestId);
             logger.info(
                 "Backtest {} started: strategy={}, datasetId={}, symbol={}, timeframe={}, range={} to {}",
                 backtestId,
@@ -78,7 +73,7 @@ public class BacktestExecutionService {
                 context.endDate()
             );
 
-            updateProgress(
+            backtestExecutionLifecycleService.updateProgress(
                 backtestId,
                 BacktestResult.ExecutionStage.LOADING_DATASET,
                 5,
@@ -100,8 +95,10 @@ public class BacktestExecutionService {
 
             List<OHLCVData> candles = backtestDatasetCandleCache.getOrParse(dataset);
             logger.info("Backtest {} parsed {} raw candles from dataset {}", backtestId, candles.size(), dataset.getId());
+            BacktestAlgorithmType algorithmType = BacktestAlgorithmType.from(context.strategyId());
+            String primarySymbol = resolvePrimarySymbol(context.symbol(), dataset.getSymbolsCsv());
 
-            updateProgress(
+            backtestExecutionLifecycleService.updateProgress(
                 backtestId,
                 BacktestResult.ExecutionStage.FILTERING_CANDLES,
                 12,
@@ -116,35 +113,39 @@ public class BacktestExecutionService {
                 .filter(candle -> !candle.getTimestamp().isAfter(context.endDate()))
                 .sorted(Comparator.comparing(OHLCVData::getTimestamp))
                 .toList();
+            List<OHLCVData> scopedForExecution = scopeForExecution(algorithmType, primarySymbol, filtered);
+            List<OHLCVData> simulationCandles = marketDataResampler.resample(scopedForExecution, context.timeframe());
 
-            LocalDateTime firstFilteredTimestamp = filtered.isEmpty() ? null : filtered.get(0).getTimestamp();
-            LocalDateTime lastFilteredTimestamp = filtered.isEmpty() ? null : filtered.get(filtered.size() - 1).getTimestamp();
+            LocalDateTime firstFilteredTimestamp = simulationCandles.isEmpty() ? null : simulationCandles.get(0).getTimestamp();
+            LocalDateTime lastFilteredTimestamp = simulationCandles.isEmpty() ? null : simulationCandles.get(simulationCandles.size() - 1).getTimestamp();
             logger.info(
-                "Backtest {} prepared {} filtered candles between {} and {}",
+                "Backtest {} prepared {} simulation candles at timeframe {} from {} scoped rows between {} and {}",
                 backtestId,
-                filtered.size(),
+                simulationCandles.size(),
+                context.timeframe(),
+                scopedForExecution.size(),
                 firstFilteredTimestamp,
                 lastFilteredTimestamp
             );
 
-            updateProgress(
+            backtestExecutionLifecycleService.updateProgress(
                 backtestId,
                 BacktestResult.ExecutionStage.SIMULATING,
                 PREPARATION_PROGRESS_PERCENT,
                 0,
-                filtered.size(),
+                simulationCandles.size(),
                 firstFilteredTimestamp,
-                filtered.isEmpty()
+                simulationCandles.isEmpty()
                     ? "No candles remain after filtering."
-                    : "Simulation started. Replaying historical candles."
+                    : "Simulation started. Replaying historical candles at " + context.timeframe() + "."
             );
 
             AtomicInteger lastLoggedMilestone = new AtomicInteger(-1);
             BacktestSimulationResult simulationResult = backtestSimulationEngine.simulate(
-                BacktestAlgorithmType.from(context.strategyId()),
+                algorithmType,
                 new BacktestSimulationRequest(
-                    filtered,
-                    resolvePrimarySymbol(context.symbol(), dataset.getSymbolsCsv()),
+                    simulationCandles,
+                    primarySymbol,
                     context.timeframe(),
                     context.initialBalance(),
                     context.feesBps(),
@@ -153,17 +154,22 @@ public class BacktestExecutionService {
                 progress -> onSimulationProgress(backtestId, progress, lastLoggedMilestone)
             );
 
-            updateProgress(
+            backtestExecutionLifecycleService.updateProgress(
                 backtestId,
                 BacktestResult.ExecutionStage.PERSISTING_RESULTS,
                 PERSISTING_PROGRESS_PERCENT,
-                filtered.size(),
-                filtered.size(),
+                simulationCandles.size(),
+                simulationCandles.size(),
                 lastFilteredTimestamp,
                 "Simulation loop finished. Persisting metrics, equity curve, and trade series."
             );
 
-            persistCompletedResult(backtestId, simulationResult, filtered.size(), lastFilteredTimestamp);
+            backtestExecutionLifecycleService.persistCompletedResult(
+                backtestId,
+                simulationResult,
+                simulationCandles.size(),
+                lastFilteredTimestamp
+            );
             logger.info(
                 "Backtest {} completed: finalBalance={}, trades={}, sharpe={}, profitFactor={}, maxDrawdown={}",
                 backtestId,
@@ -175,7 +181,11 @@ public class BacktestExecutionService {
             );
         } catch (Exception exception) {
             logger.error("Backtest execution failed for id {}", backtestId, exception);
-            markRunFailed(backtestId, exception);
+            try {
+                backtestExecutionLifecycleService.markRunFailed(backtestId, exception);
+            } catch (Exception markFailedException) {
+                logger.error("Unable to persist failure state for backtest {}", backtestId, markFailedException);
+            }
         } finally {
             inFlightBacktests.remove(backtestId);
         }
@@ -183,38 +193,8 @@ public class BacktestExecutionService {
         return CompletableFuture.completedFuture(null);
     }
 
-    private BacktestExecutionContext markRunStarted(Long backtestId) {
-        return transactionTemplate.execute(status -> {
-            BacktestResult result = backtestResultRepository.findById(backtestId)
-                .orElseThrow(() -> new EntityNotFoundException("Backtest not found: " + backtestId));
-
-            LocalDateTime now = LocalDateTime.now();
-            result.setExecutionStatus(BacktestResult.ExecutionStatus.RUNNING);
-            result.setExecutionStage(BacktestResult.ExecutionStage.VALIDATING_REQUEST);
-            result.setStartedAt(now);
-            result.setLastProgressAt(now);
-            result.setProgressPercent(2);
-            result.setProcessedCandles(0);
-            result.setTotalCandles(0);
-            result.setCurrentDataTimestamp(null);
-            result.setStatusMessage("Validation passed. Preparing execution.");
-            result.setErrorMessage(null);
-            backtestResultRepository.save(result);
-            publishProgress(result);
-
-            return new BacktestExecutionContext(
-                result.getId(),
-                result.getStrategyId(),
-                result.getDatasetId(),
-                result.getSymbol(),
-                result.getTimeframe(),
-                result.getStartDate(),
-                result.getEndDate(),
-                result.getInitialBalance(),
-                result.getFeesBps(),
-                result.getSlippageBps()
-            );
-        });
+    public int getInFlightBacktestCount() {
+        return inFlightBacktests.size();
     }
 
     private void onSimulationProgress(Long backtestId,
@@ -225,7 +205,7 @@ public class BacktestExecutionService {
             ? "Simulation loop finished. Computing final metrics."
             : "Replaying candle " + progress.processedCandles() + " of " + progress.totalCandles() + ".";
 
-        updateProgress(
+        backtestExecutionLifecycleService.updateProgress(
             backtestId,
             BacktestResult.ExecutionStage.SIMULATING,
             overallProgress,
@@ -251,150 +231,24 @@ public class BacktestExecutionService {
         }
     }
 
-    private void updateProgress(Long backtestId,
-                                BacktestResult.ExecutionStage executionStage,
-                                int progressPercent,
-                                int processedCandles,
-                                int totalCandles,
-                                LocalDateTime currentDataTimestamp,
-                                String statusMessage) {
-        transactionTemplate.executeWithoutResult(status -> {
-            BacktestResult result = backtestResultRepository.findById(backtestId)
-                .orElseThrow(() -> new EntityNotFoundException("Backtest not found: " + backtestId));
-
-            result.setExecutionStage(executionStage);
-            result.setProgressPercent(Math.max(0, Math.min(progressPercent, 100)));
-            result.setProcessedCandles(Math.max(processedCandles, 0));
-            result.setTotalCandles(Math.max(totalCandles, 0));
-            result.setCurrentDataTimestamp(currentDataTimestamp);
-            result.setStatusMessage(statusMessage);
-            result.setLastProgressAt(LocalDateTime.now());
-            backtestResultRepository.save(result);
-            publishProgress(result);
-        });
-    }
-
-    private void persistCompletedResult(Long backtestId,
-                                        BacktestSimulationResult simulationResult,
-                                        int totalCandles,
-                                        LocalDateTime currentDataTimestamp) {
-        transactionTemplate.executeWithoutResult(status -> {
-            BacktestResult result = backtestResultRepository.findById(backtestId)
-                .orElseThrow(() -> new EntityNotFoundException("Backtest not found: " + backtestId));
-
-            applySimulationResult(result, simulationResult);
-            LocalDateTime now = LocalDateTime.now();
-            result.setExecutionStatus(BacktestResult.ExecutionStatus.COMPLETED);
-            result.setExecutionStage(BacktestResult.ExecutionStage.COMPLETED);
-            result.setProgressPercent(100);
-            result.setProcessedCandles(totalCandles);
-            result.setTotalCandles(totalCandles);
-            result.setCurrentDataTimestamp(currentDataTimestamp);
-            result.setStatusMessage("Backtest completed. Metrics and trade series are ready to review.");
-            result.setLastProgressAt(now);
-            result.setCompletedAt(now);
-            result.setErrorMessage(null);
-            backtestResultRepository.save(result);
-            publishProgress(result);
-        });
-    }
-
-    private void markRunFailed(Long backtestId, Exception exception) {
-        transactionTemplate.executeWithoutResult(status -> {
-            BacktestResult result = backtestResultRepository.findById(backtestId)
-                .orElseThrow(() -> new EntityNotFoundException("Backtest not found: " + backtestId));
-
-            LocalDateTime now = LocalDateTime.now();
-            result.setExecutionStatus(BacktestResult.ExecutionStatus.FAILED);
-            result.setExecutionStage(BacktestResult.ExecutionStage.FAILED);
-            result.setValidationStatus(BacktestResult.ValidationStatus.FAILED);
-            result.setStatusMessage("Execution failed: " + exception.getMessage());
-            result.setErrorMessage(exception.getMessage());
-            result.setLastProgressAt(now);
-            result.setCompletedAt(now);
-            backtestResultRepository.save(result);
-            publishProgress(result);
-        });
-    }
-
-    public int getInFlightBacktestCount() {
-        return inFlightBacktests.size();
-    }
-
-    private void publishProgress(BacktestResult result) {
-        webSocketEventPublisher.publishBacktestProgress(
-            "test",
-            result.getId(),
-            result.getStrategyId(),
-            result.getDatasetName(),
-            result.getExperimentName(),
-            result.getSymbol(),
-            result.getTimeframe(),
-            result.getExecutionStatus().name(),
-            result.getValidationStatus().name(),
-            result.getFeesBps(),
-            result.getSlippageBps(),
-            result.getTimestamp(),
-            result.getInitialBalance(),
-            result.getFinalBalance(),
-            result.getExecutionStage().name(),
-            result.getProgressPercent(),
-            result.getProcessedCandles(),
-            result.getTotalCandles(),
-            result.getCurrentDataTimestamp(),
-            result.getLastProgressAt(),
-            result.getStatusMessage(),
-            result.getStartedAt(),
-            result.getCompletedAt(),
-            result.getErrorMessage()
-        );
-    }
-
     private int mapSimulationProgressToOverall(int processedCandles, int totalCandles) {
         if (totalCandles <= 0) {
             return PREPARATION_PROGRESS_PERCENT;
         }
         double ratio = Math.min(1.0, Math.max(0.0, processedCandles / (double) totalCandles));
-        return PREPARATION_PROGRESS_PERCENT + (int) Math.round(ratio * (PERSISTING_PROGRESS_PERCENT - PREPARATION_PROGRESS_PERCENT - 3));
+        return PREPARATION_PROGRESS_PERCENT
+            + (int) Math.round(ratio * (PERSISTING_PROGRESS_PERCENT - PREPARATION_PROGRESS_PERCENT - 3));
     }
 
-    private void applySimulationResult(BacktestResult result, BacktestSimulationResult simulationResult) {
-        result.setFinalBalance(simulationResult.finalBalance());
-        result.setSharpeRatio(simulationResult.sharpeRatio());
-        result.setProfitFactor(simulationResult.profitFactor());
-        result.setWinRate(simulationResult.winRatePercent());
-        result.setMaxDrawdown(simulationResult.maxDrawdownPercent());
-        result.setTotalTrades(simulationResult.totalTrades());
-        result.setValidationStatus(isPassed(simulationResult)
-            ? BacktestResult.ValidationStatus.PASSED
-            : BacktestResult.ValidationStatus.FAILED);
-        result.replaceEquityPoints(simulationResult.equitySeries().stream().map(sample -> {
-            BacktestEquityPoint point = new BacktestEquityPoint();
-            point.setPointTimestamp(sample.timestamp());
-            point.setEquity(sample.equity());
-            point.setDrawdownPct(sample.drawdownPct());
-            return point;
-        }).toList());
-        result.replaceTradeSeries(simulationResult.tradeSeries().stream().map(sample -> {
-            BacktestTradeSeriesItem item = new BacktestTradeSeriesItem();
-            item.setSymbol(sample.symbol());
-            item.setPositionSide(sample.side());
-            item.setEntryTime(sample.entryTime());
-            item.setExitTime(sample.exitTime());
-            item.setEntryPrice(sample.entryPrice());
-            item.setExitPrice(sample.exitPrice());
-            item.setQuantity(sample.quantity());
-            item.setEntryValue(sample.entryValue());
-            item.setExitValue(sample.exitValue());
-            item.setReturnPct(sample.returnPct());
-            return item;
-        }).toList());
-    }
-
-    private boolean isPassed(BacktestSimulationResult simulationResult) {
-        return simulationResult.sharpeRatio().compareTo(BigDecimal.ONE) >= 0
-            && simulationResult.profitFactor().compareTo(new BigDecimal("1.5")) >= 0
-            && simulationResult.maxDrawdownPercent().compareTo(new BigDecimal("25")) < 0;
+    private List<OHLCVData> scopeForExecution(BacktestAlgorithmType algorithmType,
+                                              String primarySymbol,
+                                              List<OHLCVData> filteredCandles) {
+        if (backtestStrategyRegistry.getStrategy(algorithmType).getSelectionMode() == BacktestStrategySelectionMode.SINGLE_SYMBOL) {
+            return filteredCandles.stream()
+                .filter(candle -> candle.getSymbol().equals(primarySymbol))
+                .toList();
+        }
+        return filteredCandles;
     }
 
     private String resolvePrimarySymbol(String requestedSymbol, String datasetSymbolsCsv) {
@@ -412,19 +266,5 @@ public class BacktestExecutionService {
             .map(String::trim)
             .filter(symbol -> !symbol.isBlank())
             .toList();
-    }
-
-    private record BacktestExecutionContext(
-        Long backtestId,
-        String strategyId,
-        Long datasetId,
-        String symbol,
-        String timeframe,
-        LocalDateTime startDate,
-        LocalDateTime endDate,
-        BigDecimal initialBalance,
-        Integer feesBps,
-        Integer slippageBps
-    ) {
     }
 }

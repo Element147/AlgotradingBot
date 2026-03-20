@@ -7,7 +7,6 @@ import { useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import {
-  buildEnvironmentChannels,
   getWebSocketManager,
   type WebSocketEventType,
   type WebSocketEventHandler,
@@ -22,6 +21,9 @@ import {
   connectionClosed,
   reconnectAttempted,
   eventReceived,
+  subscriptionsUpdated,
+  subscriptionsRemoved,
+  subscriptionFailed,
   selectIsConnected,
 } from './websocketSlice';
 
@@ -43,7 +45,7 @@ export const useWebSocketConnection = () => {
       }
 
       if (state === 'open') {
-        dispatch(connectionEstablished(buildEnvironmentChannels(environment)));
+        dispatch(connectionEstablished([]));
         return;
       }
 
@@ -57,11 +59,30 @@ export const useWebSocketConnection = () => {
       dispatch(reconnectAttempted());
     });
 
+    const unsubscribeSubscriptionState = wsManager.subscribeSubscriptionState(
+      ({ action, channels, error, rejectedChannels }) => {
+        if (action === 'subscribed' && channels.length > 0) {
+          dispatch(subscriptionsUpdated(channels));
+        }
+
+        if (action === 'unsubscribed' && channels.length > 0) {
+          dispatch(subscriptionsRemoved(channels));
+        }
+
+        if (error) {
+          const suffix =
+            rejectedChannels.length > 0 ? ` (${rejectedChannels.join(', ')})` : '';
+          dispatch(subscriptionFailed(`${error}${suffix}`));
+        }
+      }
+    );
+
     return () => {
       unsubscribeConnectionState();
       unsubscribeReconnects();
+      unsubscribeSubscriptionState();
     };
-  }, [dispatch, environment, wsManager]);
+  }, [dispatch, wsManager]);
 
   useEffect(() => {
     if (!token) {

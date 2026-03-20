@@ -9,6 +9,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -21,7 +22,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "market_data_import_jobs")
+@Table(name = "market_data_import_jobs", indexes = {
+    @Index(name = "idx_market_data_import_ready_scan", columnList = "status,next_retry_at,created_at")
+})
 public class MarketDataImportJob {
 
     @Id

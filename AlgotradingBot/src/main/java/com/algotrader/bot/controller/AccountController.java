@@ -46,7 +46,7 @@ public class AccountController {
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "Get account balance",
-            description = "Returns account balance with asset breakdown. Supports test and live environments."
+            description = "Returns account balance with asset breakdown. Requests are environment-aware, but live-mode reads currently return a capability error until live exchange balances are wired."
     )
     public ResponseEntity<BalanceResponse> getBalance(
             @Parameter(description = "Environment mode: test or live")
@@ -75,7 +75,7 @@ public class AccountController {
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "Get performance metrics",
-            description = "Returns performance metrics for specified timeframe: today, week, month, or all-time."
+            description = "Returns performance metrics for specified timeframe: today, week, month, or all-time. Requests are environment-aware, but live-mode reads currently return a capability error until live exchange performance reads are wired."
     )
     public ResponseEntity<PerformanceResponse> getPerformance(
             @Parameter(description = "Environment mode: test or live")
@@ -106,7 +106,7 @@ public class AccountController {
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "Get open positions",
-            description = "Returns all open positions with unrealized P&L."
+            description = "Returns all open positions with unrealized P&L. Requests are environment-aware, but live-mode reads currently return a capability error until live exchange positions are wired."
     )
     public ResponseEntity<List<OpenPositionResponse>> getOpenPositions(
             @Parameter(description = "Environment mode: test or live")
@@ -135,7 +135,7 @@ public class AccountController {
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "Get recent trades",
-            description = "Returns recent completed trades with entry/exit details and P&L."
+            description = "Returns recent completed trades with entry/exit details and P&L. Requests are environment-aware, but live-mode reads currently return a capability error until live exchange trade history is wired."
     )
     public ResponseEntity<List<RecentTradeResponse>> getRecentTrades(
             @Parameter(description = "Environment mode: test or live")

@@ -21,17 +21,19 @@ class BacktestStrategyRegistryTest {
             new RegimeFilteredMeanReversionBacktestStrategy(indicatorCalculator),
             new TrendFirstAdaptiveEnsembleBacktestStrategy(indicatorCalculator),
             new SmaCrossoverBacktestStrategy(indicatorCalculator),
-            new BollingerBandsBacktestStrategy(indicatorCalculator)
+            new BollingerBandsBacktestStrategy(indicatorCalculator),
+            new IchimokuTrendBacktestStrategy(indicatorCalculator)
         ));
 
         List<BacktestStrategyDefinition> definitions = registry.getDefinitions();
 
-        assertEquals(8, definitions.size());
+        assertEquals(9, definitions.size());
         assertEquals(BacktestAlgorithmType.BUY_AND_HOLD, definitions.get(0).type());
         assertEquals(BacktestAlgorithmType.DUAL_MOMENTUM_ROTATION, definitions.get(1).type());
         assertEquals(BacktestStrategySelectionMode.DATASET_UNIVERSE, definitions.get(1).selectionMode());
         assertEquals(BacktestAlgorithmType.TREND_FIRST_ADAPTIVE_ENSEMBLE, definitions.get(5).type());
         assertEquals(BacktestAlgorithmType.BOLLINGER_BANDS, definitions.get(7).type());
+        assertEquals(BacktestAlgorithmType.ICHIMOKU_TREND, definitions.get(8).type());
     }
 
     @Test

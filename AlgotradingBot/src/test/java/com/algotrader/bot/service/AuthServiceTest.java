@@ -1,6 +1,7 @@
 package com.algotrader.bot.service;
 
 import com.algotrader.bot.entity.User;
+import com.algotrader.bot.repository.AuthTokenRevocationRepository;
 import com.algotrader.bot.repository.UserRepository;
 import com.algotrader.bot.security.JwtTokenProvider;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 
@@ -34,6 +36,9 @@ class AuthServiceTest {
 
     @Mock
     private JwtTokenProvider jwtTokenProvider;
+
+    @Mock
+    private AuthTokenRevocationRepository authTokenRevocationRepository;
 
     @InjectMocks
     private AuthService authService;
@@ -130,6 +135,8 @@ class AuthServiceTest {
         // Arrange
         String token = "valid-token";
         when(jwtTokenProvider.validateToken(token)).thenReturn(true);
+        when(jwtTokenProvider.getExpirationFromToken(token)).thenReturn(Instant.parse("2026-03-20T00:00:00Z"));
+        when(authTokenRevocationRepository.existsByTokenHash(anyString())).thenReturn(false, true);
 
         // Act
         authService.logout(token);
@@ -137,6 +144,8 @@ class AuthServiceTest {
         // Assert
         assertTrue(authService.isTokenBlacklisted(token));
         verify(jwtTokenProvider).validateToken(token);
+        verify(jwtTokenProvider).getExpirationFromToken(token);
+        verify(authTokenRevocationRepository).save(any());
     }
 
     @Test
@@ -183,6 +192,8 @@ class AuthServiceTest {
         // Arrange
         String refreshToken = "blacklisted-token";
         when(jwtTokenProvider.validateToken(refreshToken)).thenReturn(true);
+        when(jwtTokenProvider.getExpirationFromToken(refreshToken)).thenReturn(Instant.parse("2026-03-20T00:00:00Z"));
+        when(authTokenRevocationRepository.existsByTokenHash(anyString())).thenReturn(false, true);
         authService.logout(refreshToken); // Blacklist the token
 
         // Act & Assert
@@ -191,6 +202,12 @@ class AuthServiceTest {
         );
 
         verify(jwtTokenProvider, atLeastOnce()).validateToken(refreshToken);
+    }
+
+    @Test
+    void testIsTokenBlacklisted_BlankToken() {
+        assertFalse(authService.isTokenBlacklisted(" "));
+        verifyNoInteractions(authTokenRevocationRepository);
     }
 
     @Test
@@ -224,6 +241,22 @@ class AuthServiceTest {
 
         // Act & Assert
         assertThrows(BadCredentialsException.class, () -> 
+            authService.getCurrentUser(token)
+        );
+
+        verify(jwtTokenProvider).validateToken(token);
+        verify(jwtTokenProvider, never()).getUsernameFromToken(anyString());
+    }
+
+    @Test
+    void testGetCurrentUser_BlacklistedToken() {
+        // Arrange
+        String token = "revoked-token";
+        when(jwtTokenProvider.validateToken(token)).thenReturn(true);
+        when(authTokenRevocationRepository.existsByTokenHash(anyString())).thenReturn(true);
+
+        // Act & Assert
+        assertThrows(BadCredentialsException.class, () ->
             authService.getCurrentUser(token)
         );
 

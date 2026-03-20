@@ -9,6 +9,8 @@ import {
   CardContent,
   Chip,
   Grid,
+  MenuItem,
+  Select,
   Stack,
   Table,
   TableBody,
@@ -23,6 +25,11 @@ import { jsPDF } from 'jspdf';
 import { useMemo, useRef, useState } from 'react';
 
 import type { BacktestDetails } from './backtestApi';
+import { BacktestExposureChart } from './BacktestExposureChart';
+import { BacktestIndicatorChart } from './BacktestIndicatorChart';
+import { BacktestPriceActionChart } from './BacktestPriceActionChart';
+import { getPreferredTelemetrySymbol } from './backtestTelemetry';
+import { formatBacktestMarketLabel } from './backtestTypes';
 import {
   createDrawdownCurve,
   createEquityCurve,
@@ -117,6 +124,7 @@ export function BacktestResults({
 }: BacktestResultsProps) {
   const exportRef = useRef<HTMLDivElement | null>(null);
   const [exportFeedback, setExportFeedback] = useState<string | null>(null);
+  const [selectedTelemetrySymbol, setSelectedTelemetrySymbol] = useState<string | null>(null);
   const equityCurve = useMemo(() => createEquityCurve(details), [details]);
   const drawdownCurve = useMemo(() => createDrawdownCurve(equityCurve), [equityCurve]);
   const monthlyReturns = useMemo(() => createMonthlyReturns(equityCurve), [equityCurve]);
@@ -140,6 +148,12 @@ export function BacktestResults({
   const lastUpdateLabel = details.lastProgressAt
     ? formatDistanceToNow(new Date(details.lastProgressAt))
     : 'No progress updates yet';
+  const preferredTelemetrySymbol = getPreferredTelemetrySymbol(details.symbol, details.telemetry);
+  const activeTelemetry =
+    details.telemetry.find((series) => series.symbol === selectedTelemetrySymbol) ??
+    details.telemetry.find((series) => series.symbol === preferredTelemetrySymbol) ??
+    details.telemetry[0] ??
+    null;
 
   const exportPdf = async () => {
     if (!hasCompleteProvenance) {
@@ -182,7 +196,7 @@ export function BacktestResults({
                 Experiment: {details.experimentName} | Algorithm: {details.strategyId}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Dataset: {details.datasetName ?? '-'} | Market: {details.symbol} ({details.timeframe})
+                Dataset: {details.datasetName ?? '-'} | Market: {formatBacktestMarketLabel(details.symbol)} ({details.timeframe})
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Equity points: {details.equityCurve.length} | Recorded trades: {details.tradeSeries.length}
@@ -314,6 +328,59 @@ export function BacktestResults({
 
       <Box ref={exportRef}>
         <Grid container spacing={2}>
+          {activeTelemetry ? (
+            <>
+              <Grid size={{ xs: 12 }}>
+                <Card>
+                  <CardContent>
+                    <Stack
+                      direction={{ xs: 'column', md: 'row' }}
+                      justifyContent="space-between"
+                      spacing={2}
+                      alignItems={{ xs: 'flex-start', md: 'center' }}
+                    >
+                      <Box>
+                        <Typography variant="h6">Price, Signal, and Telemetry Review</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Reconstructed price path, exposure, regime context, and indicator overlays
+                          for the selected symbol.
+                        </Typography>
+                      </Box>
+                      {details.telemetry.length > 1 ? (
+                        <Select
+                          size="small"
+                          value={activeTelemetry.symbol}
+                          onChange={(event) => setSelectedTelemetrySymbol(event.target.value)}
+                        >
+                          {details.telemetry.map((series) => (
+                            <MenuItem key={series.symbol} value={series.symbol}>
+                              {series.symbol}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      ) : null}
+                    </Stack>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <BacktestPriceActionChart series={activeTelemetry} />
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <BacktestExposureChart series={activeTelemetry} />
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <BacktestIndicatorChart series={activeTelemetry} />
+              </Grid>
+            </>
+          ) : (
+            <Grid size={{ xs: 12 }}>
+              <Alert severity="info">
+                Per-bar telemetry is unavailable for this run, so price-action review stays limited to
+                the equity curve and recorded trade table.
+              </Alert>
+            </Grid>
+          )}
           <Grid size={{ xs: 12 }}>
             <EquityCurve points={equityCurve} />
           </Grid>

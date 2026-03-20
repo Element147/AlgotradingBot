@@ -1,6 +1,7 @@
 package com.algotrader.bot.backtest;
 
 import com.algotrader.bot.backtest.strategy.BacktestStrategyRegistry;
+import com.algotrader.bot.entity.PositionSide;
 import com.algotrader.bot.service.BacktestAlgorithmType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -122,6 +123,19 @@ class BacktestStrategyCatalogIntegrationTest {
 
         assertNotNull(strategyRegistry.getStrategy(BacktestAlgorithmType.BOLLINGER_BANDS));
         assertTrue(result.totalTrades() >= 1);
+    }
+
+    @Test
+    void ichimokuTrend_strategyRunsEndToEnd() {
+        BacktestSimulationResult result = simulate(
+            BacktestAlgorithmType.ICHIMOKU_TREND,
+            createIchimokuCandles("BTC/USDT"),
+            "BTC/USDT"
+        );
+
+        assertNotNull(strategyRegistry.getStrategy(BacktestAlgorithmType.ICHIMOKU_TREND));
+        assertTrue(result.totalTrades() >= 1);
+        assertEquals(PositionSide.LONG, result.tradeSeries().get(0).side());
     }
 
     private BacktestSimulationResult simulate(BacktestAlgorithmType algorithmType,
@@ -254,12 +268,34 @@ class BacktestStrategyCatalogIntegrationTest {
         List<OHLCVData> candles = new ArrayList<>();
         LocalDateTime start = LocalDateTime.parse("2025-01-01T00:00:00");
 
-        for (int i = 0; i < 20; i++) {
-            candles.add(candle(start.plusHours(i), symbol, bd(100)));
+        for (int i = 0; i < 50; i++) {
+            candles.add(candle(start.plusHours(i), symbol, bd(100 + i * 0.4)));
         }
 
-        candles.add(candle(start.plusHours(20), symbol, bd(70)));
-        candles.add(candle(start.plusHours(21), symbol, bd(105)));
+        List<BigDecimal> closes = List.of(
+            bd(115), bd(110), bd(113), bd(117), bd(120), bd(123), bd(126), bd(128)
+        );
+        for (int i = 0; i < closes.size(); i++) {
+            candles.add(candle(start.plusHours(50 + i), symbol, closes.get(i)));
+        }
+
+        return candles;
+    }
+
+    private List<OHLCVData> createIchimokuCandles(String symbol) {
+        List<OHLCVData> candles = new ArrayList<>();
+        LocalDateTime start = LocalDateTime.parse("2025-01-01T00:00:00");
+
+        for (int i = 0; i < 90; i++) {
+            candles.add(candle(start.plusHours(i), symbol, bd(100 + i * 1.2)));
+        }
+
+        List<BigDecimal> closes = List.of(
+            bd(205), bd(202), bd(199), bd(196), bd(193), bd(190), bd(187), bd(184)
+        );
+        for (int i = 0; i < closes.size(); i++) {
+            candles.add(candle(start.plusHours(90 + i), symbol, closes.get(i)));
+        }
 
         return candles;
     }

@@ -8,11 +8,13 @@ The SPA currently provides:
 
 - login and protected routes
 - dashboard health, paper-trading, and alert views
+- paper order placement, fill/cancel controls, and order history
 - strategy management and configuration UX
 - backtest execution, history, details, compare, replay, and export views
+- telemetry-rich backtest review with price-action, exposure, regime, indicator, equity, drawdown, and comparison visuals
 - market-data import job management
 - trade review surfaces
-- risk configuration and circuit-breaker visibility
+- risk configuration, circuit-breaker inventory, and override visibility
 - settings for exchange profiles, provider credentials, audit review, and display preferences
 
 ## App Shell
@@ -25,10 +27,19 @@ The SPA currently provides:
 - protected routes
 - shared `WebSocketRuntime`
 
+Shared shell ownership:
+
+- `frontend/src/theme/theme.ts` defines the research-workstation design tokens, MUI component overrides, and global dense-data styling.
+- `frontend/src/components/layout/AppLayout.tsx` owns the shell framing, skip-link, responsive sidebar behavior, and content-stage backdrop.
+- `frontend/src/components/layout/Header.tsx` owns route-aware operator context, environment and connection badges, and session actions.
+- `frontend/src/components/layout/Sidebar.tsx` owns grouped navigation, shell safety cues, and workstation branding.
+- `frontend/src/components/LoadingFallback.tsx` and `frontend/src/components/ErrorFallback.tsx` should mirror the shell hierarchy instead of falling back to generic placeholder layouts.
+
 Current route surfaces:
 
 - `/login`
 - `/dashboard`
+- `/paper`
 - `/strategies`
 - `/trades`
 - `/backtest`
@@ -46,12 +57,24 @@ Current route surfaces:
 
 Keep backend contract adaptation in these slices or transport helpers rather than in page components.
 
+Current contract pattern:
+
+- `frontend/src/generated/openapi.d.ts` is the transport contract source.
+- `frontend/src/services/openapi.ts` provides path-indexed helper types so slices can bind request and response shapes directly to generated paths without copying transport interfaces by hand.
+- Feature APIs own the transport boundary. `backtestContract.ts`, `authContract.ts`, and `accountContract.ts` normalize generated transport shapes into feature models before components consume them.
+- Explicit environment overrides should go through `withEnvironmentMode(...)` in `frontend/src/services/api.ts` instead of hand-writing `X-Environment` headers inside slices.
+- Simpler slices can stay thin when the feature type genuinely matches the transport shape, but any response normalization should move into a feature contract module instead of staying inline in page components or ad hoc endpoint code.
+- Backtest form helpers should omit transport fields that are invalid for the selected strategy mode instead of fabricating placeholder values.
+- Treat backtest telemetry as a backend-owned read model. Components may reshape it for chart rows, but they should not recompute indicators, exposure, or action timelines client-side.
+- Paper-order, backtest, and other research-only surfaces must show explicit capability messaging when the environment switch is on `live`.
+
 ## Frontend Boundaries
 
 - `src/features/*`: route-level and feature-level UI
 - `src/app`: store and typed hooks
 - `src/services`: API base query, WebSocket manager, and shared transport logic
 - `src/components`: shared layout, guards, loading, and error handling primitives
+- Route files should stay orchestration-first. Large UI sections belong in feature-local panel modules such as `BacktestPanels.tsx`, `MarketDataPanels.tsx`, and `SettingsPanels.tsx`, while page-only derivation and normalization helpers belong in small state/helper modules such as `backtestPageState.ts`, `marketDataPageState.ts`, and `tradesPageState.ts`.
 
 ## Implementation Rules
 
@@ -61,6 +84,9 @@ Keep backend contract adaptation in these slices or transport helpers rather tha
 4. Handle loading, empty, error, and success states in user-facing flows.
 5. Keep execution-sensitive settings explicit in the UI.
 6. Avoid browser-only persistence for shared operational state or secrets.
+7. Keep selection-mode or environment-mode quirks inside feature form helpers or API adapters, not route components.
+8. Prefer feature container plus panel/helper splits once a route starts accumulating multiple cards, tables, or modal workflows.
+9. Keep the visual system centralized in theme or shell components before adding one-off page styling; safety and environment cues should stay visually consistent across routes.
 
 ## Real-Time Behavior
 
@@ -68,6 +94,13 @@ The frontend currently uses WebSockets for live updates to:
 
 - backtest progress
 - market-data import progress
+
+The verified runtime contract is:
+
+- connect to `/ws?token=...&env=test|live` with an authenticated browser session token
+- wait for backend `ack` control messages before treating a channel as subscribed
+- surface backend `error` control messages without pretending the socket is fully subscribed
+- keep polling fallback states visible whenever the socket is disconnected or a channel is not acknowledged
 
 Pages must still present the operator with clear fallback behavior when the app is on polling rather than live push updates.
 

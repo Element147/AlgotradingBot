@@ -51,6 +51,10 @@ export const riskApi = createApi({
       query: () => '/api/risk/config',
       providesTags: ['Risk'],
     }),
+    getCircuitBreakers: builder.query<RiskConfig[], void>({
+      query: () => '/api/risk/circuit-breakers',
+      providesTags: ['Risk'],
+    }),
     getRiskAlerts: builder.query<RiskAlert[], void>({
       query: () => '/api/risk/alerts',
       providesTags: ['Risk'],
@@ -77,6 +81,7 @@ export const riskApi = createApi({
 export const {
   useGetRiskStatusQuery,
   useGetRiskConfigQuery,
+  useGetCircuitBreakersQuery,
   useGetRiskAlertsQuery,
   useUpdateRiskConfigMutation,
   useOverrideCircuitBreakerMutation,

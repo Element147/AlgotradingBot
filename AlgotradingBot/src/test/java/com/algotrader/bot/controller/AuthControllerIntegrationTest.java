@@ -125,6 +125,15 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
+    void testLogin_PreflightRequest_RejectsUnknownOrigin() throws Exception {
+        mockMvc.perform(options("/api/auth/login")
+                        .header("Origin", "http://evil.example")
+                        .header("Access-Control-Request-Method", "POST")
+                        .header("Access-Control-Request-Headers", "content-type"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void testRefreshToken_Success() throws Exception {
         // Arrange - First login to get refresh token
         LoginRequest loginRequest = new LoginRequest("testuser", "password123");
@@ -190,5 +199,31 @@ class AuthControllerIntegrationTest {
                         .content(objectMapper.writeValueAsString(refreshRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").exists());
+    }
+
+    @Test
+    void testLogout_RevokesAccessTokenForSubsequentRequests() throws Exception {
+        LoginRequest loginRequest = new LoginRequest("testuser", "password123");
+        MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> loginResponse = objectMapper.readValue(
+                loginResult.getResponse().getContentAsString(),
+                Map.class
+        );
+        String accessToken = (String) loginResponse.get("accessToken");
+
+        mockMvc.perform(post("/api/auth/logout")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Logout successful"));
+
+        mockMvc.perform(get("/api/auth/me")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isForbidden());
     }
 }

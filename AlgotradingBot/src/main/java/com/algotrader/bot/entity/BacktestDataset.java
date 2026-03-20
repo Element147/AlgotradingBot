@@ -9,7 +9,9 @@ import org.hibernate.type.SqlTypes;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "backtest_datasets")
+@Table(name = "backtest_datasets", indexes = {
+    @Index(name = "idx_backtest_dataset_uploaded_at", columnList = "uploaded_at")
+})
 public class BacktestDataset {
 
     @Id

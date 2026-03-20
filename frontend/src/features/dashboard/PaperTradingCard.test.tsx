@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { BrowserRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 
 import { PaperTradingCard } from './PaperTradingCard';
@@ -37,7 +38,11 @@ vi.mock('@/features/paperApi', () => ({
 
 describe('PaperTradingCard', () => {
   it('renders paper trading state', () => {
-    render(<PaperTradingCard />);
+    render(
+      <BrowserRouter>
+        <PaperTradingCard />
+      </BrowserRouter>
+    );
 
     expect(screen.getByText('Paper Trading')).toBeInTheDocument();
     expect(screen.getByText('Paper mode active')).toBeInTheDocument();
@@ -45,5 +50,6 @@ describe('PaperTradingCard', () => {
     expect(screen.getByText('Open Positions: 2')).toBeInTheDocument();
     expect(screen.getByText('Paper trading is active with no current incident signals.')).toBeInTheDocument();
     expect(screen.getByText(/Recovery status: HEALTHY/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /open paper desk/i })).toHaveAttribute('href', '/paper');
   });
 });

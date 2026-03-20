@@ -32,7 +32,7 @@ import {
   useUpdateStrategyConfigMutation,
 } from './strategiesApi';
 import { StrategyConfigModal } from './StrategyConfigModal';
-import { getAllStrategyProfiles } from './strategyProfiles';
+import { getAllStrategyProfiles, getStrategyProfile } from './strategyProfiles';
 import type { StrategyConfigOutput } from './strategyValidation';
 
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -262,10 +262,25 @@ export default function StrategiesPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {strategies.map((strategy) => (
+                  {strategies.map((strategy) => {
+                    const strategyProfile = getStrategyProfile(strategy.type);
+
+                    return (
                     <TableRow key={strategy.id} hover>
-                      <TableCell>{strategy.name}</TableCell>
-                      <TableCell>{strategy.type}</TableCell>
+                      <TableCell>
+                        {strategy.name}
+                        {strategyProfile ? (
+                          <Typography variant="caption" display="block" color="text.secondary">
+                            {strategyProfile.shortDescription}
+                          </Typography>
+                        ) : null}
+                      </TableCell>
+                      <TableCell>
+                        {strategyProfile?.title ?? strategy.type}
+                        <Typography variant="caption" display="block" color="text.secondary">
+                          Canonical ID: {strategy.type}
+                        </Typography>
+                      </TableCell>
                       <TableCell>
                         <Chip label={strategy.status} size="small" color={statusColor(strategy.status)} />
                       </TableCell>
@@ -321,7 +336,8 @@ export default function StrategiesPage() {
                         </Stack>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </CardContent>

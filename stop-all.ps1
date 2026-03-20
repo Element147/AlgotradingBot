@@ -13,6 +13,9 @@ Write-Host ""
 
 Set-Location $scriptPath
 $repoPaths = Get-RepoPaths -ScriptPath $scriptPath
+Initialize-RepoRuntime -RepoPaths $repoPaths
+Set-LocalDockerComposeEnvironment -RepoPaths $repoPaths
+$backendPidFile = Get-PidFilePath -RepoPaths $repoPaths -Name "backend"
 $frontendPidFile = Get-PidFilePath -RepoPaths $repoPaths -Name "frontend"
 $composeArgs = Get-ComposeArgs -RepoPaths $repoPaths -IncludeDebug
 
@@ -31,8 +34,11 @@ if (Test-DockerRunning) {
 Write-Host ""
 Write-Host "Stopping Frontend dev server..." -ForegroundColor Yellow
 Stop-FromPidFile -PidFile $frontendPidFile -Label "frontend"
+Stop-FromPidFile -PidFile $backendPidFile -Label "backend"
 Stop-ListeningProcess -Port 5173 -Label "frontend"
+Stop-ListeningProcess -Port 8080 -Label "backend"
 Remove-PidFile -PidFile $frontendPidFile
+Remove-PidFile -PidFile $backendPidFile
 
 Write-Host "[OK] Frontend dev server stopped" -ForegroundColor Green
 

@@ -66,6 +66,13 @@ npm run contract:generate
 
 `contract:check` stays non-zero until tracked artifacts match the generated output.
 
+Contract ownership model:
+
+- Treat generated OpenAPI artifacts as the transport source of truth.
+- Normalize generated request and response shapes in one API-slice or transport-helper boundary before they reach page components.
+- Keep component-facing models explicit and stable even when generated schemas contain optional transport fields.
+- Encode selection-mode rules in DTOs and adapters instead of inventing placeholder values in the UI.
+
 ## CI Order
 
 Current CI baseline:
@@ -94,3 +101,9 @@ When orchestration, Docker, or runtime config changes, mirror the runbooks:
 .\run-all.ps1
 .\stop-all.ps1
 ```
+
+Runtime smoke guidance:
+
+- Prefer `.\run.ps1` when you need to validate the current local backend source tree, because it runs the backend with local `bootRun`.
+- Use `.\run-all.ps1` when you specifically need the Docker-backed full stack; rebuild the compose app image first if you expect backend code changes to be present there.
+- For large active backtests, prefer history or progress polling while the run is in flight. The detail endpoint intentionally withholds heavy telemetry until completion, and completed detail payloads can be large.

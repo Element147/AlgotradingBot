@@ -167,14 +167,74 @@ class BacktestSimulationEngineTest {
         assertTrue(result.finalBalance().compareTo(new BigDecimal("1000")) > 0);
     }
 
+    @Test
+    void simulate_executesQueuedSignalsOnNextBarOpen() {
+        BacktestStrategy nextOpenStrategy = new BacktestStrategy() {
+            @Override
+            public BacktestStrategyDefinition definition() {
+                return new BacktestStrategyDefinition(
+                    BacktestAlgorithmType.BUY_AND_HOLD,
+                    "Next-open execution test",
+                    "Verifies that signal decisions are queued for the next bar open.",
+                    BacktestStrategySelectionMode.SINGLE_SYMBOL,
+                    3
+                );
+            }
+
+            @Override
+            public BacktestStrategyDecision evaluate(BacktestStrategyContext context) {
+                if (!context.inPosition() && context.currentIndex() == 2) {
+                    return BacktestStrategyDecision.buy(context.primarySymbol(), BigDecimal.ONE, "Queue long entry");
+                }
+                if (context.inLongPosition() && context.currentIndex() == 4) {
+                    return BacktestStrategyDecision.sell("Queue long exit");
+                }
+                return BacktestStrategyDecision.hold();
+            }
+        };
+
+        BacktestSimulationEngine nextOpenEngine = new BacktestSimulationEngine(
+            new BacktestStrategyRegistry(List.of(nextOpenStrategy)),
+            new BacktestSimulationMetricsCalculator()
+        );
+
+        LocalDateTime start = LocalDateTime.parse("2025-01-01T00:00:00");
+        List<OHLCVData> candles = List.of(
+            candle(start, "BTC/USDT", bd(100), bd(100)),
+            candle(start.plusHours(1), "BTC/USDT", bd(101), bd(101)),
+            candle(start.plusHours(2), "BTC/USDT", bd(102), bd(105)),
+            candle(start.plusHours(3), "BTC/USDT", bd(120), bd(121)),
+            candle(start.plusHours(4), "BTC/USDT", bd(122), bd(123)),
+            candle(start.plusHours(5), "BTC/USDT", bd(90), bd(89))
+        );
+
+        BacktestSimulationResult result = nextOpenEngine.simulate(
+            BacktestAlgorithmType.BUY_AND_HOLD,
+            request(candles, "BTC/USDT", 0, 0)
+        );
+
+        assertEquals(1, result.tradeSeries().size());
+        assertEquals(start.plusHours(3), result.tradeSeries().get(0).entryTime());
+        assertEquals(bd(120).setScale(8), result.tradeSeries().get(0).entryPrice());
+        assertEquals(start.plusHours(5), result.tradeSeries().get(0).exitTime());
+        assertEquals(bd(90).setScale(8), result.tradeSeries().get(0).exitPrice());
+    }
+
     private BacktestSimulationRequest request(List<OHLCVData> candles, String primarySymbol) {
+        return request(candles, primarySymbol, 10, 3);
+    }
+
+    private BacktestSimulationRequest request(List<OHLCVData> candles,
+                                              String primarySymbol,
+                                              Integer feesBps,
+                                              Integer slippageBps) {
         return new BacktestSimulationRequest(
             candles,
             primarySymbol,
             "1h",
             new BigDecimal("1000"),
-            10,
-            3
+            feesBps,
+            slippageBps
         );
     }
 
@@ -283,12 +343,16 @@ class BacktestSimulationEngineTest {
     }
 
     private OHLCVData candle(LocalDateTime timestamp, String symbol, BigDecimal close) {
+        return candle(timestamp, symbol, close, close);
+    }
+
+    private OHLCVData candle(LocalDateTime timestamp, String symbol, BigDecimal open, BigDecimal close) {
         return new OHLCVData(
             timestamp,
             symbol,
-            close,
-            close.add(BigDecimal.ONE),
-            close.subtract(BigDecimal.ONE),
+            open,
+            open.max(close).add(BigDecimal.ONE),
+            open.min(close).subtract(BigDecimal.ONE),
             close,
             bd(1000)
         );

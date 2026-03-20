@@ -25,17 +25,74 @@ export interface PaperTradingState {
   }>;
 }
 
+export type PaperOrderSide = 'BUY' | 'SELL' | 'SHORT' | 'COVER';
+
+export type PaperOrderStatus = 'NEW' | 'FILLED' | 'CANCELLED';
+
+export interface PaperOrder {
+  id: number;
+  symbol: string;
+  side: PaperOrderSide;
+  status: PaperOrderStatus;
+  quantity: number;
+  price: number;
+  fillPrice: number | null;
+  fees: number | null;
+  slippage: number | null;
+  createdAt: string;
+}
+
+export interface PlacePaperOrderPayload {
+  symbol: string;
+  side: PaperOrderSide;
+  quantity: number;
+  price: number;
+  executeNow: boolean;
+}
+
 export const paperApi = createApi({
   reducerPath: 'paperApi',
   baseQuery: baseQueryWithEnvironment,
-  tagTypes: ['PaperTrading'],
+  tagTypes: ['PaperTrading', 'PaperOrders'],
   keepUnusedDataFor: 300,
   endpoints: (builder) => ({
     getPaperTradingState: builder.query<PaperTradingState, void>({
       query: () => '/api/paper/state',
       providesTags: ['PaperTrading'],
     }),
+    getPaperOrders: builder.query<PaperOrder[], void>({
+      query: () => '/api/paper/orders',
+      providesTags: ['PaperOrders'],
+    }),
+    placePaperOrder: builder.mutation<PaperOrder, PlacePaperOrderPayload>({
+      query: (body) => ({
+        url: '/api/paper/orders',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['PaperTrading', 'PaperOrders'],
+    }),
+    fillPaperOrder: builder.mutation<PaperOrder, number>({
+      query: (orderId) => ({
+        url: `/api/paper/orders/${orderId}/fill`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['PaperTrading', 'PaperOrders'],
+    }),
+    cancelPaperOrder: builder.mutation<PaperOrder, number>({
+      query: (orderId) => ({
+        url: `/api/paper/orders/${orderId}/cancel`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['PaperTrading', 'PaperOrders'],
+    }),
   }),
 });
 
-export const { useGetPaperTradingStateQuery } = paperApi;
+export const {
+  useGetPaperTradingStateQuery,
+  useGetPaperOrdersQuery,
+  usePlacePaperOrderMutation,
+  useFillPaperOrderMutation,
+  useCancelPaperOrderMutation,
+} = paperApi;

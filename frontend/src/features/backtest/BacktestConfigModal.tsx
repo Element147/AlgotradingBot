@@ -17,23 +17,14 @@ import {
 import { useEffect, useMemo } from 'react';
 
 import type { BacktestAlgorithm, BacktestDataset, RunBacktestPayload } from './backtestApi';
+import {
+  buildRunBacktestPayload,
+  type BacktestConfigFormState,
+} from './backtestConfigForm';
 
 import { FieldTooltip } from '@/components/ui/FieldTooltip';
 import { getStrategyProfile } from '@/features/strategies/strategyProfiles';
 import { sanitizeText } from '@/utils/security';
-
-export interface BacktestConfigFormState {
-  algorithmType: string;
-  datasetId: string;
-  experimentName: string;
-  symbol: string;
-  timeframe: string;
-  startDate: string;
-  endDate: string;
-  initialBalance: string;
-  feesBps: string;
-  slippageBps: string;
-}
 
 interface BacktestConfigModalProps {
   open: boolean;
@@ -45,19 +36,6 @@ interface BacktestConfigModalProps {
   onClose: () => void;
   onRun: (payload: RunBacktestPayload) => Promise<void> | void;
 }
-
-const normalizePayload = (form: BacktestConfigFormState): RunBacktestPayload => ({
-  algorithmType: form.algorithmType,
-  datasetId: Number(form.datasetId),
-  experimentName: form.experimentName.trim() || undefined,
-  symbol: form.symbol,
-  timeframe: form.timeframe,
-  startDate: form.startDate,
-  endDate: form.endDate,
-  initialBalance: Number(form.initialBalance),
-  feesBps: Number(form.feesBps),
-  slippageBps: Number(form.slippageBps),
-});
 
 const parseSymbols = (symbolsCsv: string): string[] =>
   symbolsCsv
@@ -95,19 +73,22 @@ export function BacktestConfigModal({
     [form.algorithmType]
   );
   const timeframeOptions = selectedAlgorithmProfile?.timeframeOptions ?? COMMON_TIMEFRAMES;
-  const recommendedTimeframe = selectedAlgorithmProfile?.configPreset.timeframe ?? timeframeOptions[0] ?? '1h';
+  const recommendedTimeframe =
+    selectedAlgorithmProfile?.configPreset.timeframe ?? timeframeOptions[0] ?? '1h';
 
   useEffect(() => {
+    if (requiresDatasetUniverse) {
+      if (form.symbol) {
+        onChange({ ...form, symbol: '' });
+      }
+      return;
+    }
+
     if (availableSymbols.length === 0) {
       return;
     }
 
-    if (requiresDatasetUniverse && !form.symbol) {
-      onChange({ ...form, symbol: availableSymbols[0] });
-      return;
-    }
-
-    if (!requiresDatasetUniverse && !availableSymbols.includes(form.symbol)) {
+    if (!form.symbol || !availableSymbols.includes(form.symbol)) {
       onChange({ ...form, symbol: availableSymbols[0] });
     }
   }, [availableSymbols, form, onChange, requiresDatasetUniverse]);
@@ -177,7 +158,10 @@ export function BacktestConfigModal({
     if (validation.summary) {
       return;
     }
-    await onRun(normalizePayload(form));
+
+    await onRun(
+      buildRunBacktestPayload(form, selectedAlgorithm?.selectionMode ?? 'SINGLE_SYMBOL')
+    );
   };
 
   const applyRecommendedSetup = () => {
@@ -186,7 +170,7 @@ export function BacktestConfigModal({
       timeframe: recommendedTimeframe,
       feesBps: '10',
       slippageBps: '3',
-      symbol: availableSymbols[0] ?? form.symbol,
+      symbol: requiresDatasetUniverse ? '' : availableSymbols[0] ?? form.symbol,
     });
   };
 
@@ -209,11 +193,18 @@ export function BacktestConfigModal({
                 Beginner-friendly setup
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Pick a strategy, choose a dataset that matches its style, then keep timeframe and cost assumptions realistic.
-                Backtests are research evidence, not proof of future profits.
+                Pick a strategy, choose a dataset that matches its style, then keep timeframe and
+                cost assumptions realistic. Backtests are research evidence, not proof of future
+                profits.
               </Typography>
               <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                <Chip label={requiresDatasetUniverse ? 'Multi-symbol strategy' : 'Single-symbol strategy'} color="primary" variant="outlined" />
+                <Chip
+                  label={
+                    requiresDatasetUniverse ? 'Multi-symbol strategy' : 'Single-symbol strategy'
+                  }
+                  color="primary"
+                  variant="outlined"
+                />
                 <Chip
                   label={`Recommended timeframe: ${recommendedTimeframe}`}
                   color="success"
@@ -234,7 +225,10 @@ export function BacktestConfigModal({
                 onChange({
                   ...form,
                   algorithmType: value?.id ?? '',
-                  timeframe: value ? getStrategyProfile(value.id)?.configPreset.timeframe ?? form.timeframe : form.timeframe,
+                  timeframe: value
+                    ? getStrategyProfile(value.id)?.configPreset.timeframe ?? form.timeframe
+                    : form.timeframe,
+                  symbol: value?.selectionMode === 'DATASET_UNIVERSE' ? '' : form.symbol,
                 })
               }
               getOptionLabel={(option) => option.label}
@@ -244,7 +238,10 @@ export function BacktestConfigModal({
                   {...params}
                   label="Algorithm"
                   error={Boolean(validation.errors.algorithmType)}
-                  helperText={validation.errors.algorithmType ?? 'Determines the signal logic used in the simulation.'}
+                  helperText={
+                    validation.errors.algorithmType ??
+                    'Determines the signal logic used in the simulation.'
+                  }
                 />
               )}
               renderOption={(props, option) => {
@@ -267,7 +264,8 @@ export function BacktestConfigModal({
 
           {selectedAlgorithmProfile ? (
             <Alert severity="info">
-              <strong>{selectedAlgorithmProfile.title}:</strong> {selectedAlgorithmProfile.shortDescription} Best for:{' '}
+              <strong>{selectedAlgorithmProfile.title}:</strong>{' '}
+              {selectedAlgorithmProfile.shortDescription} Best for:{' '}
               {selectedAlgorithmProfile.bestFor}
             </Alert>
           ) : null}
@@ -276,7 +274,9 @@ export function BacktestConfigModal({
             <TextField
               label="Experiment Name (optional)"
               value={form.experimentName}
-              onChange={(event) => onChange({ ...form, experimentName: sanitizeText(event.target.value) })}
+              onChange={(event) =>
+                onChange({ ...form, experimentName: sanitizeText(event.target.value) })
+              }
               helperText="Examples: Q1 Trend Rotation Review, BTC Mean Reversion Retest"
             />
           </FieldTooltip>
@@ -289,7 +289,10 @@ export function BacktestConfigModal({
                 onChange({
                   ...form,
                   datasetId: value ? String(value.id) : '',
-                  symbol: value ? parseSymbols(value.symbolsCsv)[0] ?? '' : '',
+                  symbol:
+                    value && !requiresDatasetUniverse
+                      ? parseSymbols(value.symbolsCsv)[0] ?? ''
+                      : '',
                 })
               }
               getOptionLabel={(option) => option.name}
@@ -299,7 +302,9 @@ export function BacktestConfigModal({
                   {...params}
                   label="Dataset"
                   error={Boolean(validation.errors.datasetId)}
-                  helperText={validation.errors.datasetId ?? 'Historical CSV dataset used for this run.'}
+                  helperText={
+                    validation.errors.datasetId ?? 'Historical CSV dataset used for this run.'
+                  }
                 />
               )}
               renderOption={(props, option) => (
@@ -309,8 +314,8 @@ export function BacktestConfigModal({
                       {option.name}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {parseSymbols(option.symbolsCsv).length} symbols • {option.rowCount} rows • {option.dataStart.slice(0, 10)} to{' '}
-                      {option.dataEnd.slice(0, 10)}
+                      {parseSymbols(option.symbolsCsv).length} symbols | {option.rowCount} rows |{' '}
+                      {option.dataStart.slice(0, 10)} to {option.dataEnd.slice(0, 10)}
                     </Typography>
                   </Stack>
                 </Box>
@@ -326,18 +331,22 @@ export function BacktestConfigModal({
                   Symbols: {availableSymbols.join(', ')}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Coverage: {selectedDataset.dataStart.slice(0, 10)} to {selectedDataset.dataEnd.slice(0, 10)} • {selectedDataset.rowCount} rows
+                  Coverage: {selectedDataset.dataStart.slice(0, 10)} to{' '}
+                  {selectedDataset.dataEnd.slice(0, 10)} | {selectedDataset.rowCount} rows
                 </Typography>
               </Stack>
             </Paper>
           ) : null}
 
-          {requiresDatasetUniverse ? (
+          {selectedAlgorithm ? (
             <Alert severity="info">
-              This strategy evaluates the whole dataset universe, not just one pair. The engine can use any symbol in the selected dataset.
-              {form.symbol ? ` Anchor symbol for context: ${form.symbol}.` : ''}
+              {requiresDatasetUniverse
+                ? 'This strategy evaluates the whole dataset universe, not just one pair. No symbol override is required for submission.'
+                : 'This strategy runs against one symbol from the selected dataset. Confirm the dataset first, then choose the market pair below.'}
             </Alert>
-          ) : availableSymbols.length > 0 ? (
+          ) : null}
+
+          {requiresDatasetUniverse ? null : availableSymbols.length > 0 ? (
             <FieldTooltip title="Trading pair to simulate. Must match dataset coverage for meaningful results.">
               <Autocomplete
                 options={availableSymbols}
@@ -348,13 +357,17 @@ export function BacktestConfigModal({
                     {...params}
                     label="Symbol"
                     error={Boolean(validation.errors.symbol)}
-                    helperText={validation.errors.symbol ?? 'Primary market pair used by the strategy.'}
+                    helperText={
+                      validation.errors.symbol ?? 'Primary market pair used by the strategy.'
+                    }
                   />
                 )}
               />
             </FieldTooltip>
           ) : (
-            <Alert severity="warning">This dataset does not expose any symbols that can be selected.</Alert>
+            <Alert severity="warning">
+              This dataset does not expose any symbols that can be selected.
+            </Alert>
           )}
 
           <FieldTooltip title="Candle interval for strategy logic. A mismatch with dataset granularity can distort metrics.">
@@ -400,6 +413,7 @@ export function BacktestConfigModal({
               slotProps={{ inputLabel: { shrink: true } }}
             />
           </FieldTooltip>
+
           <FieldTooltip title="Backtest end boundary. Very short windows can overfit conclusions.">
             <TextField
               label="End Date"
@@ -410,6 +424,7 @@ export function BacktestConfigModal({
               slotProps={{ inputLabel: { shrink: true } }}
             />
           </FieldTooltip>
+
           <FieldTooltip title="Starting capital for simulation. Small values can exaggerate position-size constraints.">
             <TextField
               label="Initial Balance"
@@ -421,6 +436,7 @@ export function BacktestConfigModal({
               inputProps={{ min: 101, step: 100 }}
             />
           </FieldTooltip>
+
           <FieldTooltip title="Transaction fee in basis points. Understating fees inflates performance.">
             <TextField
               label="Fees (bps)"
@@ -428,10 +444,13 @@ export function BacktestConfigModal({
               value={form.feesBps}
               onChange={(event) => onChange({ ...form, feesBps: event.target.value })}
               error={Boolean(validation.errors.feesBps)}
-              helperText={validation.errors.feesBps ?? '1 bps = 0.01%. Keep realistic exchange costs.'}
+              helperText={
+                validation.errors.feesBps ?? '1 bps = 0.01%. Keep realistic exchange costs.'
+              }
               inputProps={{ min: 0, max: 200, step: 1 }}
             />
           </FieldTooltip>
+
           <FieldTooltip title="Execution slippage in basis points. Lower values can overstate real-world fills.">
             <TextField
               label="Slippage (bps)"
@@ -439,7 +458,9 @@ export function BacktestConfigModal({
               value={form.slippageBps}
               onChange={(event) => onChange({ ...form, slippageBps: event.target.value })}
               error={Boolean(validation.errors.slippageBps)}
-              helperText={validation.errors.slippageBps ?? 'Models adverse fill movement during execution.'}
+              helperText={
+                validation.errors.slippageBps ?? 'Models adverse fill movement during execution.'
+              }
               inputProps={{ min: 0, max: 200, step: 1 }}
             />
           </FieldTooltip>
@@ -450,24 +471,34 @@ export function BacktestConfigModal({
             <Stack spacing={0.75}>
               <Typography variant="subtitle2">Run summary</Typography>
               <Typography variant="body2" color="text.secondary">
-                Strategy: {selectedAlgorithm?.label ?? 'Not selected'} | Dataset: {selectedDataset?.name ?? 'Not selected'}
+                Strategy: {selectedAlgorithm?.label ?? 'Not selected'} | Dataset:{' '}
+                {selectedDataset?.name ?? 'Not selected'}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Market focus: {requiresDatasetUniverse ? 'Whole dataset universe' : form.symbol || 'Choose a symbol'} | Timeframe: {form.timeframe || 'Choose a timeframe'}
+                Market focus:{' '}
+                {requiresDatasetUniverse ? 'Whole dataset universe' : form.symbol || 'Choose a symbol'}{' '}
+                | Timeframe: {form.timeframe || 'Choose a timeframe'}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Capital: {form.initialBalance || '-'} | Fees/slippage: {form.feesBps || '-'} / {form.slippageBps || '-'} bps
+                Capital: {form.initialBalance || '-'} | Fees/slippage: {form.feesBps || '-'} /{' '}
+                {form.slippageBps || '-'} bps
               </Typography>
             </Stack>
           </Paper>
 
-          {validation.errors.dateRange ? <Alert severity="error">{validation.errors.dateRange}</Alert> : null}
+          {validation.errors.dateRange ? (
+            <Alert severity="error">{validation.errors.dateRange}</Alert>
+          ) : null}
           {validation.summary ? <Alert severity="error">{validation.summary}</Alert> : null}
         </Stack>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" disabled={busy || Boolean(validation.summary)} onClick={() => void run()}>
+        <Button
+          variant="contained"
+          disabled={busy || Boolean(validation.summary)}
+          onClick={() => void run()}
+        >
           Run Backtest
         </Button>
       </DialogActions>

@@ -42,5 +42,6 @@ public record BacktestDetailsResponse(
     LocalDateTime completedAt,
     String errorMessage,
     List<BacktestEquityPointResponse> equityCurve,
-    List<BacktestTradeSeriesItemResponse> tradeSeries
+    List<BacktestTradeSeriesItemResponse> tradeSeries,
+    List<BacktestSymbolTelemetryResponse> telemetry
 ) {}

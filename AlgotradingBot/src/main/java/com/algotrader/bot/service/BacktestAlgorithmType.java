@@ -1,5 +1,7 @@
 package com.algotrader.bot.service;
 
+import java.util.Locale;
+
 public enum BacktestAlgorithmType {
     BUY_AND_HOLD,
     DUAL_MOMENTUM_ROTATION,
@@ -8,11 +10,16 @@ public enum BacktestAlgorithmType {
     REGIME_FILTERED_MEAN_REVERSION,
     TREND_FIRST_ADAPTIVE_ENSEMBLE,
     SMA_CROSSOVER,
-    BOLLINGER_BANDS;
+    BOLLINGER_BANDS,
+    ICHIMOKU_TREND;
 
     public static BacktestAlgorithmType from(String value) {
         try {
-            return BacktestAlgorithmType.valueOf(value.trim().toUpperCase());
+            String normalized = value.trim()
+                .replace('-', '_')
+                .replace(' ', '_')
+                .toUpperCase(Locale.ROOT);
+            return BacktestAlgorithmType.valueOf(normalized);
         } catch (Exception ex) {
             throw new IllegalArgumentException("Unsupported algorithm type: " + value);
         }

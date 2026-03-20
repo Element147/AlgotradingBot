@@ -32,7 +32,7 @@ public record UpdateStrategyConfigRequest(
     Boolean shortSellingEnabled
 ) {
     public UpdateStrategyConfigRequest {
-        shortSellingEnabled = shortSellingEnabled == null ? Boolean.TRUE : shortSellingEnabled;
+        shortSellingEnabled = shortSellingEnabled == null ? Boolean.FALSE : shortSellingEnabled;
     }
 
     public UpdateStrategyConfigRequest(String symbol,
@@ -40,6 +40,6 @@ public record UpdateStrategyConfigRequest(
                                        BigDecimal riskPerTrade,
                                        BigDecimal minPositionSize,
                                        BigDecimal maxPositionSize) {
-        this(symbol, timeframe, riskPerTrade, minPositionSize, maxPositionSize, Boolean.TRUE);
+        this(symbol, timeframe, riskPerTrade, minPositionSize, maxPositionSize, Boolean.FALSE);
     }
 }

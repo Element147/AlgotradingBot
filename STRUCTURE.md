@@ -19,30 +19,52 @@ C:\Git\algotradingbot\
 `AlgotradingBot/src/main/java/com/algotrader/bot/`
 
 - `controller`: request and response contracts plus REST entrypoints
-- `service`: application orchestration and domain services
-- `service/marketdata`: provider, import, normalization, and scheduling logic
+- `service`: application orchestration and domain services, including the split backtest command/query/runtime services
+- `service/marketdata`: provider definitions, credential flows, import-job commands, async execution, progress publishing, and response mapping
 - `repository`: database access
 - `entity`: runtime database models
-- `backtest`: simulation engine, metrics, validation, and reproducibility model
-- `backtest/strategy`: backtest strategy registry and implementations
+- `backtest`: active simulation engine, metrics, validation, and reproducibility model
+- `backtest/strategy`: active strategy registry and implementations used by the current controller/service runtime path
 - `risk`: risk and cost calculations
 - `security`: auth and token handling
 - `config`: application configuration and runtime infrastructure
 - `repair`: local runtime validation and repair helpers
 - `validation`: explicit validation suites and runtime checks
 - `websocket`: event transport support
-- `strategy`: shared or legacy signal helpers
+- `strategy`: legacy Bollinger-style signal helpers retained for `BacktestEngine` and its test seam
+
+## Active Vs Legacy Backtest Seams
+
+- Active runtime path: `BacktestManagementController -> BacktestManagementService -> BacktestExecutionService -> BacktestSimulationEngine -> backtest.strategy.*`.
+- Backtest service ownership within `service/`:
+  - `BacktestManagementService`: run, replay, delete, selection-mode validation, and algorithm catalog reads
+  - `BacktestResultQueryService`: history, details, experiment summaries, and comparison responses
+  - `BacktestExecutionService`: async runtime orchestration, dataset loading, and simulation progress callbacks
+  - `BacktestExecutionLifecycleService`: transactional state transitions and result persistence
+  - `BacktestProgressService`: WebSocket progress publication shared by queue, execution, completion, and failure paths
+- Legacy compatibility/test seam: `backtest/BacktestEngine` and `strategy/*` still compile and still have direct unit or integration tests, but no current controller or service dispatches production backtests through them.
+- Ownership rule: new backtest/runtime work should land in `backtest/*` and `backtest/strategy/*`, while the legacy seam should only receive migration, quarantine, or retirement changes.
+
+## Dataset And Import Ownership
+
+- `BacktestDatasetStorageService` owns CSV parsing, persistence, downloads, and size validation.
+- `BacktestDatasetLifecycleService` owns dataset inventory, retention reporting, archive/restore, and new-run availability checks.
+- `BacktestDatasetService` remains the controller-facing facade over those two dataset services.
+- `MarketDataImportService` owns provider and job commands, while `MarketDataImportExecutionService` owns async fetch execution and `MarketDataImportProgressService` owns import telemetry publication.
 
 ## Frontend Layout
 
 `frontend/src/`
 
-- `features/*`: feature modules such as `auth`, `dashboard`, `strategies`, `backtest`, `marketData`, `risk`, `trades`, `settings`, and `websocket`
+- `features/*`: feature modules such as `auth`, `dashboard`, `paper`, `strategies`, `backtest`, `marketData`, `risk`, `trades`, `settings`, and `websocket`
 - `features/paperApi.ts`: shared paper-trading API slice
 - `app`: Redux store and typed hooks
-- `components`: shared UI primitives, route guards, and error handling
+- `components`: shared UI primitives, route guards, layout shell, and error handling
 - `services`: API and WebSocket transport helpers
+- `theme`: centralized MUI design tokens and global component overrides for the research-workstation shell
 - `generated`: committed OpenAPI-derived TypeScript types
+- Route containers in `features/backtest`, `features/marketData`, `features/settings`, and `features/trades` now delegate bulky sections into feature-local `*Panels.tsx` modules and page-only helper/state files so route components stay focused on query, mutation, and feedback orchestration.
+- Shared shell ownership sits under `components/layout/*`, while fallback states live under `components/*Fallback.tsx`; page features should plug into that shell instead of recreating their own navigation or operator-status chrome.
 
 ## Documentation Layout
 

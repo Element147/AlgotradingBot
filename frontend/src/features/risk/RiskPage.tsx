@@ -3,11 +3,20 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { CircuitBreakerPanel } from './CircuitBreakerPanel';
 import { PositionSizingCalculator } from './PositionSizingCalculator';
-import { useGetRiskAlertsQuery, useGetRiskConfigQuery, useGetRiskStatusQuery, useOverrideCircuitBreakerMutation, useUpdateRiskConfigMutation } from './riskApi';
+import {
+  useGetCircuitBreakersQuery,
+  useGetRiskAlertsQuery,
+  useGetRiskConfigQuery,
+  useGetRiskStatusQuery,
+  useOverrideCircuitBreakerMutation,
+  useUpdateRiskConfigMutation,
+} from './riskApi';
 import { RiskConfigForm } from './RiskConfigForm';
 import { RiskMetrics } from './RiskMetrics';
 
+import { useAppSelector } from '@/app/hooks';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { selectEnvironmentMode } from '@/features/environment/environmentSlice';
 
 const playAlertTone = () => {
   if (typeof window === 'undefined' || !window.AudioContext) {
@@ -26,11 +35,13 @@ const playAlertTone = () => {
 };
 
 export default function RiskPage() {
+  const environmentMode = useAppSelector(selectEnvironmentMode);
   const { data: status, isLoading: isStatusLoading } = useGetRiskStatusQuery(undefined, {
     pollingInterval: 30000,
     skipPollingIfUnfocused: true,
   });
   const { data: config, isLoading: isConfigLoading } = useGetRiskConfigQuery();
+  const { data: circuitBreakers = [] } = useGetCircuitBreakersQuery();
   const { data: alerts = [] } = useGetRiskAlertsQuery(undefined, {
     pollingInterval: 5000,
     skipPollingIfUnfocused: true,
@@ -116,7 +127,13 @@ export default function RiskPage() {
           </Grid>
 
           <Grid size={{ xs: 12, lg: 6 }}>
-            <CircuitBreakerPanel alerts={alerts} busy={isOverriding} onOverride={overrideBreaker} />
+            <CircuitBreakerPanel
+              alerts={alerts}
+              circuitBreakers={circuitBreakers}
+              environmentMode={environmentMode}
+              busy={isOverriding}
+              onOverride={overrideBreaker}
+            />
           </Grid>
 
           <Grid size={{ xs: 12, lg: 6 }}>

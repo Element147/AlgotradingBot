@@ -34,6 +34,7 @@ describe('Sidebar', () => {
     renderWithProviders(<Sidebar open={true} onClose={vi.fn()} />);
 
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Paper')).toBeInTheDocument();
     expect(screen.getByText('Strategies')).toBeInTheDocument();
     expect(screen.getByText('Trades')).toBeInTheDocument();
     expect(screen.getByText('Backtest')).toBeInTheDocument();
@@ -53,7 +54,7 @@ describe('Sidebar', () => {
 
     // Check that icons are rendered (MUI icons render as SVG)
     const icons = container.querySelectorAll('.MuiListItemIcon-root svg');
-    expect(icons.length).toBe(7); // 7 navigation items
+    expect(icons.length).toBe(8); // 8 navigation items
   });
 
   it('should highlight active route', () => {
@@ -87,6 +88,7 @@ describe('Sidebar', () => {
 
     const navigationTests = [
       { name: /dashboard/i, path: '/dashboard' },
+      { name: /paper/i, path: '/paper' },
       { name: /strategies/i, path: '/strategies' },
       { name: /trades/i, path: '/trades' },
       { name: /backtest/i, path: '/backtest' },
@@ -149,6 +151,7 @@ describe('Sidebar', () => {
     const navigationButtons = buttons.filter(
       (button) =>
         button.textContent?.includes('Dashboard') ||
+        button.textContent?.includes('Paper') ||
         button.textContent?.includes('Strategies') ||
         button.textContent?.includes('Trades') ||
         button.textContent?.includes('Backtest') ||
@@ -158,12 +161,13 @@ describe('Sidebar', () => {
     );
 
     expect(navigationButtons[0]).toHaveTextContent('Dashboard');
-    expect(navigationButtons[1]).toHaveTextContent('Strategies');
-    expect(navigationButtons[2]).toHaveTextContent('Trades');
-    expect(navigationButtons[3]).toHaveTextContent('Backtest');
-    expect(navigationButtons[4]).toHaveTextContent('Market Data');
-    expect(navigationButtons[5]).toHaveTextContent('Risk');
-    expect(navigationButtons[6]).toHaveTextContent('Settings');
+    expect(navigationButtons[1]).toHaveTextContent('Paper');
+    expect(navigationButtons[2]).toHaveTextContent('Strategies');
+    expect(navigationButtons[3]).toHaveTextContent('Trades');
+    expect(navigationButtons[4]).toHaveTextContent('Backtest');
+    expect(navigationButtons[5]).toHaveTextContent('Market Data');
+    expect(navigationButtons[6]).toHaveTextContent('Risk');
+    expect(navigationButtons[7]).toHaveTextContent('Settings');
   });
 
   it('should have proper ARIA labels for accessibility', () => {

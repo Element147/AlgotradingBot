@@ -7,6 +7,9 @@ import { describe, it, expect } from 'vitest';
 import websocketReducer, {
   connectionStarted,
   connectionEstablished,
+  subscriptionsUpdated,
+  subscriptionsRemoved,
+  subscriptionFailed,
   connectionFailed,
   connectionClosed,
   reconnectAttempted,
@@ -71,6 +74,52 @@ describe('websocketSlice', () => {
       );
 
       expect(state.reconnectAttempts).toBe(0);
+    });
+  });
+
+  describe('subscriptionsUpdated', () => {
+    it('should merge subscribed channels without duplicates', () => {
+      const state = websocketReducer(
+        {
+          ...initialState,
+          connected: true,
+          subscribedChannels: ['test.balance'],
+        },
+        subscriptionsUpdated(['test.balance', 'test.backtests'])
+      );
+
+      expect(state.subscribedChannels).toEqual(['test.balance', 'test.backtests']);
+      expect(state.error).toBeNull();
+    });
+  });
+
+  describe('subscriptionsRemoved', () => {
+    it('should remove unsubscribed channels', () => {
+      const state = websocketReducer(
+        {
+          ...initialState,
+          connected: true,
+          subscribedChannels: ['test.balance', 'test.backtests'],
+        },
+        subscriptionsRemoved(['test.balance'])
+      );
+
+      expect(state.subscribedChannels).toEqual(['test.backtests']);
+    });
+  });
+
+  describe('subscriptionFailed', () => {
+    it('should retain connection state and expose the subscription error', () => {
+      const state = websocketReducer(
+        {
+          ...initialState,
+          connected: true,
+        },
+        subscriptionFailed('Rejected unauthorized or unknown channels (live.balance)')
+      );
+
+      expect(state.connected).toBe(true);
+      expect(state.error).toBe('Rejected unauthorized or unknown channels (live.balance)');
     });
   });
 
