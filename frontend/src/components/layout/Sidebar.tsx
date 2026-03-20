@@ -10,7 +10,6 @@ import {
 } from '@mui/icons-material';
 import {
   Box,
-  Chip,
   Divider,
   Drawer,
   List,
@@ -19,7 +18,6 @@ import {
   ListItemIcon,
   ListItemText,
   Stack,
-  Toolbar,
   Typography,
   useMediaQuery,
   useTheme,
@@ -33,7 +31,7 @@ interface SidebarProps {
   onClose: () => void;
 }
 
-const DRAWER_WIDTH = 264;
+const DRAWER_WIDTH = 296;
 
 const navigationSections = [
   {
@@ -74,7 +72,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
 
   const drawerContent = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Toolbar sx={{ alignItems: 'stretch', px: 2.5, pt: 3, pb: 2 }}>
+      <Box sx={{ px: 2.5, pt: 3, pb: 2 }}>
         <Stack spacing={2}>
           <Box>
             <Typography variant="overline" color="text.secondary">
@@ -83,17 +81,37 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
             <Typography variant="h6" sx={{ mt: 0.25 }}>
               Research Workstation
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              Simple, test-first access to backtests, paper orders, risk controls, and operator settings.
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mt: 1, overflowWrap: 'anywhere' }}
+            >
+              Simple, test-first access to research, paper workflows, risk controls, and operator
+              settings.
             </Typography>
           </Box>
 
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            <Chip label="Mode starts in test" size="small" variant="outlined" />
-            <Chip label="Paper actions stay simulated" size="small" variant="outlined" />
-          </Stack>
+          <Box
+            sx={{
+              px: 1.5,
+              py: 1.25,
+              border: '1px solid',
+              borderColor: 'divider',
+              bgcolor: alpha(theme.palette.primary.main, 0.03),
+            }}
+          >
+            <Typography variant="subtitle2" sx={{ mb: 0.75 }}>
+              Safety defaults
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Mode starts in test.
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Paper actions stay simulated.
+            </Typography>
+          </Box>
         </Stack>
-      </Toolbar>
+      </Box>
 
       <Divider />
 
@@ -119,8 +137,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
                       selected={isActive}
                       sx={{
                         px: 1.5,
-                        py: 1.2,
-                        alignItems: 'flex-start',
+                        py: 1.25,
+                        alignItems: 'center',
                         border: `1px solid ${
                           isActive
                             ? alpha(theme.palette.primary.main, 0.2)
@@ -151,6 +169,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
                         secondaryTypographyProps={{
                           variant: 'body2',
                           color: 'text.secondary',
+                          sx: {
+                            mt: 0.25,
+                            lineHeight: 1.45,
+                            overflowWrap: 'anywhere',
+                          },
                         }}
                       />
                     </ListItemButton>
@@ -165,8 +188,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
       <Box sx={{ p: 2, pt: 0 }}>
         <Box
           sx={{
-            borderRadius: 3,
-            p: 2,
+            p: 1.75,
             border: `1px solid ${theme.palette.divider}`,
             backgroundColor: alpha(theme.palette.primary.main, 0.05),
           }}

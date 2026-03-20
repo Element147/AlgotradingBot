@@ -54,6 +54,7 @@ import {
 import { formatBacktestMarketLabel } from './backtestTypes';
 
 import { FieldTooltip } from '@/components/ui/FieldTooltip';
+import { KeyValueGrid } from '@/components/ui/KeyValueGrid';
 import type { StrategyProfile } from '@/features/strategies/strategyProfiles';
 import { formatDateTime, formatNumber } from '@/utils/formatters';
 
@@ -106,13 +107,13 @@ export function BacktestTrackedRunCard({
   lastLiveEventAt,
 }: BacktestTrackedRunCardProps) {
   return (
-    <Card sx={{ mb: 3, borderRadius: 3 }}>
+    <Card sx={{ mb: 3 }}>
       <CardContent>
         <Stack spacing={1.5}>
           <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={1}>
             <Box>
               <Typography variant="h6">Current Run Progress</Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>
                 Tracking run #{trackedRun.id} for {trackedRun.strategyId} on{' '}
                 {trackedRun.datasetName ?? 'dataset'}.
               </Typography>
@@ -127,47 +128,45 @@ export function BacktestTrackedRunCard({
             variant="determinate"
             value={executionProgressValue(trackedRun)}
             color={trackedRun.executionStatus === 'FAILED' ? 'error' : 'primary'}
-            sx={{ height: 10, borderRadius: 999 }}
+            sx={{ height: 8, borderRadius: 1 }}
           />
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} useFlexGap flexWrap="wrap">
-            <Chip
-              size="small"
-              color={transportConnected ? 'success' : 'warning'}
-              label={`Transport: ${transportConnected ? 'WebSocket live' : 'Polling fallback'}`}
-              variant={transportConnected ? 'filled' : 'outlined'}
-            />
-            <Chip
-              size="small"
-              label={`Stage: ${executionStageLabel(trackedRun.executionStage)}`}
-              variant="outlined"
-            />
-            <Chip
-              size="small"
-              label={`Done: ${executionProgressValue(trackedRun)}%`}
-              variant="outlined"
-            />
-            <Chip size="small" label={`Left: ${percentLeft(trackedRun)}%`} variant="outlined" />
-            <Chip
-              size="small"
-              label={`Current data date: ${formatProgressTimestamp(trackedRun.currentDataTimestamp)}`}
-              variant="outlined"
-            />
-            <Chip
-              size="small"
-              label={`Candles: ${formatNumber(trackedRun.processedCandles)} / ${formatNumber(trackedRun.totalCandles)}`}
-              variant="outlined"
-            />
-            <Chip
-              size="small"
-              label={`Last backend update: ${formatLastUpdate(trackedRun.lastProgressAt)}`}
-              variant="outlined"
-            />
-            <Chip
-              size="small"
-              label={`Last pushed event: ${formatLiveEventTimestamp(lastLiveEventAt)}`}
-              variant="outlined"
-            />
-          </Stack>
+          <KeyValueGrid
+            items={[
+              {
+                label: 'Transport',
+                value: transportConnected ? 'WebSocket live' : 'Polling fallback',
+                tone: transportConnected ? 'success' : 'warning',
+              },
+              {
+                label: 'Stage',
+                value: executionStageLabel(trackedRun.executionStage),
+              },
+              {
+                label: 'Done',
+                value: `${executionProgressValue(trackedRun)}%`,
+              },
+              {
+                label: 'Left',
+                value: `${percentLeft(trackedRun)}%`,
+              },
+              {
+                label: 'Current data date',
+                value: formatProgressTimestamp(trackedRun.currentDataTimestamp),
+              },
+              {
+                label: 'Candles',
+                value: `${formatNumber(trackedRun.processedCandles)} / ${formatNumber(trackedRun.totalCandles)}`,
+              },
+              {
+                label: 'Last backend update',
+                value: formatLastUpdate(trackedRun.lastProgressAt),
+              },
+              {
+                label: 'Last pushed event',
+                value: formatLiveEventTimestamp(lastLiveEventAt),
+              },
+            ]}
+          />
           <Typography variant="body2" color="text.secondary">
             {executionStageDescription(trackedRun)}
           </Typography>

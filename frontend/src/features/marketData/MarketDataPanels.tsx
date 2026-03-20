@@ -36,6 +36,7 @@ import {
 } from './marketDataPageState';
 
 import { FieldTooltip } from '@/components/ui/FieldTooltip';
+import { KeyValueGrid } from '@/components/ui/KeyValueGrid';
 import { formatNumber } from '@/utils/formatters';
 
 interface MarketDataTransportAlertProps {
@@ -94,57 +95,52 @@ export function MarketDataTelemetryCard({
   );
 
   return (
-    <Card sx={{ mb: 3, borderRadius: 3 }}>
+    <Card sx={{ mb: 3 }}>
       <CardContent>
         <Stack spacing={1.5}>
           <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={1}>
             <Box>
               <Typography variant="h6">Current Import Telemetry</Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>
                 Tracking job #{trackedJob.id} for {trackedJob.providerLabel} on{' '}
                 {trackedJob.symbolsCsv}.
               </Typography>
             </Box>
             <Chip size="small" color={statusColor(trackedJob.status)} label={trackedJob.status} />
           </Stack>
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} useFlexGap flexWrap="wrap">
-            <Chip
-              size="small"
-              color={transportConnected ? 'success' : 'warning'}
-              label={`Transport: ${transportConnected ? 'WebSocket live' : 'Polling fallback'}`}
-              variant={transportConnected ? 'filled' : 'outlined'}
-            />
-            <Chip
-              size="small"
-              label={`Current symbol: ${trackedJob.currentSymbol ?? 'Waiting for first symbol'}`}
-              variant="outlined"
-            />
-            <Chip
-              size="small"
-              label={`Symbol cursor: ${currentSymbolIndex} / ${trackedJob.totalSymbols}`}
-              variant="outlined"
-            />
-            <Chip
-              size="small"
-              label={`Rows imported: ${formatNumber(trackedJob.importedRowCount)}`}
-              variant="outlined"
-            />
-            <Chip
-              size="small"
-              label={`Current chunk start: ${formatOptionalDateTime(trackedJob.currentChunkStart)}`}
-              variant="outlined"
-            />
-            <Chip
-              size="small"
-              label={`Last backend update: ${formatRelativeUpdate(trackedJob.updatedAt)}`}
-              variant="outlined"
-            />
-            <Chip
-              size="small"
-              label={`Last pushed event: ${formatLiveImportEventTimestamp(lastImportEventAt)}`}
-              variant="outlined"
-            />
-          </Stack>
+          <KeyValueGrid
+            items={[
+              {
+                label: 'Transport',
+                value: transportConnected ? 'WebSocket live' : 'Polling fallback',
+                tone: transportConnected ? 'success' : 'warning',
+              },
+              {
+                label: 'Current symbol',
+                value: trackedJob.currentSymbol ?? 'Waiting for first symbol',
+              },
+              {
+                label: 'Symbol cursor',
+                value: `${currentSymbolIndex} / ${trackedJob.totalSymbols}`,
+              },
+              {
+                label: 'Rows imported',
+                value: formatNumber(trackedJob.importedRowCount),
+              },
+              {
+                label: 'Current chunk start',
+                value: formatOptionalDateTime(trackedJob.currentChunkStart),
+              },
+              {
+                label: 'Last backend update',
+                value: formatRelativeUpdate(trackedJob.updatedAt),
+              },
+              {
+                label: 'Last pushed event',
+                value: formatLiveImportEventTimestamp(lastImportEventAt),
+              },
+            ]}
+          />
           <Typography variant="body2" color="text.secondary">
             {trackedJob.statusMessage}
           </Typography>

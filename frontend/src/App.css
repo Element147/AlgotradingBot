@@ -12,11 +12,10 @@
   background: rgba(18, 107, 103, 0.98);
   color: #f8fafc;
   border: 1px solid rgba(7, 17, 22, 0.12);
-  border-radius: 14px;
+  border-radius: 6px;
   text-decoration: none;
   font-weight: 700;
   letter-spacing: 0.01em;
-  box-shadow: 0 12px 22px rgba(7, 17, 22, 0.18);
   transition:
     top 120ms ease,
     transform 120ms ease;

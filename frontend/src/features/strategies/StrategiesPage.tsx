@@ -216,7 +216,7 @@ export default function StrategiesPage() {
                   sx={{
                     height: '100%',
                     p: 2,
-                    borderRadius: 3,
+                    borderRadius: 1,
                   }}
                 >
                   <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.75 }}>

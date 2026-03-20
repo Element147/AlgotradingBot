@@ -1,6 +1,6 @@
-import { Box, Card, CardContent, Chip, Grid, Paper, Stack, Typography } from '@mui/material';
+import { Box, Grid, Paper, Stack, Typography } from '@mui/material';
 import type { AlertColor } from '@mui/material';
-import { alpha, useTheme } from '@mui/material/styles';
+import { useTheme } from '@mui/material/styles';
 import type { ReactNode } from 'react';
 
 interface PageContentProps {
@@ -31,50 +31,54 @@ export function PageIntro({
   actions,
 }: PageIntroProps) {
   return (
-    <Card variant="outlined">
-      <CardContent>
-        <Stack spacing={2.5}>
-          <Stack
-            direction={{ xs: 'column', lg: 'row' }}
-            spacing={2}
-            justifyContent="space-between"
-            alignItems={{ xs: 'flex-start', lg: 'center' }}
-          >
-            <Box sx={{ maxWidth: 920 }}>
-              {eyebrow ? (
-                <Typography variant="overline" color="text.secondary">
-                  {eyebrow}
-                </Typography>
-              ) : null}
-              {title ? (
-                <Typography variant="h5" sx={{ mb: 1 }}>
-                  {title}
-                </Typography>
-              ) : null}
-              <Typography variant="body1" color="text.secondary">
-                {description}
+    <Paper variant="outlined" sx={{ p: { xs: 2, md: 2.5 } }}>
+      <Stack spacing={2}>
+        <Stack
+          direction={{ xs: 'column', lg: 'row' }}
+          spacing={2}
+          justifyContent="space-between"
+          alignItems={{ xs: 'flex-start', lg: 'center' }}
+        >
+          <Box sx={{ maxWidth: 920 }}>
+            {eyebrow ? (
+              <Typography variant="overline" color="text.secondary">
+                {eyebrow}
               </Typography>
-            </Box>
-            {actions ? (
-              <Stack
-                direction={{ xs: 'column', sm: 'row' }}
-                spacing={1}
-                alignItems={{ xs: 'stretch', lg: 'center' }}
-                sx={{ flexShrink: 0, width: { xs: '100%', lg: 'auto' } }}
-              >
-                {actions}
-              </Stack>
             ) : null}
-          </Stack>
-
-          {chips ? (
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-              {chips}
+            {title ? (
+              <Typography variant="h5" sx={{ mb: 1 }}>
+                {title}
+              </Typography>
+            ) : null}
+            <Typography variant="body1" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>
+              {description}
+            </Typography>
+          </Box>
+          {actions ? (
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={1}
+              alignItems={{ xs: 'stretch', lg: 'center' }}
+              sx={{ flexShrink: 0, width: { xs: '100%', lg: 'auto' } }}
+            >
+              {actions}
             </Stack>
           ) : null}
         </Stack>
-      </CardContent>
-    </Card>
+
+        {chips ? (
+          <Stack
+            direction="row"
+            spacing={1}
+            flexWrap="wrap"
+            useFlexGap
+            sx={{ '& > *': { maxWidth: '100%' } }}
+          >
+            {chips}
+          </Stack>
+        ) : null}
+      </Stack>
+    </Paper>
   );
 }
 
@@ -134,29 +138,37 @@ export function PageMetricStrip({ items }: PageMetricStripProps) {
               sx={{
                 height: '100%',
                 p: 2,
-                borderRadius: 3,
-                backgroundColor: alpha(accent, 0.04),
+                borderLeft: `3px solid ${accent}`,
+                backgroundColor: 'background.paper',
               }}
             >
               <Stack spacing={0.75}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="flex-start"
+                  spacing={1}
+                >
                   <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
                     {item.label}
                   </Typography>
-                  <Chip
-                    size="small"
-                    label={toneLabel(item.tone)}
-                    variant="outlined"
+                  <Typography
+                    variant="caption"
                     sx={{
-                      textTransform: 'capitalize',
-                      borderColor: alpha(accent, 0.18),
                       color: accent,
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
                     }}
-                  />
+                  >
+                    {toneLabel(item.tone)}
+                  </Typography>
                 </Stack>
-                <Typography variant="h6">{item.value}</Typography>
+                <Typography variant="h6" sx={{ overflowWrap: 'anywhere' }}>
+                  {item.value}
+                </Typography>
                 {item.detail ? (
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>
                     {item.detail}
                   </Typography>
                 ) : null}

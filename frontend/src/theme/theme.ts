@@ -9,18 +9,12 @@ const buildTheme = (mode: PaletteMode): Theme => {
   const isLight = mode === 'light';
   const primaryMain = isLight ? '#176a65' : '#84e1d4';
   const secondaryMain = isLight ? '#b36a1f' : '#ffc870';
-  const defaultBackground = isLight ? '#f4efe7' : '#0b1115';
-  const paperBackground = isLight ? '#fffdfa' : '#121b20';
-  const shellBackground = isLight ? '#ece5da' : '#081015';
+  const defaultBackground = isLight ? '#f5f2eb' : '#0d1318';
+  const paperBackground = isLight ? '#ffffff' : '#151d23';
+  const shellBackground = isLight ? '#ede8de' : '#0a1116';
   const textPrimary = isLight ? '#162128' : '#eef5f1';
   const textSecondary = isLight ? '#5d6c75' : '#9aa9b1';
   const divider = alpha(isLight ? '#17354a' : '#d7ece5', isLight ? 0.12 : 0.14);
-  const cardShadow = isLight
-    ? '0 14px 28px rgba(15, 24, 31, 0.06)'
-    : '0 14px 30px rgba(0, 7, 10, 0.28)';
-  const sectionShadow = isLight
-    ? '0 10px 20px rgba(15, 24, 31, 0.05)'
-    : '0 10px 24px rgba(0, 7, 10, 0.22)';
   const focusedRing = `0 0 0 3px ${alpha(primaryMain, isLight ? 0.2 : 0.28)}`;
 
   return createTheme({
@@ -74,7 +68,7 @@ const buildTheme = (mode: PaletteMode): Theme => {
       divider,
     },
     shape: {
-      borderRadius: 18,
+      borderRadius: 4,
     },
     typography: {
       fontFamily:
@@ -146,9 +140,6 @@ const buildTheme = (mode: PaletteMode): Theme => {
           },
           body: {
             backgroundColor: defaultBackground,
-            backgroundImage: isLight
-              ? 'linear-gradient(180deg, #f7f2ea 0%, #f1ebe2 100%)'
-              : 'linear-gradient(180deg, #0f171c 0%, #091015 100%)',
             color: textPrimary,
           },
           '#root': {
@@ -167,7 +158,7 @@ const buildTheme = (mode: PaletteMode): Theme => {
           },
           '*::-webkit-scrollbar-thumb': {
             backgroundColor: alpha(primaryMain, 0.28),
-            borderRadius: 999,
+            borderRadius: 6,
             border: `3px solid ${alpha(shellBackground, 0.08)}`,
           },
           '*::-webkit-scrollbar-track': {
@@ -182,8 +173,7 @@ const buildTheme = (mode: PaletteMode): Theme => {
       MuiAppBar: {
         styleOverrides: {
           root: {
-            backgroundColor: alpha(paperBackground, isLight ? 0.94 : 0.9),
-            backdropFilter: 'blur(10px)',
+            backgroundColor: paperBackground,
             borderBottom: `1px solid ${divider}`,
             boxShadow: 'none',
           },
@@ -192,9 +182,9 @@ const buildTheme = (mode: PaletteMode): Theme => {
       MuiDrawer: {
         styleOverrides: {
           paper: {
-            backgroundColor: isLight ? '#f8f3ec' : '#0f181d',
+            backgroundColor: isLight ? '#faf7f1' : '#10181e',
             borderRight: `1px solid ${divider}`,
-            boxShadow: sectionShadow,
+            boxShadow: 'none',
           },
         },
       },
@@ -205,25 +195,25 @@ const buildTheme = (mode: PaletteMode): Theme => {
           },
           outlined: {
             borderColor: divider,
-            backgroundColor: alpha(paperBackground, isLight ? 0.88 : 0.76),
+            backgroundColor: paperBackground,
           },
         },
       },
       MuiCard: {
         styleOverrides: {
           root: {
-            backgroundColor: alpha(paperBackground, isLight ? 0.94 : 0.92),
+            backgroundColor: paperBackground,
             border: `1px solid ${divider}`,
-            boxShadow: cardShadow,
+            boxShadow: 'none',
           },
         },
       },
       MuiCardContent: {
         styleOverrides: {
           root: {
-            padding: 22,
+            padding: 20,
             '&:last-child': {
-              paddingBottom: 22,
+              paddingBottom: 20,
             },
           },
         },
@@ -235,12 +225,9 @@ const buildTheme = (mode: PaletteMode): Theme => {
         styleOverrides: {
           root: {
             textTransform: 'none',
-            borderRadius: 14,
+            borderRadius: 6,
             paddingInline: 16,
-            minHeight: 40,
-          },
-          containedPrimary: {
-            boxShadow: `0 10px 18px ${alpha(primaryMain, isLight ? 0.16 : 0.22)}`,
+            minHeight: 38,
           },
           outlined: {
             borderColor: alpha(textPrimary, 0.14),
@@ -250,27 +237,38 @@ const buildTheme = (mode: PaletteMode): Theme => {
       MuiIconButton: {
         styleOverrides: {
           root: {
-            borderRadius: 14,
+            borderRadius: 6,
             border: `1px solid ${alpha(textPrimary, isLight ? 0.08 : 0.12)}`,
-            backgroundColor: alpha(paperBackground, isLight ? 0.76 : 0.32),
+            backgroundColor: paperBackground,
           },
         },
       },
       MuiChip: {
         styleOverrides: {
           root: {
-            borderRadius: 999,
-            fontWeight: 700,
+            borderRadius: 6,
+            fontWeight: 600,
             borderColor: alpha(textPrimary, 0.08),
+            backgroundColor: alpha(paperBackground, isLight ? 0.98 : 0.82),
+            height: 'auto',
+            maxWidth: '100%',
+            alignItems: 'flex-start',
+          },
+          label: {
+            display: 'block',
+            whiteSpace: 'normal',
+            lineHeight: 1.3,
+            paddingTop: 6,
+            paddingBottom: 6,
           },
         },
       },
       MuiAlert: {
         styleOverrides: {
           root: {
-            borderRadius: 16,
+            borderRadius: 6,
             border: `1px solid ${divider}`,
-            backgroundColor: alpha(paperBackground, isLight ? 0.9 : 0.72),
+            backgroundColor: paperBackground,
           },
         },
       },
@@ -278,17 +276,17 @@ const buildTheme = (mode: PaletteMode): Theme => {
         styleOverrides: {
           paper: {
             marginTop: 10,
-            borderRadius: 16,
+            borderRadius: 8,
             border: `1px solid ${divider}`,
-            backgroundColor: alpha(paperBackground, isLight ? 0.98 : 0.94),
-            boxShadow: sectionShadow,
+            backgroundColor: paperBackground,
+            boxShadow: 'none',
           },
         },
       },
       MuiMenuItem: {
         styleOverrides: {
           root: {
-            borderRadius: 12,
+            borderRadius: 4,
             marginInline: 8,
             marginBlock: 2,
           },
@@ -319,9 +317,9 @@ const buildTheme = (mode: PaletteMode): Theme => {
       MuiTableContainer: {
         styleOverrides: {
           root: {
-            borderRadius: 14,
+            borderRadius: 6,
             border: `1px solid ${divider}`,
-            backgroundColor: alpha(paperBackground, isLight ? 0.9 : 0.62),
+            backgroundColor: paperBackground,
           },
         },
       },
@@ -338,15 +336,15 @@ const buildTheme = (mode: PaletteMode): Theme => {
       MuiListItemButton: {
         styleOverrides: {
           root: {
-            borderRadius: 14,
+            borderRadius: 6,
           },
         },
       },
       MuiOutlinedInput: {
         styleOverrides: {
           root: {
-            borderRadius: 14,
-            backgroundColor: alpha(paperBackground, isLight ? 0.78 : 0.3),
+            borderRadius: 6,
+            backgroundColor: paperBackground,
             '& .MuiOutlinedInput-notchedOutline': {
               borderColor: alpha(textPrimary, isLight ? 0.1 : 0.16),
             },
@@ -364,21 +362,21 @@ const buildTheme = (mode: PaletteMode): Theme => {
         styleOverrides: {
           root: {
             padding: 4,
-            borderRadius: 14,
-            backgroundColor: alpha(textPrimary, isLight ? 0.04 : 0.08),
+            borderRadius: 6,
+            backgroundColor: alpha(textPrimary, isLight ? 0.03 : 0.08),
             border: `1px solid ${divider}`,
           },
           grouped: {
             margin: 0,
             border: 0,
-            borderRadius: 12,
+            borderRadius: 4,
           },
         },
       },
       MuiToggleButton: {
         styleOverrides: {
           root: {
-            borderRadius: 12,
+            borderRadius: 4,
             color: textSecondary,
             '&.Mui-selected': {
               backgroundColor: alpha(primaryMain, isLight ? 0.13 : 0.16),
@@ -390,8 +388,8 @@ const buildTheme = (mode: PaletteMode): Theme => {
       MuiTabs: {
         styleOverrides: {
           indicator: {
-            height: 3,
-            borderRadius: 999,
+            height: 2,
+            borderRadius: 0,
             backgroundColor: primaryMain,
           },
         },
@@ -409,24 +407,24 @@ const buildTheme = (mode: PaletteMode): Theme => {
       MuiDialog: {
         styleOverrides: {
           paper: {
-            borderRadius: 20,
+            borderRadius: 8,
             border: `1px solid ${divider}`,
-            backgroundColor: alpha(paperBackground, isLight ? 0.98 : 0.96),
+            backgroundColor: paperBackground,
           },
         },
       },
       MuiLinearProgress: {
         styleOverrides: {
           root: {
-            height: 8,
-            borderRadius: 999,
+            height: 6,
+            borderRadius: 4,
           },
         },
       },
       MuiSkeleton: {
         styleOverrides: {
           root: {
-            borderRadius: 12,
+            borderRadius: 4,
             backgroundColor: alpha(textPrimary, isLight ? 0.08 : 0.12),
             transform: 'none',
           },
@@ -435,10 +433,10 @@ const buildTheme = (mode: PaletteMode): Theme => {
       MuiTooltip: {
         styleOverrides: {
           tooltip: {
-            borderRadius: 12,
+            borderRadius: 6,
             backgroundColor: isLight ? '#183037' : '#f3f7f5',
             color: isLight ? '#f5f8f7' : '#102228',
-            boxShadow: sectionShadow,
+            boxShadow: 'none',
           },
         },
       },

@@ -113,7 +113,7 @@ export default function LoginPage() {
           justifyContent: 'center',
         }}
       >
-        <Card sx={{ width: '100%', boxShadow: 3 }}>
+        <Card sx={{ width: '100%' }}>
           <CardContent sx={{ p: 4 }}>
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3 }}>
               <LoginIcon sx={{ fontSize: 48, color: 'primary.main', mb: 1 }} />

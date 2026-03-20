@@ -9,7 +9,6 @@ import {
   Avatar,
   Badge,
   Box,
-  Chip,
   Divider,
   IconButton,
   ListItemIcon,
@@ -44,6 +43,12 @@ import ThemeToggle from '../ThemeToggle';
 interface HeaderProps {
   onMenuClick: () => void;
 }
+
+type HeaderStatusItem = {
+  label: string;
+  value: string;
+  color: 'success' | 'warning' | 'error' | 'info' | 'default';
+};
 
 const routeMeta: Record<string, { title: string; subtitle: string }> = {
   '/dashboard': {
@@ -80,6 +85,71 @@ const routeMeta: Record<string, { title: string; subtitle: string }> = {
   },
 };
 
+function HeaderStatusGrid({
+  items,
+}: {
+  items: HeaderStatusItem[];
+}) {
+  const theme = useTheme();
+
+  const resolveAccent = (color: HeaderStatusItem['color']) => {
+    switch (color) {
+      case 'success':
+        return theme.palette.success.main;
+      case 'warning':
+        return theme.palette.warning.main;
+      case 'error':
+        return theme.palette.error.main;
+      case 'info':
+        return theme.palette.info.main;
+      default:
+        return theme.palette.text.secondary;
+    }
+  };
+
+  return (
+    <Box
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: {
+          xs: 'repeat(2, minmax(0, 1fr))',
+          lg: 'repeat(4, minmax(0, 1fr))',
+        },
+        gap: 1,
+      }}
+    >
+      {items.map((item) => {
+        const accent = resolveAccent(item.color);
+
+        return (
+          <Box
+            key={item.label}
+            sx={{
+              minWidth: 0,
+              px: 1.25,
+              py: 1,
+              border: '1px solid',
+              borderColor: 'divider',
+              borderLeft: `3px solid ${accent}`,
+              bgcolor: 'background.paper',
+            }}
+          >
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+              {item.label}
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ fontWeight: 700, lineHeight: 1.35, overflowWrap: 'anywhere' }}
+            >
+              {item.value}
+            </Typography>
+          </Box>
+        );
+      })}
+    </Box>
+  );
+}
+
 export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -114,16 +184,37 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
         activeExchangeConnection.testnet ? 'TESTNET' : 'LIVE'
       }`
     : 'No exchange profile';
-  const riskLabel = riskStatus
-    ? riskStatus.circuitBreakerActive
-      ? 'Risk breaker active'
-      : 'Risk posture guarded'
-    : 'Risk status loading';
   const riskColor = riskStatus
     ? riskStatus.circuitBreakerActive
       ? 'error'
       : 'success'
     : 'default';
+  const headerStatusItems: HeaderStatusItem[] = [
+    {
+      label: 'Mode',
+      value: environmentMode.toUpperCase(),
+      color: environmentMode === 'live' ? 'error' : 'success',
+    },
+    {
+      label: 'Telemetry',
+      value: telemetryConnected ? 'Connected' : 'Fallback mode',
+      color: telemetryConnected ? 'success' : 'warning',
+    },
+    {
+      label: 'Risk',
+      value: riskStatus
+        ? riskStatus.circuitBreakerActive
+          ? 'Breaker active'
+          : 'Guarded'
+        : 'Loading',
+      color: riskColor,
+    },
+    {
+      label: 'Role',
+      value: userRoleLabel,
+      color: 'info',
+    },
+  ];
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationAnchorEl, setNotificationAnchorEl] =
@@ -160,7 +251,12 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     <AppBar position="sticky" elevation={0} color="inherit">
       <Toolbar sx={{ px: { xs: 2, sm: 3 }, py: 1.5, alignItems: 'stretch' }}>
         <Stack spacing={1.5} sx={{ width: '100%' }}>
-          <Stack direction="row" spacing={1.5} alignItems="flex-start">
+          <Stack
+            direction="row"
+            spacing={1.5}
+            alignItems="flex-start"
+            sx={{ flexWrap: { xs: 'wrap', md: 'nowrap' } }}
+          >
             <IconButton
               edge="start"
               color="inherit"
@@ -185,9 +281,24 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               >
                 {currentRoute.subtitle}
               </Typography>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ mt: 0.75, display: 'block', overflowWrap: 'anywhere' }}
+              >
+                Exchange profile: {exchangeLabel}
+              </Typography>
             </Box>
 
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ flexShrink: 0 }}>
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="center"
+              sx={{
+                flexShrink: 0,
+                ml: { xs: 0, md: 'auto' },
+              }}
+            >
               <ThemeToggle />
 
               <IconButton
@@ -225,21 +336,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             </Stack>
           </Stack>
 
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            <Chip
-              label={`Mode ${environmentMode.toUpperCase()}`}
-              color={environmentMode === 'live' ? 'error' : 'success'}
-              variant={environmentMode === 'live' ? 'filled' : 'outlined'}
-            />
-            <Chip label={exchangeLabel} variant="outlined" />
-            <Chip
-              label={telemetryConnected ? 'Telemetry connected' : 'Telemetry fallback'}
-              color={telemetryConnected ? 'success' : 'warning'}
-              variant={telemetryConnected ? 'filled' : 'outlined'}
-            />
-            <Chip label={riskLabel} color={riskColor} variant="outlined" />
-            <Chip label={`Role ${userRoleLabel}`} variant="outlined" />
-          </Stack>
+          <HeaderStatusGrid items={headerStatusItems} />
         </Stack>
 
         <Menu
