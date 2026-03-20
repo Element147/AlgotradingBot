@@ -1,7 +1,7 @@
-import { Alert, Box, Chip, Grid } from '@mui/material';
+import { Alert, Box, Button, Chip, Grid } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { useSearchParams } from 'react-router-dom';
+import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 
 import { TradeDetailsModal } from './TradeDetailsModal';
 import { useGetTradeHistoryQuery, type TradeHistoryQuery } from './tradesApi';
@@ -253,10 +253,20 @@ export default function TradesPage() {
 
   return (
     <AppLayout>
-      <PageContent>
+      <PageContent maxWidth="research">
         <PageIntro
           eyebrow="Review and export"
           description="Use a lighter filter flow to narrow the trade set, inspect fills, and export clean evidence without losing timezone or account context."
+          actions={
+            <>
+              <Button component={RouterLink} to="/paper" variant="contained">
+                Open paper desk
+              </Button>
+              <Button component={RouterLink} to="/strategies" variant="outlined">
+                Open strategies
+              </Button>
+            </>
+          }
           chips={
             <>
               <Chip label="Timezone-aware review" variant="outlined" />

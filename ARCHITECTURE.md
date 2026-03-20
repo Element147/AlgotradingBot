@@ -127,12 +127,15 @@ Shared frontend infrastructure:
 - `src/services`: transport helpers, environment-aware API plumbing, OpenAPI path helpers, WebSocket manager
 - `src/components`: shared layout primitives, route guards, loading states, and error handling
 - `src/components/layout/PageContent.tsx`: shared page intro, metric-strip, and section-header primitives used to keep route spacing, section rhythm, and primary-action placement consistent across the SPA
+- `src/components/ui/Workbench.tsx`: shared workstation primitives such as `SurfacePanel`, `StatusPill`, `MetricCard`, route action bars, empty states, and chart legends
+- `src/components/workspace/StickyInspectorPanel.tsx`: sticky detail rail used by Backtest and other selection-heavy review flows
 
 ### Frontend Data Flow
 
 - RTK Query slices own backend contract adaptation.
 - Generated OpenAPI transport types are consumed through feature-owned contract modules where response normalization is needed, rather than leaking generated optional transport shapes into pages.
 - Backtest details now carry telemetry-rich read models so the UI can render price-action markers, exposure or regime review, indicator overlays, and run comparison visuals without recomputing strategy logic in the browser.
+- `features/backtest/BacktestWorkspaceChart.tsx` owns the trading-oriented price-review surface using `lightweight-charts`, while aggregate analytics remain on the existing Recharts-based components.
 - Redux slices handle auth, environment mode, settings, and WebSocket connection state.
 - `WebSocketRuntime` subscribes the app to environment-aware channels and updates RTK Query caches for long-running task progress when the authenticated WebSocket handshake succeeds.
 - The frontend now treats connection-open and channel subscription as separate states: pages only consider live telemetry active after the backend acknowledges the requested channels.

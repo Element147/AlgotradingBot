@@ -26,6 +26,8 @@ import { alpha } from '@mui/material/styles';
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+import { StatusPill } from '../ui/Workbench';
+
 interface SidebarProps {
   open: boolean;
   onClose: () => void;
@@ -37,7 +39,12 @@ const navigationSections = [
   {
     heading: 'Command',
     items: [
-      { text: 'Dashboard', detail: 'Overview and system signals', icon: <DashboardIcon />, path: '/dashboard' },
+      {
+        text: 'Dashboard',
+        detail: 'Overview and system signals',
+        icon: <DashboardIcon />,
+        path: '/dashboard',
+      },
       { text: 'Paper', detail: 'Simulated order desk', icon: <PaperIcon />, path: '/paper' },
     ],
   },
@@ -72,8 +79,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
 
   const drawerContent = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ px: 2.5, pt: 3, pb: 2 }}>
-        <Stack spacing={2}>
+      <Box sx={{ px: 2.5, pt: 3, pb: 2.5 }}>
+        <Stack spacing={2.25}>
           <Box>
             <Typography variant="overline" color="text.secondary">
               AlgoTrading Bot
@@ -86,28 +93,44 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
               color="text.secondary"
               sx={{ mt: 1, overflowWrap: 'anywhere' }}
             >
-              Simple, test-first access to research, paper workflows, risk controls, and operator
-              settings.
+              Calm, test-first access to research, paper workflows, risk controls, and operator settings.
             </Typography>
           </Box>
 
           <Box
             sx={{
               px: 1.5,
-              py: 1.25,
+              py: 1.5,
               border: '1px solid',
               borderColor: 'divider',
-              bgcolor: alpha(theme.palette.primary.main, 0.03),
+              bgcolor: alpha(theme.palette.primary.main, 0.04),
+              borderRadius: 3,
             }}
           >
-            <Typography variant="subtitle2" sx={{ mb: 0.75 }}>
-              Safety defaults
+            <Stack spacing={1.25}>
+              <Typography variant="subtitle2">Safety defaults</Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                <StatusPill label="Default: test" tone="success" variant="filled" />
+                <StatusPill label="Paper stays simulated" tone="info" />
+              </Stack>
+              <Typography variant="body2" color="text.secondary">
+                Follow the workstation path: Backtest first, Paper second, and only explicit live context when the app says it is supported.
+              </Typography>
+            </Stack>
+          </Box>
+
+          <Box sx={{ px: 0.25 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+              Workstation flow
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Mode starts in test.
+            <Typography variant="body2" sx={{ fontWeight: 700 }}>
+              1. Review Dashboard
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Paper actions stay simulated.
+            <Typography variant="body2" sx={{ fontWeight: 700 }}>
+              2. Validate in Backtest
+            </Typography>
+            <Typography variant="body2" sx={{ fontWeight: 700 }}>
+              3. Simulate in Paper
             </Typography>
           </Box>
         </Stack>
@@ -121,7 +144,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
             <Typography
               variant="overline"
               color="text.secondary"
-              sx={{ px: 1.25, display: 'block', mb: 1 }}
+              sx={{ px: 1.25, display: 'block', mb: 0.75 }}
             >
               {section.heading}
             </Typography>
@@ -137,12 +160,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
                       selected={isActive}
                       sx={{
                         px: 1.5,
-                        py: 1.25,
+                        py: 1.35,
                         alignItems: 'center',
+                        borderRadius: 3,
                         border: `1px solid ${
-                          isActive
-                            ? alpha(theme.palette.primary.main, 0.2)
-                            : 'transparent'
+                          isActive ? alpha(theme.palette.primary.main, 0.2) : 'transparent'
                         }`,
                         backgroundColor: isActive
                           ? alpha(theme.palette.primary.main, 0.11)
@@ -190,7 +212,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
           sx={{
             p: 1.75,
             border: `1px solid ${theme.palette.divider}`,
-            backgroundColor: alpha(theme.palette.primary.main, 0.05),
+            backgroundColor: alpha(theme.palette.secondary.main, 0.08),
+            borderRadius: 3,
           }}
         >
           <Typography variant="subtitle2">Safe next step</Typography>

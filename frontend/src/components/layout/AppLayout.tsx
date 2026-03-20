@@ -36,6 +36,17 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         display: 'flex',
         minHeight: '100vh',
         bgcolor: 'background.default',
+        backgroundImage: (theme) =>
+          `radial-gradient(circle at top right, ${
+            theme.palette.mode === 'light'
+              ? 'rgba(24, 102, 96, 0.10)'
+              : 'rgba(132, 225, 212, 0.10)'
+          } 0%, transparent 28%),
+           radial-gradient(circle at left 22%, ${
+             theme.palette.mode === 'light'
+               ? 'rgba(179, 106, 31, 0.09)'
+               : 'rgba(255, 200, 112, 0.08)'
+           } 0%, transparent 24%)`,
       }}
     >
       <a href="#main-content" className="skip-link">
@@ -69,9 +80,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           role="main"
           sx={{
             flexGrow: 1,
-            px: { xs: 2, sm: 3, lg: 4 },
+            px: { xs: 1.5, sm: 2.5, lg: 3.5 },
             pb: { xs: 3, sm: 4, lg: 5 },
-            pt: { xs: 2, sm: 2.5, lg: 3 },
+            pt: { xs: 1.5, sm: 2, lg: 2.5 },
             position: 'relative',
             minWidth: 0,
           }}
@@ -79,7 +90,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           <Box
             sx={{
               width: '100%',
-              maxWidth: 1480,
               mx: 'auto',
               minWidth: 0,
               display: 'flex',

@@ -100,7 +100,7 @@ describe('TradesPage', { timeout: 15000 }, () => {
     renderPage();
 
     expect(screen.getByText('Review and export')).toBeInTheDocument();
-    expect(screen.getByText('Results')).toBeInTheDocument();
+    expect(screen.getByText('Trade review')).toBeInTheDocument();
     expect(screen.getByText('BTC/USDT')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Export CSV' })).toBeInTheDocument();
   });

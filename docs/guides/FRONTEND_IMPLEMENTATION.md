@@ -34,6 +34,8 @@ Shared shell ownership:
 - `frontend/src/components/layout/Header.tsx` owns route-aware operator context, environment and connection badges, and session actions.
 - `frontend/src/components/layout/Sidebar.tsx` owns grouped navigation, shell safety cues, and workstation branding.
 - `frontend/src/components/layout/PageContent.tsx` owns the reusable page intro, metric-strip, and section-header primitives that standardize max-width, spacing, and primary-action placement across routes.
+- `frontend/src/components/ui/Workbench.tsx` owns reusable workstation primitives such as `SurfacePanel`, `RouteActionBar`, `StatusPill`, `MetricCard`, `LegendList`, and unified empty states.
+- `frontend/src/components/workspace/StickyInspectorPanel.tsx` owns the sticky detail rail used by linked chart and table review flows.
 - `frontend/src/components/LoadingFallback.tsx` and `frontend/src/components/ErrorFallback.tsx` should mirror the shell hierarchy instead of falling back to generic placeholder layouts.
 
 Current route surfaces:
@@ -77,6 +79,7 @@ Current contract pattern:
 - `src/components`: shared layout, guards, loading, and error handling primitives
 - Route files should stay orchestration-first. Large UI sections belong in feature-local panel modules such as `BacktestPanels.tsx`, `MarketDataPanels.tsx`, and `SettingsPanels.tsx`, while page-only derivation and normalization helpers belong in small state/helper modules such as `backtestPageState.ts`, `marketDataPageState.ts`, and `tradesPageState.ts`.
 - Treat the shell header as the primary route-title surface. Pages may add an intro card when they need workflow guidance or a clear primary action, but they should not recreate a competing page hero when the header already supplies route context.
+- `features/backtest/BacktestWorkspaceChart.tsx` is the main price-action chart surface and uses `lightweight-charts`; keep marker interaction, overlay toggles, and focus-sync behavior there instead of scattering chart glue across route files.
 
 ## Implementation Rules
 

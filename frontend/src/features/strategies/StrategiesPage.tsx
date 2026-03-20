@@ -1,7 +1,6 @@
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {
   Alert,
-  Box,
   Button,
   Chip,
   Dialog,
@@ -10,7 +9,6 @@ import {
   DialogContentText,
   DialogTitle,
   Grid,
-  Paper,
   Stack,
   Table,
   TableBody,
@@ -42,6 +40,12 @@ import {
   PageMetricStrip,
   PageSectionHeader,
 } from '@/components/layout/PageContent';
+import {
+  EmptyState,
+  NumericText,
+  StatusPill,
+  SurfacePanel,
+} from '@/components/ui/Workbench';
 
 type ActionDialogState = {
   strategy: Strategy;
@@ -173,7 +177,7 @@ export default function StrategiesPage() {
 
   return (
     <AppLayout>
-      <PageContent>
+      <PageContent maxWidth="research">
         <PageIntro
           eyebrow="Paper-safe strategy desk"
           description="Pick a template, review how it behaves, then edit configuration before you start or stop anything in the paper workflow."
@@ -211,20 +215,11 @@ export default function StrategiesPage() {
           <Grid container spacing={1.5}>
             {strategyProfiles.map((profile) => (
               <Grid key={profile.key} size={{ xs: 12, md: 6, xl: 4 }}>
-                <Paper
-                  variant="outlined"
-                  sx={{
-                    height: '100%',
-                    p: 2,
-                    borderRadius: 1,
-                  }}
+                <SurfacePanel
+                  title={profile.title}
+                  description={profile.shortDescription}
+                  sx={{ height: '100%' }}
                 >
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.75 }}>
-                    {profile.title}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                    {profile.shortDescription}
-                  </Typography>
                   <Typography variant="caption" display="block">
                     Entry: {profile.entryRule}
                   </Typography>
@@ -237,30 +232,33 @@ export default function StrategiesPage() {
                   <Typography variant="caption" display="block">
                     Risk note: {profile.riskNotes}
                   </Typography>
-                </Paper>
+                </SurfacePanel>
               </Grid>
             ))}
           </Grid>
         </Stack>
 
         {!isLoading && !isError ? (
-          <Paper variant="outlined" sx={{ p: 0.25 }}>
-            <Box sx={{ p: 2 }}>
-              <PageSectionHeader
-                title="Available strategies"
-                description="Use Start only after the config is reviewed. Edit keeps advanced and destructive changes lower in the visual hierarchy."
-                actions={
-                  <Chip
-                    label={isBusy ? 'Updating strategy state' : 'Paper mode only'}
-                    color={isBusy ? 'warning' : 'success'}
-                    variant="outlined"
-                  />
-                }
+          <SurfacePanel
+            title="Saved strategy configs"
+            description="Edit config first, then use the lighter action band to start or stop paper execution."
+            actions={
+              <StatusPill
+                label={isBusy ? 'Updating strategy state' : 'Paper mode only'}
+                tone={isBusy ? 'warning' : 'success'}
+                variant="filled"
               />
-            </Box>
-
-            <TableContainer>
-              <Table size="small" sx={{ minWidth: 1120 }}>
+            }
+          >
+            {strategies.length === 0 ? (
+              <EmptyState
+                title="No saved strategies returned"
+                description="When the backend exposes saved strategy configs, they will appear here for review and editing."
+                tone="info"
+              />
+            ) : (
+              <TableContainer>
+                <Table size="small" sx={{ minWidth: 1120 }}>
                 <TableHead>
                   <TableRow>
                     <TableCell>
@@ -350,10 +348,10 @@ export default function StrategiesPage() {
                           </Typography>
                         </TableCell>
                         <TableCell>
-                          <Chip
+                          <StatusPill
                             label={strategy.status}
-                            size="small"
-                            color={statusColor(strategy.status)}
+                            tone={statusColor(strategy.status)}
+                            variant="filled"
                           />
                         </TableCell>
                         <TableCell>
@@ -362,10 +360,27 @@ export default function StrategiesPage() {
                             {strategy.shortSellingEnabled ? 'Long + short enabled' : 'Long only'}
                           </Typography>
                         </TableCell>
-                        <TableCell>{(strategy.riskPerTrade * 100).toFixed(2)}%</TableCell>
-                        <TableCell>{strategy.profitLoss.toFixed(2)}</TableCell>
-                        <TableCell>{strategy.tradeCount}</TableCell>
-                        <TableCell>{strategy.currentDrawdown.toFixed(2)}%</TableCell>
+                        <TableCell>
+                          <NumericText variant="body2">
+                            {(strategy.riskPerTrade * 100).toFixed(2)}%
+                          </NumericText>
+                        </TableCell>
+                        <TableCell>
+                          <NumericText
+                            variant="body2"
+                            tone={strategy.profitLoss >= 0 ? 'success' : 'error'}
+                          >
+                            {strategy.profitLoss.toFixed(2)}
+                          </NumericText>
+                        </TableCell>
+                        <TableCell>
+                          <NumericText variant="body2">{strategy.tradeCount}</NumericText>
+                        </TableCell>
+                        <TableCell>
+                          <NumericText variant="body2">
+                            {strategy.currentDrawdown.toFixed(2)}%
+                          </NumericText>
+                        </TableCell>
                         <TableCell>
                           v{strategy.configVersion}
                           {strategy.lastConfigChangedAt ? (
@@ -380,10 +395,18 @@ export default function StrategiesPage() {
                             spacing={1}
                             justifyContent="flex-end"
                           >
+                            <Button
+                              size="small"
+                              variant="contained"
+                              disabled={isBusy}
+                              onClick={() => setSelectedStrategy(strategy)}
+                            >
+                              Edit config
+                            </Button>
                             {strategy.status === 'RUNNING' ? (
                               <Button
                                 size="small"
-                                variant="contained"
+                                variant="outlined"
                                 color="warning"
                                 disabled={isBusy}
                                 onClick={() => setActionDialog({ strategy, action: 'stop' })}
@@ -393,7 +416,7 @@ export default function StrategiesPage() {
                             ) : (
                               <Button
                                 size="small"
-                                variant="contained"
+                                variant="outlined"
                                 color="success"
                                 disabled={isBusy}
                                 onClick={() => setActionDialog({ strategy, action: 'start' })}
@@ -401,23 +424,16 @@ export default function StrategiesPage() {
                                 Start
                               </Button>
                             )}
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              disabled={isBusy}
-                              onClick={() => setSelectedStrategy(strategy)}
-                            >
-                              Edit
-                            </Button>
                           </Stack>
                         </TableCell>
                       </TableRow>
                     );
                   })}
                 </TableBody>
-              </Table>
-            </TableContainer>
-          </Paper>
+                </Table>
+              </TableContainer>
+            )}
+          </SurfacePanel>
         ) : null}
       </PageContent>
 

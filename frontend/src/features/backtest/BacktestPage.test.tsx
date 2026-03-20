@@ -242,8 +242,6 @@ describe('BacktestPage', { timeout: 15000 }, () => {
 
     expect(screen.getByText('Research-only workflow')).toBeInTheDocument();
     expect(screen.getByText(/Backtest transport: live WebSocket stream connected/i)).toBeInTheDocument();
-    expect(screen.getByText('Current Run Progress')).toBeInTheDocument();
-    expect(screen.getAllByText(/Current data date:/).length).toBeGreaterThan(0);
     expect(screen.getByText('Dataset Upload')).toBeInTheDocument();
     expect(screen.getByText('Dataset Inventory')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Run New Backtest' })).toBeInTheDocument();

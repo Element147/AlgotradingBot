@@ -49,9 +49,9 @@ describe('StrategiesPage', () => {
 
     expect(screen.getByText('Paper-safe strategy desk')).toBeInTheDocument();
     expect(screen.getByText('Bollinger BTC Mean Reversion')).toBeInTheDocument();
-    expect(screen.getByText('Available strategies')).toBeInTheDocument();
+    expect(screen.getByText('Saved strategy configs')).toBeInTheDocument();
     expect(screen.getByText('BTC/USDT (1h)')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit config' })).toBeInTheDocument();
   });
 
   it('shows start confirmation dialog before mutation execution', async () => {

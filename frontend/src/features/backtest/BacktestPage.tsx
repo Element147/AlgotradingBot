@@ -1,5 +1,5 @@
-import { Alert, Chip, Grid } from '@mui/material';
-import { useEffect, useMemo, useState } from 'react';
+import { Alert, Button, Chip, Grid } from '@mui/material';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   useArchiveBacktestDatasetMutation,
@@ -77,6 +77,7 @@ export default function BacktestPage() {
   const [configModalOpen, setConfigModalOpen] = useState(false);
   const [comparisonIds, setComparisonIds] = useState<number[]>([]);
   const [activeComparisonIds, setActiveComparisonIds] = useState<number[]>([]);
+  const historySectionRef = useRef<HTMLDivElement | null>(null);
 
   const { data: algorithms = [] } = useGetBacktestAlgorithmsQuery();
   const { data: datasets = [] } = useGetBacktestDatasetsQuery();
@@ -113,34 +114,36 @@ export default function BacktestPage() {
     [resolvedForm.algorithmType]
   );
   const requiresDatasetUniverse = selectedAlgorithm?.selectionMode === 'DATASET_UNIVERSE';
-  const selectedHistoryItem = useMemo(
-    () => history.find((item) => item.id === selectedId) ?? null,
-    [history, selectedId]
+  const fallbackTrackedRun = useMemo(
+    () => history.find((item) => isExecutionActive(item)) ?? history[0] ?? null,
+    [history]
   );
-  const selectedRunIsActive = selectedHistoryItem ? isExecutionActive(selectedHistoryItem) : false;
+  const effectiveSelectedId = selectedId ?? fallbackTrackedRun?.id ?? null;
+  const trackedRun = useMemo(
+    () => history.find((item) => item.id === effectiveSelectedId) ?? null,
+    [effectiveSelectedId, history]
+  );
+  const selectedRunIsActive = trackedRun ? isExecutionActive(trackedRun) : false;
 
-  const { data: details, refetch: refetchDetails } = useGetBacktestDetailsQuery(selectedId ?? 0, {
-    skip: selectedId === null,
-    pollingInterval: selectedRunIsActive ? backtestPollingInterval : 0,
-    skipPollingIfUnfocused: true,
-  });
+  const { data: details, refetch: refetchDetails } = useGetBacktestDetailsQuery(
+    effectiveSelectedId ?? 0,
+    {
+      skip: effectiveSelectedId === null,
+      pollingInterval: selectedRunIsActive ? backtestPollingInterval : 0,
+      skipPollingIfUnfocused: true,
+    }
+  );
 
   useEffect(() => {
-    if (selectedId !== null && !selectedRunIsActive) {
+    if (effectiveSelectedId !== null && !selectedRunIsActive) {
       void refetchDetails();
     }
-  }, [refetchDetails, selectedId, selectedRunIsActive]);
+  }, [effectiveSelectedId, refetchDetails, selectedRunIsActive]);
 
   const comparisonIsStale =
     activeComparisonIds.length > 0 && activeComparisonIds.join(',') !== comparisonIds.join(',');
   const comparisonErrorMessage = comparisonError ? getErrorMessage(comparisonError) : null;
   const datasetLifecycleBusy = isArchivingDataset || isRestoringDataset;
-  const trackedRun = useMemo(() => {
-    if (selectedId !== null) {
-      return history.find((item) => item.id === selectedId) ?? null;
-    }
-    return history.find((item) => isExecutionActive(item)) ?? history[0] ?? null;
-  }, [history, selectedId]);
   const summaryItems = useMemo<PageMetricItem[]>(
     () => [
       {
@@ -360,12 +363,30 @@ export default function BacktestPage() {
     }
   };
 
+  const focusHistory = () => {
+    historySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   return (
     <AppLayout>
-      <PageContent>
+      <PageContent maxWidth="research">
         <PageIntro
           eyebrow="Research-only workflow"
           description="Upload or restore datasets, launch runs with realistic costs, then compare and inspect results without blurring the line between research and live execution."
+          actions={
+            <>
+              <Button
+                variant="contained"
+                onClick={() => setConfigModalOpen(true)}
+                disabled={!activeDatasets.length}
+              >
+                Run new backtest
+              </Button>
+              <Button variant="outlined" onClick={focusHistory}>
+                Open history
+              </Button>
+            </>
+          }
           chips={
             <>
               <Chip label="Backtests stay research-only" variant="outlined" />
@@ -396,16 +417,41 @@ export default function BacktestPage() {
           websocketError={websocketError}
         />
 
-        {trackedRun ? (
+        {details ? (
+          <BacktestResults
+            details={details}
+            transportLabel={backtestLiveTransportConnected ? 'Live WebSocket stream' : 'Fallback polling'}
+            lastLiveEventAt={lastBacktestEventAt}
+            transportError={websocketError}
+            onReplay={() => void onReplayBacktest(details.id)}
+            onFocusHistory={focusHistory}
+            onDelete={() => void onDeleteResult(details)}
+            deleteDisabled={isExecutionActive(details) || isDeletingBacktest}
+          />
+        ) : trackedRun ? (
           <BacktestTrackedRunCard
             trackedRun={trackedRun}
             transportConnected={backtestLiveTransportConnected}
             lastLiveEventAt={lastBacktestEventAt}
           />
-        ) : null}
+        ) : (
+          <Alert severity="info">
+            Select a run from history or launch a new one to open the research workspace.
+          </Alert>
+        )}
 
         <Grid container spacing={2.5}>
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid size={{ xs: 12, xl: 6 }}>
+            <BacktestRunLauncherPanel
+              selectedAlgorithm={selectedAlgorithm}
+              selectedAlgorithmProfile={selectedAlgorithmProfile}
+              requiresDatasetUniverse={requiresDatasetUniverse}
+              hasActiveDatasets={activeDatasets.length > 0}
+              onOpenConfigModal={() => setConfigModalOpen(true)}
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, xl: 6 }}>
             <BacktestDatasetPanel
               datasetName={datasetName}
               datasetFile={datasetFile}
@@ -423,26 +469,16 @@ export default function BacktestPage() {
             />
           </Grid>
 
-          <Grid size={{ xs: 12, md: 6 }}>
-            <BacktestRunLauncherPanel
-              selectedAlgorithm={selectedAlgorithm}
-              selectedAlgorithmProfile={selectedAlgorithmProfile}
-              requiresDatasetUniverse={requiresDatasetUniverse}
-              hasActiveDatasets={activeDatasets.length > 0}
-              onOpenConfigModal={() => setConfigModalOpen(true)}
-            />
-          </Grid>
-
           <Grid size={{ xs: 12 }}>
             <BacktestExperimentSummariesPanel experimentSummaries={experimentSummaries} />
           </Grid>
 
-          <Grid size={{ xs: 12 }}>
+          <Grid size={{ xs: 12 }} ref={historySectionRef}>
             <BacktestHistoryPanel
               history={history}
               comparison={comparison}
               comparisonIds={comparisonIds}
-              selectedId={selectedId}
+               selectedId={effectiveSelectedId}
               comparisonIsStale={comparisonIsStale}
               comparisonErrorMessage={comparisonErrorMessage}
               lastLiveEventAt={lastBacktestEventAt}
@@ -462,24 +498,6 @@ export default function BacktestPage() {
               onReplayBacktest={onReplayBacktest}
               onDeleteResult={onDeleteResult}
             />
-          </Grid>
-
-          <Grid size={{ xs: 12 }}>
-            {details ? (
-              <BacktestResults
-                details={details}
-                transportLabel={backtestLiveTransportConnected ? 'Live WebSocket stream' : 'Fallback polling'}
-                lastLiveEventAt={lastBacktestEventAt}
-                transportError={websocketError}
-                onDelete={() => void onDeleteResult(details)}
-                deleteDisabled={isExecutionActive(details) || isDeletingBacktest}
-              />
-            ) : (
-              <Alert severity="info">
-                Select a run from history or use the Details action to inspect full metrics, charts,
-                and trades.
-              </Alert>
-            )}
           </Grid>
         </Grid>
       </PageContent>

@@ -1,5 +1,6 @@
-import { Alert, Chip, Grid } from '@mui/material';
+import { Alert, Button, Chip, Grid } from '@mui/material';
 import { useMemo, useState } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 
 import {
   useCancelMarketDataJobMutation,
@@ -216,15 +217,21 @@ export default function MarketDataPage() {
 
   return (
     <AppLayout>
-      <PageContent>
+      <PageContent maxWidth="research">
         <PageIntro
           eyebrow="Provider-backed imports"
           description="Create download jobs, watch retries, and move completed datasets into the backtest catalog without guesswork about provider requirements or job state."
+          actions={
+            <Button component={RouterLink} to="/backtest" variant="contained">
+              Open backtest catalog
+            </Button>
+          }
           chips={
             <>
+              <Chip label="1. Pick provider" variant="outlined" />
+              <Chip label="2. Define import scope" variant="outlined" />
+              <Chip label="3. Review jobs and output" variant="outlined" />
               <Chip label="Jobs retry automatically" variant="outlined" />
-              <Chip label="Provider requirements stay visible" variant="outlined" />
-              <Chip label="Completed datasets flow into Backtest" variant="outlined" />
             </>
           }
         />
@@ -253,7 +260,18 @@ export default function MarketDataPage() {
         ) : null}
 
         <Grid container spacing={2.5}>
-          <Grid size={{ xs: 12, lg: 7 }}>
+          <Grid size={{ xs: 12, lg: 4 }}>
+            <Grid container spacing={2.5}>
+              <Grid size={{ xs: 12 }}>
+                <MarketDataProviderSetupPanel selectedProvider={selectedProvider} />
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <MarketDataHowToPanel />
+              </Grid>
+            </Grid>
+          </Grid>
+
+          <Grid size={{ xs: 12, lg: 8 }}>
             <MarketDataJobFormPanel
               providers={providers}
               selectedProvider={selectedProvider}
@@ -291,17 +309,6 @@ export default function MarketDataPage() {
               }
               onSubmit={onSubmit}
             />
-          </Grid>
-
-          <Grid size={{ xs: 12, lg: 5 }}>
-            <Grid container spacing={2.5}>
-              <Grid size={{ xs: 12 }}>
-                <MarketDataProviderSetupPanel selectedProvider={selectedProvider} />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <MarketDataHowToPanel />
-              </Grid>
-            </Grid>
           </Grid>
 
           <Grid size={{ xs: 12 }}>

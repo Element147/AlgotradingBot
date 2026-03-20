@@ -114,8 +114,8 @@ describe('PaperTradingPage', () => {
     renderPage();
 
     expect(screen.getByText('Paper-only execution')).toBeInTheDocument();
-    expect(screen.getByText('Place Paper Order')).toBeInTheDocument();
-    expect(screen.getByText('Paper Orders')).toBeInTheDocument();
+    expect(screen.getByText('Order entry')).toBeInTheDocument();
+    expect(screen.getByText('Paper orders')).toBeInTheDocument();
     expect(screen.getAllByText('No paper incidents detected.').length).toBeGreaterThan(0);
     expect(screen.getByText('#11')).toBeInTheDocument();
   });

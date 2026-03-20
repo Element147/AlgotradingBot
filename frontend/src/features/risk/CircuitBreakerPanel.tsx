@@ -1,9 +1,10 @@
-import { Alert, Button, Card, CardContent, Chip, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Button, Stack, TextField, Typography } from '@mui/material';
 import { useMemo, useState } from 'react';
 
 import type { RiskAlert, RiskConfig } from './riskApi';
 
 import { FieldTooltip } from '@/components/ui/FieldTooltip';
+import { StatusPill, SurfacePanel } from '@/components/ui/Workbench';
 import type { EnvironmentMode } from '@/features/environment/environmentSlice';
 import { sanitizeText } from '@/utils/security';
 
@@ -43,18 +44,60 @@ export function CircuitBreakerPanel({
   };
 
   return (
-    <Card>
-      <CardContent>
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Circuit Breaker Override
-        </Typography>
-        <Alert severity="warning" sx={{ mb: 2 }}>
-          Override is test/paper only. Use confirmation code and reason for auditability.
-        </Alert>
-        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
-          <Chip size="small" label={`Environment: ${environmentMode}`} color={environmentMode === 'live' ? 'error' : 'success'} />
-          <Chip size="small" label={`Configured breakers: ${circuitBreakers.length}`} variant="outlined" />
+    <SurfacePanel
+      title="Circuit breakers and alerts"
+      description="Read the current breaker inventory and recent alerts before you even consider the manual override flow."
+      tone={alerts.some((alert) => alert.severity === 'HIGH') ? 'warning' : 'default'}
+      actions={
+        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+          <StatusPill
+            label={`Environment: ${environmentMode}`}
+            tone={environmentMode === 'live' ? 'error' : 'success'}
+          />
+          <StatusPill label={`${circuitBreakers.length} configured breakers`} />
         </Stack>
+      }
+    >
+      <Stack spacing={1}>
+        {circuitBreakers.length === 0 ? (
+          <Typography variant="body2">No circuit-breaker configurations returned.</Typography>
+        ) : (
+          circuitBreakers.map((breaker, index) => (
+            <Alert
+              key={`${breaker.maxRiskPerTrade}-${breaker.maxDailyLossLimit}-${index}`}
+              severity={breaker.circuitBreakerActive ? 'warning' : 'info'}
+            >
+              Max risk per trade {(breaker.maxRiskPerTrade * 100).toFixed(2)}% | Daily loss{' '}
+              {(breaker.maxDailyLossLimit * 100).toFixed(2)}% | Drawdown{' '}
+              {(breaker.maxDrawdownLimit * 100).toFixed(2)}% | Max positions{' '}
+              {breaker.maxOpenPositions} | Correlation {(breaker.correlationLimit * 100).toFixed(0)}%
+              {breaker.circuitBreakerReason
+                ? ` | Active reason: ${breaker.circuitBreakerReason}`
+                : ' | Breaker currently inactive'}
+            </Alert>
+          ))
+        )}
+      </Stack>
+
+      <Stack spacing={1} aria-live="assertive">
+        <Typography variant="subtitle2">Recent alerts</Typography>
+        {alerts.length === 0 ? <Typography variant="body2">No recent alerts.</Typography> : null}
+        {alerts.slice(0, 10).map((alert) => (
+          <Alert key={alert.id} severity={alert.severity === 'HIGH' ? 'error' : 'warning'}>
+            [{alert.type}] {alert.message} ({alert.actionTaken})
+          </Alert>
+        ))}
+      </Stack>
+
+      <SurfacePanel
+        title="Danger zone: manual override"
+        description="Override remains test and paper only. Use it only when you can justify the action for audit and incident review."
+        tone="error"
+        contentSx={{ gap: 1.5 }}
+      >
+        <Alert severity="warning">
+          Override is test and paper only. Use confirmation code and reason for auditability.
+        </Alert>
         <Stack spacing={2}>
           <FieldTooltip title="Required confirmation token for manual override. Invalid code blocks the action.">
             <TextField
@@ -73,47 +116,16 @@ export function CircuitBreakerPanel({
               helperText="Document why override is necessary and temporary."
             />
           </FieldTooltip>
-          <Button variant="outlined" color="warning" onClick={() => void submit()} disabled={!canSubmit}>
-            Override Circuit Breaker
+          <Button
+            variant="outlined"
+            color="warning"
+            onClick={() => void submit()}
+            disabled={!canSubmit}
+          >
+            Override circuit breaker
           </Button>
         </Stack>
-
-        <Typography variant="h6" sx={{ mt: 3, mb: 2 }}>
-          Circuit Breaker Inventory
-        </Typography>
-        <Stack spacing={1}>
-          {circuitBreakers.length === 0 ? (
-            <Typography variant="body2">No circuit-breaker configurations returned.</Typography>
-          ) : (
-            circuitBreakers.map((breaker, index) => (
-              <Alert
-                key={`${breaker.maxRiskPerTrade}-${breaker.maxDailyLossLimit}-${index}`}
-                severity={breaker.circuitBreakerActive ? 'warning' : 'info'}
-              >
-                Max risk/trade: {(breaker.maxRiskPerTrade * 100).toFixed(2)}% | Daily loss:{' '}
-                {(breaker.maxDailyLossLimit * 100).toFixed(2)}% | Drawdown:{' '}
-                {(breaker.maxDrawdownLimit * 100).toFixed(2)}% | Max positions:{' '}
-                {breaker.maxOpenPositions} | Correlation: {(breaker.correlationLimit * 100).toFixed(0)}%
-                {breaker.circuitBreakerReason
-                  ? ` | Active reason: ${breaker.circuitBreakerReason}`
-                  : ' | Breaker currently inactive'}
-              </Alert>
-            ))
-          )}
-        </Stack>
-
-        <Typography variant="h6" sx={{ mt: 3, mb: 2 }}>
-          Risk Alerts
-        </Typography>
-        <Stack spacing={1} aria-live="assertive">
-          {alerts.length === 0 ? <Typography variant="body2">No recent alerts.</Typography> : null}
-          {alerts.slice(0, 10).map((alert) => (
-            <Alert key={alert.id} severity={alert.severity === 'HIGH' ? 'error' : 'warning'}>
-              [{alert.type}] {alert.message} ({alert.actionTaken})
-            </Alert>
-          ))}
-        </Stack>
-      </CardContent>
-    </Card>
+      </SurfacePanel>
+    </SurfacePanel>
   );
 }

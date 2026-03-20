@@ -17,6 +17,7 @@ import {
   MenuItem,
   Stack,
   Toolbar,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
@@ -39,116 +40,54 @@ import {
   selectSubscribedChannels,
 } from '../../features/websocket/websocketSlice';
 import ThemeToggle from '../ThemeToggle';
+import { StatusPill } from '../ui/Workbench';
 
 interface HeaderProps {
   onMenuClick: () => void;
 }
 
-type HeaderStatusItem = {
-  label: string;
-  value: string;
-  color: 'success' | 'warning' | 'error' | 'info' | 'default';
-};
-
 const routeMeta: Record<string, { title: string; subtitle: string }> = {
   '/dashboard': {
     title: 'Dashboard',
-    subtitle: 'Start here for mode, health, paper activity, and current operator signals.',
+    subtitle:
+      'Review workstation posture, paper state, and the next safe action without chasing multiple competing panels.',
   },
   '/paper': {
     title: 'Paper Trading',
-    subtitle: 'Place and review simulated orders without implying live routing.',
+    subtitle:
+      'Work from one simulated execution desk where order entry stays primary and recovery state stays separate.',
   },
   '/strategies': {
     title: 'Strategies',
-    subtitle: 'Review templates, readiness, and paper-safe configuration changes.',
+    subtitle:
+      'Understand the template first, then edit saved paper-safe configs before you start or stop anything.',
   },
   '/trades': {
     title: 'Trades',
-    subtitle: 'Audit fills, outcomes, and exports without losing operational context.',
+    subtitle:
+      'Filter, inspect, and export fills with stronger row focus and clearer numeric review.',
   },
   '/backtest': {
     title: 'Backtest',
-    subtitle: 'Launch research runs, review progress, and inspect results with provenance.',
+    subtitle:
+      'Use the research workspace to launch runs, review evidence, and link chart events back to trades and datasets.',
   },
   '/market-data': {
     title: 'Market Data',
-    subtitle: 'Create import jobs, watch retries, and move datasets into research workflows.',
+    subtitle:
+      'Move cleanly from provider setup to import scope and then job output without losing retry context.',
   },
   '/risk': {
     title: 'Risk',
-    subtitle: 'Keep breaker posture, limits, alerts, and override context easy to scan.',
+    subtitle:
+      'Put protective posture first, then isolate overrides and operator follow-up in a clearly marked danger area.',
   },
   '/settings': {
     title: 'Settings',
-    subtitle: 'Manage connections, credentials, preferences, and audit-facing controls.',
+    subtitle:
+      'Work through calmer sections for preferences, connections, audit review, and sensitive operator tooling.',
   },
 };
-
-function HeaderStatusGrid({
-  items,
-}: {
-  items: HeaderStatusItem[];
-}) {
-  const theme = useTheme();
-
-  const resolveAccent = (color: HeaderStatusItem['color']) => {
-    switch (color) {
-      case 'success':
-        return theme.palette.success.main;
-      case 'warning':
-        return theme.palette.warning.main;
-      case 'error':
-        return theme.palette.error.main;
-      case 'info':
-        return theme.palette.info.main;
-      default:
-        return theme.palette.text.secondary;
-    }
-  };
-
-  return (
-    <Box
-      sx={{
-        display: 'grid',
-        gridTemplateColumns: {
-          xs: 'repeat(2, minmax(0, 1fr))',
-          lg: 'repeat(4, minmax(0, 1fr))',
-        },
-        gap: 1,
-      }}
-    >
-      {items.map((item) => {
-        const accent = resolveAccent(item.color);
-
-        return (
-          <Box
-            key={item.label}
-            sx={{
-              minWidth: 0,
-              px: 1.25,
-              py: 1,
-              border: '1px solid',
-              borderColor: 'divider',
-              borderLeft: `3px solid ${accent}`,
-              bgcolor: 'background.paper',
-            }}
-          >
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-              {item.label}
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{ fontWeight: 700, lineHeight: 1.35, overflowWrap: 'anywhere' }}
-            >
-              {item.value}
-            </Typography>
-          </Box>
-        );
-      })}
-    </Box>
-  );
-}
 
 export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const theme = useTheme();
@@ -184,37 +123,6 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
         activeExchangeConnection.testnet ? 'TESTNET' : 'LIVE'
       }`
     : 'No exchange profile';
-  const riskColor = riskStatus
-    ? riskStatus.circuitBreakerActive
-      ? 'error'
-      : 'success'
-    : 'default';
-  const headerStatusItems: HeaderStatusItem[] = [
-    {
-      label: 'Mode',
-      value: environmentMode.toUpperCase(),
-      color: environmentMode === 'live' ? 'error' : 'success',
-    },
-    {
-      label: 'Telemetry',
-      value: telemetryConnected ? 'Connected' : 'Fallback mode',
-      color: telemetryConnected ? 'success' : 'warning',
-    },
-    {
-      label: 'Risk',
-      value: riskStatus
-        ? riskStatus.circuitBreakerActive
-          ? 'Breaker active'
-          : 'Guarded'
-        : 'Loading',
-      color: riskColor,
-    },
-    {
-      label: 'Role',
-      value: userRoleLabel,
-      color: 'info',
-    },
-  ];
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationAnchorEl, setNotificationAnchorEl] =
@@ -249,8 +157,15 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 
   return (
     <AppBar position="sticky" elevation={0} color="inherit">
-      <Toolbar sx={{ px: { xs: 2, sm: 3 }, py: 1.5, alignItems: 'stretch' }}>
-        <Stack spacing={1.5} sx={{ width: '100%' }}>
+      <Toolbar
+        sx={{
+          px: { xs: 1.75, sm: 2.5, lg: 3 },
+          py: 1.5,
+          alignItems: 'stretch',
+          minHeight: 88,
+        }}
+      >
+        <Stack spacing={1.25} sx={{ width: '100%' }}>
           <Stack
             direction="row"
             spacing={1.5}
@@ -271,22 +186,15 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               <Typography variant="overline" color="text.secondary">
                 Research Workstation
               </Typography>
-              <Typography variant={isMobile ? 'h6' : 'h5'} sx={{ lineHeight: 1.15 }}>
+              <Typography variant={isMobile ? 'h6' : 'h5'} sx={{ lineHeight: 1.08 }}>
                 {currentRoute.title}
               </Typography>
               <Typography
                 variant="body2"
                 color="text.secondary"
-                sx={{ mt: 0.5, maxWidth: 860 }}
+                sx={{ mt: 0.45, maxWidth: 920 }}
               >
                 {currentRoute.subtitle}
-              </Typography>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ mt: 0.75, display: 'block', overflowWrap: 'anywhere' }}
-              >
-                Exchange profile: {exchangeLabel}
               </Typography>
             </Box>
 
@@ -299,7 +207,11 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                 ml: { xs: 0, md: 'auto' },
               }}
             >
-              <ThemeToggle />
+              <Tooltip title={`Role: ${userRoleLabel}`} arrow>
+                <Box>
+                  <ThemeToggle />
+                </Box>
+              </Tooltip>
 
               <IconButton
                 color="inherit"
@@ -336,7 +248,37 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             </Stack>
           </Stack>
 
-          <HeaderStatusGrid items={headerStatusItems} />
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            <StatusPill
+              tone={environmentMode === 'live' ? 'error' : 'success'}
+              label={`Mode: ${environmentMode.toUpperCase()}`}
+              variant="filled"
+            />
+            <StatusPill
+              tone={telemetryConnected ? 'success' : 'warning'}
+              label={`Telemetry: ${telemetryConnected ? 'Live stream' : 'Polling fallback'}`}
+            />
+            <StatusPill
+              tone={
+                riskStatus
+                  ? riskStatus.circuitBreakerActive
+                    ? 'error'
+                    : 'success'
+                  : 'default'
+              }
+              label={`Risk: ${
+                riskStatus
+                  ? riskStatus.circuitBreakerActive
+                    ? 'Breaker active'
+                    : 'Guarded'
+                  : 'Loading'
+              }`}
+            />
+            <StatusPill
+              tone={activeExchangeConnection?.testnet === false ? 'warning' : 'info'}
+              label={`Exchange: ${exchangeLabel}`}
+            />
+          </Stack>
         </Stack>
 
         <Menu

@@ -88,10 +88,10 @@ describe('RiskPage', () => {
     renderPage();
 
     expect(screen.getByText('Protective controls first')).toBeInTheDocument();
-    expect(screen.getByText('Risk Status')).toBeInTheDocument();
-    expect(screen.getByText('Risk Configuration')).toBeInTheDocument();
-    expect(screen.getByText('Circuit Breaker Override')).toBeInTheDocument();
-    expect(screen.getByText(/Configured breakers: 1/)).toBeInTheDocument();
+    expect(screen.getByText('Breaker posture')).toBeInTheDocument();
+    expect(screen.getByText('Risk configuration')).toBeInTheDocument();
+    expect(screen.getByText('Danger zone: manual override')).toBeInTheDocument();
+    expect(screen.getByText(/1 configured breakers/i)).toBeInTheDocument();
   });
 
   it('renders risk alert entries', () => {

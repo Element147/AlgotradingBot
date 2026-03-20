@@ -146,17 +146,15 @@ describe('Header', () => {
 
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
     expect(
-      screen.getByText('Start here for mode, health, paper activity, and current operator signals.')
+      screen.getByText(
+        'Review workstation posture, paper state, and the next safe action without chasing multiple competing panels.'
+      )
     ).toBeInTheDocument();
-    expect(screen.getByText('Mode')).toBeInTheDocument();
-    expect(screen.getByText('TEST')).toBeInTheDocument();
-    expect(screen.getByText(/Exchange profile:\s*BINANCE TESTNET/i)).toBeInTheDocument();
-    expect(screen.getByText('Telemetry')).toBeInTheDocument();
-    expect(screen.getByText('Connected')).toBeInTheDocument();
-    expect(screen.getByText('Risk')).toBeInTheDocument();
-    expect(screen.getByText('Guarded')).toBeInTheDocument();
-    expect(screen.getByText('Role')).toBeInTheDocument();
-    expect(screen.getByText('TRADER')).toBeInTheDocument();
+    expect(screen.getByText('Mode: TEST')).toBeInTheDocument();
+    expect(screen.getByText('Exchange: BINANCE TESTNET')).toBeInTheDocument();
+    expect(screen.getByText('Telemetry: Live stream')).toBeInTheDocument();
+    expect(screen.getByText('Risk: Guarded')).toBeInTheDocument();
+    expect(screen.getByLabelText('Role: TRADER')).toBeInTheDocument();
   });
 
   it('renders user avatar with first letter of username', () => {

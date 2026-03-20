@@ -171,7 +171,7 @@ export default function PaperTradingPage() {
 
   return (
     <AppLayout>
-      <PageContent>
+      <PageContent maxWidth="research">
         <PageIntro
           eyebrow="Paper-only execution"
           description="Place, fill, and cancel simulated orders from one desk without hiding recovery state, stale positions, or audit-sensitive context."
@@ -200,7 +200,7 @@ export default function PaperTradingPage() {
         ) : null}
 
         <Grid container spacing={2.5}>
-          <Grid size={{ xs: 12, lg: 5 }}>
+          <Grid size={{ xs: 12, lg: 7 }}>
             <PaperOrderEntryPanel
               form={form}
               busy={orderMutationBusy}
@@ -214,7 +214,7 @@ export default function PaperTradingPage() {
             />
           </Grid>
 
-          <Grid size={{ xs: 12, lg: 7 }}>
+          <Grid size={{ xs: 12, lg: 5 }}>
             {isStateLoading ? <Alert severity="info">Loading paper-trading state...</Alert> : null}
             {isStateError ? (
               <Alert severity="error">Unable to load paper-trading state.</Alert>

@@ -7,127 +7,151 @@ import {
 
 const buildTheme = (mode: PaletteMode): Theme => {
   const isLight = mode === 'light';
-  const primaryMain = isLight ? '#176a65' : '#84e1d4';
-  const secondaryMain = isLight ? '#b36a1f' : '#ffc870';
-  const defaultBackground = isLight ? '#f5f2eb' : '#0d1318';
-  const paperBackground = isLight ? '#ffffff' : '#151d23';
-  const shellBackground = isLight ? '#ede8de' : '#0a1116';
-  const textPrimary = isLight ? '#162128' : '#eef5f1';
-  const textSecondary = isLight ? '#5d6c75' : '#9aa9b1';
-  const divider = alpha(isLight ? '#17354a' : '#d7ece5', isLight ? 0.12 : 0.14);
-  const focusedRing = `0 0 0 3px ${alpha(primaryMain, isLight ? 0.2 : 0.28)}`;
+  const primaryMain = isLight ? '#186660' : '#8edfd4';
+  const secondaryMain = isLight ? '#ad6a25' : '#ffd086';
+  const successMain = isLight ? '#147351' : '#79e0aa';
+  const warningMain = isLight ? '#b7761f' : '#ffd07a';
+  const errorMain = isLight ? '#b02c21' : '#ffaaa1';
+  const infoMain = isLight ? '#2b67c7' : '#8dbcff';
+  const canvasBackground = isLight ? '#f3efe6' : '#0d1318';
+  const panelBackground = isLight ? '#fbfaf7' : '#151d23';
+  const raisedBackground = isLight ? '#f7f4ee' : '#121920';
+  const shellBackground = isLight ? '#ece5da' : '#0a1015';
+  const textPrimary = isLight ? '#152229' : '#edf5f1';
+  const textSecondary = isLight ? '#60707a' : '#9baab3';
+  const divider = alpha(isLight ? '#16384b' : '#dbeae3', isLight ? 0.12 : 0.14);
+  const numericFont =
+    '"IBM Plex Mono", "Cascadia Mono", "Aptos Mono", "Consolas", monospace';
+  const sansFont =
+    '"IBM Plex Sans", "Aptos", "Segoe UI Variable Text", "Segoe UI", sans-serif';
+  const focusRing = `0 0 0 3px ${alpha(primaryMain, isLight ? 0.18 : 0.26)}`;
 
   return createTheme({
+    spacing: 4,
     palette: {
       mode,
       primary: {
         main: primaryMain,
-        light: isLight ? '#2fa49c' : '#a8f0e7',
-        dark: isLight ? '#0f5652' : '#4dc6b6',
-        contrastText: isLight ? '#f6fffd' : '#06221f',
+        light: isLight ? '#2c8f87' : '#b4ebe3',
+        dark: isLight ? '#0f514c' : '#5bc9bc',
+        contrastText: isLight ? '#f7fffd' : '#06211f',
       },
       secondary: {
         main: secondaryMain,
-        light: isLight ? '#d18c41' : '#ffd89a',
-        dark: isLight ? '#8b4c0f' : '#d69a43',
-        contrastText: isLight ? '#fff9f2' : '#301902',
+        light: isLight ? '#cb8a43' : '#ffe0ab',
+        dark: isLight ? '#825019' : '#d5a054',
+        contrastText: isLight ? '#fff9f2' : '#2f1a03',
       },
       success: {
-        main: isLight ? '#1d7a55' : '#7ae0ad',
-        light: isLight ? '#2ba76f' : '#a6edc9',
-        dark: isLight ? '#13553a' : '#45c187',
-        contrastText: isLight ? '#f7fff9' : '#082f1f',
-      },
-      error: {
-        main: isLight ? '#b42318' : '#ff9a8e',
-        light: isLight ? '#d94841' : '#ffc0b8',
-        dark: isLight ? '#7c1d16' : '#e17367',
-        contrastText: isLight ? '#fff8f7' : '#350907',
+        main: successMain,
+        light: isLight ? '#28a16f' : '#a7edc7',
+        dark: isLight ? '#0f563b' : '#45bf84',
+        contrastText: isLight ? '#f6fff9' : '#07281b',
       },
       warning: {
-        main: isLight ? '#b7791f' : '#ffcf78',
-        light: isLight ? '#d89a3e' : '#ffe0a3',
-        dark: isLight ? '#845111' : '#ddb05c',
-        contrastText: isLight ? '#fffaf3' : '#362104',
+        main: warningMain,
+        light: isLight ? '#daa04a' : '#ffe4ae',
+        dark: isLight ? '#855012' : '#ddb25e',
+        contrastText: isLight ? '#fffaf2' : '#342003',
+      },
+      error: {
+        main: errorMain,
+        light: isLight ? '#d9584c' : '#ffc2bb',
+        dark: isLight ? '#7a1f19' : '#e7776c',
+        contrastText: isLight ? '#fff7f6' : '#320806',
       },
       info: {
-        main: isLight ? '#2b6ed7' : '#8abfff',
-        light: isLight ? '#5a97ea' : '#b0d7ff',
-        dark: isLight ? '#1f4e9a' : '#5b9de5',
-        contrastText: isLight ? '#f8fbff' : '#09192f',
+        main: infoMain,
+        light: isLight ? '#5d92e5' : '#b1d3ff',
+        dark: isLight ? '#1f4b92' : '#5c9ce4',
+        contrastText: isLight ? '#f7faff' : '#08182e',
       },
       background: {
-        default: defaultBackground,
-        paper: paperBackground,
+        default: canvasBackground,
+        paper: panelBackground,
       },
       text: {
         primary: textPrimary,
         secondary: textSecondary,
-        disabled: alpha(textPrimary, 0.44),
+        disabled: alpha(textPrimary, 0.42),
       },
       divider,
     },
     shape: {
-      borderRadius: 4,
+      borderRadius: 16,
     },
     typography: {
-      fontFamily:
-        '"Aptos", "Segoe UI Variable Text", "Segoe UI", "Trebuchet MS", sans-serif',
+      fontFamily: sansFont,
+      fontSize: 14,
       h1: {
-        fontFamily:
-          '"Bahnschrift", "Segoe UI Variable Display", "Trebuchet MS", sans-serif',
-        fontSize: '2.85rem',
+        fontFamily: sansFont,
+        fontSize: '2.55rem',
         fontWeight: 700,
-        letterSpacing: '-0.04em',
+        letterSpacing: '-0.05em',
+        lineHeight: 1.04,
       },
       h2: {
-        fontFamily:
-          '"Bahnschrift", "Segoe UI Variable Display", "Trebuchet MS", sans-serif',
-        fontSize: '2.35rem',
+        fontFamily: sansFont,
+        fontSize: '2.1rem',
         fontWeight: 700,
         letterSpacing: '-0.04em',
+        lineHeight: 1.08,
       },
       h3: {
-        fontFamily:
-          '"Bahnschrift", "Segoe UI Variable Display", "Trebuchet MS", sans-serif',
-        fontSize: '1.95rem',
+        fontFamily: sansFont,
+        fontSize: '1.72rem',
         fontWeight: 700,
-        letterSpacing: '-0.03em',
+        letterSpacing: '-0.035em',
+        lineHeight: 1.1,
       },
       h4: {
-        fontFamily:
-          '"Bahnschrift", "Segoe UI Variable Display", "Trebuchet MS", sans-serif',
-        fontSize: '1.55rem',
+        fontFamily: sansFont,
+        fontSize: '1.45rem',
         fontWeight: 700,
-        letterSpacing: '-0.02em',
+        letterSpacing: '-0.03em',
+        lineHeight: 1.15,
       },
       h5: {
-        fontFamily:
-          '"Bahnschrift", "Segoe UI Variable Display", "Trebuchet MS", sans-serif',
-        fontSize: '1.3rem',
+        fontFamily: sansFont,
+        fontSize: '1.22rem',
         fontWeight: 700,
+        letterSpacing: '-0.02em',
+        lineHeight: 1.18,
       },
       h6: {
-        fontFamily:
-          '"Bahnschrift", "Segoe UI Variable Display", "Trebuchet MS", sans-serif',
-        fontSize: '1.05rem',
+        fontFamily: sansFont,
+        fontSize: '1rem',
         fontWeight: 700,
+        letterSpacing: '-0.01em',
+        lineHeight: 1.2,
+      },
+      subtitle1: {
+        fontSize: '0.98rem',
+        fontWeight: 600,
+        lineHeight: 1.4,
       },
       subtitle2: {
+        fontSize: '0.84rem',
         fontWeight: 700,
         letterSpacing: '0.03em',
+        lineHeight: 1.35,
       },
       body1: {
-        lineHeight: 1.62,
+        lineHeight: 1.64,
       },
       body2: {
         lineHeight: 1.58,
       },
+      caption: {
+        lineHeight: 1.45,
+      },
       overline: {
         fontWeight: 700,
         letterSpacing: '0.14em',
+        lineHeight: 1.2,
       },
       button: {
+        textTransform: 'none',
         fontWeight: 700,
         letterSpacing: '0.01em',
       },
@@ -139,7 +163,7 @@ const buildTheme = (mode: PaletteMode): Theme => {
             backgroundColor: shellBackground,
           },
           body: {
-            backgroundColor: defaultBackground,
+            backgroundColor: canvasBackground,
             color: textPrimary,
           },
           '#root': {
@@ -147,18 +171,39 @@ const buildTheme = (mode: PaletteMode): Theme => {
           },
           '*': {
             scrollbarWidth: 'thin',
-            scrollbarColor: `${alpha(primaryMain, 0.42)} transparent`,
+            scrollbarColor: `${alpha(primaryMain, 0.38)} transparent`,
+            boxSizing: 'border-box',
+          },
+          'code, pre, kbd, samp': {
+            fontFamily: numericFont,
+            fontVariantNumeric: 'tabular-nums',
+          },
+          '.skip-link': {
+            position: 'absolute',
+            left: 12,
+            top: -80,
+            zIndex: 2000,
+            padding: '10px 14px',
+            borderRadius: 12,
+            backgroundColor: panelBackground,
+            border: `1px solid ${divider}`,
+            color: textPrimary,
+            textDecoration: 'none',
+            transition: 'top 140ms ease',
+          },
+          '.skip-link:focus': {
+            top: 12,
           },
           '::selection': {
-            backgroundColor: alpha(primaryMain, 0.24),
+            backgroundColor: alpha(primaryMain, 0.18),
           },
           '*::-webkit-scrollbar': {
             width: 11,
             height: 11,
           },
           '*::-webkit-scrollbar-thumb': {
-            backgroundColor: alpha(primaryMain, 0.28),
-            borderRadius: 6,
+            backgroundColor: alpha(primaryMain, 0.3),
+            borderRadius: 999,
             border: `3px solid ${alpha(shellBackground, 0.08)}`,
           },
           '*::-webkit-scrollbar-track': {
@@ -166,23 +211,24 @@ const buildTheme = (mode: PaletteMode): Theme => {
           },
           ':focus-visible': {
             outline: 'none',
-            boxShadow: focusedRing,
+            boxShadow: focusRing,
           },
         },
       },
       MuiAppBar: {
         styleOverrides: {
           root: {
-            backgroundColor: paperBackground,
+            backgroundColor: alpha(raisedBackground, isLight ? 0.84 : 0.9),
             borderBottom: `1px solid ${divider}`,
             boxShadow: 'none',
+            backdropFilter: 'blur(14px)',
           },
         },
       },
       MuiDrawer: {
         styleOverrides: {
           paper: {
-            backgroundColor: isLight ? '#faf7f1' : '#10181e',
+            backgroundColor: isLight ? '#f7f3eb' : '#10171d',
             borderRight: `1px solid ${divider}`,
             boxShadow: 'none',
           },
@@ -195,15 +241,16 @@ const buildTheme = (mode: PaletteMode): Theme => {
           },
           outlined: {
             borderColor: divider,
-            backgroundColor: paperBackground,
+            backgroundColor: panelBackground,
           },
         },
       },
       MuiCard: {
         styleOverrides: {
           root: {
-            backgroundColor: paperBackground,
+            backgroundColor: panelBackground,
             border: `1px solid ${divider}`,
+            borderRadius: 18,
             boxShadow: 'none',
           },
         },
@@ -224,10 +271,12 @@ const buildTheme = (mode: PaletteMode): Theme => {
         },
         styleOverrides: {
           root: {
-            textTransform: 'none',
-            borderRadius: 6,
+            minHeight: 40,
+            borderRadius: 12,
             paddingInline: 16,
-            minHeight: 38,
+          },
+          contained: {
+            boxShadow: 'none',
           },
           outlined: {
             borderColor: alpha(textPrimary, 0.14),
@@ -237,27 +286,27 @@ const buildTheme = (mode: PaletteMode): Theme => {
       MuiIconButton: {
         styleOverrides: {
           root: {
-            borderRadius: 6,
-            border: `1px solid ${alpha(textPrimary, isLight ? 0.08 : 0.12)}`,
-            backgroundColor: paperBackground,
+            borderRadius: 12,
+            border: `1px solid ${alpha(textPrimary, isLight ? 0.08 : 0.14)}`,
+            backgroundColor: alpha(panelBackground, 0.9),
           },
         },
       },
       MuiChip: {
         styleOverrides: {
           root: {
-            borderRadius: 6,
-            fontWeight: 600,
+            minHeight: 30,
+            borderRadius: 999,
             borderColor: alpha(textPrimary, 0.08),
-            backgroundColor: alpha(paperBackground, isLight ? 0.98 : 0.82),
+            backgroundColor: alpha(panelBackground, isLight ? 0.98 : 0.82),
+            fontWeight: 700,
             height: 'auto',
-            maxWidth: '100%',
             alignItems: 'flex-start',
           },
           label: {
             display: 'block',
             whiteSpace: 'normal',
-            lineHeight: 1.3,
+            lineHeight: 1.28,
             paddingTop: 6,
             paddingBottom: 6,
           },
@@ -266,9 +315,9 @@ const buildTheme = (mode: PaletteMode): Theme => {
       MuiAlert: {
         styleOverrides: {
           root: {
-            borderRadius: 6,
+            borderRadius: 16,
             border: `1px solid ${divider}`,
-            backgroundColor: paperBackground,
+            backgroundColor: alpha(panelBackground, 0.98),
           },
         },
       },
@@ -276,17 +325,17 @@ const buildTheme = (mode: PaletteMode): Theme => {
         styleOverrides: {
           paper: {
             marginTop: 10,
-            borderRadius: 8,
+            borderRadius: 16,
             border: `1px solid ${divider}`,
-            backgroundColor: paperBackground,
-            boxShadow: 'none',
+            backgroundColor: panelBackground,
+            boxShadow: `0 24px 48px ${alpha('#000000', 0.12)}`,
           },
         },
       },
       MuiMenuItem: {
         styleOverrides: {
           root: {
-            borderRadius: 4,
+            borderRadius: 10,
             marginInline: 8,
             marginBlock: 2,
           },
@@ -295,7 +344,7 @@ const buildTheme = (mode: PaletteMode): Theme => {
       MuiToolbar: {
         styleOverrides: {
           root: {
-            minHeight: 76,
+            minHeight: 84,
           },
         },
       },
@@ -304,6 +353,8 @@ const buildTheme = (mode: PaletteMode): Theme => {
           root: {
             borderColor: divider,
             verticalAlign: 'top',
+            paddingTop: 14,
+            paddingBottom: 14,
           },
           head: {
             fontSize: '0.72rem',
@@ -317,9 +368,9 @@ const buildTheme = (mode: PaletteMode): Theme => {
       MuiTableContainer: {
         styleOverrides: {
           root: {
-            borderRadius: 6,
+            borderRadius: 16,
             border: `1px solid ${divider}`,
-            backgroundColor: paperBackground,
+            backgroundColor: panelBackground,
           },
         },
       },
@@ -330,26 +381,29 @@ const buildTheme = (mode: PaletteMode): Theme => {
             '&:hover': {
               backgroundColor: alpha(primaryMain, isLight ? 0.05 : 0.08),
             },
+            '&.Mui-selected': {
+              backgroundColor: alpha(primaryMain, isLight ? 0.11 : 0.16),
+            },
           },
         },
       },
       MuiListItemButton: {
         styleOverrides: {
           root: {
-            borderRadius: 6,
+            borderRadius: 14,
           },
         },
       },
       MuiOutlinedInput: {
         styleOverrides: {
           root: {
-            borderRadius: 6,
-            backgroundColor: paperBackground,
+            borderRadius: 14,
+            backgroundColor: alpha(panelBackground, 0.94),
             '& .MuiOutlinedInput-notchedOutline': {
               borderColor: alpha(textPrimary, isLight ? 0.1 : 0.16),
             },
             '&:hover .MuiOutlinedInput-notchedOutline': {
-              borderColor: alpha(primaryMain, 0.28),
+              borderColor: alpha(primaryMain, 0.32),
             },
             '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
               borderWidth: 1,
@@ -362,21 +416,21 @@ const buildTheme = (mode: PaletteMode): Theme => {
         styleOverrides: {
           root: {
             padding: 4,
-            borderRadius: 6,
+            borderRadius: 16,
             backgroundColor: alpha(textPrimary, isLight ? 0.03 : 0.08),
             border: `1px solid ${divider}`,
           },
           grouped: {
             margin: 0,
             border: 0,
-            borderRadius: 4,
+            borderRadius: 12,
           },
         },
       },
       MuiToggleButton: {
         styleOverrides: {
           root: {
-            borderRadius: 4,
+            borderRadius: 12,
             color: textSecondary,
             '&.Mui-selected': {
               backgroundColor: alpha(primaryMain, isLight ? 0.13 : 0.16),
@@ -388,8 +442,8 @@ const buildTheme = (mode: PaletteMode): Theme => {
       MuiTabs: {
         styleOverrides: {
           indicator: {
-            height: 2,
-            borderRadius: 0,
+            height: 3,
+            borderRadius: 999,
             backgroundColor: primaryMain,
           },
         },
@@ -399,32 +453,33 @@ const buildTheme = (mode: PaletteMode): Theme => {
           root: {
             textTransform: 'none',
             alignItems: 'flex-start',
-            minHeight: 48,
+            minHeight: 52,
             fontWeight: 700,
+            paddingInline: 12,
           },
         },
       },
       MuiDialog: {
         styleOverrides: {
           paper: {
-            borderRadius: 8,
+            borderRadius: 18,
             border: `1px solid ${divider}`,
-            backgroundColor: paperBackground,
+            backgroundColor: panelBackground,
           },
         },
       },
       MuiLinearProgress: {
         styleOverrides: {
           root: {
-            height: 6,
-            borderRadius: 4,
+            height: 7,
+            borderRadius: 999,
           },
         },
       },
       MuiSkeleton: {
         styleOverrides: {
           root: {
-            borderRadius: 4,
+            borderRadius: 12,
             backgroundColor: alpha(textPrimary, isLight ? 0.08 : 0.12),
             transform: 'none',
           },
@@ -433,10 +488,11 @@ const buildTheme = (mode: PaletteMode): Theme => {
       MuiTooltip: {
         styleOverrides: {
           tooltip: {
-            borderRadius: 6,
+            borderRadius: 12,
             backgroundColor: isLight ? '#183037' : '#f3f7f5',
-            color: isLight ? '#f5f8f7' : '#102228',
+            color: isLight ? '#f4f9f7' : '#102228',
             boxShadow: 'none',
+            padding: '8px 10px',
           },
         },
       },
@@ -447,10 +503,39 @@ const buildTheme = (mode: PaletteMode): Theme => {
           },
         },
       },
+      MuiAccordion: {
+        styleOverrides: {
+          root: {
+            border: `1px solid ${divider}`,
+            borderRadius: '16px !important',
+            backgroundColor: panelBackground,
+            boxShadow: 'none',
+            '&:before': {
+              display: 'none',
+            },
+          },
+        },
+      },
+      MuiAccordionSummary: {
+        styleOverrides: {
+          root: {
+            minHeight: 58,
+          },
+          content: {
+            marginBlock: 14,
+          },
+        },
+      },
+      MuiAccordionDetails: {
+        styleOverrides: {
+          root: {
+            paddingTop: 0,
+          },
+        },
+      },
     },
   });
 };
 
 export const lightTheme: Theme = buildTheme('light');
-
 export const darkTheme: Theme = buildTheme('dark');

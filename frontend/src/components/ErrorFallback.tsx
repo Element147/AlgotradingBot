@@ -87,7 +87,7 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
                   sx={{
                     p: 2,
                     bgcolor: 'background.paper',
-                    borderRadius: 3,
+                    borderRadius: 4,
                     border: '1px solid',
                     borderColor: 'divider',
                     overflow: 'auto',

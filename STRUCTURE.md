@@ -59,6 +59,8 @@ C:\Git\algotradingbot\
 - `features/paperApi.ts`: shared paper-trading API slice
 - `app`: Redux store and typed hooks
 - `components`: shared UI primitives, route guards, layout shell, and error handling
+- `components/ui/Workbench.tsx`: shared workstation-surface primitives for route bars, metric cards, status pills, legends, and empty states
+- `components/workspace/*`: sticky inspector and other review-workspace helpers used by selection-heavy routes
 - `services`: API and WebSocket transport helpers
 - `theme`: centralized MUI design tokens and global component overrides for the research-workstation shell
 - `generated`: committed OpenAPI-derived TypeScript types

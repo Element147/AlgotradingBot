@@ -63,6 +63,7 @@ Verified on March 20, 2026 against dataset `#12` (`Binance BTC/USDT +2 15m 2024-
 - The shell polish pass now keeps route context in one place: the header provides the page title plus explicit mode, exchange-profile, telemetry, risk, and role chips, while route surfaces avoid duplicating hero chrome and instead use shared intro, metric-strip, and section-header primitives.
 - Dashboard, Paper Trading, Strategies, Trades, Backtest, Market Data, Risk, and Settings now share the same spacing, max-width, card density, and responsive stacking rules so dense workflows stay readable without overlapping or clipped UI.
 - Backtest research views now include price-action, exposure, regime, indicator, equity, drawdown, and comparison visuals so operators can inspect what a strategy actually did instead of relying only on summary metrics.
+- The Backtest route is now the reference research workspace: a sticky action bar, `lightweight-charts` price-action surface, linked marker and trade inspection, and secondary analytics below the chart define the interaction pattern reused by the rest of the SPA.
 - New/default strategy configurations are long-only unless short exposure is explicitly enabled; existing explicit short settings are preserved for operator review.
 - Paper-trading state includes recovery-aware telemetry, stale-order and stale-position visibility, and in-app incident alerts.
 - JWT access tokens now fail fast at startup unless a non-placeholder secret of at least 32 bytes is configured.

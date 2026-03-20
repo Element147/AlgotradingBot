@@ -1,5 +1,6 @@
 import { ArrowDownward, ArrowUpward } from '@mui/icons-material';
 import { Box, IconButton, Stack, Typography } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useMemo, useRef } from 'react';
 
@@ -153,10 +154,27 @@ export function VirtualizedTradeTable({
                     cursor: 'pointer',
                     borderBottom: '1px solid',
                     borderColor: 'divider',
+                    borderLeft: '3px solid',
+                    borderLeftColor:
+                      row.id === selectedTradeId ? 'primary.main' : 'transparent',
                     backgroundColor:
-                      row.id === selectedTradeId ? 'action.selected' : 'background.paper',
+                      row.id === selectedTradeId
+                        ? (theme) => alpha(theme.palette.primary.main, 0.1)
+                        : 'background.paper',
+                    boxShadow:
+                      row.id === selectedTradeId
+                        ? (theme) =>
+                            `inset 0 0 0 1px ${alpha(theme.palette.primary.main, 0.2)}`
+                        : 'none',
                     '&:hover': {
-                      backgroundColor: 'action.hover',
+                      backgroundColor:
+                        row.id === selectedTradeId
+                          ? (theme) => alpha(theme.palette.primary.main, 0.14)
+                          : 'action.hover',
+                    },
+                    '&:focus-visible': {
+                      outline: (theme) => `2px solid ${theme.palette.primary.main}`,
+                      outlineOffset: '-2px',
                     },
                   }}
                 >

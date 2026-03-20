@@ -144,7 +144,7 @@ export default function RiskPage() {
 
   return (
     <AppLayout>
-      <PageContent>
+      <PageContent maxWidth="research">
         <PageIntro
           eyebrow="Protective controls first"
           description="Review breaker posture, active alerts, and saved limits before you touch overrides or position-sizing assumptions."
@@ -166,20 +166,11 @@ export default function RiskPage() {
         ) : null}
 
         <Grid container spacing={2.5}>
-          <Grid size={{ xs: 12, lg: 6 }}>
+          <Grid size={{ xs: 12 }}>
             <RiskMetrics status={status} loading={isStatusLoading} />
           </Grid>
 
-          <Grid size={{ xs: 12, lg: 6 }}>
-            <RiskConfigForm
-              config={config}
-              loading={isConfigLoading}
-              busy={isSavingConfig}
-              onSave={saveRiskConfig}
-            />
-          </Grid>
-
-          <Grid size={{ xs: 12, lg: 6 }}>
+          <Grid size={{ xs: 12 }}>
             <CircuitBreakerPanel
               alerts={alerts}
               circuitBreakers={circuitBreakers}
@@ -189,7 +180,16 @@ export default function RiskPage() {
             />
           </Grid>
 
-          <Grid size={{ xs: 12, lg: 6 }}>
+          <Grid size={{ xs: 12, lg: 7 }}>
+            <RiskConfigForm
+              config={config}
+              loading={isConfigLoading}
+              busy={isSavingConfig}
+              onSave={saveRiskConfig}
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, lg: 5 }}>
             <PositionSizingCalculator />
           </Grid>
         </Grid>

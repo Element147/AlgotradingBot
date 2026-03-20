@@ -1,13 +1,12 @@
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import DownloadIcon from '@mui/icons-material/Download';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import ReplayIcon from '@mui/icons-material/Replay';
+import TableRowsIcon from '@mui/icons-material/TableRows';
 import {
   Alert,
   Box,
   Button,
-  Card,
-  CardContent,
-  Chip,
   Grid,
   MenuItem,
   Select,
@@ -17,8 +16,8 @@ import {
   TableCell,
   TableHead,
   TableRow,
-  TableContainer,
-  Tooltip,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from '@mui/material';
 import { toPng } from 'html-to-image';
@@ -26,22 +25,46 @@ import { jsPDF } from 'jspdf';
 import { useMemo, useRef, useState } from 'react';
 
 import type { BacktestDetails } from './backtestApi';
-import { BacktestExposureChart } from './BacktestExposureChart';
-import { BacktestIndicatorChart } from './BacktestIndicatorChart';
-import { BacktestPriceActionChart } from './BacktestPriceActionChart';
 import { getPreferredTelemetrySymbol } from './backtestTelemetry';
-import { formatBacktestMarketLabel } from './backtestTypes';
+import {
+  formatBacktestMarketLabel,
+  type BacktestSymbolTelemetry,
+} from './backtestTypes';
 import {
   createDrawdownCurve,
   createEquityCurve,
   createMonthlyReturns,
   createTradeDistribution,
 } from './backtestVisualization';
+import {
+  actionVisuals,
+  buildOverlayLegend,
+  buildWorkspaceMarkers,
+  buildWorkspaceTrades,
+  deriveWorkspaceFocusTime,
+  findMarkerById,
+  findTradeByMarkerId,
+  getDefaultVisibleOverlayKeys,
+  summarizeMarkerFilter,
+  type BacktestMarkerFilter,
+} from './backtestWorkspace';
+import { BacktestWorkspaceChart } from './BacktestWorkspaceChart';
 import { MonthlyReturnsHeatmap } from './MonthlyReturnsHeatmap';
 import { TradeDistributionHistogram } from './TradeDistributionHistogram';
 
 import { DrawdownChart } from '@/components/charts/DrawdownChart';
 import { EquityCurve } from '@/components/charts/EquityCurve';
+import { KeyValueGrid } from '@/components/ui/KeyValueGrid';
+import {
+  EmptyState,
+  LegendList,
+  MetricCard,
+  NumericText,
+  RouteActionBar,
+  StatusPill,
+  SurfacePanel,
+} from '@/components/ui/Workbench';
+import { StickyInspectorPanel } from '@/components/workspace/StickyInspectorPanel';
 import {
   formatCurrency,
   formatDateTime,
@@ -57,63 +80,426 @@ interface BacktestResultsProps {
   transportError?: string | null;
   onDelete?: () => void;
   deleteDisabled?: boolean;
+  onReplay?: () => void;
+  onFocusHistory?: () => void;
 }
 
-const validationColor = (status: BacktestDetails['validationStatus']) => {
+interface BacktestResearchWorkspaceProps {
+  details: BacktestDetails;
+  activeTelemetry: BacktestSymbolTelemetry;
+  selectedTelemetrySymbol: string;
+  onTelemetrySelect: (symbol: string) => void;
+}
+
+const validationTone = (status: BacktestDetails['validationStatus']) => {
   if (status === 'PASSED' || status === 'PRODUCTION_READY') {
-    return 'success.main';
+    return 'success';
   }
   if (status === 'FAILED') {
-    return 'error.main';
+    return 'error';
   }
-  return 'warning.main';
+  return 'warning';
 };
-
-const metricDefinitions: Array<{ key: string; label: string; description: string }> = [
-  {
-    key: 'sharpe',
-    label: 'Sharpe Ratio',
-    description: 'Risk-adjusted return. Higher means more return per unit of volatility.',
-  },
-  {
-    key: 'profitFactor',
-    label: 'Profit Factor',
-    description: 'Gross profits divided by gross losses. Values above 1 suggest positive expectancy.',
-  },
-  {
-    key: 'winRate',
-    label: 'Win Rate',
-    description: 'Percentage of trades closed as winners. Use with profit factor, not alone.',
-  },
-  {
-    key: 'maxDrawdown',
-    label: 'Max Drawdown',
-    description: 'Largest peak-to-trough decline. Lower values imply smoother equity behavior.',
-  },
-  {
-    key: 'totalTrades',
-    label: 'Total Trades',
-    description: 'Trade sample size. Larger samples generally improve confidence in conclusions.',
-  },
-  {
-    key: 'initialBalance',
-    label: 'Initial Balance',
-    description: 'Starting capital used by the simulation assumptions.',
-  },
-  {
-    key: 'finalBalance',
-    label: 'Final Balance',
-    description: 'Ending account value after all simulated trades and costs.',
-  },
-  {
-    key: 'validation',
-    label: 'Validation',
-    description: 'Quality gate summary from platform checks. Treat as research signal, not guarantee.',
-  },
-];
 
 const formatLiveEventLabel = (value: string | null | undefined) =>
   value ? formatDistanceToNow(new Date(value)) : 'No live progress event received yet';
+
+function BacktestResearchWorkspace({
+  details,
+  activeTelemetry,
+  selectedTelemetrySymbol,
+  onTelemetrySelect,
+}: BacktestResearchWorkspaceProps) {
+  const [selectedTradeId, setSelectedTradeId] = useState<string | null>(null);
+  const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
+  const [markerFilter, setMarkerFilter] = useState<BacktestMarkerFilter>('ALL');
+  const [visibleOverlayKeys, setVisibleOverlayKeys] = useState<string[]>(() =>
+    getDefaultVisibleOverlayKeys(activeTelemetry)
+  );
+  const [visiblePanes, setVisiblePanes] = useState<string[]>(['exposure', 'oscillator']);
+
+  const overlayLegend = useMemo(
+    () => buildOverlayLegend(activeTelemetry),
+    [activeTelemetry]
+  );
+  const workspaceTrades = useMemo(
+    () => buildWorkspaceTrades(details, activeTelemetry.symbol, activeTelemetry.actions),
+    [activeTelemetry, details]
+  );
+  const workspaceMarkers = useMemo(
+    () => buildWorkspaceMarkers(workspaceTrades),
+    [workspaceTrades]
+  );
+  const visibleMarkers = useMemo(
+    () =>
+      workspaceMarkers.filter((marker) => {
+        switch (markerFilter) {
+          case 'LONG':
+            return marker.side === 'LONG' && marker.category === 'ENTRY';
+          case 'SHORT':
+            return marker.side === 'SHORT' && marker.category === 'ENTRY';
+          case 'EXITS':
+            return marker.category === 'EXIT' || marker.category === 'FORCED';
+          case 'FORCED':
+            return marker.category === 'FORCED' || marker.isForced;
+          default:
+            return true;
+        }
+      }),
+    [markerFilter, workspaceMarkers]
+  );
+
+  const explicitMarker = useMemo(
+    () => findMarkerById(workspaceMarkers, selectedMarkerId),
+    [selectedMarkerId, workspaceMarkers]
+  );
+  const tradeFromExplicitMarker = useMemo(
+    () => findTradeByMarkerId(workspaceTrades, selectedMarkerId),
+    [selectedMarkerId, workspaceTrades]
+  );
+  const selectedTrade =
+    workspaceTrades.find((trade) => trade.id === selectedTradeId) ??
+    tradeFromExplicitMarker ??
+    workspaceTrades[0] ??
+    null;
+  const inspectorMarker =
+    explicitMarker ??
+    (selectedTrade ? findMarkerById(workspaceMarkers, selectedTrade.entryMarkerId) : null);
+  const visibleSelectedMarker =
+    visibleMarkers.find((marker) => marker.id === inspectorMarker?.id) ??
+    visibleMarkers.find((marker) => marker.tradeId === selectedTrade?.id) ??
+    visibleMarkers[0] ??
+    null;
+  const visibleOverlayKeySet = useMemo(
+    () => new Set(overlayLegend.map((item) => item.key)),
+    [overlayLegend]
+  );
+  const resolvedOverlayKeys = visibleOverlayKeys.filter((key) =>
+    visibleOverlayKeySet.has(key)
+  );
+  const activeMarkerIndex = visibleSelectedMarker
+    ? visibleMarkers.findIndex((marker) => marker.id === visibleSelectedMarker.id)
+    : -1;
+  const focusTimestamp = deriveWorkspaceFocusTime(
+    inspectorMarker ?? visibleSelectedMarker,
+    selectedTrade
+  );
+
+  const selectTrade = (tradeId: string, preferredMarkerId?: string) => {
+    const trade = workspaceTrades.find((entry) => entry.id === tradeId) ?? null;
+    if (!trade) {
+      return;
+    }
+
+    setSelectedTradeId(trade.id);
+    setSelectedMarkerId(preferredMarkerId ?? trade.entryMarkerId);
+  };
+
+  const stepMarker = (offset: number) => {
+    if (visibleMarkers.length === 0) {
+      return;
+    }
+
+    const nextIndex =
+      activeMarkerIndex === -1
+        ? 0
+        : Math.min(Math.max(activeMarkerIndex + offset, 0), visibleMarkers.length - 1);
+    const nextMarker = visibleMarkers[nextIndex];
+    if (!nextMarker) {
+      return;
+    }
+
+    setSelectedMarkerId(nextMarker.id);
+    setSelectedTradeId(nextMarker.tradeId);
+  };
+
+  return (
+    <Stack spacing={2.5}>
+      <Grid container spacing={2.5} alignItems="flex-start">
+        <Grid size={{ xs: 12, xl: 8.25 }}>
+          <SurfacePanel
+            title="Chart workspace"
+            description={`${summarizeMarkerFilter(markerFilter, visibleMarkers.length)} on ${activeTelemetry.symbol}. Click a marker or trade row to keep the chart and inspector in sync.`}
+            actions={
+              details.telemetry.length > 1 ? (
+                <Select
+                  size="small"
+                  value={selectedTelemetrySymbol}
+                  onChange={(event) => onTelemetrySelect(String(event.target.value))}
+                >
+                  {details.telemetry.map((series) => (
+                    <MenuItem key={series.symbol} value={series.symbol}>
+                      {series.symbol}
+                    </MenuItem>
+                  ))}
+                </Select>
+              ) : undefined
+            }
+            contentSx={{ gap: 1.5 }}
+          >
+            <LegendList
+              items={[
+                {
+                  color: actionVisuals.BUY.color,
+                  label: 'BUY',
+                  detail: 'long entry',
+                  shape: actionVisuals.BUY.legendShape,
+                },
+                {
+                  color: actionVisuals.SELL.color,
+                  label: 'SELL',
+                  detail: 'long exit',
+                  shape: actionVisuals.SELL.legendShape,
+                },
+                {
+                  color: actionVisuals.SHORT.color,
+                  label: 'SHORT',
+                  detail: 'short entry',
+                  shape: actionVisuals.SHORT.legendShape,
+                },
+                {
+                  color: actionVisuals.COVER.color,
+                  label: 'COVER',
+                  detail: 'short exit',
+                  shape: actionVisuals.COVER.legendShape,
+                },
+              ]}
+            />
+
+            <Stack spacing={1.25}>
+              <Stack
+                direction={{ xs: 'column', lg: 'row' }}
+                spacing={1}
+                alignItems={{ xs: 'stretch', lg: 'center' }}
+              >
+                <ToggleButtonGroup
+                  size="small"
+                  exclusive
+                  value={markerFilter}
+                  onChange={(_, value: BacktestMarkerFilter | null) => {
+                    if (value) {
+                      setMarkerFilter(value);
+                    }
+                  }}
+                >
+                  <ToggleButton value="ALL">All</ToggleButton>
+                  <ToggleButton value="LONG">Long</ToggleButton>
+                  <ToggleButton value="SHORT">Short</ToggleButton>
+                  <ToggleButton value="EXITS">Exits</ToggleButton>
+                  <ToggleButton value="FORCED">Forced</ToggleButton>
+                </ToggleButtonGroup>
+
+                {overlayLegend.length > 0 ? (
+                  <ToggleButtonGroup
+                    size="small"
+                    value={resolvedOverlayKeys}
+                    onChange={(_, value: string[]) => setVisibleOverlayKeys(value)}
+                  >
+                    {overlayLegend.map((overlay) => (
+                      <ToggleButton key={overlay.key} value={overlay.key}>
+                        {overlay.label}
+                      </ToggleButton>
+                    ))}
+                  </ToggleButtonGroup>
+                ) : null}
+
+                <ToggleButtonGroup
+                  size="small"
+                  value={visiblePanes}
+                  onChange={(_, value: string[]) => setVisiblePanes(value)}
+                >
+                  <ToggleButton value="exposure">Exposure pane</ToggleButton>
+                  <ToggleButton value="oscillator">Indicator pane</ToggleButton>
+                </ToggleButtonGroup>
+              </Stack>
+
+              <BacktestWorkspaceChart
+                series={activeTelemetry}
+                markers={workspaceMarkers}
+                selectedMarkerId={visibleSelectedMarker?.id ?? null}
+                markerFilter={markerFilter}
+                visibleOverlayKeys={resolvedOverlayKeys}
+                showExposurePane={visiblePanes.includes('exposure')}
+                showOscillatorPane={visiblePanes.includes('oscillator')}
+                focusTimestamp={focusTimestamp}
+                onMarkerSelect={(marker) => {
+                  setSelectedMarkerId(marker.id);
+                  setSelectedTradeId(marker.tradeId);
+                }}
+              />
+            </Stack>
+          </SurfacePanel>
+        </Grid>
+
+        <Grid size={{ xs: 12, xl: 3.75 }}>
+          <StickyInspectorPanel
+            title="Inspector"
+            description="Selection follows chart markers and trade rows so context stays in one place."
+            actions={
+              selectedTrade ? (
+                <StatusPill
+                  label={`${selectedTrade.side} trade`}
+                  tone={selectedTrade.side === 'LONG' ? 'success' : 'error'}
+                  variant="filled"
+                />
+              ) : undefined
+            }
+          >
+            {selectedTrade ? (
+              <>
+                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                  <StatusPill label={`Entry: ${selectedTrade.entryAction}`} tone="success" />
+                  <StatusPill label={`Exit: ${selectedTrade.exitAction}`} tone="info" />
+                  <StatusPill
+                    label={
+                      inspectorMarker?.category === 'FORCED'
+                        ? 'Forced or flagged event'
+                        : inspectorMarker?.category ?? 'Trade selection'
+                    }
+                    tone={inspectorMarker?.category === 'FORCED' ? 'warning' : 'default'}
+                  />
+                </Stack>
+
+                <KeyValueGrid
+                  items={[
+                    { label: 'Symbol', value: selectedTrade.symbol },
+                    { label: 'Entry time', value: formatDateTime(selectedTrade.entryTime) },
+                    { label: 'Exit time', value: formatDateTime(selectedTrade.exitTime) },
+                    { label: 'Duration', value: `${formatNumber(selectedTrade.durationMinutes)} min` },
+                    { label: 'Entry price', value: formatCurrency(selectedTrade.entryPrice, 4) },
+                    { label: 'Exit price', value: formatCurrency(selectedTrade.exitPrice, 4) },
+                    { label: 'Quantity', value: formatNumber(selectedTrade.quantity, 6) },
+                    {
+                      label: 'PnL',
+                      value: formatCurrency(selectedTrade.pnlValue, 2),
+                      tone: selectedTrade.pnlValue >= 0 ? 'success' : 'error',
+                    },
+                    {
+                      label: 'Return',
+                      value: formatPercentage(selectedTrade.returnPct, 2),
+                      tone: selectedTrade.returnPct >= 0 ? 'success' : 'error',
+                    },
+                    { label: 'Entry label', value: selectedTrade.entryLabel },
+                    { label: 'Exit label', value: selectedTrade.exitLabel },
+                  ]}
+                />
+
+                <Stack direction="row" spacing={1}>
+                  <Button
+                    variant="outlined"
+                    onClick={() => stepMarker(-1)}
+                    disabled={visibleMarkers.length === 0 || activeMarkerIndex <= 0}
+                  >
+                    Previous event
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    onClick={() => stepMarker(1)}
+                    disabled={
+                      visibleMarkers.length === 0 ||
+                      activeMarkerIndex === -1 ||
+                      activeMarkerIndex >= visibleMarkers.length - 1
+                    }
+                  >
+                    Next event
+                  </Button>
+                </Stack>
+              </>
+            ) : (
+              <EmptyState
+                title="Select a trade or marker"
+                description="Click a chart marker or a trade row to load entry, exit, and PnL details here."
+                tone="info"
+              />
+            )}
+          </StickyInspectorPanel>
+        </Grid>
+      </Grid>
+
+      <SurfacePanel
+        title="Trade review table"
+        description="Rows stay linked to chart focus. Click one to jump the workspace to that trade's entry point."
+      >
+        {workspaceTrades.length > 0 ? (
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Symbol</TableCell>
+                <TableCell>Side</TableCell>
+                <TableCell>Entry</TableCell>
+                <TableCell>Exit</TableCell>
+                <TableCell align="right">Quantity</TableCell>
+                <TableCell align="right">Entry price</TableCell>
+                <TableCell align="right">Exit price</TableCell>
+                <TableCell align="right">PnL</TableCell>
+                <TableCell align="right">Return</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {workspaceTrades.map((trade) => (
+                <TableRow
+                  key={trade.id}
+                  hover
+                  selected={trade.id === selectedTrade?.id}
+                  onClick={() => selectTrade(trade.id)}
+                  sx={{ cursor: 'pointer' }}
+                >
+                  <TableCell>{trade.symbol}</TableCell>
+                  <TableCell>
+                    <StatusPill
+                      label={trade.side}
+                      tone={trade.side === 'LONG' ? 'success' : 'error'}
+                      variant="filled"
+                    />
+                  </TableCell>
+                  <TableCell>{formatDateTime(trade.entryTime)}</TableCell>
+                  <TableCell>{formatDateTime(trade.exitTime)}</TableCell>
+                  <TableCell align="right">
+                    <NumericText variant="body2">
+                      {formatNumber(trade.quantity, 6)}
+                    </NumericText>
+                  </TableCell>
+                  <TableCell align="right">
+                    <NumericText variant="body2">
+                      {formatCurrency(trade.entryPrice, 4)}
+                    </NumericText>
+                  </TableCell>
+                  <TableCell align="right">
+                    <NumericText variant="body2">
+                      {formatCurrency(trade.exitPrice, 4)}
+                    </NumericText>
+                  </TableCell>
+                  <TableCell align="right">
+                    <NumericText
+                      variant="body2"
+                      tone={trade.pnlValue >= 0 ? 'success' : 'error'}
+                    >
+                      {formatCurrency(trade.pnlValue, 2)}
+                    </NumericText>
+                  </TableCell>
+                  <TableCell align="right">
+                    <NumericText
+                      variant="body2"
+                      tone={trade.returnPct >= 0 ? 'success' : 'error'}
+                    >
+                      {formatPercentage(trade.returnPct, 2)}
+                    </NumericText>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <EmptyState
+            title="No trade windows for this symbol"
+            description="Switch the symbol or keep the analytics below for summary review."
+            tone="info"
+          />
+        )}
+      </SurfacePanel>
+    </Stack>
+  );
+}
 
 export function BacktestResults({
   details,
@@ -122,9 +508,11 @@ export function BacktestResults({
   transportError = null,
   onDelete,
   deleteDisabled = false,
+  onReplay,
+  onFocusHistory,
 }: BacktestResultsProps) {
   const exportRef = useRef<HTMLDivElement | null>(null);
-  const [exportFeedback, setExportFeedback] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
   const [selectedTelemetrySymbol, setSelectedTelemetrySymbol] = useState<string | null>(null);
   const equityCurve = useMemo(() => createEquityCurve(details), [details]);
   const drawdownCurve = useMemo(() => createDrawdownCurve(equityCurve), [equityCurve]);
@@ -136,16 +524,6 @@ export function BacktestResults({
       details.datasetSchemaVersion &&
       details.datasetUploadedAt
   );
-  const metricValues = [
-    details.sharpeRatio.toFixed(2),
-    details.profitFactor.toFixed(2),
-    `${details.winRate.toFixed(2)}%`,
-    `${details.maxDrawdown.toFixed(2)}%`,
-    details.totalTrades,
-    details.initialBalance.toFixed(2),
-    details.finalBalance.toFixed(2),
-    details.validationStatus,
-  ];
   const lastUpdateLabel = details.lastProgressAt
     ? formatDistanceToNow(new Date(details.lastProgressAt))
     : 'No progress updates yet';
@@ -158,11 +536,13 @@ export function BacktestResults({
 
   const exportPdf = async () => {
     if (!hasCompleteProvenance) {
-      setExportFeedback('Report export is blocked until dataset checksum, schema version, and upload timestamp are available.');
+      setFeedback(
+        'Report export is blocked until dataset checksum, schema version, and upload timestamp are available.'
+      );
       return;
     }
 
-    setExportFeedback(null);
+    setFeedback(null);
     const doc = new jsPDF('p', 'mm', 'a4');
     doc.setFontSize(14);
     doc.text(`Backtest ${details.id}`, 10, 12);
@@ -175,8 +555,16 @@ export function BacktestResults({
     doc.text(`Uploaded: ${formatDateTime(details.datasetUploadedAt ?? '')}`, 10, 50);
     doc.text(`Validation: ${details.validationStatus}`, 10, 56);
     doc.text(`Fees/Slippage: ${details.feesBps} bps / ${details.slippageBps} bps`, 10, 62);
-    doc.text(`Sharpe: ${details.sharpeRatio.toFixed(2)} | Profit Factor: ${details.profitFactor.toFixed(2)}`, 10, 68);
-    doc.text(`Win Rate: ${details.winRate.toFixed(2)}% | Max DD: ${details.maxDrawdown.toFixed(2)}%`, 10, 74);
+    doc.text(
+      `Sharpe: ${details.sharpeRatio.toFixed(2)} | Profit Factor: ${details.profitFactor.toFixed(2)}`,
+      10,
+      68
+    );
+    doc.text(
+      `Win Rate: ${details.winRate.toFixed(2)}% | Max DD: ${details.maxDrawdown.toFixed(2)}%`,
+      10,
+      74
+    );
 
     if (exportRef.current) {
       const dataUrl = await toPng(exportRef.current, { pixelRatio: 1.3, cacheBust: true });
@@ -186,100 +574,204 @@ export function BacktestResults({
     doc.save(`backtest_${details.id}_${new Date().toISOString().slice(0, 10)}.pdf`);
   };
 
+  const copyShareableLink = async () => {
+    const shareUrl = `${window.location.origin}${window.location.pathname}?run=${details.id}${
+      activeTelemetry ? `&symbol=${encodeURIComponent(activeTelemetry.symbol)}` : ''
+    }`;
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setFeedback('Shareable run link copied to clipboard.');
+    } catch {
+      setFeedback('Unable to copy the shareable run link from this browser context.');
+    }
+  };
+
   return (
-    <Box>
-      <Card sx={{ mt: 2, mb: 2 }}>
-        <CardContent>
-          <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2}>
-            <Box>
-              <Typography variant="h6">Backtest Details #{details.id}</Typography>
-              <Typography variant="body2" color="text.secondary">
-                Experiment: {details.experimentName} | Algorithm: {details.strategyId}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Dataset: {details.datasetName ?? '-'} | Market: {formatBacktestMarketLabel(details.symbol)} ({details.timeframe})
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Equity points: {details.equityCurve.length} | Recorded trades: {details.tradeSeries.length}
-              </Typography>
-            </Box>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Chip
-                size="small"
-                label={`Validation: ${details.validationStatus}`}
-                sx={{ color: validationColor(details.validationStatus) }}
-              />
-              <Chip size="small" label={`Stage: ${details.executionStage}`} variant="outlined" />
-              <Chip size="small" label={`Progress: ${details.progressPercent}%`} variant="outlined" />
+    <Stack spacing={2.5}>
+      <RouteActionBar
+        sticky
+        title={`Run #${details.id} research workspace`}
+        description="Review entries, exits, overlays, and trade evidence in one flow before moving to compare or replay actions."
+        actions={
+          <>
+            {onReplay ? (
+              <Button variant="outlined" startIcon={<ReplayIcon />} onClick={onReplay}>
+                Replay
+              </Button>
+            ) : null}
+            {onFocusHistory ? (
               <Button
                 variant="outlined"
-                startIcon={<DownloadIcon />}
-                onClick={() => void exportPdf()}
-                disabled={!hasCompleteProvenance}
+                startIcon={<TableRowsIcon />}
+                onClick={onFocusHistory}
               >
-                Export PDF
+                Compare in history
               </Button>
-              {onDelete ? (
-                <Button
-                  variant="outlined"
-                  color="error"
-                  startIcon={<DeleteOutlineIcon />}
-                  onClick={onDelete}
-                  disabled={deleteDisabled}
-                >
-                  Delete Result
-                </Button>
-              ) : null}
-            </Stack>
-          </Stack>
+            ) : null}
+            <Button
+              variant="outlined"
+              startIcon={<ContentCopyIcon />}
+              onClick={() => void copyShareableLink()}
+            >
+              Copy link
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<DownloadIcon />}
+              onClick={() => void exportPdf()}
+              disabled={!hasCompleteProvenance}
+            >
+              Export PDF
+            </Button>
+            {onDelete ? (
+              <Button
+                variant="outlined"
+                color="error"
+                startIcon={<DeleteOutlineIcon />}
+                onClick={onDelete}
+                disabled={deleteDisabled}
+              >
+                Delete
+              </Button>
+            ) : null}
+          </>
+        }
+        meta={
+          <>
+            <StatusPill
+              label={`Validation: ${details.validationStatus}`}
+              tone={validationTone(details.validationStatus)}
+              variant="filled"
+            />
+            <StatusPill label={`Status: ${details.executionStatus}`} tone="info" />
+            <StatusPill
+              label={`Market: ${formatBacktestMarketLabel(details.symbol)} (${details.timeframe})`}
+            />
+            <StatusPill
+              label={`Transport: ${transportLabel}`}
+              tone={transportError ? 'warning' : 'success'}
+            />
+            <StatusPill
+              label={`Last pushed event: ${formatLiveEventLabel(lastLiveEventAt)}`}
+              tone={transportError ? 'warning' : 'default'}
+            />
+          </>
+        }
+      />
 
-          {exportFeedback ? (
-            <Alert severity="warning" sx={{ mt: 2 }}>
-              {exportFeedback}
-            </Alert>
-          ) : null}
+      {feedback ? (
+        <Alert
+          severity={feedback.toLowerCase().includes('unable') ? 'warning' : 'success'}
+          onClose={() => setFeedback(null)}
+        >
+          {feedback}
+        </Alert>
+      ) : null}
 
-          <Card variant="outlined" sx={{ mt: 2 }}>
-            <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-              <Typography variant="subtitle2" gutterBottom>
-                Execution Telemetry
-              </Typography>
+      {activeTelemetry ? (
+        <BacktestResearchWorkspace
+          key={activeTelemetry.symbol}
+          details={details}
+          activeTelemetry={activeTelemetry}
+          selectedTelemetrySymbol={activeTelemetry.symbol}
+          onTelemetrySelect={setSelectedTelemetrySymbol}
+        />
+      ) : (
+        <EmptyState
+          title="Telemetry was not persisted for this run"
+          description="Price-action review is unavailable, so use the analytics below for evidence review."
+          tone="info"
+        />
+      )}
+
+      <Box ref={exportRef}>
+        <Grid container spacing={2}>
+          <Grid size={{ xs: 12, sm: 6, xl: 3 }}>
+            <MetricCard
+              label="Sharpe ratio"
+              value={details.sharpeRatio.toFixed(2)}
+              detail="Risk-adjusted return under the current cost model."
+              tone="info"
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, xl: 3 }}>
+            <MetricCard
+              label="Profit factor"
+              value={details.profitFactor.toFixed(2)}
+              detail="Gross profits divided by gross losses."
+              tone={details.profitFactor >= 1 ? 'success' : 'warning'}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, xl: 3 }}>
+            <MetricCard
+              label="Win rate"
+              value={`${details.winRate.toFixed(2)}%`}
+              detail={`${details.totalTrades} recorded trades`}
+              tone={details.winRate >= 50 ? 'success' : 'warning'}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, xl: 3 }}>
+            <MetricCard
+              label="Final balance"
+              value={details.finalBalance.toFixed(2)}
+              detail={`Initial balance ${details.initialBalance.toFixed(2)}`}
+              tone={details.finalBalance >= details.initialBalance ? 'success' : 'error'}
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, lg: 6 }}>
+            <SurfacePanel
+              title="Execution telemetry"
+              description="Runtime progress and transport context stay visible here so chart review never loses execution status."
+            >
               <Stack spacing={0.75}>
                 <Typography variant="body2" color="text.secondary">
-                  Status: {details.executionStatus} | Stage: {details.executionStage} | Progress: {details.progressPercent}%
+                  Status: {details.executionStatus} | Stage: {details.executionStage} | Progress:{' '}
+                  {details.progressPercent}%
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Current data date: {details.currentDataTimestamp ? formatDateTime(details.currentDataTimestamp) : 'Waiting for first candle'}
+                  Current data date:{' '}
+                  {details.currentDataTimestamp
+                    ? formatDateTime(details.currentDataTimestamp)
+                    : 'Waiting for first candle'}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Candles processed: {formatNumber(details.processedCandles)} / {formatNumber(details.totalCandles)} | Remaining:{' '}
+                  Candles processed: {formatNumber(details.processedCandles)} /{' '}
+                  {formatNumber(details.totalCandles)} | Remaining{' '}
                   {Math.max(0, 100 - details.progressPercent)}%
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Started: {details.startedAt ? formatDateTime(details.startedAt) : 'Queued only'} | Last update: {lastUpdateLabel}
-                  {details.completedAt ? ` | Completed: ${formatDateTime(details.completedAt)}` : ''}
+                  Started: {details.startedAt ? formatDateTime(details.startedAt) : 'Queued only'} |
+                  Last update: {lastUpdateLabel}
+                  {details.completedAt
+                    ? ` | Completed: ${formatDateTime(details.completedAt)}`
+                    : ''}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Transport: {transportLabel} | Last pushed event: {formatLiveEventLabel(lastLiveEventAt)}
+                  Transport: {transportLabel} | Last pushed event:{' '}
+                  {formatLiveEventLabel(lastLiveEventAt)}
                   {transportError ? ` | Stream status: ${transportError}` : ''}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {details.statusMessage ?? 'No backend status message was recorded for this run.'}
+                  {details.statusMessage ??
+                    'No backend status message was recorded for this run.'}
                 </Typography>
                 {details.errorMessage ? <Alert severity="error">{details.errorMessage}</Alert> : null}
               </Stack>
-            </CardContent>
-          </Card>
+            </SurfacePanel>
+          </Grid>
 
-          <Card variant="outlined" sx={{ mt: 2 }}>
-            <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-              <Typography variant="subtitle2" gutterBottom>
-                Reproducibility Metadata
-              </Typography>
+          <Grid size={{ xs: 12, lg: 6 }}>
+            <SurfacePanel
+              title="Reproducibility"
+              description="Dataset identity, schema, and archive state stay explicit so this run remains evidence-backed."
+            >
               {hasCompleteProvenance ? (
-                <Stack spacing={0.5}>
+                <Stack spacing={0.75}>
                   <Typography variant="body2" color="text.secondary">
-                    Dataset #{details.datasetId} | {details.datasetName ?? '-'} | Schema {details.datasetSchemaVersion}
+                    Dataset #{details.datasetId} | {details.datasetName ?? '-'} | Schema{' '}
+                    {details.datasetSchemaVersion}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Experiment key: {details.experimentKey}
@@ -289,161 +781,34 @@ export function BacktestResults({
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Uploaded: {formatDateTime(details.datasetUploadedAt ?? '')}
-                    {details.datasetArchived ? ' | Archived from active catalog' : ' | Active in dataset catalog'}
+                    {details.datasetArchived
+                      ? ' | Archived from active catalog'
+                      : ' | Active in dataset catalog'}
                   </Typography>
                 </Stack>
               ) : (
                 <Alert severity="warning">
-                  This run is missing full dataset provenance. Charts remain visible, but report export is intentionally blocked.
+                  This run is missing full dataset provenance. Charts remain visible, but report
+                  export is intentionally blocked.
                 </Alert>
               )}
-            </CardContent>
-          </Card>
-
-          <Grid container spacing={1.5} sx={{ mt: 1 }}>
-            {metricDefinitions.map((metric, index) => (
-              <Grid key={metric.key} size={{ xs: 12, sm: 6, lg: 3 }}>
-                <Card variant="outlined" sx={{ height: '100%' }}>
-                  <CardContent sx={{ py: 1.25, '&:last-child': { pb: 1.25 } }}>
-                    <Stack direction="row" spacing={0.5} alignItems="center">
-                      <Typography variant="caption" color="text.secondary">
-                        {metric.label}
-                      </Typography>
-                      <Tooltip title={metric.description} arrow>
-                        <InfoOutlinedIcon fontSize="inherit" color="action" sx={{ cursor: 'help' }} />
-                      </Tooltip>
-                    </Stack>
-                    <Typography
-                      variant="body1"
-                      sx={metric.key === 'validation' ? { color: validationColor(details.validationStatus) } : undefined}
-                    >
-                      {metricValues[index]}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
+            </SurfacePanel>
           </Grid>
-        </CardContent>
-      </Card>
 
-      <Box ref={exportRef}>
-        <Grid container spacing={2}>
-          {activeTelemetry ? (
-            <>
-              <Grid size={{ xs: 12 }}>
-                <Card>
-                  <CardContent>
-                    <Stack
-                      direction={{ xs: 'column', md: 'row' }}
-                      justifyContent="space-between"
-                      spacing={2}
-                      alignItems={{ xs: 'flex-start', md: 'center' }}
-                    >
-                      <Box>
-                        <Typography variant="h6">Price, Signal, and Telemetry Review</Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Reconstructed price path, exposure, regime context, and indicator overlays
-                          for the selected symbol.
-                        </Typography>
-                      </Box>
-                      {details.telemetry.length > 1 ? (
-                        <Select
-                          size="small"
-                          value={activeTelemetry.symbol}
-                          onChange={(event) => setSelectedTelemetrySymbol(event.target.value)}
-                        >
-                          {details.telemetry.map((series) => (
-                            <MenuItem key={series.symbol} value={series.symbol}>
-                              {series.symbol}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      ) : null}
-                    </Stack>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <BacktestPriceActionChart series={activeTelemetry} />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <BacktestExposureChart series={activeTelemetry} />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <BacktestIndicatorChart series={activeTelemetry} />
-              </Grid>
-            </>
-          ) : (
-            <Grid size={{ xs: 12 }}>
-              <Alert severity="info">
-                Per-bar telemetry is unavailable for this run, so price-action review stays limited to
-                the equity curve and recorded trade table.
-              </Alert>
-            </Grid>
-          )}
-          <Grid size={{ xs: 12 }}>
+          <Grid size={{ xs: 12, lg: 6 }}>
             <EquityCurve points={equityCurve} />
           </Grid>
-          <Grid size={{ xs: 12 }}>
+          <Grid size={{ xs: 12, lg: 6 }}>
             <DrawdownChart points={drawdownCurve} maxDrawdownLimitPct={25} />
           </Grid>
-          <Grid size={{ xs: 12 }}>
+          <Grid size={{ xs: 12, lg: 6 }}>
             <MonthlyReturnsHeatmap data={monthlyReturns} />
           </Grid>
-          <Grid size={{ xs: 12 }}>
+          <Grid size={{ xs: 12, lg: 6 }}>
             <TradeDistributionHistogram bins={tradeDistribution} />
-          </Grid>
-          <Grid size={{ xs: 12 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Recorded Trade Series
-                </Typography>
-                <TableContainer>
-                  <Table size="small" sx={{ minWidth: 1120 }}>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Symbol</TableCell>
-                      <TableCell>Side</TableCell>
-                      <TableCell>Entry</TableCell>
-                      <TableCell>Exit</TableCell>
-                      <TableCell align="right">Quantity</TableCell>
-                      <TableCell align="right">Entry Price</TableCell>
-                      <TableCell align="right">Exit Price</TableCell>
-                      <TableCell align="right">Entry Value</TableCell>
-                      <TableCell align="right">Exit Value</TableCell>
-                      <TableCell align="right">Return</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {details.tradeSeries.map((trade, index) => (
-                      <TableRow key={`${trade.symbol}-${trade.entryTime}-${index}`}>
-                        <TableCell>{trade.symbol}</TableCell>
-                        <TableCell>{trade.side}</TableCell>
-                        <TableCell>{formatDateTime(trade.entryTime)}</TableCell>
-                        <TableCell>{formatDateTime(trade.exitTime)}</TableCell>
-                        <TableCell align="right">{formatNumber(trade.quantity, 4)}</TableCell>
-                        <TableCell align="right">{formatCurrency(trade.entryPrice, 2)}</TableCell>
-                        <TableCell align="right">{formatCurrency(trade.exitPrice, 2)}</TableCell>
-                        <TableCell align="right">{formatCurrency(trade.entryValue, 2)}</TableCell>
-                        <TableCell align="right">{formatCurrency(trade.exitValue, 2)}</TableCell>
-                        <TableCell
-                          align="right"
-                          sx={{ color: trade.returnPct >= 0 ? 'success.main' : 'error.main' }}
-                        >
-                          {formatPercentage(trade.returnPct, 2)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                  </Table>
-                </TableContainer>
-              </CardContent>
-            </Card>
           </Grid>
         </Grid>
       </Box>
-    </Box>
+    </Stack>
   );
 }

@@ -6,10 +6,7 @@ import PlayArrowOutlinedIcon from '@mui/icons-material/PlayArrowOutlined';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import {
   Alert,
-  Box,
   Button,
-  Card,
-  CardContent,
   Chip,
   FormControl,
   FormControlLabel,
@@ -37,6 +34,7 @@ import {
 
 import { FieldTooltip } from '@/components/ui/FieldTooltip';
 import { KeyValueGrid } from '@/components/ui/KeyValueGrid';
+import { EmptyState, SurfacePanel } from '@/components/ui/Workbench';
 import { formatNumber } from '@/utils/formatters';
 
 interface MarketDataTransportAlertProps {
@@ -95,72 +93,68 @@ export function MarketDataTelemetryCard({
   );
 
   return (
-    <Card sx={{ mb: 3 }}>
-      <CardContent>
-        <Stack spacing={1.5}>
-          <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={1}>
-            <Box>
-              <Typography variant="h6">Current Import Telemetry</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>
-                Tracking job #{trackedJob.id} for {trackedJob.providerLabel} on{' '}
-                {trackedJob.symbolsCsv}.
-              </Typography>
-            </Box>
-            <Chip size="small" color={statusColor(trackedJob.status)} label={trackedJob.status} />
-          </Stack>
-          <KeyValueGrid
-            items={[
-              {
-                label: 'Transport',
-                value: transportConnected ? 'WebSocket live' : 'Polling fallback',
-                tone: transportConnected ? 'success' : 'warning',
-              },
-              {
-                label: 'Current symbol',
-                value: trackedJob.currentSymbol ?? 'Waiting for first symbol',
-              },
-              {
-                label: 'Symbol cursor',
-                value: `${currentSymbolIndex} / ${trackedJob.totalSymbols}`,
-              },
-              {
-                label: 'Rows imported',
-                value: formatNumber(trackedJob.importedRowCount),
-              },
-              {
-                label: 'Current chunk start',
-                value: formatOptionalDateTime(trackedJob.currentChunkStart),
-              },
-              {
-                label: 'Last backend update',
-                value: formatRelativeUpdate(trackedJob.updatedAt),
-              },
-              {
-                label: 'Last pushed event',
-                value: formatLiveImportEventTimestamp(lastImportEventAt),
-              },
-            ]}
-          />
-          <Typography variant="body2" color="text.secondary">
-            {trackedJob.statusMessage}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Attempts: {trackedJob.attemptCount} | Started: {formatOptionalDateTime(trackedJob.startedAt)}
-            {trackedJob.nextRetryAt ? ` | Next retry: ${formatOptionalDateTime(trackedJob.nextRetryAt)}` : ''}
-            {trackedJob.completedAt ? ` | Completed: ${formatOptionalDateTime(trackedJob.completedAt)}` : ''}
-          </Typography>
-          {(trackedJob.status === 'RUNNING' ||
-            trackedJob.status === 'QUEUED' ||
-            trackedJob.status === 'WAITING_RETRY') &&
-          !transportConnected ? (
-            <Alert severity="warning">
-              Live stream is not connected, so this page is temporarily relying on polling for import
-              updates.
-            </Alert>
-          ) : null}
-        </Stack>
-      </CardContent>
-    </Card>
+    <SurfacePanel
+      title="Step 3. Job telemetry"
+      description={`Tracking job #${trackedJob.id} for ${trackedJob.providerLabel} on ${trackedJob.symbolsCsv}.`}
+      sx={{ mb: 3 }}
+      actions={<Chip size="small" color={statusColor(trackedJob.status)} label={trackedJob.status} />}
+    >
+      <KeyValueGrid
+        items={[
+          {
+            label: 'Transport',
+            value: transportConnected ? 'WebSocket live' : 'Polling fallback',
+            tone: transportConnected ? 'success' : 'warning',
+          },
+          {
+            label: 'Current symbol',
+            value: trackedJob.currentSymbol ?? 'Waiting for first symbol',
+          },
+          {
+            label: 'Symbol cursor',
+            value: `${currentSymbolIndex} / ${trackedJob.totalSymbols}`,
+          },
+          {
+            label: 'Rows imported',
+            value: formatNumber(trackedJob.importedRowCount),
+          },
+          {
+            label: 'Current chunk start',
+            value: formatOptionalDateTime(trackedJob.currentChunkStart),
+          },
+          {
+            label: 'Last backend update',
+            value: formatRelativeUpdate(trackedJob.updatedAt),
+          },
+          {
+            label: 'Last pushed event',
+            value: formatLiveImportEventTimestamp(lastImportEventAt),
+          },
+        ]}
+      />
+      <Typography variant="body2" color="text.secondary">
+        {trackedJob.statusMessage}
+      </Typography>
+      <Typography variant="body2" color="text.secondary">
+        Attempts: {trackedJob.attemptCount} | Started:{' '}
+        {formatOptionalDateTime(trackedJob.startedAt)}
+        {trackedJob.nextRetryAt
+          ? ` | Next retry: ${formatOptionalDateTime(trackedJob.nextRetryAt)}`
+          : ''}
+        {trackedJob.completedAt
+          ? ` | Completed: ${formatOptionalDateTime(trackedJob.completedAt)}`
+          : ''}
+      </Typography>
+      {(trackedJob.status === 'RUNNING' ||
+        trackedJob.status === 'QUEUED' ||
+        trackedJob.status === 'WAITING_RETRY') &&
+      !transportConnected ? (
+        <Alert severity="warning">
+          Live stream is not connected, so this page is temporarily relying on polling for import
+          updates.
+        </Alert>
+      ) : null}
+    </SurfacePanel>
   );
 }
 
@@ -206,10 +200,12 @@ export function MarketDataJobFormPanel({
   onSubmit,
 }: MarketDataJobFormPanelProps) {
   return (
-    <Card sx={{ height: '100%' }}>
-      <CardContent>
-        <Stack spacing={2}>
-          <Typography variant="h6">Create Import Job</Typography>
+    <SurfacePanel
+      title="Step 2. Define import scope"
+      description="Choose symbols, timeframe, and dataset naming before the downloader queues the job."
+      sx={{ height: '100%' }}
+    >
+      <Stack spacing={2}>
           <FieldTooltip title="Choose the provider that will supply the historical bars. The page shows the account or API-key requirement for the currently selected source.">
             <FormControl fullWidth>
               <InputLabel id="market-data-provider-label">Provider</InputLabel>
@@ -342,9 +338,8 @@ export function MarketDataJobFormPanel({
           >
             Create Download Job
           </Button>
-        </Stack>
-      </CardContent>
-    </Card>
+      </Stack>
+    </SurfacePanel>
   );
 }
 
@@ -356,10 +351,11 @@ export function MarketDataProviderSetupPanel({
   selectedProvider,
 }: MarketDataProviderSetupPanelProps) {
   return (
-    <Card>
-      <CardContent>
-        <Stack spacing={1.5}>
-          <Typography variant="h6">Provider Setup</Typography>
+    <SurfacePanel
+      title="Step 1. Pick provider"
+      description="Review credentials, supported assets, and provider notes before you start the import."
+    >
+      <Stack spacing={1.5}>
           {selectedProvider ? (
             <>
               <Typography variant="body2" color="text.secondary">
@@ -416,22 +412,24 @@ export function MarketDataProviderSetupPanel({
               </Stack>
             </>
           ) : (
-            <Typography variant="body2" color="text.secondary">
-              Loading provider metadata.
-            </Typography>
+            <EmptyState
+              title="Loading provider metadata"
+              description="Provider capabilities and account requirements will appear here."
+              tone="info"
+            />
           )}
-        </Stack>
-      </CardContent>
-    </Card>
+      </Stack>
+    </SurfacePanel>
   );
 }
 
 export function MarketDataHowToPanel() {
   return (
-    <Card>
-      <CardContent>
-        <Stack spacing={1.5}>
-          <Typography variant="h6">How To Use It</Typography>
+    <SurfacePanel
+      title="Step 3. Move finished data into research"
+      description="Imports become useful only after they land in Backtest with clear provenance."
+    >
+      <Stack spacing={1.5}>
           <Typography variant="body2" color="text.secondary">
             1. Configure any required provider API key in your environment.
           </Typography>
@@ -450,9 +448,8 @@ export function MarketDataHowToPanel() {
           >
             Open Backtest
           </Button>
-        </Stack>
-      </CardContent>
-    </Card>
+      </Stack>
+    </SurfacePanel>
   );
 }
 
@@ -474,103 +471,94 @@ export function MarketDataJobsPanel({
   onCancel,
 }: MarketDataJobsPanelProps) {
   return (
-    <Card>
-      <CardContent>
-        <Stack spacing={2}>
-          <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={1}>
-            <Box>
-              <Typography variant="h6">Import Jobs</Typography>
-              <Typography variant="body2" color="text.secondary">
-                Active jobs: {activeJobCount} | Waiting to retry: {waitingJobCount}
-              </Typography>
-            </Box>
-            {jobStateUpdating ? <Chip label="Updating job state" color="warning" size="small" /> : null}
-          </Stack>
+    <SurfacePanel
+      title="Step 3. Jobs and output"
+      description={`Active jobs: ${activeJobCount} | Waiting to retry: ${waitingJobCount}`}
+      actions={
+        jobStateUpdating ? <Chip label="Updating job state" color="warning" size="small" /> : undefined
+      }
+    >
+      <Stack spacing={2}>
 
           {jobs.length === 0 ? (
-            <Alert severity="info">
-              No import jobs yet. Create one above to start building datasets automatically.
-            </Alert>
+            <EmptyState
+              title="No import jobs yet"
+              description="Create one above to start building datasets automatically."
+              tone="info"
+            />
           ) : (
             <Grid container spacing={2}>
               {jobs.map((job) => (
                 <Grid key={job.id} size={{ xs: 12, lg: 6 }}>
-                  <Card variant="outlined" sx={{ height: '100%' }}>
-                    <CardContent>
-                      <Stack spacing={1.5}>
-                        <Stack direction="row" justifyContent="space-between" spacing={1}>
-                          <Typography variant="subtitle1">
-                            #{job.id} {job.datasetName}
-                          </Typography>
-                          <Chip size="small" color={statusColor(job.status)} label={job.status} />
-                        </Stack>
-                        <Typography variant="body2" color="text.secondary">
-                          {job.providerLabel} | {job.assetType} | {job.symbolsCsv} | {job.timeframe}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {job.startDate} to {job.endDate}
-                        </Typography>
-                        <Typography variant="body2">{job.statusMessage}</Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Rows imported: {formatNumber(job.importedRowCount)} | Attempts:{' '}
-                          {job.attemptCount}
-                          {job.currentSymbol ? ` | Current symbol: ${job.currentSymbol}` : ''}
-                          {job.currentChunkStart
-                            ? ` | Chunk start: ${formatOptionalDateTime(job.currentChunkStart)}`
-                            : ''}
-                          {job.nextRetryAt
-                            ? ` | Next retry: ${formatOptionalDateTime(job.nextRetryAt)}`
-                            : ''}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Last backend update: {formatRelativeUpdate(job.updatedAt)} | Started:{' '}
-                          {job.startedAt ? formatOptionalDateTime(job.startedAt) : 'queued only'}
-                          {job.completedAt
-                            ? ` | Completed: ${formatOptionalDateTime(job.completedAt)}`
-                            : ''}
-                        </Typography>
-                        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                          {job.status === 'FAILED' || job.status === 'CANCELLED' ? (
-                            <Button
-                              size="small"
-                              startIcon={<RefreshIcon />}
-                              onClick={() => void onRetry(job.id)}
-                            >
-                              Retry
-                            </Button>
-                          ) : null}
-                          {job.status === 'QUEUED' ||
-                          job.status === 'RUNNING' ||
-                          job.status === 'WAITING_RETRY' ? (
-                            <Button
-                              size="small"
-                              color="inherit"
-                              startIcon={<CancelOutlinedIcon />}
-                              onClick={() => void onCancel(job.id)}
-                            >
-                              Cancel
-                            </Button>
-                          ) : null}
-                          {job.datasetReady && job.datasetId ? (
-                            <Button
-                              size="small"
-                              component={RouterLink}
-                              to="/backtest"
-                              startIcon={<PlayArrowOutlinedIcon />}
-                            >
-                              Dataset #{job.datasetId} ready
-                            </Button>
-                          ) : null}
-                        </Stack>
+                  <SurfacePanel
+                    title={`#${job.id} ${job.datasetName}`}
+                    description={`${job.providerLabel} | ${job.assetType} | ${job.symbolsCsv} | ${job.timeframe}`}
+                    sx={{ height: '100%' }}
+                    actions={<Chip size="small" color={statusColor(job.status)} label={job.status} />}
+                  >
+                    <Stack spacing={1.5}>
+                      <Typography variant="body2" color="text.secondary">
+                        {job.startDate} to {job.endDate}
+                      </Typography>
+                      <Typography variant="body2">{job.statusMessage}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Rows imported: {formatNumber(job.importedRowCount)} | Attempts:{' '}
+                        {job.attemptCount}
+                        {job.currentSymbol ? ` | Current symbol: ${job.currentSymbol}` : ''}
+                        {job.currentChunkStart
+                          ? ` | Chunk start: ${formatOptionalDateTime(job.currentChunkStart)}`
+                          : ''}
+                        {job.nextRetryAt
+                          ? ` | Next retry: ${formatOptionalDateTime(job.nextRetryAt)}`
+                          : ''}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Last backend update: {formatRelativeUpdate(job.updatedAt)} | Started:{' '}
+                        {job.startedAt ? formatOptionalDateTime(job.startedAt) : 'queued only'}
+                        {job.completedAt
+                          ? ` | Completed: ${formatOptionalDateTime(job.completedAt)}`
+                          : ''}
+                      </Typography>
+                      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                        {job.status === 'FAILED' || job.status === 'CANCELLED' ? (
+                          <Button
+                            size="small"
+                            startIcon={<RefreshIcon />}
+                            onClick={() => void onRetry(job.id)}
+                          >
+                            Retry
+                          </Button>
+                        ) : null}
+                        {job.status === 'QUEUED' ||
+                        job.status === 'RUNNING' ||
+                        job.status === 'WAITING_RETRY' ? (
+                          <Button
+                            size="small"
+                            color="inherit"
+                            startIcon={<CancelOutlinedIcon />}
+                            onClick={() => void onCancel(job.id)}
+                          >
+                            Cancel
+                          </Button>
+                        ) : null}
+                        {job.datasetReady && job.datasetId ? (
+                          <Button
+                            size="small"
+                            component={RouterLink}
+                            to="/backtest"
+                            startIcon={<PlayArrowOutlinedIcon />}
+                          >
+                            Dataset #{job.datasetId} ready
+                          </Button>
+                        ) : null}
                       </Stack>
-                    </CardContent>
-                  </Card>
+                    </Stack>
+                  </SurfacePanel>
                 </Grid>
               ))}
             </Grid>
           )}
-        </Stack>
-      </CardContent>
-    </Card>
+      </Stack>
+    </SurfacePanel>
   );
 }

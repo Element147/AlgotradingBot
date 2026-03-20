@@ -5,19 +5,19 @@ export default function LoadingFallback() {
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       <Box
         sx={{
-          height: 112,
+          minHeight: 116,
           borderBottom: 1,
           borderColor: 'divider',
-          px: { xs: 2, md: 3 },
+          px: { xs: 1.75, md: 2.5, lg: 3 },
           py: 2,
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
-          gap: 1.5,
+          gap: 1.25,
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Skeleton variant="circular" width={42} height={42} />
+          <Skeleton variant="rounded" width={42} height={42} />
           <Box sx={{ flexGrow: 1, maxWidth: 640 }}>
             <Skeleton variant="text" width={120} height={18} />
             <Skeleton variant="text" width="32%" height={34} />
@@ -37,7 +37,7 @@ export default function LoadingFallback() {
       <Box sx={{ display: 'flex', minHeight: 'calc(100vh - 112px)' }}>
         <Box
           sx={{
-            width: 264,
+            width: 296,
             borderRight: 1,
             borderColor: 'divider',
             p: 2,
@@ -66,17 +66,17 @@ export default function LoadingFallback() {
         </Box>
 
         <Box sx={{ flexGrow: 1, p: { xs: 2, md: 3, lg: 4 } }}>
-          <Box sx={{ maxWidth: 1480, mx: 'auto' }}>
+          <Box sx={{ maxWidth: 1560, mx: 'auto' }}>
             <Stack spacing={2.5}>
-              <Skeleton variant="rounded" height={140} />
+              <Skeleton variant="rounded" height={128} />
               <Stack direction={{ xs: 'column', xl: 'row' }} spacing={2}>
-                <Skeleton variant="rounded" height={190} sx={{ flex: 1 }} />
-                <Skeleton variant="rounded" height={190} sx={{ flex: 1 }} />
-                <Skeleton variant="rounded" height={190} sx={{ flex: 1 }} />
+                <Skeleton variant="rounded" height={176} sx={{ flex: 1 }} />
+                <Skeleton variant="rounded" height={176} sx={{ flex: 1 }} />
+                <Skeleton variant="rounded" height={176} sx={{ flex: 1 }} />
               </Stack>
               <Stack direction={{ xs: 'column', xl: 'row' }} spacing={2}>
-                <Skeleton variant="rounded" height={300} sx={{ flex: 0.9 }} />
-                <Skeleton variant="rounded" height={300} sx={{ flex: 1.1 }} />
+                <Skeleton variant="rounded" height={372} sx={{ flex: 1.15 }} />
+                <Skeleton variant="rounded" height={372} sx={{ flex: 0.85 }} />
               </Stack>
               <Skeleton variant="rounded" height={360} />
             </Stack>

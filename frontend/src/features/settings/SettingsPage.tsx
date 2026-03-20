@@ -13,7 +13,6 @@ import {
   Grid,
   InputLabel,
   MenuItem,
-  Paper,
   Select,
   Stack,
   Switch,
@@ -70,9 +69,9 @@ import {
   PageIntro,
   type PageMetricItem,
   PageMetricStrip,
-  PageSectionHeader,
 } from '@/components/layout/PageContent';
 import { FieldTooltip } from '@/components/ui/FieldTooltip';
+import { StatusPill, SurfacePanel } from '@/components/ui/Workbench';
 import {
   selectEnvironmentMode,
   setConnectedExchange,
@@ -568,7 +567,7 @@ export default function SettingsPage() {
 
   return (
     <AppLayout>
-      <PageContent>
+      <PageContent maxWidth="research">
         <PageIntro
           eyebrow="Reference surface"
           description="Keep credentials, display preferences, environment mode, and operator-facing tooling in one calmer layout where drafts, saved state, and advanced actions are easier to tell apart."
@@ -591,66 +590,62 @@ export default function SettingsPage() {
 
         <Grid container spacing={2.5}>
           <Grid size={{ xs: 12, lg: 3 }}>
-            <Card sx={{ position: { lg: 'sticky' }, top: { lg: 16 } }}>
-              <CardContent>
-                <Stack spacing={2.5}>
-                  <Box>
-                    <Typography variant="h6">Settings Sections</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Pick one area, make the draft changes you need, then save that section before moving on.
-                    </Typography>
-                  </Box>
-
-                  <Tabs
-                    value={activeTab}
-                    onChange={(_, value: SettingsTab) => setTab(value)}
-                    variant="scrollable"
-                    allowScrollButtonsMobile
-                    orientation={useVerticalTabs ? 'vertical' : 'horizontal'}
-                    sx={{
-                      minHeight: 0,
-                      '& .MuiTabs-flexContainer': {
-                        gap: useVerticalTabs ? 4 : 8,
-                      },
-                    }}
-                  >
-                    {visibleTabs.map((tabValue) => (
-                      <Tab
-                        key={tabValue}
-                        value={tabValue}
-                        label={
-                          <Box sx={{ textAlign: 'left' }}>
-                            <Typography variant="subtitle2">
-                              {SETTINGS_TAB_META[tabValue].label}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {SETTINGS_TAB_META[tabValue].description}
-                            </Typography>
-                          </Box>
-                        }
-                      />
-                    ))}
-                  </Tabs>
-                </Stack>
-              </CardContent>
-            </Card>
+            <SurfacePanel
+              title="Settings sections"
+              description="Pick one area, make the draft changes you need, then save that section before moving on."
+              elevated
+              sx={{ position: { lg: 'sticky' }, top: { lg: 16 } }}
+            >
+              <Tabs
+                value={activeTab}
+                onChange={(_, value: SettingsTab) => setTab(value)}
+                variant="scrollable"
+                allowScrollButtonsMobile
+                orientation={useVerticalTabs ? 'vertical' : 'horizontal'}
+                sx={{
+                  minHeight: 0,
+                  '& .MuiTabs-flexContainer': {
+                    gap: useVerticalTabs ? 4 : 8,
+                  },
+                }}
+              >
+                {visibleTabs.map((tabValue) => (
+                  <Tab
+                    key={tabValue}
+                    value={tabValue}
+                    label={
+                      <Box sx={{ textAlign: 'left' }}>
+                        <Typography variant="subtitle2">
+                          {SETTINGS_TAB_META[tabValue].label}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {SETTINGS_TAB_META[tabValue].description}
+                        </Typography>
+                      </Box>
+                    }
+                  />
+                ))}
+              </Tabs>
+            </SurfacePanel>
           </Grid>
 
           <Grid size={{ xs: 12, lg: 9 }}>
             <Stack spacing={2.5}>
-              <Paper variant="outlined" sx={{ p: 2 }}>
-                <PageSectionHeader
-                  title={SETTINGS_TAB_META[activeTab].label}
-                  description={SETTINGS_TAB_META[activeTab].description}
-                  actions={
-                    <Chip
-                      label={activeTabStatus.label}
-                      color={activeTabStatus.color}
-                      variant="outlined"
-                    />
-                  }
-                />
-              </Paper>
+              <SurfacePanel
+                title={SETTINGS_TAB_META[activeTab].label}
+                description={SETTINGS_TAB_META[activeTab].description}
+                actions={
+                  <StatusPill
+                    label={activeTabStatus.label}
+                    tone={activeTabStatus.color}
+                    variant="filled"
+                  />
+                }
+              >
+                <Typography variant="body2" color="text.secondary">
+                  Draft changes remain local to this section until you save or activate them.
+                </Typography>
+              </SurfacePanel>
 
               {activeTab === 'api' ? (
                 <Grid container spacing={2.5}>

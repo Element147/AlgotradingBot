@@ -57,7 +57,7 @@ const DashboardPage: React.FC = () => {
 
   return (
     <AppLayout>
-      <PageContent>
+      <PageContent maxWidth="research">
         <PageIntro
           eyebrow="Start here"
           description="Review workstation health, paper posture, and open research signals before moving into deeper strategy or execution flows."

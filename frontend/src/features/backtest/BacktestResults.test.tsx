@@ -19,21 +19,9 @@ vi.mock('./TradeDistributionHistogram', () => ({
   TradeDistributionHistogram: () => <div>trade distribution</div>,
 }));
 
-vi.mock('./BacktestPriceActionChart', () => ({
-  BacktestPriceActionChart: ({ series }: { series: { symbol: string } }) => (
-    <div>price action {series.symbol}</div>
-  ),
-}));
-
-vi.mock('./BacktestExposureChart', () => ({
-  BacktestExposureChart: ({ series }: { series: { symbol: string } }) => (
-    <div>exposure chart {series.symbol}</div>
-  ),
-}));
-
-vi.mock('./BacktestIndicatorChart', () => ({
-  BacktestIndicatorChart: ({ series }: { series: { symbol: string } }) => (
-    <div>indicator chart {series.symbol}</div>
+vi.mock('./BacktestWorkspaceChart', () => ({
+  BacktestWorkspaceChart: ({ series }: { series: { symbol: string } }) => (
+    <div>chart workspace {series.symbol}</div>
   ),
 }));
 
@@ -158,9 +146,8 @@ describe('BacktestResults', () => {
   it('renders telemetry review charts when telemetry is available', () => {
     render(<BacktestResults details={baseDetails} />);
 
-    expect(screen.getByText(/price, signal, and telemetry review/i)).toBeInTheDocument();
-    expect(screen.getByText('price action BTC/USDT')).toBeInTheDocument();
-    expect(screen.getByText('exposure chart BTC/USDT')).toBeInTheDocument();
-    expect(screen.getByText('indicator chart BTC/USDT')).toBeInTheDocument();
+    expect(screen.getByText('Chart workspace')).toBeInTheDocument();
+    expect(screen.getByText('chart workspace BTC/USDT')).toBeInTheDocument();
+    expect(screen.getByText('Trade review table')).toBeInTheDocument();
   });
 });
