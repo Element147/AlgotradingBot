@@ -1,5 +1,6 @@
 import { Alert, Button, Chip, Grid } from '@mui/material';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import {
   useArchiveBacktestDatasetMutation,
@@ -55,7 +56,19 @@ import {
 import axiosClient, { getErrorMessage } from '@/services/axiosClient';
 import { sanitizeText } from '@/utils/security';
 
+const parseBacktestIdParam = (value: string | null) => {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+};
+
+const parseBacktestIdListParam = (value: string | null) =>
+  value
+    ?.split(',')
+    .map((item) => Number(item.trim()))
+    .filter((item) => Number.isInteger(item) && item > 0) ?? [];
+
 export default function BacktestPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const environmentMode = useAppSelector(selectEnvironmentMode);
   const websocketConnected = useAppSelector(selectIsConnected);
   const websocketError = useAppSelector(selectConnectionError);
@@ -68,14 +81,18 @@ export default function BacktestPage() {
   const backtestPollingInterval = backtestLiveTransportConnected ? 30000 : 2000;
 
   const [form, setForm] = useState(initialBacktestForm);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(() =>
+    parseBacktestIdParam(searchParams.get('run'))
+  );
   const [datasetName, setDatasetName] = useState('');
   const [datasetFile, setDatasetFile] = useState<File | null>(null);
   const [feedback, setFeedback] = useState<{ severity: 'success' | 'error'; message: string } | null>(
     null
   );
   const [configModalOpen, setConfigModalOpen] = useState(false);
-  const [comparisonIds, setComparisonIds] = useState<number[]>([]);
+  const [comparisonIds, setComparisonIds] = useState<number[]>(() =>
+    parseBacktestIdListParam(searchParams.get('compare'))
+  );
   const [activeComparisonIds, setActiveComparisonIds] = useState<number[]>([]);
   const historySectionRef = useRef<HTMLDivElement | null>(null);
 
@@ -139,6 +156,28 @@ export default function BacktestPage() {
       void refetchDetails();
     }
   }, [effectiveSelectedId, refetchDetails, selectedRunIsActive]);
+
+  useEffect(() => {
+    const nextParams = new URLSearchParams(searchParams);
+
+    if (selectedId) {
+      nextParams.set('run', String(selectedId));
+    } else if (fallbackTrackedRun?.id) {
+      nextParams.set('run', String(fallbackTrackedRun.id));
+    } else {
+      nextParams.delete('run');
+    }
+
+    if (comparisonIds.length > 0) {
+      nextParams.set('compare', comparisonIds.join(','));
+    } else {
+      nextParams.delete('compare');
+    }
+
+    if (nextParams.toString() !== searchParams.toString()) {
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [comparisonIds, fallbackTrackedRun?.id, searchParams, selectedId, setSearchParams]);
 
   const comparisonIsStale =
     activeComparisonIds.length > 0 && activeComparisonIds.join(',') !== comparisonIds.join(',');

@@ -23,6 +23,7 @@ import {
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import { useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import type { BacktestDetails } from './backtestApi';
 import { getPreferredTelemetrySymbol } from './backtestTelemetry';
@@ -91,6 +92,39 @@ interface BacktestResearchWorkspaceProps {
   onTelemetrySelect: (symbol: string) => void;
 }
 
+const workspaceMarkerFilters: BacktestMarkerFilter[] = [
+  'ALL',
+  'LONG',
+  'SHORT',
+  'EXITS',
+  'FORCED',
+];
+const workspacePaneKeys = ['exposure', 'oscillator'] as const;
+
+const parseWorkspaceMarkerFilter = (value: string | null): BacktestMarkerFilter =>
+  workspaceMarkerFilters.find((item) => item === value) ?? 'ALL';
+
+const parseParamList = (
+  value: string | null,
+  allowed: readonly string[],
+  fallback: string[]
+) => {
+  if (value === null) {
+    return fallback;
+  }
+
+  if (value === 'none') {
+    return [];
+  }
+
+  const parsed = value
+    .split(',')
+    .map((item) => item.trim())
+    .filter((item): item is string => Boolean(item) && allowed.includes(item));
+
+  return parsed.length > 0 ? parsed : fallback;
+};
+
 const validationTone = (status: BacktestDetails['validationStatus']) => {
   if (status === 'PASSED' || status === 'PRODUCTION_READY') {
     return 'success';
@@ -110,13 +144,7 @@ function BacktestResearchWorkspace({
   selectedTelemetrySymbol,
   onTelemetrySelect,
 }: BacktestResearchWorkspaceProps) {
-  const [selectedTradeId, setSelectedTradeId] = useState<string | null>(null);
-  const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
-  const [markerFilter, setMarkerFilter] = useState<BacktestMarkerFilter>('ALL');
-  const [visibleOverlayKeys, setVisibleOverlayKeys] = useState<string[]>(() =>
-    getDefaultVisibleOverlayKeys(activeTelemetry)
-  );
-  const [visiblePanes, setVisiblePanes] = useState<string[]>(['exposure', 'oscillator']);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const overlayLegend = useMemo(
     () => buildOverlayLegend(activeTelemetry),
@@ -129,6 +157,25 @@ function BacktestResearchWorkspace({
   const workspaceMarkers = useMemo(
     () => buildWorkspaceMarkers(workspaceTrades),
     [workspaceTrades]
+  );
+  const updateWorkspaceParams = (update: (params: URLSearchParams) => void) => {
+    const nextParams = new URLSearchParams(searchParams);
+    update(nextParams);
+    setSearchParams(nextParams, { replace: true });
+  };
+  const selectedTradeId = searchParams.get('trade');
+  const selectedMarkerId = searchParams.get('marker');
+  const markerFilter = parseWorkspaceMarkerFilter(searchParams.get('filter'));
+  const overlayKeys = overlayLegend.map((item) => item.key);
+  const resolvedOverlayKeys = parseParamList(
+    searchParams.get('overlays'),
+    overlayKeys,
+    getDefaultVisibleOverlayKeys(activeTelemetry)
+  );
+  const visiblePanes = parseParamList(
+    searchParams.get('panes'),
+    workspacePaneKeys,
+    [...workspacePaneKeys]
   );
   const visibleMarkers = useMemo(
     () =>
@@ -170,13 +217,6 @@ function BacktestResearchWorkspace({
     visibleMarkers.find((marker) => marker.tradeId === selectedTrade?.id) ??
     visibleMarkers[0] ??
     null;
-  const visibleOverlayKeySet = useMemo(
-    () => new Set(overlayLegend.map((item) => item.key)),
-    [overlayLegend]
-  );
-  const resolvedOverlayKeys = visibleOverlayKeys.filter((key) =>
-    visibleOverlayKeySet.has(key)
-  );
   const activeMarkerIndex = visibleSelectedMarker
     ? visibleMarkers.findIndex((marker) => marker.id === visibleSelectedMarker.id)
     : -1;
@@ -191,8 +231,10 @@ function BacktestResearchWorkspace({
       return;
     }
 
-    setSelectedTradeId(trade.id);
-    setSelectedMarkerId(preferredMarkerId ?? trade.entryMarkerId);
+    updateWorkspaceParams((params) => {
+      params.set('trade', trade.id);
+      params.set('marker', preferredMarkerId ?? trade.entryMarkerId);
+    });
   };
 
   const stepMarker = (offset: number) => {
@@ -209,8 +251,10 @@ function BacktestResearchWorkspace({
       return;
     }
 
-    setSelectedMarkerId(nextMarker.id);
-    setSelectedTradeId(nextMarker.tradeId);
+    updateWorkspaceParams((params) => {
+      params.set('marker', nextMarker.id);
+      params.set('trade', nextMarker.tradeId);
+    });
   };
 
   return (
@@ -278,7 +322,9 @@ function BacktestResearchWorkspace({
                   value={markerFilter}
                   onChange={(_, value: BacktestMarkerFilter | null) => {
                     if (value) {
-                      setMarkerFilter(value);
+                      updateWorkspaceParams((params) => {
+                        params.set('filter', value);
+                      });
                     }
                   }}
                 >
@@ -293,7 +339,11 @@ function BacktestResearchWorkspace({
                   <ToggleButtonGroup
                     size="small"
                     value={resolvedOverlayKeys}
-                    onChange={(_, value: string[]) => setVisibleOverlayKeys(value)}
+                    onChange={(_, value: string[]) =>
+                      updateWorkspaceParams((params) => {
+                        params.set('overlays', value.length > 0 ? value.join(',') : 'none');
+                      })
+                    }
                   >
                     {overlayLegend.map((overlay) => (
                       <ToggleButton key={overlay.key} value={overlay.key}>
@@ -306,7 +356,11 @@ function BacktestResearchWorkspace({
                 <ToggleButtonGroup
                   size="small"
                   value={visiblePanes}
-                  onChange={(_, value: string[]) => setVisiblePanes(value)}
+                  onChange={(_, value: string[]) =>
+                    updateWorkspaceParams((params) => {
+                      params.set('panes', value.length > 0 ? value.join(',') : 'none');
+                    })
+                  }
                 >
                   <ToggleButton value="exposure">Exposure pane</ToggleButton>
                   <ToggleButton value="oscillator">Indicator pane</ToggleButton>
@@ -323,8 +377,10 @@ function BacktestResearchWorkspace({
                 showOscillatorPane={visiblePanes.includes('oscillator')}
                 focusTimestamp={focusTimestamp}
                 onMarkerSelect={(marker) => {
-                  setSelectedMarkerId(marker.id);
-                  setSelectedTradeId(marker.tradeId);
+                  updateWorkspaceParams((params) => {
+                    params.set('marker', marker.id);
+                    params.set('trade', marker.tradeId);
+                  });
                 }}
               />
             </Stack>
@@ -343,6 +399,33 @@ function BacktestResearchWorkspace({
                   variant="filled"
                 />
               ) : undefined
+            }
+            mobileBehavior="drawer"
+            mobileOpenLabel={selectedTrade ? 'Open trade detail' : 'Open inspector'}
+            mobilePreview={
+              selectedTrade ? (
+                <Stack spacing={1.25}>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    <StatusPill
+                      label={`${selectedTrade.side} trade`}
+                      tone={selectedTrade.side === 'LONG' ? 'success' : 'error'}
+                      variant="filled"
+                    />
+                    <StatusPill label={selectedTrade.symbol} tone="info" />
+                    <StatusPill
+                      label={`PnL ${formatCurrency(selectedTrade.pnlValue, 2)}`}
+                      tone={selectedTrade.pnlValue >= 0 ? 'success' : 'error'}
+                    />
+                  </Stack>
+                  <Typography variant="body2" color="text.secondary">
+                    Open the inspector to review entry and exit timing, return, duration, and linked event context while keeping the chart unobstructed.
+                  </Typography>
+                </Stack>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  Select a chart marker or trade row, then open the inspector to review the linked evidence in a focused bottom sheet.
+                </Typography>
+              )
             }
           >
             {selectedTrade ? (
@@ -435,14 +518,43 @@ function BacktestResearchWorkspace({
                 <TableCell align="right">Return</TableCell>
               </TableRow>
             </TableHead>
-            <TableBody>
-              {workspaceTrades.map((trade) => (
+                <TableBody>
+              {workspaceTrades.map((trade, index) => (
                 <TableRow
                   key={trade.id}
                   hover
                   selected={trade.id === selectedTrade?.id}
+                  tabIndex={0}
                   onClick={() => selectTrade(trade.id)}
-                  sx={{ cursor: 'pointer' }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      selectTrade(trade.id);
+                    }
+
+                    if (event.key === 'ArrowDown') {
+                      event.preventDefault();
+                      const nextTrade = workspaceTrades[Math.min(index + 1, workspaceTrades.length - 1)];
+                      if (nextTrade) {
+                        selectTrade(nextTrade.id);
+                      }
+                    }
+
+                    if (event.key === 'ArrowUp') {
+                      event.preventDefault();
+                      const previousTrade = workspaceTrades[Math.max(index - 1, 0)];
+                      if (previousTrade) {
+                        selectTrade(previousTrade.id);
+                      }
+                    }
+                  }}
+                  sx={{
+                    cursor: 'pointer',
+                    '&:focus-visible': {
+                      outline: (theme) => `2px solid ${theme.palette.primary.main}`,
+                      outlineOffset: '-2px',
+                    },
+                  }}
                 >
                   <TableCell>{trade.symbol}</TableCell>
                   <TableCell>
@@ -513,7 +625,7 @@ export function BacktestResults({
 }: BacktestResultsProps) {
   const exportRef = useRef<HTMLDivElement | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
-  const [selectedTelemetrySymbol, setSelectedTelemetrySymbol] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
   const equityCurve = useMemo(() => createEquityCurve(details), [details]);
   const drawdownCurve = useMemo(() => createDrawdownCurve(equityCurve), [equityCurve]);
   const monthlyReturns = useMemo(() => createMonthlyReturns(equityCurve), [equityCurve]);
@@ -528,8 +640,9 @@ export function BacktestResults({
     ? formatDistanceToNow(new Date(details.lastProgressAt))
     : 'No progress updates yet';
   const preferredTelemetrySymbol = getPreferredTelemetrySymbol(details.symbol, details.telemetry);
+  const requestedTelemetrySymbol = searchParams.get('symbol');
   const activeTelemetry =
-    details.telemetry.find((series) => series.symbol === selectedTelemetrySymbol) ??
+    details.telemetry.find((series) => series.symbol === requestedTelemetrySymbol) ??
     details.telemetry.find((series) => series.symbol === preferredTelemetrySymbol) ??
     details.telemetry[0] ??
     null;
@@ -575,12 +688,8 @@ export function BacktestResults({
   };
 
   const copyShareableLink = async () => {
-    const shareUrl = `${window.location.origin}${window.location.pathname}?run=${details.id}${
-      activeTelemetry ? `&symbol=${encodeURIComponent(activeTelemetry.symbol)}` : ''
-    }`;
-
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      await navigator.clipboard.writeText(window.location.href);
       setFeedback('Shareable run link copied to clipboard.');
     } catch {
       setFeedback('Unable to copy the shareable run link from this browser context.');
@@ -675,7 +784,13 @@ export function BacktestResults({
           details={details}
           activeTelemetry={activeTelemetry}
           selectedTelemetrySymbol={activeTelemetry.symbol}
-          onTelemetrySelect={setSelectedTelemetrySymbol}
+          onTelemetrySelect={(symbol) => {
+            const nextParams = new URLSearchParams(searchParams);
+            nextParams.set('symbol', symbol);
+            nextParams.delete('trade');
+            nextParams.delete('marker');
+            setSearchParams(nextParams, { replace: true });
+          }}
         />
       ) : (
         <EmptyState

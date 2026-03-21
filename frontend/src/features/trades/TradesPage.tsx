@@ -30,6 +30,29 @@ import {
 import { selectCurrency, selectTimezone } from '@/features/settings/settingsSlice';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
+const tradeSortFields: TradeSortField[] = [
+  'id',
+  'pair',
+  'positionSide',
+  'signal',
+  'entryTime',
+  'exitTime',
+  'entryPrice',
+  'exitPrice',
+  'positionSize',
+  'pnl',
+  'feesActual',
+  'slippageActual',
+];
+
+const parsePositiveIntParam = (value: string | null, fallback: number) => {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const parseTradeSortFieldParam = (value: string | null): TradeSortField =>
+  tradeSortFields.find((field) => field === value) ?? 'entryTime';
+
 export default function TradesPage() {
   const timezone = useSelector(selectTimezone);
   const currency = useSelector(selectCurrency);
@@ -50,14 +73,21 @@ export default function TradesPage() {
     };
   });
   const [query, setQuery] = useState<TradeHistoryQuery>({ limit: 200 });
-  const [selectedTradeId, setSelectedTradeId] = useState<number | null>(null);
+  const [selectedTradeId, setSelectedTradeId] = useState<number | null>(() => {
+    const parsed = Number(searchParams.get('trade'));
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+  });
   const [feedback, setFeedback] = useState<{
     severity: 'success' | 'error';
     message: string;
   } | null>(null);
-  const [page, setPage] = useState(1);
-  const [sortField, setSortField] = useState<TradeSortField>('entryTime');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [page, setPage] = useState(() => parsePositiveIntParam(searchParams.get('page'), 1));
+  const [sortField, setSortField] = useState<TradeSortField>(() =>
+    parseTradeSortFieldParam(searchParams.get('sort'))
+  );
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(() =>
+    searchParams.get('direction') === 'asc' ? 'asc' : 'desc'
+  );
 
   const debouncedSearchId = useDebouncedValue(draft.searchId, 300);
 
@@ -179,8 +209,12 @@ export default function TradesPage() {
     if (draft.endDate) params.set('endDate', draft.endDate);
     if (draft.limit) params.set('limit', draft.limit);
     if (draft.searchId) params.set('searchId', draft.searchId);
+    if (selectedTradeId) params.set('trade', String(selectedTradeId));
+    if (page > 1) params.set('page', String(page));
+    if (sortField !== 'entryTime') params.set('sort', sortField);
+    if (sortDirection !== 'desc') params.set('direction', sortDirection);
     setSearchParams(params, { replace: true });
-  }, [draft, setSearchParams]);
+  }, [draft, page, selectedTradeId, setSearchParams, sortDirection, sortField]);
 
   const applyFilters = () => {
     if (validationError) {

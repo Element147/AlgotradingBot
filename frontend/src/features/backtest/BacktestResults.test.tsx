@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 
 import { BacktestResults } from './BacktestResults';
@@ -131,12 +132,14 @@ const baseDetails = {
 describe('BacktestResults', () => {
   it('blocks export when dataset provenance is incomplete', { timeout: 15000 }, () => {
     render(
-      <BacktestResults
-        details={{
-          ...baseDetails,
-          datasetChecksumSha256: null,
-        }}
-      />
+      <MemoryRouter>
+        <BacktestResults
+          details={{
+            ...baseDetails,
+            datasetChecksumSha256: null,
+          }}
+        />
+      </MemoryRouter>
     );
 
     expect(screen.getByText(/missing full dataset provenance/i)).toBeInTheDocument();
@@ -144,7 +147,11 @@ describe('BacktestResults', () => {
   });
 
   it('renders telemetry review charts when telemetry is available', () => {
-    render(<BacktestResults details={baseDetails} />);
+    render(
+      <MemoryRouter>
+        <BacktestResults details={baseDetails} />
+      </MemoryRouter>
+    );
 
     expect(screen.getByText('Chart workspace')).toBeInTheDocument();
     expect(screen.getByText('chart workspace BTC/USDT')).toBeInTheDocument();

@@ -60,6 +60,11 @@ export function VirtualizedTradeTable({
 
   const virtualRows = rowVirtualizer.getVirtualItems();
   const totalHeight = rowVirtualizer.getTotalSize();
+  const focusTradeRow = (tradeId: number) => {
+    requestAnimationFrame(() => {
+      document.getElementById(`trade-row-${tradeId}`)?.focus();
+    });
+  };
 
   const formatters = useMemo(
     () => ({
@@ -112,6 +117,7 @@ export function VirtualizedTradeTable({
 
         <Box
           ref={scrollElementRef}
+          aria-label="Trade review table"
           sx={{
             maxHeight: 560,
             overflow: 'auto',
@@ -129,6 +135,7 @@ export function VirtualizedTradeTable({
 
               return (
                 <Box
+                  id={`trade-row-${row.id}`}
                   key={row.id}
                   role="button"
                   tabIndex={0}
@@ -137,6 +144,28 @@ export function VirtualizedTradeTable({
                     if (event.key === 'Enter' || event.key === ' ') {
                       event.preventDefault();
                       onRowSelect(row);
+                    }
+
+                    if (event.key === 'ArrowDown') {
+                      event.preventDefault();
+                      const nextIndex = Math.min(virtualRow.index + 1, rows.length - 1);
+                      const nextRow = rows[nextIndex];
+                      if (nextRow) {
+                        onRowSelect(nextRow);
+                        rowVirtualizer.scrollToIndex(nextIndex, { align: 'auto' });
+                        focusTradeRow(nextRow.id);
+                      }
+                    }
+
+                    if (event.key === 'ArrowUp') {
+                      event.preventDefault();
+                      const previousIndex = Math.max(virtualRow.index - 1, 0);
+                      const previousRow = rows[previousIndex];
+                      if (previousRow) {
+                        onRowSelect(previousRow);
+                        rowVirtualizer.scrollToIndex(previousIndex, { align: 'auto' });
+                        focusTradeRow(previousRow.id);
+                      }
                     }
                   }}
                   sx={{

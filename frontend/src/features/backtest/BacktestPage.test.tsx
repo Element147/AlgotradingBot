@@ -1,6 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { render, screen } from '@testing-library/react';
 import { Provider } from 'react-redux';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 
 import environmentReducer from '../environment/environmentSlice';
@@ -231,9 +232,11 @@ describe('BacktestPage', { timeout: 15000 }, () => {
     });
 
     return render(
-      <Provider store={store}>
-        <BacktestPage />
-      </Provider>
+      <MemoryRouter>
+        <Provider store={store}>
+          <BacktestPage />
+        </Provider>
+      </MemoryRouter>
     );
   };
 

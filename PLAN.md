@@ -5,6 +5,24 @@
 This plan resets the frontend direction around one coherent research workstation for backtesting, signal review, paper trading, and future live monitoring.
 It replaces the older lightweight polish pass with a full UI and UX plan that is easier for beginners to learn, clearer to operate, and safer to extend.
 
+Status as of March 21, 2026: implemented in the repository.
+
+## Delivery Status
+
+- [x] Phase 0: UX Foundation And Token Cleanup
+- [x] Phase 1: Shared Surface Simplification
+- [x] Phase 2: Backtest Workspace Redesign
+- [x] Phase 3: Paper, Trades, And Strategies Harmonization
+- [x] Phase 4: Market Data, Risk, And Settings Rationalization
+- [x] Phase 5: Accessibility, Responsiveness, And Final Polish
+- [x] Shared shell, design tokens, and workstation primitives are in production use across the SPA
+- [x] Backtest is the reference research workspace with linked chart, marker, trade, and inspector review
+- [x] Mobile review uses inline stacking where appropriate and a bottom-sheet inspector pattern for the flagship research flow
+- [x] Filter and selection state is URL-deep-linkable on the dense review routes that benefit from shareable context
+- [x] The original open decisions are resolved and documented below
+
+This document now serves as the completion record for the redesign. New UI or UX work should be tracked in `docs/ROADMAP.md` or a new focused plan instead of reopening this one.
+
 The plan stays aligned with:
 
 - `docs/ROADMAP.md`: local-first delivery, small reversible increments, verified behavior
@@ -603,22 +621,22 @@ This UI plan is considered delivered only when:
 - advanced controls are still available without dominating the default path
 - docs remain aligned with actual implementation
 
-## Open Decisions
+## Resolved Decisions
 
-These are the only significant design decisions that may need confirmation later:
+These design decisions were closed by the March 21, 2026 implementation pass:
 
 1. Font loading policy
-   - Default assumption: keep the current system-friendly approach unless a hosted font materially improves readability.
+   - Resolved: use a system-friendly stack led by `IBM Plex Sans` or `Aptos` and `IBM Plex Mono` or `Aptos Mono`, without introducing a hosted-font dependency.
 2. Primary charting library for price review
-   - Default assumption: keep `Recharts` for analytics and add `lightweight-charts` only for the Backtest market chart.
+   - Resolved: keep `Recharts` for aggregate analytics and use `lightweight-charts` only for the Backtest price-action workspace.
 3. Dense-table strategy
-   - Default assumption: improve current MUI tables first and evaluate `MUI X Data Grid` only if the routes outgrow the simpler stack.
+   - Resolved: keep the current MUI and virtualization stack, tighten typography and selected-state behavior, and defer `MUI X Data Grid` unless future scale clearly requires it.
 
-## Immediate Next Step
+## Completion Summary
 
-The next implementation batch should start with Phase 0 and Phase 2 together:
+The redesign sequence that originally started with Phase 0 and Phase 2 together is complete:
 
-- simplify the shell and shared tokens first
-- then redesign Backtest as the reference route
-
-That gives the project one strong visual and interaction standard before the same system is rolled out to the rest of the SPA.
+- shared shell and token cleanup shipped first
+- Backtest established the interaction standard
+- the rest of the SPA was then aligned to the same workstation model
+- documentation was updated to reflect the implemented architecture instead of a proposed direction
