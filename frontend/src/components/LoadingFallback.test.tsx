@@ -23,17 +23,17 @@ describe('LoadingFallback', () => {
   it('should render sidebar skeleton on desktop', () => {
     const { container } = render(<LoadingFallback />);
 
-    const roundedSkeletons = container.querySelectorAll('.MuiSkeleton-rounded');
-    expect(roundedSkeletons.length).toBeGreaterThan(0);
+    const rectangularSkeletons = container.querySelectorAll('.MuiSkeleton-rectangular');
+    expect(rectangularSkeletons.length).toBeGreaterThan(0);
   });
 
   it('should render content area skeleton', () => {
     const { container } = render(<LoadingFallback />);
 
     const textSkeletons = container.querySelectorAll('.MuiSkeleton-text');
-    const roundedSkeletons = container.querySelectorAll('.MuiSkeleton-rounded');
+    const rectangularSkeletons = container.querySelectorAll('.MuiSkeleton-rectangular');
     expect(textSkeletons.length).toBeGreaterThan(0);
-    expect(roundedSkeletons.length).toBeGreaterThan(0);
+    expect(rectangularSkeletons.length).toBeGreaterThan(0);
   });
 
   it('should have proper layout structure', () => {

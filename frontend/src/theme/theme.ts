@@ -20,6 +20,8 @@ const buildTheme = (mode: PaletteMode): Theme => {
   const textPrimary = isLight ? '#152229' : '#edf5f1';
   const textSecondary = isLight ? '#60707a' : '#9baab3';
   const divider = alpha(isLight ? '#16384b' : '#dbeae3', isLight ? 0.12 : 0.14);
+  const surfaceRadius = 0;
+  const controlRadius = 0;
   const numericFont =
     '"IBM Plex Mono", "Cascadia Mono", "Aptos Mono", "Consolas", monospace';
   const sansFont =
@@ -78,7 +80,7 @@ const buildTheme = (mode: PaletteMode): Theme => {
       divider,
     },
     shape: {
-      borderRadius: 16,
+      borderRadius: surfaceRadius,
     },
     typography: {
       fontFamily: sansFont,
@@ -184,7 +186,7 @@ const buildTheme = (mode: PaletteMode): Theme => {
             top: -80,
             zIndex: 2000,
             padding: '10px 14px',
-            borderRadius: 12,
+            borderRadius: surfaceRadius,
             backgroundColor: panelBackground,
             border: `1px solid ${divider}`,
             color: textPrimary,
@@ -250,7 +252,7 @@ const buildTheme = (mode: PaletteMode): Theme => {
           root: {
             backgroundColor: panelBackground,
             border: `1px solid ${divider}`,
-            borderRadius: 18,
+            borderRadius: surfaceRadius,
             boxShadow: 'none',
           },
         },
@@ -272,7 +274,7 @@ const buildTheme = (mode: PaletteMode): Theme => {
         styleOverrides: {
           root: {
             minHeight: 40,
-            borderRadius: 12,
+            borderRadius: controlRadius,
             paddingInline: 16,
           },
           contained: {
@@ -286,7 +288,7 @@ const buildTheme = (mode: PaletteMode): Theme => {
       MuiIconButton: {
         styleOverrides: {
           root: {
-            borderRadius: 12,
+            borderRadius: controlRadius,
             border: `1px solid ${alpha(textPrimary, isLight ? 0.08 : 0.14)}`,
             backgroundColor: alpha(panelBackground, 0.9),
           },
@@ -296,7 +298,7 @@ const buildTheme = (mode: PaletteMode): Theme => {
         styleOverrides: {
           root: {
             minHeight: 30,
-            borderRadius: 999,
+            borderRadius: controlRadius,
             borderColor: alpha(textPrimary, 0.08),
             backgroundColor: alpha(panelBackground, isLight ? 0.98 : 0.82),
             fontWeight: 700,
@@ -315,7 +317,7 @@ const buildTheme = (mode: PaletteMode): Theme => {
       MuiAlert: {
         styleOverrides: {
           root: {
-            borderRadius: 16,
+            borderRadius: surfaceRadius,
             border: `1px solid ${divider}`,
             backgroundColor: alpha(panelBackground, 0.98),
           },
@@ -325,7 +327,7 @@ const buildTheme = (mode: PaletteMode): Theme => {
         styleOverrides: {
           paper: {
             marginTop: 10,
-            borderRadius: 16,
+            borderRadius: surfaceRadius,
             border: `1px solid ${divider}`,
             backgroundColor: panelBackground,
             boxShadow: `0 24px 48px ${alpha('#000000', 0.12)}`,
@@ -335,7 +337,7 @@ const buildTheme = (mode: PaletteMode): Theme => {
       MuiMenuItem: {
         styleOverrides: {
           root: {
-            borderRadius: 10,
+            borderRadius: controlRadius,
             marginInline: 8,
             marginBlock: 2,
           },
@@ -368,7 +370,7 @@ const buildTheme = (mode: PaletteMode): Theme => {
       MuiTableContainer: {
         styleOverrides: {
           root: {
-            borderRadius: 16,
+            borderRadius: surfaceRadius,
             border: `1px solid ${divider}`,
             backgroundColor: panelBackground,
           },
@@ -390,14 +392,14 @@ const buildTheme = (mode: PaletteMode): Theme => {
       MuiListItemButton: {
         styleOverrides: {
           root: {
-            borderRadius: 14,
+            borderRadius: controlRadius,
           },
         },
       },
       MuiOutlinedInput: {
         styleOverrides: {
           root: {
-            borderRadius: 14,
+            borderRadius: controlRadius,
             backgroundColor: alpha(panelBackground, 0.94),
             '& .MuiOutlinedInput-notchedOutline': {
               borderColor: alpha(textPrimary, isLight ? 0.1 : 0.16),
@@ -416,21 +418,21 @@ const buildTheme = (mode: PaletteMode): Theme => {
         styleOverrides: {
           root: {
             padding: 4,
-            borderRadius: 16,
+            borderRadius: surfaceRadius,
             backgroundColor: alpha(textPrimary, isLight ? 0.03 : 0.08),
             border: `1px solid ${divider}`,
           },
           grouped: {
             margin: 0,
             border: 0,
-            borderRadius: 12,
+            borderRadius: controlRadius,
           },
         },
       },
       MuiToggleButton: {
         styleOverrides: {
           root: {
-            borderRadius: 12,
+            borderRadius: controlRadius,
             color: textSecondary,
             '&.Mui-selected': {
               backgroundColor: alpha(primaryMain, isLight ? 0.13 : 0.16),
@@ -443,7 +445,7 @@ const buildTheme = (mode: PaletteMode): Theme => {
         styleOverrides: {
           indicator: {
             height: 3,
-            borderRadius: 999,
+            borderRadius: surfaceRadius,
             backgroundColor: primaryMain,
           },
         },
@@ -462,7 +464,7 @@ const buildTheme = (mode: PaletteMode): Theme => {
       MuiDialog: {
         styleOverrides: {
           paper: {
-            borderRadius: 18,
+            borderRadius: surfaceRadius,
             border: `1px solid ${divider}`,
             backgroundColor: panelBackground,
           },
@@ -472,14 +474,14 @@ const buildTheme = (mode: PaletteMode): Theme => {
         styleOverrides: {
           root: {
             height: 7,
-            borderRadius: 999,
+            borderRadius: surfaceRadius,
           },
         },
       },
       MuiSkeleton: {
         styleOverrides: {
           root: {
-            borderRadius: 12,
+            borderRadius: surfaceRadius,
             backgroundColor: alpha(textPrimary, isLight ? 0.08 : 0.12),
             transform: 'none',
           },
@@ -488,7 +490,7 @@ const buildTheme = (mode: PaletteMode): Theme => {
       MuiTooltip: {
         styleOverrides: {
           tooltip: {
-            borderRadius: 12,
+            borderRadius: surfaceRadius,
             backgroundColor: isLight ? '#183037' : '#f3f7f5',
             color: isLight ? '#f4f9f7' : '#102228',
             boxShadow: 'none',
@@ -507,7 +509,7 @@ const buildTheme = (mode: PaletteMode): Theme => {
         styleOverrides: {
           root: {
             border: `1px solid ${divider}`,
-            borderRadius: '16px !important',
+            borderRadius: `${surfaceRadius}px !important`,
             backgroundColor: panelBackground,
             boxShadow: 'none',
             '&:before': {

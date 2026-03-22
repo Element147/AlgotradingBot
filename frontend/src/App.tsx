@@ -3,17 +3,11 @@ import { lazy, Suspense, useEffect, useMemo } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 import { useAppDispatch, useAppSelector } from './app/hooks';
+import { prefetchAuthenticatedWorkstationData } from './app/prefetchAuthenticatedWorkstationData';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingFallback from './components/LoadingFallback';
 import ProtectedRoute from './components/ProtectedRoute';
-import { accountApi } from './features/account/accountApi';
-import { backtestApi } from './features/backtest/backtestApi';
-import { marketDataApi } from './features/marketData/marketDataApi';
-import { paperApi } from './features/paperApi';
-import { riskApi } from './features/risk/riskApi';
 import { selectTextScale, selectTheme } from './features/settings/settingsSlice';
-import { strategiesApi } from './features/strategies/strategiesApi';
-import { tradesApi } from './features/trades/tradesApi';
 import { WebSocketRuntime } from './features/websocket/WebSocketRuntime';
 import { lightTheme, darkTheme } from './theme/theme';
 import './App.css';
@@ -32,6 +26,7 @@ const SettingsPage = lazy(() => import('./features/settings/SettingsPage'));
 function App() {
   // Get current theme from Redux state
   const dispatch = useAppDispatch();
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
   const themeMode = useAppSelector(selectTheme);
   const textScale = useAppSelector(selectTextScale);
 
@@ -43,22 +38,11 @@ function App() {
   const enableWebSocketRuntime = import.meta.env.MODE !== 'test';
 
   useEffect(() => {
-    if (import.meta.env.MODE === 'test') {
+    if (import.meta.env.MODE === 'test' || !isAuthenticated) {
       return;
     }
-    dispatch(accountApi.util.prefetch('getBalance', undefined, { force: false }));
-    dispatch(accountApi.util.prefetch('getPerformance', 'today', { force: false }));
-    dispatch(accountApi.util.prefetch('getOpenPositions', undefined, { force: false }));
-    dispatch(accountApi.util.prefetch('getRecentTrades', 10, { force: false }));
-    dispatch(paperApi.util.prefetch('getPaperTradingState', undefined, { force: false }));
-    dispatch(paperApi.util.prefetch('getPaperOrders', undefined, { force: false }));
-    dispatch(strategiesApi.util.prefetch('getStrategies', undefined, { force: false }));
-    dispatch(tradesApi.util.prefetch('getTradeHistory', { limit: 200 }, { force: false }));
-    dispatch(backtestApi.util.prefetch('getBacktests', undefined, { force: false }));
-    dispatch(marketDataApi.util.prefetch('getMarketDataProviders', undefined, { force: false }));
-    dispatch(marketDataApi.util.prefetch('getMarketDataJobs', undefined, { force: false }));
-    dispatch(riskApi.util.prefetch('getRiskStatus', undefined, { force: false }));
-  }, [dispatch]);
+    prefetchAuthenticatedWorkstationData(dispatch);
+  }, [dispatch, isAuthenticated]);
 
   return (
     <ThemeProvider theme={theme}>

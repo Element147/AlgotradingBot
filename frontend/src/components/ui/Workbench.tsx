@@ -140,7 +140,7 @@ export function SurfacePanel({
     <Paper
       variant="outlined"
       sx={{
-        borderRadius: 4,
+        borderRadius: 0,
         backgroundColor: elevated
           ? alpha(
               theme.palette.background.paper,
@@ -262,7 +262,7 @@ export function MetricCard({
       variant="outlined"
       sx={{
         height: '100%',
-        borderRadius: 4,
+        borderRadius: 0,
         borderColor: alpha(accent, tone === 'default' ? 0.14 : 0.2),
         background: `linear-gradient(180deg, ${resolveToneSurface(theme, tone)} 0%, ${alpha(
           theme.palette.background.paper,
@@ -339,7 +339,7 @@ export function EmptyState({
         borderStyle: 'dashed',
         borderColor: alpha(accent, 0.28),
         backgroundColor: resolveToneSurface(theme, tone),
-        borderRadius: 4,
+        borderRadius: 0,
         ...sx,
       }}
     >

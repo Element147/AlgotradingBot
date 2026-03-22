@@ -75,8 +75,8 @@ export function StickyInspectorPanel({
           onClose={() => setMobileOpen(false)}
           PaperProps={{
             sx: {
-              borderTopLeftRadius: 24,
-              borderTopRightRadius: 24,
+              borderTopLeftRadius: 0,
+              borderTopRightRadius: 0,
               maxHeight: '82vh',
             },
           }}

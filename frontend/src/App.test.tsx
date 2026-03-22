@@ -1,12 +1,20 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { render, screen, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import App from './App';
 import authReducer from './features/auth/authSlice';
 import environmentReducer from './features/environment/environmentSlice';
 import settingsReducer from './features/settings/settingsSlice';
+
+const { prefetchAuthenticatedWorkstationDataMock } = vi.hoisted(() => ({
+  prefetchAuthenticatedWorkstationDataMock: vi.fn(),
+}));
+
+vi.mock('./app/prefetchAuthenticatedWorkstationData', () => ({
+  prefetchAuthenticatedWorkstationData: prefetchAuthenticatedWorkstationDataMock,
+}));
 
 // Mock the page components to avoid loading actual implementations
 vi.mock('./features/auth/LoginPage', () => ({
@@ -89,6 +97,12 @@ describe('App Routing', () => {
   beforeEach(() => {
     // Clear localStorage before each test
     localStorage.clear();
+    prefetchAuthenticatedWorkstationDataMock.mockClear();
+    vi.unstubAllEnvs();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   describe('Public Routes', () => {
@@ -404,6 +418,46 @@ describe('App Routing', () => {
       // In real scenarios, the LoadingFallback will be visible during code splitting
       await waitFor(() => {
         expect(screen.getByTestId('dashboard-page')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Authenticated Prefetch', () => {
+    it('does not prefetch protected data on the login route before authentication', async () => {
+      vi.stubEnv('MODE', 'development');
+      vi.stubEnv('DEV', 'true');
+      const store = createMockStore(false);
+      window.history.pushState({}, '', '/login');
+
+      render(
+        <Provider store={store}>
+          <App />
+        </Provider>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('login-page')).toBeInTheDocument();
+      });
+
+      expect(prefetchAuthenticatedWorkstationDataMock).not.toHaveBeenCalled();
+    });
+
+    it('prefetches protected workstation data after authentication is present', async () => {
+      vi.stubEnv('MODE', 'development');
+      vi.stubEnv('DEV', 'true');
+      const store = createMockStore(true);
+      window.history.pushState({}, '', '/dashboard');
+
+      render(
+        <Provider store={store}>
+          <App />
+        </Provider>
+      );
+
+      await waitFor(() => {
+        expect(prefetchAuthenticatedWorkstationDataMock).toHaveBeenCalledWith(
+          store.dispatch
+        );
       });
     });
   });

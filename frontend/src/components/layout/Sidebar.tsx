@@ -104,7 +104,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
               border: '1px solid',
               borderColor: 'divider',
               bgcolor: alpha(theme.palette.primary.main, 0.04),
-              borderRadius: 3,
+              borderRadius: 0,
             }}
           >
             <Stack spacing={1.25}>
@@ -162,7 +162,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
                         px: 1.5,
                         py: 1.35,
                         alignItems: 'center',
-                        borderRadius: 3,
+                        borderRadius: 0,
                         border: `1px solid ${
                           isActive ? alpha(theme.palette.primary.main, 0.2) : 'transparent'
                         }`,
@@ -213,7 +213,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
             p: 1.75,
             border: `1px solid ${theme.palette.divider}`,
             backgroundColor: alpha(theme.palette.secondary.main, 0.08),
-            borderRadius: 3,
+            borderRadius: 0,
           }}
         >
           <Typography variant="subtitle2">Safe next step</Typography>
