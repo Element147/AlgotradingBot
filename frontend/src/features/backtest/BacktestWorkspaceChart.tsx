@@ -14,7 +14,11 @@ import {
 } from 'lightweight-charts';
 import { useEffect, useMemo, useRef } from 'react';
 
-import type { BacktestSymbolTelemetry } from './backtestTypes';
+import type {
+  BacktestIndicatorSeries,
+  BacktestSymbolTelemetry,
+  BacktestTelemetryPoint,
+} from './backtestTypes';
 import {
   actionVisuals,
   getOverlayColor,
@@ -37,6 +41,34 @@ interface BacktestWorkspaceChartProps {
 
 const toChartTime = (timestamp: string): UTCTimestamp =>
   Math.floor(new Date(timestamp).getTime() / 1000) as UTCTimestamp;
+
+const compareTimestampAsc = (left: string, right: string) =>
+  new Date(left).getTime() - new Date(right).getTime();
+
+const normalizeTelemetryPoints = (points: BacktestTelemetryPoint[]) =>
+  Array.from(
+    points.reduce<Map<string, BacktestTelemetryPoint>>((lookup, point) => {
+      lookup.set(point.timestamp, point);
+      return lookup;
+    }, new Map()).values()
+  ).sort((left, right) => compareTimestampAsc(left.timestamp, right.timestamp));
+
+const normalizeIndicatorSeries = (indicators: BacktestIndicatorSeries[]) =>
+  indicators.map((indicator) => ({
+    ...indicator,
+    points: Array.from(
+      indicator.points.reduce<Map<string, (typeof indicator.points)[number]>>((lookup, point) => {
+        lookup.set(point.timestamp, point);
+        return lookup;
+      }, new Map()).values()
+    ).sort((left, right) => compareTimestampAsc(left.timestamp, right.timestamp)),
+  }));
+
+const normalizeChartSeries = (series: BacktestSymbolTelemetry): BacktestSymbolTelemetry => ({
+  ...series,
+  points: normalizeTelemetryPoints(series.points),
+  indicators: normalizeIndicatorSeries(series.indicators),
+});
 
 const markerShapeForAction = (action: WorkspaceMarker['action']) => {
   switch (action) {
@@ -79,17 +111,22 @@ export function BacktestWorkspaceChart({
   focusTimestamp,
   onMarkerSelect,
 }: BacktestWorkspaceChartProps) {
+  const normalizedSeries = useMemo(() => normalizeChartSeries(series), [series]);
+  const normalizedMarkers = useMemo(
+    () => [...markers].sort((left, right) => compareTimestampAsc(left.timestamp, right.timestamp)),
+    [markers]
+  );
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<ReturnType<typeof createChart> | null>(null);
   const priceSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const logicalIndexLookup = useMemo(
     () =>
-      new Map(series.points.map((point, index) => [point.timestamp, index])),
-    [series.points]
+      new Map(normalizedSeries.points.map((point, index) => [point.timestamp, index])),
+    [normalizedSeries.points]
   );
   const filteredMarkers = useMemo(
-    () => markers.filter((marker) => markerMatchesFilter(marker, markerFilter)),
-    [markerFilter, markers]
+    () => normalizedMarkers.filter((marker) => markerMatchesFilter(marker, markerFilter)),
+    [markerFilter, normalizedMarkers]
   );
 
   useEffect(() => {
@@ -145,7 +182,7 @@ export function BacktestWorkspaceChart({
     priceSeriesRef.current = priceSeries;
 
     priceSeries.setData(
-      series.points.map((point) => ({
+      normalizedSeries.points.map((point) => ({
         time: toChartTime(point.timestamp),
         open: point.open,
         high: point.high,
@@ -154,18 +191,18 @@ export function BacktestWorkspaceChart({
       }))
     );
 
-    const visiblePriceIndicators = series.indicators.filter(
+    const visiblePriceIndicators = normalizedSeries.indicators.filter(
       (indicator) =>
         indicator.pane === 'PRICE' && visibleOverlayKeys.includes(indicator.key)
     );
-    const oscillatorIndicators = series.indicators.filter(
+    const oscillatorIndicators = normalizedSeries.indicators.filter(
       (indicator) =>
         indicator.pane === 'OSCILLATOR' && visibleOverlayKeys.includes(indicator.key)
     );
 
     visiblePriceIndicators.forEach((indicator) => {
       const overlaySeries = chart.addSeries(LineSeries, {
-        color: getOverlayColor(indicator.key, series),
+        color: getOverlayColor(indicator.key, normalizedSeries),
         lineWidth: 2,
         priceLineVisible: false,
         lastValueVisible: true,
@@ -196,7 +233,7 @@ export function BacktestWorkspaceChart({
         paneIndex
       );
       exposureSeries.setData(
-        series.points.map((point) => ({
+        normalizedSeries.points.map((point) => ({
           time: toChartTime(point.timestamp),
           value: point.exposurePct,
           color:
@@ -216,7 +253,7 @@ export function BacktestWorkspaceChart({
         const oscillatorSeries = chart.addSeries(
           LineSeries,
           {
-            color: getOverlayColor(indicator.key, series),
+            color: getOverlayColor(indicator.key, normalizedSeries),
             lineWidth: 2,
             priceLineVisible: false,
             lastValueVisible: false,
@@ -302,9 +339,9 @@ export function BacktestWorkspaceChart({
     };
   }, [
     filteredMarkers,
+    normalizedSeries,
     onMarkerSelect,
     selectedMarkerId,
-    series,
     showExposurePane,
     showOscillatorPane,
     visibleOverlayKeys,
@@ -325,7 +362,7 @@ export function BacktestWorkspaceChart({
       });
     }
 
-    const focusPoint = series.points.find((point) => point.timestamp === focusTimestamp);
+    const focusPoint = normalizedSeries.points.find((point) => point.timestamp === focusTimestamp);
     if (focusPoint) {
       chart.setCrosshairPosition(
         focusPoint.close,
@@ -333,7 +370,7 @@ export function BacktestWorkspaceChart({
         priceSeries
       );
     }
-  }, [focusTimestamp, logicalIndexLookup, series.points]);
+  }, [focusTimestamp, logicalIndexLookup, normalizedSeries.points]);
 
   return (
     <Box

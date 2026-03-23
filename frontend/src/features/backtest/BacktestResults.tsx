@@ -7,6 +7,7 @@ import {
   Alert,
   Box,
   Button,
+  InputAdornment,
   Grid,
   MenuItem,
   Select,
@@ -16,6 +17,11 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  TableContainer,
+  TableSortLabel,
+  TextField,
+  useMediaQuery,
+  useTheme,
   ToggleButton,
   ToggleButtonGroup,
   Typography,
@@ -92,6 +98,21 @@ interface BacktestResearchWorkspaceProps {
   onTelemetrySelect: (symbol: string) => void;
 }
 
+type TradeSortField =
+  | 'symbol'
+  | 'side'
+  | 'entryTime'
+  | 'exitTime'
+  | 'quantity'
+  | 'entryPrice'
+  | 'exitPrice'
+  | 'pnlValue'
+  | 'returnPct';
+
+type TradeSortDirection = 'asc' | 'desc';
+type TradeSideFilter = 'ALL' | 'LONG' | 'SHORT';
+type TradePnlFilter = 'ALL' | 'WINNERS' | 'LOSERS';
+
 const workspaceMarkerFilters: BacktestMarkerFilter[] = [
   'ALL',
   'LONG',
@@ -138,13 +159,34 @@ const validationTone = (status: BacktestDetails['validationStatus']) => {
 const formatLiveEventLabel = (value: string | null | undefined) =>
   value ? formatDistanceToNow(new Date(value)) : 'No live progress event received yet';
 
+const compareTradeValues = (
+  left: string | number,
+  right: string | number,
+  direction: TradeSortDirection
+) => {
+  const multiplier = direction === 'asc' ? 1 : -1;
+
+  if (typeof left === 'number' && typeof right === 'number') {
+    return (left - right) * multiplier;
+  }
+
+  return String(left).localeCompare(String(right)) * multiplier;
+};
+
 function BacktestResearchWorkspace({
   details,
   activeTelemetry,
   selectedTelemetrySymbol,
   onTelemetrySelect,
 }: BacktestResearchWorkspaceProps) {
+  const theme = useTheme();
+  const isLargeScreen = useMediaQuery(theme.breakpoints.up('lg'));
   const [searchParams, setSearchParams] = useSearchParams();
+  const [tradeQuery, setTradeQuery] = useState('');
+  const [tradeSideFilter, setTradeSideFilter] = useState<TradeSideFilter>('ALL');
+  const [tradePnlFilter, setTradePnlFilter] = useState<TradePnlFilter>('ALL');
+  const [tradeSortField, setTradeSortField] = useState<TradeSortField>('entryTime');
+  const [tradeSortDirection, setTradeSortDirection] = useState<TradeSortDirection>('desc');
 
   const overlayLegend = useMemo(
     () => buildOverlayLegend(activeTelemetry),
@@ -195,6 +237,60 @@ function BacktestResearchWorkspace({
       }),
     [markerFilter, workspaceMarkers]
   );
+  const filteredTradeRows = useMemo(() => {
+    const normalizedQuery = tradeQuery.trim().toLowerCase();
+
+    return workspaceTrades
+      .filter((trade) => {
+        if (tradeSideFilter !== 'ALL' && trade.side !== tradeSideFilter) {
+          return false;
+        }
+
+        if (tradePnlFilter === 'WINNERS' && trade.pnlValue < 0) {
+          return false;
+        }
+
+        if (tradePnlFilter === 'LOSERS' && trade.pnlValue >= 0) {
+          return false;
+        }
+
+        if (!normalizedQuery) {
+          return true;
+        }
+
+        return [
+          trade.symbol,
+          trade.side,
+          trade.entryLabel,
+          trade.exitLabel,
+          formatDateTime(trade.entryTime),
+          formatDateTime(trade.exitTime),
+        ].some((value) => value.toLowerCase().includes(normalizedQuery));
+      })
+      .sort((left, right) => {
+        switch (tradeSortField) {
+          case 'symbol':
+          case 'side':
+            return compareTradeValues(left[tradeSortField], right[tradeSortField], tradeSortDirection);
+          case 'entryTime':
+          case 'exitTime':
+            return compareTradeValues(
+              new Date(left[tradeSortField]).getTime(),
+              new Date(right[tradeSortField]).getTime(),
+              tradeSortDirection
+            );
+          default:
+            return compareTradeValues(left[tradeSortField], right[tradeSortField], tradeSortDirection);
+        }
+      });
+  }, [
+    tradePnlFilter,
+    tradeQuery,
+    tradeSideFilter,
+    tradeSortDirection,
+    tradeSortField,
+    workspaceTrades,
+  ]);
 
   const explicitMarker = useMemo(
     () => findMarkerById(workspaceMarkers, selectedMarkerId),
@@ -501,106 +597,193 @@ function BacktestResearchWorkspace({
 
       <SurfacePanel
         title="Trade review table"
-        description="Rows stay linked to chart focus. Click one to jump the workspace to that trade's entry point."
+        description="Rows stay linked to chart focus. Use the filters to narrow the set, then sort columns to inspect trade timing and outcomes without the table spilling past the viewport."
+        contentSx={{ gap: 1.5 }}
       >
         {workspaceTrades.length > 0 ? (
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Symbol</TableCell>
-                <TableCell>Side</TableCell>
-                <TableCell>Entry</TableCell>
-                <TableCell>Exit</TableCell>
-                <TableCell align="right">Quantity</TableCell>
-                <TableCell align="right">Entry price</TableCell>
-                <TableCell align="right">Exit price</TableCell>
-                <TableCell align="right">PnL</TableCell>
-                <TableCell align="right">Return</TableCell>
-              </TableRow>
-            </TableHead>
+          <>
+            <Stack
+              direction={{ xs: 'column', lg: 'row' }}
+              spacing={1}
+              alignItems={{ xs: 'stretch', lg: 'center' }}
+            >
+              <TextField
+                size="small"
+                label="Filter trades"
+                value={tradeQuery}
+                onChange={(event) => setTradeQuery(event.target.value)}
+                placeholder="Symbol, side, label, timestamp"
+                sx={{ minWidth: { xs: '100%', lg: 280 } }}
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">Find</InputAdornment>
+                    ),
+                  },
+                }}
+              />
+              <Select
+                size="small"
+                value={tradeSideFilter}
+                onChange={(event) => setTradeSideFilter(event.target.value as TradeSideFilter)}
+                sx={{ minWidth: 140 }}
+              >
+                <MenuItem value="ALL">All sides</MenuItem>
+                <MenuItem value="LONG">Long only</MenuItem>
+                <MenuItem value="SHORT">Short only</MenuItem>
+              </Select>
+              <Select
+                size="small"
+                value={tradePnlFilter}
+                onChange={(event) => setTradePnlFilter(event.target.value as TradePnlFilter)}
+                sx={{ minWidth: 150 }}
+              >
+                <MenuItem value="ALL">All outcomes</MenuItem>
+                <MenuItem value="WINNERS">Winners</MenuItem>
+                <MenuItem value="LOSERS">Losers</MenuItem>
+              </Select>
+              <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto' }}>
+                Showing {filteredTradeRows.length} of {workspaceTrades.length} trades
+              </Typography>
+            </Stack>
+
+            <TableContainer
+              sx={{
+                maxHeight: isLargeScreen ? 'calc(100vh - 19rem)' : 'min(60vh, 34rem)',
+                overflow: 'auto',
+                borderRadius: 2,
+                border: (currentTheme) => `1px solid ${currentTheme.palette.divider}`,
+              }}
+            >
+              <Table size="small" stickyHeader sx={{ minWidth: 920 }}>
+                <TableHead>
+                  <TableRow>
+                    {[
+                      ['symbol', 'Symbol', 'left'],
+                      ['side', 'Side', 'left'],
+                      ['entryTime', 'Entry', 'left'],
+                      ['exitTime', 'Exit', 'left'],
+                      ['quantity', 'Quantity', 'right'],
+                      ['entryPrice', 'Entry price', 'right'],
+                      ['exitPrice', 'Exit price', 'right'],
+                      ['pnlValue', 'PnL', 'right'],
+                      ['returnPct', 'Return', 'right'],
+                    ].map(([field, label, align]) => (
+                      <TableCell
+                        key={field}
+                        align={align as 'left' | 'right'}
+                        sortDirection={tradeSortField === field ? tradeSortDirection : false}
+                      >
+                        <TableSortLabel
+                          active={tradeSortField === field}
+                          direction={tradeSortField === field ? tradeSortDirection : 'asc'}
+                          onClick={() => {
+                            const nextField = field as TradeSortField;
+                            if (tradeSortField === nextField) {
+                              setTradeSortDirection((current) =>
+                                current === 'asc' ? 'desc' : 'asc'
+                              );
+                              return;
+                            }
+
+                            setTradeSortField(nextField);
+                            setTradeSortDirection(
+                              nextField === 'entryTime' || nextField === 'exitTime' ? 'desc' : 'asc'
+                            );
+                          }}
+                        >
+                          {label}
+                        </TableSortLabel>
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                </TableHead>
                 <TableBody>
-              {workspaceTrades.map((trade, index) => (
-                <TableRow
-                  key={trade.id}
-                  hover
-                  selected={trade.id === selectedTrade?.id}
-                  tabIndex={0}
-                  onClick={() => selectTrade(trade.id)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      selectTrade(trade.id);
-                    }
+                  {filteredTradeRows.map((trade, index) => (
+                    <TableRow
+                      key={trade.id}
+                      hover
+                      selected={trade.id === selectedTrade?.id}
+                      tabIndex={0}
+                      onClick={() => selectTrade(trade.id)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          selectTrade(trade.id);
+                        }
 
-                    if (event.key === 'ArrowDown') {
-                      event.preventDefault();
-                      const nextTrade = workspaceTrades[Math.min(index + 1, workspaceTrades.length - 1)];
-                      if (nextTrade) {
-                        selectTrade(nextTrade.id);
-                      }
-                    }
+                        if (event.key === 'ArrowDown') {
+                          event.preventDefault();
+                          const nextTrade = filteredTradeRows[Math.min(index + 1, filteredTradeRows.length - 1)];
+                          if (nextTrade) {
+                            selectTrade(nextTrade.id);
+                          }
+                        }
 
-                    if (event.key === 'ArrowUp') {
-                      event.preventDefault();
-                      const previousTrade = workspaceTrades[Math.max(index - 1, 0)];
-                      if (previousTrade) {
-                        selectTrade(previousTrade.id);
-                      }
-                    }
-                  }}
-                  sx={{
-                    cursor: 'pointer',
-                    '&:focus-visible': {
-                      outline: (theme) => `2px solid ${theme.palette.primary.main}`,
-                      outlineOffset: '-2px',
-                    },
-                  }}
-                >
-                  <TableCell>{trade.symbol}</TableCell>
-                  <TableCell>
-                    <StatusPill
-                      label={trade.side}
-                      tone={trade.side === 'LONG' ? 'success' : 'error'}
-                      variant="filled"
-                    />
-                  </TableCell>
-                  <TableCell>{formatDateTime(trade.entryTime)}</TableCell>
-                  <TableCell>{formatDateTime(trade.exitTime)}</TableCell>
-                  <TableCell align="right">
-                    <NumericText variant="body2">
-                      {formatNumber(trade.quantity, 6)}
-                    </NumericText>
-                  </TableCell>
-                  <TableCell align="right">
-                    <NumericText variant="body2">
-                      {formatCurrency(trade.entryPrice, 4)}
-                    </NumericText>
-                  </TableCell>
-                  <TableCell align="right">
-                    <NumericText variant="body2">
-                      {formatCurrency(trade.exitPrice, 4)}
-                    </NumericText>
-                  </TableCell>
-                  <TableCell align="right">
-                    <NumericText
-                      variant="body2"
-                      tone={trade.pnlValue >= 0 ? 'success' : 'error'}
+                        if (event.key === 'ArrowUp') {
+                          event.preventDefault();
+                          const previousTrade = filteredTradeRows[Math.max(index - 1, 0)];
+                          if (previousTrade) {
+                            selectTrade(previousTrade.id);
+                          }
+                        }
+                      }}
+                      sx={{
+                        cursor: 'pointer',
+                        '&:focus-visible': {
+                          outline: (currentTheme) =>
+                            `2px solid ${currentTheme.palette.primary.main}`,
+                          outlineOffset: '-2px',
+                        },
+                      }}
                     >
-                      {formatCurrency(trade.pnlValue, 2)}
-                    </NumericText>
-                  </TableCell>
-                  <TableCell align="right">
-                    <NumericText
-                      variant="body2"
-                      tone={trade.returnPct >= 0 ? 'success' : 'error'}
-                    >
-                      {formatPercentage(trade.returnPct, 2)}
-                    </NumericText>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                      <TableCell>{trade.symbol}</TableCell>
+                      <TableCell>
+                        <StatusPill
+                          label={trade.side}
+                          tone={trade.side === 'LONG' ? 'success' : 'error'}
+                          variant="filled"
+                        />
+                      </TableCell>
+                      <TableCell>{formatDateTime(trade.entryTime)}</TableCell>
+                      <TableCell>{formatDateTime(trade.exitTime)}</TableCell>
+                      <TableCell align="right">
+                        <NumericText variant="body2">
+                          {formatNumber(trade.quantity, 6)}
+                        </NumericText>
+                      </TableCell>
+                      <TableCell align="right">
+                        <NumericText variant="body2">
+                          {formatCurrency(trade.entryPrice, 4)}
+                        </NumericText>
+                      </TableCell>
+                      <TableCell align="right">
+                        <NumericText variant="body2">
+                          {formatCurrency(trade.exitPrice, 4)}
+                        </NumericText>
+                      </TableCell>
+                      <TableCell align="right">
+                        <NumericText
+                          variant="body2"
+                          tone={trade.pnlValue >= 0 ? 'success' : 'error'}
+                        >
+                          {formatCurrency(trade.pnlValue, 2)}
+                        </NumericText>
+                      </TableCell>
+                      <TableCell align="right">
+                        <NumericText
+                          variant="body2"
+                          tone={trade.returnPct >= 0 ? 'success' : 'error'}
+                        >
+                          {formatPercentage(trade.returnPct, 2)}
+                        </NumericText>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </>
         ) : (
           <EmptyState
             title="No trade windows for this symbol"
