@@ -252,12 +252,14 @@ Goal: keep the current workstation shell, remove the remaining dense workflow pa
 ### 2A. UI Or UX Research And Simplification
 
 #### 2A.1 Audit the current workstation experience
-- [ ] Review the current route surfaces, especially `BacktestPage`, `BacktestResults`, `PaperTradingPage`, `Header`, `Sidebar`, and the shared workstation primitives.
+- [x] Review the current route surfaces, especially `BacktestPage`, `BacktestResults`, `PaperTradingPage`, `Header`, `Sidebar`, and the shared workstation primitives.
 Acceptance Criteria
 - A route-by-route responsibility map exists showing what belongs in Dashboard, Backtest, Paper, Strategies, Market Data, Risk, Settings, and the proposed execution workspace.
 - The audit identifies which current pain points come from information architecture, payload size, component render cost, or visual density.
 - The completed redesign recorded in `PLAN.md` is treated as the baseline, not as something to undo.
 - The mandatory step completion protocol passes.
+Implementation record
+- Workstation audit: `docs/WORKSTATION_EXPERIENCE_AUDIT.md`
 
 #### 2A.2 Define the new execution information architecture
 - [ ] Design an `Execution Workspace` that introduces dedicated `Forward Testing`, `Paper`, and `Live` tabs or child routes while preserving the current shell and safe defaults.
