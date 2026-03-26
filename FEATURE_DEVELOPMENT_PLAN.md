@@ -127,7 +127,7 @@ Acceptance Criteria
 - The mandatory step completion protocol passes.
 
 #### 1A.4 Implement Liquibase schema changes and repositories
-- [ ] Add the new tables, indexes, constraints, and repository interfaces behind Liquibase-managed migrations.
+- [x] Add the new tables, indexes, constraints, and repository interfaces behind Liquibase-managed migrations.
 Acceptance Criteria
 - The schema migrates cleanly on PostgreSQL and remains compatible with the H2 `test` profile used by backend tests.
 - Hot-path indexes cover `series_id + timeframe + bucket_start`, coverage-range scans, and venue or asset filters.
