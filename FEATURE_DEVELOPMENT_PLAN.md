@@ -93,7 +93,7 @@ Goal: replace the CSV-in-cell bottleneck with a relational market-data store, mi
 ### 1A. Backtest Data Storage Overhaul
 
 #### 1A.1 Audit the current data flow and bottlenecks
-- [ ] Document every read or write path that touches `backtest_datasets.csv_data`, `market_data_import_jobs.staged_csv_data`, `HistoricalDataCsvParser`, `BacktestDatasetCandleCache`, `BacktestExecutionService`, `BacktestTelemetryService`, dataset download, and dataset upload/import endpoints.
+- [x] Document every read or write path that touches `backtest_datasets.csv_data`, `market_data_import_jobs.staged_csv_data`, `HistoricalDataCsvParser`, `BacktestDatasetCandleCache`, `BacktestExecutionService`, `BacktestTelemetryService`, dataset download, and dataset upload/import endpoints.
 Acceptance Criteria
 - The current source of truth for historical candles is documented end to end from upload/import to backtest execution and telemetry reconstruction.
 - Baseline metrics exist for parse time, memory footprint, dataset download size, backtest warm-up time, and slow API endpoints on small, medium, and large datasets.

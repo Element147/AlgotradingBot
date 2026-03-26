@@ -176,6 +176,18 @@ tasks.register<Test>("exportOpenApiContract") {
     }
 }
 
+tasks.register<JavaExec>("legacyMarketDataFlowAudit") {
+    group = "verification"
+    description = "Benchmark the legacy CSV-backed dataset flow and write a markdown audit report."
+    dependsOn(tasks.named("testClasses"))
+    classpath = sourceSets["test"].runtimeClasspath
+    mainClass.set("com.algotrader.bot.analysis.LegacyMarketDataFlowAuditRunner")
+    systemProperty(
+        "legacyAudit.output",
+        layout.buildDirectory.file("reports/legacy-market-data-flow-audit/report.md").get().asFile.absolutePath
+    )
+}
+
 tasks.withType<JavaCompile>().configureEach {
     options.release.set(targetJavaVersion.asInt())
     options.compilerArgs.add("-Xlint:deprecation")
