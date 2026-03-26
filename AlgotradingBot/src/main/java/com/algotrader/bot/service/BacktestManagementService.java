@@ -2,10 +2,6 @@ package com.algotrader.bot.service;
 
 import com.algotrader.bot.backtest.strategy.BacktestStrategyRegistry;
 import com.algotrader.bot.controller.BacktestAlgorithmResponse;
-import com.algotrader.bot.controller.BacktestComparisonResponse;
-import com.algotrader.bot.controller.BacktestDetailsResponse;
-import com.algotrader.bot.controller.BacktestExperimentSummaryResponse;
-import com.algotrader.bot.controller.BacktestHistoryItemResponse;
 import com.algotrader.bot.controller.BacktestRunResponse;
 import com.algotrader.bot.controller.RunBacktestRequest;
 import com.algotrader.bot.entity.BacktestDataset;
@@ -35,7 +31,6 @@ public class BacktestManagementService {
     private final BacktestDatasetStorageService backtestDatasetStorageService;
     private final BacktestDatasetLifecycleService backtestDatasetLifecycleService;
     private final BacktestStrategyRegistry backtestStrategyRegistry;
-    private final BacktestResultQueryService backtestResultQueryService;
     private final BacktestProgressService backtestProgressService;
     private final OperatorAuditService operatorAuditService;
 
@@ -44,7 +39,6 @@ public class BacktestManagementService {
                                      BacktestDatasetStorageService backtestDatasetStorageService,
                                      BacktestDatasetLifecycleService backtestDatasetLifecycleService,
                                      BacktestStrategyRegistry backtestStrategyRegistry,
-                                     BacktestResultQueryService backtestResultQueryService,
                                      BacktestProgressService backtestProgressService,
                                      OperatorAuditService operatorAuditService) {
         this.backtestResultRepository = backtestResultRepository;
@@ -52,7 +46,6 @@ public class BacktestManagementService {
         this.backtestDatasetStorageService = backtestDatasetStorageService;
         this.backtestDatasetLifecycleService = backtestDatasetLifecycleService;
         this.backtestStrategyRegistry = backtestStrategyRegistry;
-        this.backtestResultQueryService = backtestResultQueryService;
         this.backtestProgressService = backtestProgressService;
         this.operatorAuditService = operatorAuditService;
     }
@@ -66,21 +59,6 @@ public class BacktestManagementService {
                 definition.description(),
                 definition.selectionMode().name()))
             .toList();
-    }
-
-    @Transactional(readOnly = true)
-    public List<BacktestHistoryItemResponse> getHistory(int limit) {
-        return backtestResultQueryService.getHistory(limit);
-    }
-
-    @Transactional(readOnly = true)
-    public List<BacktestExperimentSummaryResponse> getExperimentSummaries() {
-        return backtestResultQueryService.getExperimentSummaries();
-    }
-
-    @Transactional(readOnly = true)
-    public BacktestDetailsResponse getDetails(Long backtestId) {
-        return backtestResultQueryService.getDetails(backtestId);
     }
 
     @Transactional
@@ -253,11 +231,6 @@ public class BacktestManagementService {
             String.valueOf(backtestId),
             "strategy=" + result.getStrategyId() + ", datasetId=" + result.getDatasetId()
         );
-    }
-
-    @Transactional(readOnly = true)
-    public BacktestComparisonResponse compareBacktests(List<Long> requestedIds) {
-        return backtestResultQueryService.compareBacktests(requestedIds);
     }
 
     private String resolveRequestedSymbol(String requestedSymbol,

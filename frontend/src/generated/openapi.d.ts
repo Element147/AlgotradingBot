@@ -779,6 +779,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/backtests/{backtestId}/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["summary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/backtests/experiments": {
         parameters: {
             query?: never;
@@ -1830,6 +1846,60 @@ export interface components {
             entryValue?: number;
             exitValue?: number;
             returnPct?: number;
+        };
+        BacktestSummaryResponse: {
+            /** Format: int64 */
+            id?: number;
+            strategyId?: string;
+            /** Format: int64 */
+            datasetId?: number;
+            datasetName?: string;
+            experimentName?: string;
+            experimentKey?: string;
+            datasetChecksumSha256?: string;
+            datasetSchemaVersion?: string;
+            /** Format: date-time */
+            datasetUploadedAt?: string;
+            datasetArchived?: boolean;
+            symbol?: string;
+            timeframe?: string;
+            executionStatus?: string;
+            validationStatus?: string;
+            initialBalance?: number;
+            finalBalance?: number;
+            sharpeRatio?: number;
+            profitFactor?: number;
+            winRate?: number;
+            maxDrawdown?: number;
+            /** Format: int32 */
+            totalTrades?: number;
+            /** Format: int32 */
+            feesBps?: number;
+            /** Format: int32 */
+            slippageBps?: number;
+            /** Format: date-time */
+            startDate?: string;
+            /** Format: date-time */
+            endDate?: string;
+            /** Format: date-time */
+            timestamp?: string;
+            executionStage?: string;
+            /** Format: int32 */
+            progressPercent?: number;
+            /** Format: int32 */
+            processedCandles?: number;
+            /** Format: int32 */
+            totalCandles?: number;
+            /** Format: date-time */
+            currentDataTimestamp?: string;
+            statusMessage?: string;
+            /** Format: date-time */
+            lastProgressAt?: string;
+            /** Format: date-time */
+            startedAt?: string;
+            /** Format: date-time */
+            completedAt?: string;
+            errorMessage?: string;
         };
         BacktestExperimentSummaryResponse: {
             experimentKey?: string;
@@ -3353,6 +3423,28 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    summary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                backtestId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BacktestSummaryResponse"];
+                };
             };
         };
     };

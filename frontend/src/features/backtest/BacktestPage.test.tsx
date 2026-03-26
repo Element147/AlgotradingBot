@@ -157,6 +157,9 @@ vi.mock('./backtestApi', () => ({
     },
     refetch: vi.fn(),
   }),
+  useGetBacktestSummaryQuery: () => ({
+    data: undefined,
+  }),
   useUploadBacktestDatasetMutation: () => [vi.fn(), { isLoading: false }],
   useArchiveBacktestDatasetMutation: () => [vi.fn(), { isLoading: false }],
   useRestoreBacktestDatasetMutation: () => [vi.fn(), { isLoading: false }],

@@ -6,6 +6,7 @@ import com.algotrader.bot.controller.BacktestDetailsResponse;
 import com.algotrader.bot.controller.BacktestEquityPointResponse;
 import com.algotrader.bot.controller.BacktestExperimentSummaryResponse;
 import com.algotrader.bot.controller.BacktestHistoryItemResponse;
+import com.algotrader.bot.controller.BacktestSummaryResponse;
 import com.algotrader.bot.controller.BacktestTradeSeriesItemResponse;
 import com.algotrader.bot.entity.BacktestDataset;
 import com.algotrader.bot.entity.BacktestResult;
@@ -102,6 +103,16 @@ public class BacktestResultQueryService {
             0L
         );
         return details;
+    }
+
+    @Transactional(readOnly = true)
+    public BacktestSummaryResponse getSummary(Long backtestId) {
+        long startedAt = System.nanoTime();
+        BacktestResult result = backtestResultRepository.findById(backtestId)
+            .orElseThrow(() -> new EntityNotFoundException("Backtest not found: " + backtestId));
+        BacktestSummaryResponse summary = toSummary(result);
+        backendOperationMetrics.record("read", "backtest_summary", "single", System.nanoTime() - startedAt, 1, 0L);
+        return summary;
     }
 
     @Transactional(readOnly = true)
@@ -210,8 +221,72 @@ public class BacktestResultQueryService {
     }
 
     private BacktestDetailsResponse toDetails(BacktestResult result) {
-        DatasetProvenance provenance = datasetProvenance(result);
+        BacktestSummaryResponse summary = toSummary(result);
         return new BacktestDetailsResponse(
+            summary.id(),
+            summary.strategyId(),
+            summary.datasetId(),
+            summary.datasetName(),
+            summary.experimentName(),
+            summary.experimentKey(),
+            summary.datasetChecksumSha256(),
+            summary.datasetSchemaVersion(),
+            summary.datasetUploadedAt(),
+            summary.datasetArchived(),
+            summary.symbol(),
+            summary.timeframe(),
+            summary.executionStatus(),
+            summary.validationStatus(),
+            summary.initialBalance(),
+            summary.finalBalance(),
+            summary.sharpeRatio(),
+            summary.profitFactor(),
+            summary.winRate(),
+            summary.maxDrawdown(),
+            summary.totalTrades(),
+            summary.feesBps(),
+            summary.slippageBps(),
+            summary.startDate(),
+            summary.endDate(),
+            summary.timestamp(),
+            summary.executionStage(),
+            summary.progressPercent(),
+            summary.processedCandles(),
+            summary.totalCandles(),
+            summary.currentDataTimestamp(),
+            summary.statusMessage(),
+            summary.lastProgressAt(),
+            summary.startedAt(),
+            summary.completedAt(),
+            summary.errorMessage(),
+            result.getEquityPoints().stream()
+                .map(point -> new BacktestEquityPointResponse(
+                    point.getPointTimestamp(),
+                    point.getEquity(),
+                    point.getDrawdownPct()
+                ))
+                .toList(),
+            result.getTradeSeries().stream()
+                .map(item -> new BacktestTradeSeriesItemResponse(
+                    item.getSymbol(),
+                    item.getPositionSide().name(),
+                    item.getEntryTime(),
+                    item.getExitTime(),
+                    item.getEntryPrice(),
+                    item.getExitPrice(),
+                    item.getQuantity(),
+                    item.getEntryValue(),
+                    item.getExitValue(),
+                    item.getReturnPct()
+                ))
+                .toList(),
+            backtestTelemetryService.buildTelemetry(result)
+        );
+    }
+
+    private BacktestSummaryResponse toSummary(BacktestResult result) {
+        DatasetProvenance provenance = datasetProvenance(result);
+        return new BacktestSummaryResponse(
             result.getId(),
             result.getStrategyId(),
             result.getDatasetId(),
@@ -247,29 +322,7 @@ public class BacktestResultQueryService {
             result.getLastProgressAt(),
             result.getStartedAt(),
             result.getCompletedAt(),
-            result.getErrorMessage(),
-            result.getEquityPoints().stream()
-                .map(point -> new BacktestEquityPointResponse(
-                    point.getPointTimestamp(),
-                    point.getEquity(),
-                    point.getDrawdownPct()
-                ))
-                .toList(),
-            result.getTradeSeries().stream()
-                .map(item -> new BacktestTradeSeriesItemResponse(
-                    item.getSymbol(),
-                    item.getPositionSide().name(),
-                    item.getEntryTime(),
-                    item.getExitTime(),
-                    item.getEntryPrice(),
-                    item.getExitPrice(),
-                    item.getQuantity(),
-                    item.getEntryValue(),
-                    item.getExitValue(),
-                    item.getReturnPct()
-                ))
-                .toList(),
-            backtestTelemetryService.buildTelemetry(result)
+            result.getErrorMessage()
         );
     }
 

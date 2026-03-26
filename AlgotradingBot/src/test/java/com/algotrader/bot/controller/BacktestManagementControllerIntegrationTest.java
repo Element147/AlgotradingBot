@@ -243,6 +243,23 @@ class BacktestManagementControllerIntegrationTest {
     }
 
     @Test
+    void summary_returnsLightweightBacktestMetadataWithoutHeavySeries() throws Exception {
+        mockMvc.perform(get("/api/backtests/{backtestId}/summary", backtestId)
+                .header("Authorization", "Bearer " + authToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(backtestId))
+            .andExpect(jsonPath("$.strategyId").value("BOLLINGER_BANDS"))
+            .andExpect(jsonPath("$.datasetName").value("sample-btc"))
+            .andExpect(jsonPath("$.experimentKey").value("btc-mean-reversion-retest"))
+            .andExpect(jsonPath("$.executionStage").value("COMPLETED"))
+            .andExpect(jsonPath("$.progressPercent").value(100))
+            .andExpect(jsonPath("$.datasetChecksumSha256").value("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+            .andExpect(jsonPath("$.equityCurve").doesNotExist())
+            .andExpect(jsonPath("$.tradeSeries").doesNotExist())
+            .andExpect(jsonPath("$.telemetry").doesNotExist());
+    }
+
+    @Test
     void deleteBacktest_removesCompletedResult() throws Exception {
         mockMvc.perform(delete("/api/backtests/{backtestId}", backtestId)
                 .header("Authorization", "Bearer " + authToken))

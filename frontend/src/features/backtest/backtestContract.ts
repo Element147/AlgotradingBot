@@ -8,6 +8,7 @@ import type {
   BacktestDetails,
   BacktestExperimentSummary,
   BacktestHistoryItem,
+  BacktestSummary,
   BacktestRunSubmission,
   RunBacktestPayload,
 } from './backtestTypes';
@@ -24,6 +25,7 @@ type RawBacktestDetails = components['schemas']['BacktestDetailsResponse'] & {
 };
 type RawBacktestExperimentSummary = components['schemas']['BacktestExperimentSummaryResponse'];
 type RawBacktestHistoryItem = components['schemas']['BacktestHistoryItemResponse'];
+type RawBacktestSummary = components['schemas']['BacktestSummaryResponse'];
 type RawBacktestRunRequest = components['schemas']['RunBacktestRequest'];
 type RawBacktestRunSubmission = components['schemas']['BacktestRunResponse'];
 type RawBacktestSymbolTelemetry = {
@@ -225,6 +227,23 @@ const backtestDetailsSchema = backtestHistoryItemSchema.extend({
   telemetry: z.array(backtestSymbolTelemetrySchema).default([]),
 });
 
+const backtestSummarySchema = backtestHistoryItemSchema.extend({
+  datasetId: z.number().int().nullable(),
+  experimentKey: z.string().min(1),
+  datasetChecksumSha256: z.string().nullable(),
+  datasetSchemaVersion: z.string().nullable(),
+  datasetUploadedAt: z.string().nullable(),
+  datasetArchived: z.boolean().nullable(),
+  sharpeRatio: z.number(),
+  profitFactor: z.number(),
+  winRate: z.number(),
+  maxDrawdown: z.number(),
+  totalTrades: z.number().int(),
+  startDate: z.string().min(1),
+  endDate: z.string().min(1),
+  errorMessage: z.string().nullable(),
+});
+
 const backtestComparisonItemSchema = z.object({
   id: z.number().int(),
   strategyId: z.string().min(1),
@@ -300,6 +319,9 @@ export const normalizeBacktestHistory = (
 
 export const normalizeBacktestDetails = (response: RawBacktestDetails): BacktestDetails =>
   backtestDetailsSchema.parse(response);
+
+export const normalizeBacktestSummary = (response: RawBacktestSummary): BacktestSummary =>
+  backtestSummarySchema.parse(response);
 
 export const normalizeBacktestExperimentSummaries = (
   response: RawBacktestExperimentSummary[]

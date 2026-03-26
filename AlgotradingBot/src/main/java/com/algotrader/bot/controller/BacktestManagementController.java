@@ -2,6 +2,7 @@ package com.algotrader.bot.controller;
 
 import com.algotrader.bot.service.BacktestDatasetCatalogService;
 import com.algotrader.bot.service.BacktestManagementService;
+import com.algotrader.bot.service.BacktestResultQueryService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -18,11 +19,14 @@ public class BacktestManagementController {
 
     private final BacktestManagementService backtestManagementService;
     private final BacktestDatasetCatalogService backtestDatasetCatalogService;
+    private final BacktestResultQueryService backtestResultQueryService;
 
     public BacktestManagementController(BacktestManagementService backtestManagementService,
-                                        BacktestDatasetCatalogService backtestDatasetCatalogService) {
+                                        BacktestDatasetCatalogService backtestDatasetCatalogService,
+                                        BacktestResultQueryService backtestResultQueryService) {
         this.backtestManagementService = backtestManagementService;
         this.backtestDatasetCatalogService = backtestDatasetCatalogService;
+        this.backtestResultQueryService = backtestResultQueryService;
     }
 
     @GetMapping("/algorithms")
@@ -85,19 +89,25 @@ public class BacktestManagementController {
     public ResponseEntity<List<BacktestHistoryItemResponse>> history(
         @RequestParam(defaultValue = "20") int limit
     ) {
-        return ResponseEntity.ok(backtestManagementService.getHistory(limit));
+        return ResponseEntity.ok(backtestResultQueryService.getHistory(limit));
     }
 
     @GetMapping("/experiments")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<BacktestExperimentSummaryResponse>> experiments() {
-        return ResponseEntity.ok(backtestManagementService.getExperimentSummaries());
+        return ResponseEntity.ok(backtestResultQueryService.getExperimentSummaries());
+    }
+
+    @GetMapping("/{backtestId}/summary")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<BacktestSummaryResponse> summary(@PathVariable Long backtestId) {
+        return ResponseEntity.ok(backtestResultQueryService.getSummary(backtestId));
     }
 
     @GetMapping("/{backtestId}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<BacktestDetailsResponse> details(@PathVariable Long backtestId) {
-        return ResponseEntity.ok(backtestManagementService.getDetails(backtestId));
+        return ResponseEntity.ok(backtestResultQueryService.getDetails(backtestId));
     }
 
     @DeleteMapping("/{backtestId}")
@@ -122,6 +132,6 @@ public class BacktestManagementController {
     @GetMapping("/compare")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<BacktestComparisonResponse> compare(@RequestParam List<Long> ids) {
-        return ResponseEntity.ok(backtestManagementService.compareBacktests(ids));
+        return ResponseEntity.ok(backtestResultQueryService.compareBacktests(ids));
     }
 }

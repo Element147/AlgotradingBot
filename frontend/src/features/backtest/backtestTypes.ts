@@ -132,6 +132,23 @@ export interface BacktestDetails extends BacktestHistoryItem {
   telemetry: BacktestSymbolTelemetry[];
 }
 
+export interface BacktestSummary extends BacktestHistoryItem {
+  datasetId: number | null;
+  experimentKey: string;
+  datasetChecksumSha256: string | null;
+  datasetSchemaVersion: string | null;
+  datasetUploadedAt: string | null;
+  datasetArchived: boolean | null;
+  sharpeRatio: number;
+  profitFactor: number;
+  winRate: number;
+  maxDrawdown: number;
+  totalTrades: number;
+  startDate: string;
+  endDate: string;
+  errorMessage: string | null;
+}
+
 export interface BacktestSymbolTelemetry {
   symbol: string;
   points: BacktestTelemetryPoint[];

@@ -10,6 +10,7 @@ import {
   normalizeBacktestExperimentSummaries,
   normalizeBacktestHistory,
   normalizeBacktestRunSubmission,
+  normalizeBacktestSummary,
   toRunBacktestRequest,
 } from './backtestContract';
 import type {
@@ -21,6 +22,7 @@ import type {
   BacktestExperimentSummary,
   BacktestHistoryItem,
   BacktestRunSubmission,
+  BacktestSummary,
   RunBacktestPayload,
 } from './backtestTypes';
 
@@ -39,6 +41,7 @@ export type {
   BacktestExperimentSummary,
   BacktestHistoryItem,
   BacktestRunSubmission,
+  BacktestSummary,
   BacktestSelectionMode,
   BacktestIndicatorPane,
   BacktestIndicatorSeries,
@@ -69,6 +72,11 @@ export const backtestApi = createApi({
     getBacktestDetails: builder.query<BacktestDetails, number>({
       query: (id) => `/api/backtests/${id}`,
       transformResponse: normalizeBacktestDetails,
+      providesTags: (_result, _error, id) => [{ type: 'Backtests', id }],
+    }),
+    getBacktestSummary: builder.query<BacktestSummary, number>({
+      query: (id) => `/api/backtests/${id}/summary`,
+      transformResponse: normalizeBacktestSummary,
       providesTags: (_result, _error, id) => [{ type: 'Backtests', id }],
     }),
     getBacktestAlgorithms: builder.query<BacktestAlgorithm[], void>({
@@ -160,6 +168,7 @@ export const {
   useGetBacktestsQuery,
   useGetBacktestExperimentSummariesQuery,
   useGetBacktestDetailsQuery,
+  useGetBacktestSummaryQuery,
   useGetBacktestAlgorithmsQuery,
   useGetBacktestDatasetsQuery,
   useGetBacktestDatasetRetentionReportQuery,

@@ -10,6 +10,7 @@ import {
   useGetBacktestDatasetsQuery,
   useGetBacktestDetailsQuery,
   useGetBacktestExperimentSummariesQuery,
+  useGetBacktestSummaryQuery,
   useGetBacktestsQuery,
   useLazyCompareBacktestsQuery,
   useReplayBacktestMutation,
@@ -145,11 +146,16 @@ export default function BacktestPage() {
   const { data: details, refetch: refetchDetails } = useGetBacktestDetailsQuery(
     effectiveSelectedId ?? 0,
     {
-      skip: effectiveSelectedId === null,
-      pollingInterval: selectedRunIsActive ? backtestPollingInterval : 0,
+      skip: effectiveSelectedId === null || selectedRunIsActive,
+      pollingInterval: 0,
       skipPollingIfUnfocused: true,
     }
   );
+  const { data: activeRunSummary } = useGetBacktestSummaryQuery(effectiveSelectedId ?? 0, {
+    skip: effectiveSelectedId === null || !selectedRunIsActive,
+    pollingInterval: backtestPollingInterval,
+    skipPollingIfUnfocused: true,
+  });
 
   useEffect(() => {
     if (effectiveSelectedId !== null && !selectedRunIsActive) {
@@ -467,9 +473,9 @@ export default function BacktestPage() {
             onDelete={() => void onDeleteResult(details)}
             deleteDisabled={isExecutionActive(details) || isDeletingBacktest}
           />
-        ) : trackedRun ? (
+        ) : activeRunSummary ?? trackedRun ? (
           <BacktestTrackedRunCard
-            trackedRun={trackedRun}
+            trackedRun={activeRunSummary ?? trackedRun!}
             transportConnected={backtestLiveTransportConnected}
             lastLiveEventAt={lastBacktestEventAt}
           />

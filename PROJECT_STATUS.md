@@ -20,12 +20,14 @@ The repository is an operational local-first MVP for research and paper-trading 
 - Backtest run requests are now selection-mode aware: single-symbol strategies still require a symbol, while dataset-universe strategies omit `symbol` and evaluate the whole dataset without a fake anchor value.
 - Backtest orchestration is now split across dedicated command, query, execution-lifecycle, and progress services so read mapping, async runtime work, and transactional persistence no longer live in one oversized service.
 - Fresh backtest submissions now dispatch only after the queueing transaction commits, so new runs start immediately instead of relying on startup recovery to pick up stranded `QUEUED` rows.
+- Backtest HTTP reads are now split more explicitly as well: command endpoints stay on `BacktestManagementService`, while history, experiment summaries, comparison, full details, and the lightweight `/api/backtests/{id}/summary` progress read route through `BacktestResultQueryService`.
 - Requested backtest timeframes are now honored by explicit candle resampling before simulation; a run labeled `4h` or `1d` no longer silently executes on the raw imported granularity.
 - The active simulation engine now queues signal decisions for next-bar-open fills instead of executing on the same bar close, which removes a look-ahead path from every strategy.
 - Experiment summaries no longer depend on loading the full backtest table into memory; they now come from a repository aggregation query backed by explicit Liquibase-managed indexes.
 - Runs persist history, details, equity series, trade series, validation state, and experiment labels.
 - Backtest details now expose on-demand per-bar telemetry reconstructed from stored datasets and trade series, including price-action markers, exposure, regime classification, and strategy-specific indicator overlays.
 - Active-run detail payloads now skip heavy telemetry until execution is complete so progress polling stays lightweight and completed runs remain the only source of full per-bar review data.
+- The frontend now follows that split by polling the lightweight backtest summary endpoint for active runs and only requesting the full chart, trade, and telemetry payload once a run is no longer active.
 - The legacy `BOLLINGER_BANDS` strategy is now trend-filtered and exits on mean reversion, trend breaks, or ATR or time-stop failures; it remains research-only because the March 20 audit still rejected it under realistic costs.
 - Operators can replay a prior run, compare runs side by side, and delete finished results.
 - Dataset provenance includes checksum, schema version, retention status, archive or restore controls, and download support.

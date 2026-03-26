@@ -214,7 +214,7 @@ Implementation record
 - Frontend page profile: `frontend/build/reports/backtest-page-profile/report.md`
 
 #### 1C.2 Split heavy command and query paths more aggressively
-- [ ] Refactor remaining synchronous or oversized endpoints into explicit command submission plus asynchronous progress plus query retrieval patterns.
+- [x] Refactor remaining synchronous or oversized endpoints into explicit command submission plus asynchronous progress plus query retrieval patterns.
 Acceptance Criteria
 - Long-running actions return immediately with a command or job reference instead of blocking until work completes.
 - The backend exposes lightweight summary reads separately from heavy telemetry or export reads.
