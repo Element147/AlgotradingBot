@@ -177,7 +177,7 @@ Acceptance Criteria
 - The mandatory step completion protocol passes.
 
 #### 1B.3 Dual-write or write-cutover the import pipeline
-- [ ] Change all future dataset uploads and provider imports so candle writes go only to the new relational store, while legacy byte storage stays optional and temporary only if needed for download compatibility.
+- [x] Change all future dataset uploads and provider imports so candle writes go only to the new relational store, while legacy byte storage stays optional and temporary only if needed for download compatibility.
 Acceptance Criteria
 - `BacktestDatasetStorageService`, market-data imports, and any future ingestion path route through the new store.
 - No newly imported candle set depends on `csv_data` or `staged_csv_data` to become queryable.

@@ -4,6 +4,8 @@ import com.algotrader.bot.backtest.OHLCVData;
 import com.algotrader.bot.controller.BacktestDatasetDownloadResponse;
 import com.algotrader.bot.entity.BacktestDataset;
 import com.algotrader.bot.repository.BacktestDatasetRepository;
+import com.algotrader.bot.service.marketdata.LegacyMarketDataMigrationService;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,11 +26,20 @@ public class BacktestDatasetStorageService {
 
     private final BacktestDatasetRepository backtestDatasetRepository;
     private final HistoricalDataCsvParser historicalDataCsvParser;
+    private final LegacyMarketDataMigrationService legacyMarketDataMigrationService;
 
     public BacktestDatasetStorageService(BacktestDatasetRepository backtestDatasetRepository,
                                          HistoricalDataCsvParser historicalDataCsvParser) {
+        this(backtestDatasetRepository, historicalDataCsvParser, null);
+    }
+
+    @Autowired
+    public BacktestDatasetStorageService(BacktestDatasetRepository backtestDatasetRepository,
+                                         HistoricalDataCsvParser historicalDataCsvParser,
+                                         LegacyMarketDataMigrationService legacyMarketDataMigrationService) {
         this.backtestDatasetRepository = backtestDatasetRepository;
         this.historicalDataCsvParser = historicalDataCsvParser;
+        this.legacyMarketDataMigrationService = legacyMarketDataMigrationService;
     }
 
     public BacktestDataset storeUploadedDataset(String requestedName, MultipartFile file) {
@@ -44,11 +55,18 @@ public class BacktestDatasetStorageService {
             throw new IllegalArgumentException("Unable to read uploaded file");
         }
 
-        return saveDataset(requestedName, filename, csvData);
+        return saveDataset(requestedName, filename, csvData, "UPLOAD", "Persisted from uploaded dataset CSV.");
     }
 
     public BacktestDataset storeImportedDataset(String requestedName, String filename, byte[] csvData) {
-        return saveDataset(requestedName, filename, csvData);
+        return storeImportedDataset(requestedName, filename, csvData, "Imported dataset.");
+    }
+
+    public BacktestDataset storeImportedDataset(String requestedName, String filename, byte[] csvData, String sourceDetails) {
+        String detail = sourceDetails == null || sourceDetails.isBlank()
+            ? "Imported dataset."
+            : "Imported dataset from " + sourceDetails + ".";
+        return saveDataset(requestedName, filename, csvData, "IMPORT_JOB", detail);
     }
 
     public BacktestDataset getDataset(Long datasetId) {
@@ -72,7 +90,11 @@ public class BacktestDatasetStorageService {
         }
     }
 
-    private BacktestDataset saveDataset(String requestedName, String filename, byte[] csvData) {
+    private BacktestDataset saveDataset(String requestedName,
+                                        String filename,
+                                        byte[] csvData,
+                                        String normalizedSourceType,
+                                        String normalizedNotes) {
         validateDatasetSize(csvData == null ? 0 : csvData.length);
         String name = (requestedName == null || requestedName.isBlank()) ? filename : requestedName.trim();
         if (name.length() < 3 || name.length() > 100) {
@@ -110,7 +132,16 @@ public class BacktestDatasetStorageService {
         dataset.setChecksumSha256(sha256Hex(csvData));
         dataset.setSchemaVersion("ohlcv-v1");
         dataset.setArchived(Boolean.FALSE);
-        return backtestDatasetRepository.save(dataset);
+        BacktestDataset saved = backtestDatasetRepository.save(dataset);
+        if (legacyMarketDataMigrationService != null) {
+            legacyMarketDataMigrationService.ingestDataset(
+                saved,
+                normalizedSourceType,
+                normalizedNotes,
+                saved.getChecksumSha256()
+            );
+        }
+        return saved;
     }
 
     private String sha256Hex(byte[] payload) {

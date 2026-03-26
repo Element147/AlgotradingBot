@@ -123,6 +123,16 @@ public class LegacyMarketDataMigrationService {
         return summary;
     }
 
+    public void ingestDataset(BacktestDataset dataset,
+                              String sourceType,
+                              String segmentNotes,
+                              String providerBatchReference) {
+        transactionTemplate.executeWithoutResult(status -> {
+            List<SymbolMigrationPlan> plans = buildSymbolPlans(dataset);
+            persistDataset(dataset, plans, sourceType, segmentNotes, providerBatchReference);
+        });
+    }
+
     private LegacyMarketDataMigrationDatasetResult inspectDataset(BacktestDataset dataset) {
         List<SymbolMigrationPlan> plans = buildSymbolPlans(dataset);
         int skippedSegments = 0;
@@ -156,6 +166,39 @@ public class LegacyMarketDataMigrationService {
 
     private LegacyMarketDataMigrationDatasetResult migrateDataset(BacktestDataset dataset) {
         List<SymbolMigrationPlan> plans = buildSymbolPlans(dataset);
+        DatasetWriteSummary writeSummary = persistDataset(
+            dataset,
+            plans,
+            "LEGACY_DATASET",
+            "Migrated from legacy dataset CSV storage.",
+            dataset.getChecksumSha256()
+        );
+
+        String status = writeSummary.migratedSegmentCount() > 0 ? "MIGRATED" : "SKIPPED_ALREADY_MIGRATED";
+        String message = writeSummary.migratedSegmentCount() > 0
+            ? "Migrated " + writeSummary.migratedSegmentCount() + " segments from legacy CSV."
+            : "All matching legacy segments were already present or covered by identical candles.";
+        return new LegacyMarketDataMigrationDatasetResult(
+            dataset.getId(),
+            dataset.getName(),
+            dataset.getChecksumSha256(),
+            dataset.getRowCount(),
+            dataset.getSymbolsCsv(),
+            plans.size(),
+            writeSummary.migratedSegmentCount(),
+            writeSummary.insertedCandleCount(),
+            writeSummary.duplicateCandleCount(),
+            0,
+            status,
+            message
+        );
+    }
+
+    private DatasetWriteSummary persistDataset(BacktestDataset dataset,
+                                               List<SymbolMigrationPlan> plans,
+                                               String sourceType,
+                                               String segmentNotes,
+                                               String providerBatchReference) {
         int migratedSeriesCount = 0;
         int migratedSegmentCount = 0;
         int insertedCandleCount = 0;
@@ -211,7 +254,9 @@ public class LegacyMarketDataMigrationService {
                 continue;
             }
 
-            MarketDataCandleSegment segment = marketDataCandleSegmentRepository.save(plan.toSegmentEntity(dataset, series));
+            MarketDataCandleSegment segment = marketDataCandleSegmentRepository.save(
+                plan.toSegmentEntity(dataset, series, sourceType, segmentNotes, providerBatchReference)
+            );
             MarketDataSeries persistedSeries = series;
             marketDataCandleRepository.saveAll(
                 candlesToInsert.stream()
@@ -223,23 +268,11 @@ public class LegacyMarketDataMigrationService {
             duplicateCandleCount += duplicatesForPlan;
         }
 
-        String status = migratedSegmentCount > 0 ? "MIGRATED" : "SKIPPED_ALREADY_MIGRATED";
-        String message = migratedSegmentCount > 0
-            ? "Migrated " + migratedSegmentCount + " segments from legacy CSV."
-            : "All matching legacy segments were already present or covered by identical candles.";
-        return new LegacyMarketDataMigrationDatasetResult(
-            dataset.getId(),
-            dataset.getName(),
-            dataset.getChecksumSha256(),
-            dataset.getRowCount(),
-            dataset.getSymbolsCsv(),
-            plans.size(),
+        return new DatasetWriteSummary(
+            migratedSeriesCount,
             migratedSegmentCount,
             insertedCandleCount,
-            duplicateCandleCount,
-            0,
-            status,
-            message
+            duplicateCandleCount
         );
     }
 
@@ -710,12 +743,16 @@ public class LegacyMarketDataMigrationService {
                                        LocalDateTime coverageEnd,
                                        String segmentChecksumSha256) {
 
-        private MarketDataCandleSegment toSegmentEntity(BacktestDataset dataset, MarketDataSeries series) {
+        private MarketDataCandleSegment toSegmentEntity(BacktestDataset dataset,
+                                                        MarketDataSeries series,
+                                                        String sourceType,
+                                                        String notes,
+                                                        String providerBatchReference) {
             MarketDataCandleSegment segment = new MarketDataCandleSegment();
             segment.setDataset(dataset);
             segment.setSeries(series);
             segment.setTimeframe(timeframe.id());
-            segment.setSourceType("LEGACY_DATASET");
+            segment.setSourceType(sourceType);
             segment.setCoverageStart(coverageStart);
             segment.setCoverageEnd(coverageEnd);
             segment.setRowCount(candles.size());
@@ -726,14 +763,20 @@ public class LegacyMarketDataMigrationService {
             segment.setSegmentStatus("ACTIVE");
             segment.setStorageEncoding("ROW_STORE");
             segment.setArchived(Boolean.FALSE);
-            segment.setProviderBatchReference(dataset.getChecksumSha256());
-            segment.setNotes("Migrated from legacy dataset CSV storage.");
+            segment.setProviderBatchReference(providerBatchReference);
+            segment.setNotes(notes);
             segment.setLineageJson(
                 "{\"migration\":\"legacy-dataset\",\"datasetId\":" + dataset.getId()
                     + ",\"timeframe\":\"" + timeframe.id() + "\",\"symbol\":\"" + descriptor.symbolDisplay() + "\"}"
             );
             return segment;
         }
+    }
+
+    private record DatasetWriteSummary(int migratedSeriesCount,
+                                       int migratedSegmentCount,
+                                       int insertedCandleCount,
+                                       int duplicateCandleCount) {
     }
 
     private record SeriesTimeframeKey(String seriesIdentity, String timeframe) {

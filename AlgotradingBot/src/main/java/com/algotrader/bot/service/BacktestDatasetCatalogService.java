@@ -41,7 +41,7 @@ public class BacktestDatasetCatalogService {
 
     @Transactional
     public BacktestDatasetResponse importDataset(String requestedName, String filename, byte[] csvData, String sourceDetails) {
-        BacktestDataset saved = backtestDatasetStorageService.storeImportedDataset(requestedName, filename, csvData);
+        BacktestDataset saved = backtestDatasetStorageService.storeImportedDataset(requestedName, filename, csvData, sourceDetails);
         operatorAuditService.recordSuccess(
             "BACKTEST_DATASET_IMPORTED",
             "test",

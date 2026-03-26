@@ -26,6 +26,7 @@ cd AlgotradingBot
 8. The legacy dataset migration task defaults to dry-run mode; use `-PlegacyMigrationDryRun=false` only when you are ready to write normalized rows.
 9. The legacy dataset reconciliation task is read-only and uses the same optional dataset filters as migration.
 10. Optional migration filters are available through Gradle properties such as `-PlegacyMigrationDatasetIds=1,2` and `-PlegacyMigrationLimit=10`.
+11. New uploads and completed provider imports already hydrate normalized candles during ingestion, so the migration utilities are now for backfilling older datasets rather than for newly created ones.
 
 ## Related Files
 

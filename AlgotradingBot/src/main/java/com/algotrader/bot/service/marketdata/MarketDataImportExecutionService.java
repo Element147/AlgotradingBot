@@ -263,6 +263,7 @@ public class MarketDataImportExecutionService {
         managed.setStatusMessage(
             "Completed. Imported " + managed.getImportedRowCount() + " rows into dataset #" + dataset.id() + "."
         );
+        managed.setStagedCsvData(null);
         managed.setNextRetryAt(null);
         managed.setCompletedAt(LocalDateTime.now());
         MarketDataImportJob saved = marketDataImportJobRepository.save(managed);
