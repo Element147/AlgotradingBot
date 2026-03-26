@@ -9,7 +9,7 @@ import com.algotrader.bot.backtest.strategy.BacktestStrategyRegistry;
 import com.algotrader.bot.backtest.strategy.BacktestStrategySelectionMode;
 import com.algotrader.bot.entity.BacktestDataset;
 import com.algotrader.bot.entity.BacktestResult;
-import com.algotrader.bot.service.marketdata.MarketDataResampler;
+import com.algotrader.bot.service.marketdata.MarketDataQueryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -31,24 +32,21 @@ public class BacktestExecutionService {
     private static final int PERSISTING_PROGRESS_PERCENT = 98;
 
     private final BacktestDatasetStorageService backtestDatasetStorageService;
-    private final BacktestDatasetCandleCache backtestDatasetCandleCache;
     private final BacktestSimulationEngine backtestSimulationEngine;
     private final BacktestStrategyRegistry backtestStrategyRegistry;
-    private final MarketDataResampler marketDataResampler;
+    private final MarketDataQueryService marketDataQueryService;
     private final BacktestExecutionLifecycleService backtestExecutionLifecycleService;
     private final ConcurrentMap<Long, Boolean> inFlightBacktests = new ConcurrentHashMap<>();
 
     public BacktestExecutionService(BacktestDatasetStorageService backtestDatasetStorageService,
-                                    BacktestDatasetCandleCache backtestDatasetCandleCache,
                                     BacktestSimulationEngine backtestSimulationEngine,
                                     BacktestStrategyRegistry backtestStrategyRegistry,
-                                    MarketDataResampler marketDataResampler,
+                                    MarketDataQueryService marketDataQueryService,
                                     BacktestExecutionLifecycleService backtestExecutionLifecycleService) {
         this.backtestDatasetStorageService = backtestDatasetStorageService;
-        this.backtestDatasetCandleCache = backtestDatasetCandleCache;
         this.backtestSimulationEngine = backtestSimulationEngine;
         this.backtestStrategyRegistry = backtestStrategyRegistry;
-        this.marketDataResampler = marketDataResampler;
+        this.marketDataQueryService = marketDataQueryService;
         this.backtestExecutionLifecycleService = backtestExecutionLifecycleService;
     }
 
@@ -80,7 +78,7 @@ public class BacktestExecutionService {
                 0,
                 0,
                 null,
-                "Loading dataset bytes from the catalog."
+                "Loading the requested candle window from the market-data store."
             );
 
             BacktestDataset dataset = backtestDatasetStorageService.getDataset(context.datasetId());
@@ -93,37 +91,37 @@ public class BacktestExecutionService {
                 dataset.getSymbolsCsv()
             );
 
-            List<OHLCVData> candles = backtestDatasetCandleCache.getOrParse(dataset);
-            logger.info("Backtest {} parsed {} raw candles from dataset {}", backtestId, candles.size(), dataset.getId());
             BacktestAlgorithmType algorithmType = BacktestAlgorithmType.from(context.strategyId());
             String primarySymbol = resolvePrimarySymbol(context.symbol(), dataset.getSymbolsCsv());
+            Set<String> requestedSymbols = resolveRequestedSymbols(algorithmType, primarySymbol);
+            List<OHLCVData> simulationCandles = marketDataQueryService.loadCandlesForDataset(
+                    context.datasetId(),
+                    context.timeframe(),
+                    context.startDate(),
+                    context.endDate(),
+                    requestedSymbols
+                ).stream()
+                .map(candle -> candle.toOhlcvData())
+                .sorted(Comparator.comparing(OHLCVData::getTimestamp).thenComparing(OHLCVData::getSymbol))
+                .toList();
 
             backtestExecutionLifecycleService.updateProgress(
                 backtestId,
                 BacktestResult.ExecutionStage.FILTERING_CANDLES,
                 12,
                 0,
-                candles.size(),
+                simulationCandles.size(),
                 null,
-                "Filtering candles into the requested time window."
+                "Loaded the requested candle window from the market-data store."
             );
-
-            List<OHLCVData> filtered = candles.stream()
-                .filter(candle -> !candle.getTimestamp().isBefore(context.startDate()))
-                .filter(candle -> !candle.getTimestamp().isAfter(context.endDate()))
-                .sorted(Comparator.comparing(OHLCVData::getTimestamp))
-                .toList();
-            List<OHLCVData> scopedForExecution = scopeForExecution(algorithmType, primarySymbol, filtered);
-            List<OHLCVData> simulationCandles = marketDataResampler.resample(scopedForExecution, context.timeframe());
 
             LocalDateTime firstFilteredTimestamp = simulationCandles.isEmpty() ? null : simulationCandles.get(0).getTimestamp();
             LocalDateTime lastFilteredTimestamp = simulationCandles.isEmpty() ? null : simulationCandles.get(simulationCandles.size() - 1).getTimestamp();
             logger.info(
-                "Backtest {} prepared {} simulation candles at timeframe {} from {} scoped rows between {} and {}",
+                "Backtest {} prepared {} simulation candles at timeframe {} between {} and {}",
                 backtestId,
                 simulationCandles.size(),
                 context.timeframe(),
-                scopedForExecution.size(),
                 firstFilteredTimestamp,
                 lastFilteredTimestamp
             );
@@ -240,15 +238,11 @@ public class BacktestExecutionService {
             + (int) Math.round(ratio * (PERSISTING_PROGRESS_PERCENT - PREPARATION_PROGRESS_PERCENT - 3));
     }
 
-    private List<OHLCVData> scopeForExecution(BacktestAlgorithmType algorithmType,
-                                              String primarySymbol,
-                                              List<OHLCVData> filteredCandles) {
+    private Set<String> resolveRequestedSymbols(BacktestAlgorithmType algorithmType, String primarySymbol) {
         if (backtestStrategyRegistry.getStrategy(algorithmType).getSelectionMode() == BacktestStrategySelectionMode.SINGLE_SYMBOL) {
-            return filteredCandles.stream()
-                .filter(candle -> candle.getSymbol().equals(primarySymbol))
-                .toList();
+            return Set.of(primarySymbol);
         }
-        return filteredCandles;
+        return Set.of();
     }
 
     private String resolvePrimarySymbol(String requestedSymbol, String datasetSymbolsCsv) {

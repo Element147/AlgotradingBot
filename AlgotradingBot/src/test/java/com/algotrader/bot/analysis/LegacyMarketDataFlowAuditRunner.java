@@ -8,11 +8,13 @@ import com.algotrader.bot.entity.BacktestResult;
 import com.algotrader.bot.entity.BacktestTradeSeriesItem;
 import com.algotrader.bot.entity.PositionSide;
 import com.algotrader.bot.repository.BacktestDatasetRepository;
+import com.algotrader.bot.repository.MarketDataCandleRepository;
 import com.algotrader.bot.service.BacktestDatasetCandleCache;
 import com.algotrader.bot.service.BacktestDatasetStorageService;
 import com.algotrader.bot.service.BacktestTelemetryService;
 import com.algotrader.bot.service.HistoricalDataCsvParser;
 import com.algotrader.bot.service.marketdata.MarketDataCsvSupport;
+import com.algotrader.bot.service.marketdata.MarketDataQueryService;
 import com.algotrader.bot.service.marketdata.MarketDataResampler;
 import org.mockito.Mockito;
 
@@ -156,9 +158,14 @@ public final class LegacyMarketDataFlowAuditRunner {
         if (preloadCache) {
             cache.getOrParse(dataset);
         }
-        BacktestTelemetryService telemetryService = new BacktestTelemetryService(
-            repository,
+        MarketDataQueryService marketDataQueryService = new MarketDataQueryService(
+            Mockito.mock(MarketDataCandleRepository.class),
+            new BacktestDatasetStorageService(repository, parser),
             cache,
+            new MarketDataResampler()
+        );
+        BacktestTelemetryService telemetryService = new BacktestTelemetryService(
+            marketDataQueryService,
             new BacktestIndicatorCalculator()
         );
         BacktestResult result = buildCompletedResult(dataset, syntheticDataset);

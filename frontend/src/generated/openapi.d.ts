@@ -1782,6 +1782,7 @@ export interface components {
             points?: components["schemas"]["BacktestTelemetryPointResponse"][];
             actions?: components["schemas"]["BacktestActionMarkerResponse"][];
             indicators?: components["schemas"]["BacktestIndicatorSeriesResponse"][];
+            provenance?: components["schemas"]["BacktestTelemetryProvenanceResponse"][];
         };
         BacktestTelemetryPointResponse: {
             /** Format: date-time */
@@ -1791,8 +1792,30 @@ export interface components {
             low?: number;
             close?: number;
             volume?: number;
+            /** Format: int64 */
+            segmentId?: number;
             exposurePct?: number;
             regime?: string;
+        };
+        BacktestTelemetryProvenanceResponse: {
+            /** Format: int64 */
+            datasetId?: number;
+            /** Format: int64 */
+            importJobId?: number;
+            /** Format: int64 */
+            segmentId?: number;
+            /** Format: int64 */
+            seriesId?: number;
+            providerId?: string;
+            exchangeId?: string;
+            symbol?: string;
+            timeframe?: string;
+            resolutionTier?: string;
+            sourceType?: string;
+            /** Format: date-time */
+            coverageStart?: string;
+            /** Format: date-time */
+            coverageEnd?: string;
         };
         BacktestTradeSeriesItemResponse: {
             symbol?: string;

@@ -4,12 +4,13 @@ import com.algotrader.bot.backtest.OHLCVData;
 import com.algotrader.bot.backtest.strategy.BacktestIndicatorCalculator;
 import com.algotrader.bot.controller.BacktestActionMarkerResponse;
 import com.algotrader.bot.controller.BacktestSymbolTelemetryResponse;
-import com.algotrader.bot.entity.BacktestDataset;
 import com.algotrader.bot.entity.BacktestEquityPoint;
 import com.algotrader.bot.entity.BacktestResult;
 import com.algotrader.bot.entity.BacktestTradeSeriesItem;
 import com.algotrader.bot.entity.PositionSide;
-import com.algotrader.bot.repository.BacktestDatasetRepository;
+import com.algotrader.bot.service.marketdata.MarketDataCandleProvenance;
+import com.algotrader.bot.service.marketdata.MarketDataQueriedCandle;
+import com.algotrader.bot.service.marketdata.MarketDataQueryService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -18,48 +19,50 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class BacktestTelemetryServiceTest {
 
-    private BacktestDatasetRepository backtestDatasetRepository;
-    private BacktestDatasetCandleCache backtestDatasetCandleCache;
+    private MarketDataQueryService marketDataQueryService;
     private BacktestTelemetryService backtestTelemetryService;
 
     @BeforeEach
     void setUp() {
-        backtestDatasetRepository = mock(BacktestDatasetRepository.class);
-        backtestDatasetCandleCache = mock(BacktestDatasetCandleCache.class);
+        marketDataQueryService = mock(MarketDataQueryService.class);
         backtestTelemetryService = new BacktestTelemetryService(
-            backtestDatasetRepository,
-            backtestDatasetCandleCache,
+            marketDataQueryService,
             new BacktestIndicatorCalculator()
         );
     }
 
     @Test
     void buildTelemetry_generatesMarkersExposureAndIndicators() {
-        BacktestDataset dataset = new BacktestDataset();
-        List<OHLCVData> candles = createRisingCandles("BTC/USDT", 240, new BigDecimal("100"));
+        List<MarketDataQueriedCandle> candles = createRisingCandles("BTC/USDT", "1h", 240, new BigDecimal("100"));
         BacktestResult result = baseResult(1L, "SMA_CROSSOVER", "BTC/USDT", candles);
         result.addTradeSeriesItem(trade(
             "BTC/USDT",
             PositionSide.LONG,
-            candles.get(210).getTimestamp(),
-            candles.get(225).getTimestamp(),
+            candles.get(210).timestamp(),
+            candles.get(225).timestamp(),
             new BigDecimal("310"),
             new BigDecimal("325")
         ));
 
-        when(backtestDatasetRepository.findById(1L)).thenReturn(Optional.of(dataset));
-        when(backtestDatasetCandleCache.getOrParse(dataset)).thenReturn(candles);
+        when(marketDataQueryService.loadCandlesForDataset(
+            1L,
+            "1h",
+            result.getStartDate(),
+            result.getEndDate(),
+            Set.of("BTC/USDT")
+        )).thenReturn(candles);
 
         List<BacktestSymbolTelemetryResponse> telemetry = backtestTelemetryService.buildTelemetry(result);
 
@@ -68,17 +71,18 @@ class BacktestTelemetryServiceTest {
         assertEquals("BTC/USDT", symbolTelemetry.symbol());
         assertEquals(candles.size(), symbolTelemetry.points().size());
         assertFalse(symbolTelemetry.indicators().isEmpty());
+        assertFalse(symbolTelemetry.provenance().isEmpty());
         assertTrue(symbolTelemetry.indicators().stream().anyMatch(series -> "sma_fast_10".equals(series.key())));
         assertTrue(symbolTelemetry.actions().stream().map(BacktestActionMarkerResponse::action).toList().contains("BUY"));
         assertTrue(symbolTelemetry.actions().stream().map(BacktestActionMarkerResponse::action).toList().contains("SELL"));
         assertTrue(symbolTelemetry.points().stream().anyMatch(point -> point.exposurePct().compareTo(BigDecimal.ZERO) > 0));
         assertTrue(symbolTelemetry.points().stream().anyMatch(point -> "TREND_UP".equals(point.regime())));
+        assertTrue(symbolTelemetry.points().stream().allMatch(point -> point.segmentId() != null));
     }
 
     @Test
     void buildTelemetry_forDatasetUniversePrefersTradedSymbols() {
-        BacktestDataset dataset = new BacktestDataset();
-        List<OHLCVData> candles = createUniverseCandles();
+        List<MarketDataQueriedCandle> candles = createUniverseCandles();
         BacktestResult result = baseResult(2L, "DUAL_MOMENTUM_ROTATION", "DATASET_UNIVERSE", candles);
         result.addTradeSeriesItem(trade(
             "ETH/USDT",
@@ -89,8 +93,13 @@ class BacktestTelemetryServiceTest {
             new BigDecimal("130")
         ));
 
-        when(backtestDatasetRepository.findById(2L)).thenReturn(Optional.of(dataset));
-        when(backtestDatasetCandleCache.getOrParse(dataset)).thenReturn(candles);
+        when(marketDataQueryService.loadCandlesForDataset(
+            2L,
+            "1h",
+            result.getStartDate(),
+            result.getEndDate(),
+            Set.of("ETH/USDT")
+        )).thenReturn(candles.stream().filter(candle -> "ETH/USDT".equals(candle.symbol())).toList());
 
         List<BacktestSymbolTelemetryResponse> telemetry = backtestTelemetryService.buildTelemetry(result);
 
@@ -100,12 +109,16 @@ class BacktestTelemetryServiceTest {
 
     @Test
     void buildTelemetry_bollingerBandsIncludesTrendAndAtrIndicators() {
-        BacktestDataset dataset = new BacktestDataset();
-        List<OHLCVData> candles = createRisingCandles("BTC/USDT", 240, new BigDecimal("100"));
+        List<MarketDataQueriedCandle> candles = createRisingCandles("BTC/USDT", "1h", 240, new BigDecimal("100"));
         BacktestResult result = baseResult(4L, "BOLLINGER_BANDS", "BTC/USDT", candles);
 
-        when(backtestDatasetRepository.findById(4L)).thenReturn(Optional.of(dataset));
-        when(backtestDatasetCandleCache.getOrParse(dataset)).thenReturn(candles);
+        when(marketDataQueryService.loadCandlesForDataset(
+            4L,
+            "1h",
+            result.getStartDate(),
+            result.getEndDate(),
+            Set.of("BTC/USDT")
+        )).thenReturn(candles);
 
         List<BacktestSymbolTelemetryResponse> telemetry = backtestTelemetryService.buildTelemetry(result);
 
@@ -116,12 +129,16 @@ class BacktestTelemetryServiceTest {
 
     @Test
     void buildTelemetry_ichimokuTrendIncludesCloudIndicators() {
-        BacktestDataset dataset = new BacktestDataset();
-        List<OHLCVData> candles = createRisingCandles("BTC/USDT", 240, new BigDecimal("100"));
+        List<MarketDataQueriedCandle> candles = createRisingCandles("BTC/USDT", "1h", 240, new BigDecimal("100"));
         BacktestResult result = baseResult(5L, "ICHIMOKU_TREND", "BTC/USDT", candles);
 
-        when(backtestDatasetRepository.findById(5L)).thenReturn(Optional.of(dataset));
-        when(backtestDatasetCandleCache.getOrParse(dataset)).thenReturn(candles);
+        when(marketDataQueryService.loadCandlesForDataset(
+            5L,
+            "1h",
+            result.getStartDate(),
+            result.getEndDate(),
+            Set.of("BTC/USDT")
+        )).thenReturn(candles);
 
         List<BacktestSymbolTelemetryResponse> telemetry = backtestTelemetryService.buildTelemetry(result);
 
@@ -133,32 +150,33 @@ class BacktestTelemetryServiceTest {
 
     @Test
     void buildTelemetry_skipsIncompleteRuns() {
-        List<OHLCVData> candles = createRisingCandles("BTC/USDT", 240, new BigDecimal("100"));
+        List<MarketDataQueriedCandle> candles = createRisingCandles("BTC/USDT", "1h", 240, new BigDecimal("100"));
         BacktestResult result = baseResult(3L, "SMA_CROSSOVER", "BTC/USDT", candles);
         result.setExecutionStatus(BacktestResult.ExecutionStatus.RUNNING);
 
         List<BacktestSymbolTelemetryResponse> telemetry = backtestTelemetryService.buildTelemetry(result);
 
         assertTrue(telemetry.isEmpty());
-        verifyNoInteractions(backtestDatasetRepository, backtestDatasetCandleCache);
+        verifyNoInteractions(marketDataQueryService);
     }
 
     private BacktestResult baseResult(Long datasetId,
                                       String strategyId,
                                       String symbol,
-                                      List<OHLCVData> candles) {
+                                      List<MarketDataQueriedCandle> candles) {
         BacktestResult result = new BacktestResult();
         result.setDatasetId(datasetId);
         result.setStrategyId(strategyId);
         result.setSymbol(symbol);
+        result.setTimeframe("1h");
         result.setInitialBalance(new BigDecimal("1000"));
-        result.setStartDate(candles.get(0).getTimestamp());
-        result.setEndDate(candles.get(candles.size() - 1).getTimestamp());
+        result.setStartDate(candles.get(0).timestamp());
+        result.setEndDate(candles.get(candles.size() - 1).timestamp());
         result.setExecutionStatus(BacktestResult.ExecutionStatus.COMPLETED);
 
         for (int index = 0; index < candles.size(); index++) {
             BacktestEquityPoint point = new BacktestEquityPoint();
-            point.setPointTimestamp(candles.get(index).getTimestamp());
+            point.setPointTimestamp(candles.get(index).timestamp());
             point.setEquity(new BigDecimal("1000").add(BigDecimal.valueOf(index)));
             point.setDrawdownPct(BigDecimal.ZERO);
             result.addEquityPoint(point);
@@ -187,39 +205,61 @@ class BacktestTelemetryServiceTest {
         return trade;
     }
 
-    private List<OHLCVData> createRisingCandles(String symbol, int count, BigDecimal startPrice) {
-        List<OHLCVData> candles = new ArrayList<>();
+    private List<MarketDataQueriedCandle> createRisingCandles(String symbol,
+                                                              String timeframe,
+                                                              int count,
+                                                              BigDecimal startPrice) {
+        List<MarketDataQueriedCandle> candles = new ArrayList<>();
         LocalDateTime start = LocalDateTime.parse("2025-01-01T00:00:00");
 
         for (int index = 0; index < count; index++) {
             BigDecimal close = startPrice.add(BigDecimal.valueOf(index));
-            candles.add(candle(start.plusHours(index), symbol, close));
+            candles.add(candle(start.plusHours(index), symbol, timeframe, close, 10L + index, 20L + index));
         }
 
         return candles;
     }
 
-    private List<OHLCVData> createUniverseCandles() {
-        List<OHLCVData> candles = new ArrayList<>();
+    private List<MarketDataQueriedCandle> createUniverseCandles() {
+        List<MarketDataQueriedCandle> candles = new ArrayList<>();
         LocalDateTime start = LocalDateTime.parse("2025-01-01T00:00:00");
 
         for (int index = 0; index < 240; index++) {
-            candles.add(candle(start.plusHours(index), "BTC/USDT", BigDecimal.valueOf(100 + index * 1.1)));
-            candles.add(candle(start.plusHours(index), "ETH/USDT", BigDecimal.valueOf(120 + index * 0.8)));
+            candles.add(candle(start.plusHours(index), "BTC/USDT", "1h", BigDecimal.valueOf(100 + index * 1.1), 100L, 200L));
+            candles.add(candle(start.plusHours(index), "ETH/USDT", "1h", BigDecimal.valueOf(120 + index * 0.8), 101L, 201L));
         }
 
         return candles;
     }
 
-    private OHLCVData candle(LocalDateTime timestamp, String symbol, BigDecimal close) {
-        return new OHLCVData(
+    private MarketDataQueriedCandle candle(LocalDateTime timestamp,
+                                           String symbol,
+                                           String timeframe,
+                                           BigDecimal close,
+                                           Long segmentId,
+                                           Long seriesId) {
+        return new MarketDataQueriedCandle(
             timestamp,
             symbol,
             close,
             close.add(BigDecimal.ONE),
             close.subtract(BigDecimal.ONE),
             close,
-            BigDecimal.valueOf(1000)
+            BigDecimal.valueOf(1000),
+            new MarketDataCandleProvenance(
+                99L,
+                12L,
+                segmentId,
+                seriesId,
+                "stub",
+                "BINANCE",
+                symbol,
+                timeframe,
+                "EXACT_RAW",
+                "UPLOAD",
+                timestamp.minusHours(4),
+                timestamp.plusHours(4)
+            )
         );
     }
 }

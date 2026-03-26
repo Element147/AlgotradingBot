@@ -7,11 +7,13 @@ import com.algotrader.bot.controller.BacktestIndicatorPointResponse;
 import com.algotrader.bot.controller.BacktestIndicatorSeriesResponse;
 import com.algotrader.bot.controller.BacktestSymbolTelemetryResponse;
 import com.algotrader.bot.controller.BacktestTelemetryPointResponse;
-import com.algotrader.bot.entity.BacktestDataset;
+import com.algotrader.bot.controller.BacktestTelemetryProvenanceResponse;
 import com.algotrader.bot.entity.BacktestResult;
 import com.algotrader.bot.entity.BacktestTradeSeriesItem;
 import com.algotrader.bot.entity.PositionSide;
-import com.algotrader.bot.repository.BacktestDatasetRepository;
+import com.algotrader.bot.service.marketdata.MarketDataCandleProvenance;
+import com.algotrader.bot.service.marketdata.MarketDataQueriedCandle;
+import com.algotrader.bot.service.marketdata.MarketDataQueryService;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -38,15 +40,12 @@ public class BacktestTelemetryService {
     private static final BigDecimal BOLLINGER_MULTIPLIER = new BigDecimal("2.0");
     private static final int MAX_SYMBOLS = 6;
 
-    private final BacktestDatasetRepository backtestDatasetRepository;
-    private final BacktestDatasetCandleCache backtestDatasetCandleCache;
+    private final MarketDataQueryService marketDataQueryService;
     private final BacktestIndicatorCalculator indicatorCalculator;
 
-    public BacktestTelemetryService(BacktestDatasetRepository backtestDatasetRepository,
-                                    BacktestDatasetCandleCache backtestDatasetCandleCache,
+    public BacktestTelemetryService(MarketDataQueryService marketDataQueryService,
                                     BacktestIndicatorCalculator indicatorCalculator) {
-        this.backtestDatasetRepository = backtestDatasetRepository;
-        this.backtestDatasetCandleCache = backtestDatasetCandleCache;
+        this.marketDataQueryService = marketDataQueryService;
         this.indicatorCalculator = indicatorCalculator;
     }
 
@@ -56,25 +55,24 @@ public class BacktestTelemetryService {
             return List.of();
         }
 
-        BacktestDataset dataset = backtestDatasetRepository.findById(result.getDatasetId()).orElse(null);
-        if (dataset == null) {
-            return List.of();
-        }
-
-        List<OHLCVData> filteredCandles = backtestDatasetCandleCache.getOrParse(dataset).stream()
-            .filter(candle -> !candle.getTimestamp().isBefore(result.getStartDate()))
-            .filter(candle -> !candle.getTimestamp().isAfter(result.getEndDate()))
-            .sorted(Comparator.comparing(OHLCVData::getTimestamp).thenComparing(OHLCVData::getSymbol))
+        List<MarketDataQueriedCandle> filteredCandles = marketDataQueryService.loadCandlesForDataset(
+                result.getDatasetId(),
+                result.getTimeframe(),
+                result.getStartDate(),
+                result.getEndDate(),
+                resolveRequestedSymbols(result)
+            ).stream()
+            .sorted(Comparator.comparing(MarketDataQueriedCandle::timestamp).thenComparing(MarketDataQueriedCandle::symbol))
             .toList();
         if (filteredCandles.isEmpty()) {
             return List.of();
         }
 
         Set<String> relevantSymbols = resolveRelevantSymbols(result, filteredCandles);
-        Map<String, List<OHLCVData>> candlesBySymbol = filteredCandles.stream()
-            .filter(candle -> relevantSymbols.contains(candle.getSymbol()))
+        Map<String, List<MarketDataQueriedCandle>> candlesBySymbol = filteredCandles.stream()
+            .filter(candle -> relevantSymbols.contains(candle.symbol()))
             .collect(Collectors.groupingBy(
-                OHLCVData::getSymbol,
+                MarketDataQueriedCandle::symbol,
                 LinkedHashMap::new,
                 Collectors.toList()
             ));
@@ -101,14 +99,14 @@ public class BacktestTelemetryService {
             .toList();
     }
 
-    private Set<String> resolveRelevantSymbols(BacktestResult result, List<OHLCVData> candles) {
+    private Set<String> resolveRelevantSymbols(BacktestResult result, List<MarketDataQueriedCandle> candles) {
         Set<String> availableSymbols = candles.stream()
-            .map(OHLCVData::getSymbol)
+            .map(MarketDataQueriedCandle::symbol)
             .collect(Collectors.toCollection(LinkedHashSet::new));
-        LinkedHashSet<String> symbols = new LinkedHashSet<>();
+        LinkedHashSet<String> symbols = new LinkedHashSet<>(resolveRequestedSymbols(result));
 
-        if (result.getSymbol() != null && availableSymbols.contains(result.getSymbol())) {
-            symbols.add(result.getSymbol());
+        if (!availableSymbols.isEmpty()) {
+            symbols.retainAll(availableSymbols);
         }
 
         result.getTradeSeries().stream()
@@ -119,6 +117,23 @@ public class BacktestTelemetryService {
         if (symbols.isEmpty()) {
             availableSymbols.stream().limit(1).forEach(symbols::add);
         }
+
+        return symbols.stream().limit(MAX_SYMBOLS).collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private Set<String> resolveRequestedSymbols(BacktestResult result) {
+        LinkedHashSet<String> symbols = new LinkedHashSet<>();
+
+        if (result.getSymbol() != null
+            && !result.getSymbol().isBlank()
+            && !"DATASET_UNIVERSE".equalsIgnoreCase(result.getSymbol())) {
+            symbols.add(result.getSymbol());
+        }
+
+        result.getTradeSeries().stream()
+            .map(BacktestTradeSeriesItem::getSymbol)
+            .filter(symbol -> symbol != null && !symbol.isBlank())
+            .forEach(symbols::add);
 
         return symbols.stream().limit(MAX_SYMBOLS).collect(Collectors.toCollection(LinkedHashSet::new));
     }
@@ -173,20 +188,24 @@ public class BacktestTelemetryService {
 
     private BacktestSymbolTelemetryResponse buildSymbolTelemetry(BacktestAlgorithmType algorithmType,
                                                                  String symbol,
-                                                                 List<OHLCVData> candles,
+                                                                 List<MarketDataQueriedCandle> candles,
                                                                  List<TradeWindow> tradeWindows) {
+        List<OHLCVData> ohlcvCandles = candles.stream()
+            .map(MarketDataQueriedCandle::toOhlcvData)
+            .toList();
         List<BacktestTelemetryPointResponse> points = new ArrayList<>(candles.size());
         for (int index = 0; index < candles.size(); index++) {
-            OHLCVData candle = candles.get(index);
+            MarketDataQueriedCandle candle = candles.get(index);
             points.add(new BacktestTelemetryPointResponse(
-                candle.getTimestamp(),
-                scale(candle.getOpen()),
-                scale(candle.getHigh()),
-                scale(candle.getLow()),
-                scale(candle.getClose()),
-                scale(candle.getVolume()),
-                exposureAt(candle.getTimestamp(), tradeWindows),
-                classifyRegime(candles, index)
+                candle.timestamp(),
+                scale(candle.open()),
+                scale(candle.high()),
+                scale(candle.low()),
+                scale(candle.close()),
+                scale(candle.volume()),
+                candle.provenance() == null ? null : candle.provenance().segmentId(),
+                exposureAt(candle.timestamp(), tradeWindows),
+                classifyRegime(ohlcvCandles, index)
             ));
         }
 
@@ -198,11 +217,19 @@ public class BacktestTelemetryService {
             .sorted(Comparator.comparing(BacktestActionMarkerResponse::timestamp))
             .toList();
 
+        List<BacktestTelemetryProvenanceResponse> provenance = candles.stream()
+            .map(MarketDataQueriedCandle::provenance)
+            .filter(Objects::nonNull)
+            .map(this::toTelemetryProvenance)
+            .distinct()
+            .toList();
+
         return new BacktestSymbolTelemetryResponse(
             symbol,
             points,
             actions,
-            buildIndicatorSeries(algorithmType, candles)
+            buildIndicatorSeries(algorithmType, ohlcvCandles),
+            provenance
         );
     }
 
@@ -354,6 +381,23 @@ public class BacktestTelemetryService {
             return null;
         }
         return value.setScale(6, RoundingMode.HALF_UP);
+    }
+
+    private BacktestTelemetryProvenanceResponse toTelemetryProvenance(MarketDataCandleProvenance provenance) {
+        return new BacktestTelemetryProvenanceResponse(
+            provenance.datasetId(),
+            provenance.importJobId(),
+            provenance.segmentId(),
+            provenance.seriesId(),
+            provenance.providerId(),
+            provenance.exchangeId(),
+            provenance.symbol(),
+            provenance.timeframe(),
+            provenance.resolutionTier(),
+            provenance.sourceType(),
+            provenance.coverageStart(),
+            provenance.coverageEnd()
+        );
     }
 
     private BacktestAlgorithmType resolveAlgorithmType(String strategyId) {

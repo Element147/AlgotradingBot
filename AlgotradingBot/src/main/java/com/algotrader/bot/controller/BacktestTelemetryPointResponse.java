@@ -10,6 +10,7 @@ public record BacktestTelemetryPointResponse(
     BigDecimal low,
     BigDecimal close,
     BigDecimal volume,
+    Long segmentId,
     BigDecimal exposurePct,
     String regime
 ) {}

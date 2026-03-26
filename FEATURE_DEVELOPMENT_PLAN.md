@@ -135,7 +135,7 @@ Acceptance Criteria
 - The mandatory step completion protocol passes.
 
 #### 1A.5 Build the new market-data query service
-- [ ] Introduce backend services that query the relational candle store directly instead of reparsing CSV blobs for execution and telemetry.
+- [x] Introduce backend services that query the relational candle store directly instead of reparsing CSV blobs for execution and telemetry.
 Acceptance Criteria
 - Backtest execution can load candles by series or timeframe or date range without touching `HistoricalDataCsvParser`.
 - Telemetry reconstruction can query only the window it needs instead of hydrating the entire dataset into memory.

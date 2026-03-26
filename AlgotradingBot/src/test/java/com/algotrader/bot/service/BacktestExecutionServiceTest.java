@@ -2,7 +2,7 @@ package com.algotrader.bot.service;
 
 import com.algotrader.bot.backtest.BacktestSimulationEngine;
 import com.algotrader.bot.backtest.strategy.BacktestStrategyRegistry;
-import com.algotrader.bot.service.marketdata.MarketDataResampler;
+import com.algotrader.bot.service.marketdata.MarketDataQueryService;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -17,17 +17,15 @@ class BacktestExecutionServiceTest {
     @Test
     void executeAsync_clearsInFlightStateWhenMarkRunStartedFails() {
         BacktestDatasetStorageService backtestDatasetStorageService = mock(BacktestDatasetStorageService.class);
-        BacktestDatasetCandleCache backtestDatasetCandleCache = mock(BacktestDatasetCandleCache.class);
         BacktestSimulationEngine backtestSimulationEngine = mock(BacktestSimulationEngine.class);
         BacktestStrategyRegistry backtestStrategyRegistry = mock(BacktestStrategyRegistry.class);
-        MarketDataResampler marketDataResampler = mock(MarketDataResampler.class);
+        MarketDataQueryService marketDataQueryService = mock(MarketDataQueryService.class);
         BacktestExecutionLifecycleService backtestExecutionLifecycleService = mock(BacktestExecutionLifecycleService.class);
         BacktestExecutionService service = new BacktestExecutionService(
             backtestDatasetStorageService,
-            backtestDatasetCandleCache,
             backtestSimulationEngine,
             backtestStrategyRegistry,
-            marketDataResampler,
+            marketDataQueryService,
             backtestExecutionLifecycleService
         );
         RuntimeException failure = new RuntimeException("backtest row is not visible yet");

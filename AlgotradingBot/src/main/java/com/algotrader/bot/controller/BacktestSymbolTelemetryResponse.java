@@ -6,5 +6,6 @@ public record BacktestSymbolTelemetryResponse(
     String symbol,
     List<BacktestTelemetryPointResponse> points,
     List<BacktestActionMarkerResponse> actions,
-    List<BacktestIndicatorSeriesResponse> indicators
+    List<BacktestIndicatorSeriesResponse> indicators,
+    List<BacktestTelemetryProvenanceResponse> provenance
 ) {}
