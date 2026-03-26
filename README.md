@@ -12,12 +12,13 @@ Local-first research platform for strategy design, backtesting, market-data impo
 ## What The System Does Now
 
 - Authenticated Spring Boot backend with JWT, Liquibase-managed PostgreSQL runtime, WebSocket events, and audited system operations
-- React/Vite dashboard for login, dashboard, strategies, backtests, market-data imports, trades, risk controls, and settings
+- React/Vite workstation for login, dashboard, forward testing, paper trading, live monitoring, strategies, backtests, market-data imports, trades, risk controls, and settings
 - Backtest engine with modular strategy registry, experiment grouping, replay and compare flows, persisted equity and trade series, and provenance-aware exports
 - Market-data import pipeline with provider-specific download adapters, retry-aware persistent jobs, encrypted provider credentials, and direct dataset ingestion into the backtest catalog
 - New uploads and completed provider imports now hydrate the normalized market-data store at ingestion time; legacy CSV bytes remain only as a temporary compatibility copy for explicit download and fallback paths
 - Legacy catalog datasets without normalized segments are now backfilled on startup before operators use them, so backtest execution and telemetry stay on the relational market-data store even after runtime cutover
-- Paper-trading and operator oversight flows with circuit-breaker controls, audit history, incident alerts, exchange connection profiles, and environment-aware UI state
+- Route-owned execution contexts now replace the old global execution switch: research routes stay pinned to `research`, Forward Testing stays `forward-test`, Paper stays `paper`, and Live stays capability-gated `live`
+- Paper-trading, live monitoring, and operator oversight flows with circuit-breaker controls, audit history, incident alerts, exchange connection profiles, and environment-aware shell state
 - Local scripts for fast development mode and Docker-backed full-stack mode, plus CI-aligned contract and verification workflows
 
 Current backtest strategy catalog:

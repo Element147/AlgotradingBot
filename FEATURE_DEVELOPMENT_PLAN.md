@@ -433,12 +433,16 @@ Implementation record
 - Added regression coverage for the shared explainability component plus the three execution routes in `frontend/src/components/workspace/ActiveAlgorithmExplainabilityPanel.test.tsx`, `frontend/src/features/forwardTesting/ForwardTestingPage.test.tsx`, `frontend/src/features/paper/PaperTradingPage.test.tsx`, and `frontend/src/features/live/LiveTradingPage.test.tsx`.
 
 #### 2C.6 Update navigation, contracts, tests, and docs for the new execution model
-- [ ] Finish the route wiring, API adaptation, tests, and canonical documentation updates required by the execution workspace split.
+- [x] Finish the route wiring, API adaptation, tests, and canonical documentation updates required by the execution workspace split.
 Acceptance Criteria
 - Navigation, protected routes, deep links, and shared shell context all work with the new tabs.
 - Backend and frontend contracts remain aligned and generated artifacts are up to date.
 - Docs explain the removal of the global switch and the ownership of each execution context.
 - The mandatory step completion protocol passes.
+Implementation record
+- Expanded route-ownership regression coverage in `frontend/src/features/execution/executionContext.test.ts` so deep links for `/forward-testing`, `/paper`, `/strategies`, `/trades`, and `/live` keep resolving to the intended execution context instead of relying on incidental shell state.
+- Hardened account RTK Query coverage in `frontend/src/features/account/accountApi.test.tsx` by exercising `withExecutionContext` overrides for balance, performance, open positions, and recent trades, proving that live-context reads send explicit `X-Execution-Context` and derived `X-Environment` headers without mutating the global operations mode.
+- Updated `README.md` so the canonical repo entry point now names Forward Testing and Live Monitoring explicitly and documents that route-owned execution contexts replaced the old global execution switch.
 
 ## Phase 3: Quantitative Research And Strategy Development
 

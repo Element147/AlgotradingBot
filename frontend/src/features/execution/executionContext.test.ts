@@ -14,10 +14,17 @@ describe('executionContext', () => {
     expect(resolveExecutionEnvironment('live')).toBe('live');
   });
 
-  it('pins research and paper routes to explicit contexts', () => {
+  it('pins execution routes to explicit contexts', () => {
     expect(resolveRouteExecutionContext('/backtest')).toEqual(executionContextMeta.research);
     expect(resolveRouteExecutionContext('/market-data/jobs')).toEqual(executionContextMeta.research);
+    expect(resolveRouteExecutionContext('/forward-testing')).toEqual(
+      executionContextMeta['forward-test']
+    );
     expect(resolveRouteExecutionContext('/paper')).toEqual(executionContextMeta.paper);
+    expect(resolveRouteExecutionContext('/strategies')).toEqual(executionContextMeta.paper);
+    expect(resolveRouteExecutionContext('/trades/export')).toEqual(executionContextMeta.paper);
+    expect(resolveRouteExecutionContext('/live')).toEqual(executionContextMeta.live);
     expect(resolveRouteExecutionContext('/settings')).toBeNull();
+    expect(resolveRouteExecutionContext('/dashboard')).toBeNull();
   });
 });
