@@ -12,6 +12,7 @@ import com.algotrader.bot.repository.MarketDataCandleRepository;
 import com.algotrader.bot.service.BacktestDatasetCandleCache;
 import com.algotrader.bot.service.BacktestDatasetStorageService;
 import com.algotrader.bot.service.BacktestTelemetryService;
+import com.algotrader.bot.service.BackendOperationMetrics;
 import com.algotrader.bot.service.HistoricalDataCsvParser;
 import com.algotrader.bot.service.marketdata.MarketDataCsvSupport;
 import com.algotrader.bot.service.marketdata.MarketDataQueryMetrics;
@@ -169,7 +170,8 @@ public final class LegacyMarketDataFlowAuditRunner {
         );
         BacktestTelemetryService telemetryService = new BacktestTelemetryService(
             marketDataQueryService,
-            new BacktestIndicatorCalculator()
+            new BacktestIndicatorCalculator(),
+            new BackendOperationMetrics(new SimpleMeterRegistry())
         );
         BacktestResult result = buildCompletedResult(dataset, syntheticDataset);
 

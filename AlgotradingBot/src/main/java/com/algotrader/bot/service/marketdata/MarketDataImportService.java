@@ -7,6 +7,7 @@ import com.algotrader.bot.controller.MarketDataProviderCredentialResponse;
 import com.algotrader.bot.controller.MarketDataProviderResponse;
 import com.algotrader.bot.entity.MarketDataImportJob;
 import com.algotrader.bot.repository.MarketDataImportJobRepository;
+import com.algotrader.bot.service.BackendOperationMetrics;
 import com.algotrader.bot.service.OperatorAuditService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.PageRequest;
@@ -36,6 +37,7 @@ public class MarketDataImportService {
     private final MarketDataImportJobResponseMapper marketDataImportJobResponseMapper;
     private final MarketDataImportProgressService marketDataImportProgressService;
     private final MarketDataImportExecutionService marketDataImportExecutionService;
+    private final BackendOperationMetrics backendOperationMetrics;
 
     public MarketDataImportService(MarketDataImportJobRepository marketDataImportJobRepository,
                                    MarketDataProviderRegistry marketDataProviderRegistry,
@@ -43,7 +45,8 @@ public class MarketDataImportService {
                                    OperatorAuditService operatorAuditService,
                                    MarketDataImportJobResponseMapper marketDataImportJobResponseMapper,
                                    MarketDataImportProgressService marketDataImportProgressService,
-                                   MarketDataImportExecutionService marketDataImportExecutionService) {
+                                   MarketDataImportExecutionService marketDataImportExecutionService,
+                                   BackendOperationMetrics backendOperationMetrics) {
         this.marketDataImportJobRepository = marketDataImportJobRepository;
         this.marketDataProviderRegistry = marketDataProviderRegistry;
         this.marketDataProviderCredentialService = marketDataProviderCredentialService;
@@ -51,6 +54,7 @@ public class MarketDataImportService {
         this.marketDataImportJobResponseMapper = marketDataImportJobResponseMapper;
         this.marketDataImportProgressService = marketDataImportProgressService;
         this.marketDataImportExecutionService = marketDataImportExecutionService;
+        this.backendOperationMetrics = backendOperationMetrics;
     }
 
     @Transactional(readOnly = true)
@@ -102,9 +106,12 @@ public class MarketDataImportService {
 
     @Transactional(readOnly = true)
     public List<MarketDataImportJobResponse> listJobs() {
-        return marketDataImportJobRepository.findTop25ByOrderByCreatedAtDesc().stream()
+        long startedAt = System.nanoTime();
+        List<MarketDataImportJobResponse> jobs = marketDataImportJobRepository.findTop25ByOrderByCreatedAtDesc().stream()
             .map(marketDataImportJobResponseMapper::toResponse)
             .toList();
+        backendOperationMetrics.record("read", "market_data_import_jobs", "list", System.nanoTime() - startedAt, jobs.size(), 0L);
+        return jobs;
     }
 
     @Transactional

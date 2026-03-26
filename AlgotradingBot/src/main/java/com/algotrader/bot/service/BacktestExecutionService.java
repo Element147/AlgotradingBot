@@ -37,18 +37,21 @@ public class BacktestExecutionService {
     private final BacktestStrategyRegistry backtestStrategyRegistry;
     private final MarketDataQueryService marketDataQueryService;
     private final BacktestExecutionLifecycleService backtestExecutionLifecycleService;
+    private final BackendOperationMetrics backendOperationMetrics;
     private final ConcurrentMap<Long, Boolean> inFlightBacktests = new ConcurrentHashMap<>();
 
     public BacktestExecutionService(BacktestDatasetStorageService backtestDatasetStorageService,
                                     BacktestSimulationEngine backtestSimulationEngine,
                                     BacktestStrategyRegistry backtestStrategyRegistry,
                                     MarketDataQueryService marketDataQueryService,
-                                    BacktestExecutionLifecycleService backtestExecutionLifecycleService) {
+                                    BacktestExecutionLifecycleService backtestExecutionLifecycleService,
+                                    BackendOperationMetrics backendOperationMetrics) {
         this.backtestDatasetStorageService = backtestDatasetStorageService;
         this.backtestSimulationEngine = backtestSimulationEngine;
         this.backtestStrategyRegistry = backtestStrategyRegistry;
         this.marketDataQueryService = marketDataQueryService;
         this.backtestExecutionLifecycleService = backtestExecutionLifecycleService;
+        this.backendOperationMetrics = backendOperationMetrics;
     }
 
     @Async("virtualThreadTaskExecutor")
@@ -59,6 +62,7 @@ public class BacktestExecutionService {
         }
 
         try {
+            long executionStartedAt = System.nanoTime();
             BacktestExecutionLifecycleService.BacktestExecutionContext context =
                 backtestExecutionLifecycleService.markRunStarted(backtestId);
             logger.info(
@@ -82,7 +86,16 @@ public class BacktestExecutionService {
                 "Loading the requested candle window from the market-data store."
             );
 
+            long datasetLookupStartedAt = System.nanoTime();
             BacktestDataset dataset = backtestDatasetStorageService.getDataset(context.datasetId());
+            backendOperationMetrics.record(
+                "async",
+                "backtest_execution_startup",
+                "dataset_lookup",
+                System.nanoTime() - datasetLookupStartedAt,
+                1,
+                0L
+            );
             logger.info(
                 "Backtest {} loading dataset {} ({}, {} rows, symbols={})",
                 backtestId,
@@ -95,6 +108,7 @@ public class BacktestExecutionService {
             BacktestAlgorithmType algorithmType = BacktestAlgorithmType.from(context.strategyId());
             String primarySymbol = resolvePrimarySymbol(context.symbol(), dataset.getSymbolsCsv());
             Set<String> requestedSymbols = resolveRequestedSymbols(algorithmType, primarySymbol);
+            long candleQueryStartedAt = System.nanoTime();
             List<OHLCVData> simulationCandles = marketDataQueryService.queryCandlesForDataset(
                     context.datasetId(),
                     context.timeframe(),
@@ -106,6 +120,14 @@ public class BacktestExecutionService {
                 .map(candle -> candle.toOhlcvData())
                 .sorted(Comparator.comparing(OHLCVData::getTimestamp).thenComparing(OHLCVData::getSymbol))
                 .toList();
+            backendOperationMetrics.record(
+                "async",
+                "backtest_execution_startup",
+                "candle_query",
+                System.nanoTime() - candleQueryStartedAt,
+                simulationCandles.size(),
+                0L
+            );
 
             backtestExecutionLifecycleService.updateProgress(
                 backtestId,
@@ -127,6 +149,14 @@ public class BacktestExecutionService {
                 firstFilteredTimestamp,
                 lastFilteredTimestamp
             );
+            backendOperationMetrics.record(
+                "async",
+                "backtest_execution_startup",
+                "prepare_request",
+                System.nanoTime() - executionStartedAt,
+                simulationCandles.size(),
+                0L
+            );
 
             backtestExecutionLifecycleService.updateProgress(
                 backtestId,
@@ -141,6 +171,7 @@ public class BacktestExecutionService {
             );
 
             AtomicInteger lastLoggedMilestone = new AtomicInteger(-1);
+            long simulationStartedAt = System.nanoTime();
             BacktestSimulationResult simulationResult = backtestSimulationEngine.simulate(
                 algorithmType,
                 new BacktestSimulationRequest(
@@ -152,6 +183,14 @@ public class BacktestExecutionService {
                     context.slippageBps()
                 ),
                 progress -> onSimulationProgress(backtestId, progress, lastLoggedMilestone)
+            );
+            backendOperationMetrics.record(
+                "async",
+                "backtest_execution",
+                "simulation",
+                System.nanoTime() - simulationStartedAt,
+                simulationCandles.size(),
+                0L
             );
 
             backtestExecutionLifecycleService.updateProgress(
@@ -169,6 +208,14 @@ public class BacktestExecutionService {
                 simulationResult,
                 simulationCandles.size(),
                 lastFilteredTimestamp
+            );
+            backendOperationMetrics.record(
+                "async",
+                "backtest_execution",
+                "total",
+                System.nanoTime() - executionStartedAt,
+                simulationCandles.size(),
+                0L
             );
             logger.info(
                 "Backtest {} completed: finalBalance={}, trades={}, sharpe={}, profitFactor={}, maxDrawdown={}",

@@ -33,6 +33,18 @@ Add the Java audit when toolchain-sensitive code is touched:
 .\gradlew.bat javaMigrationAudit --no-daemon
 ```
 
+Use these profiling runners when work targets known performance hotspots and you need a reproducible timing record:
+
+```powershell
+cd AlgotradingBot
+.\gradlew.bat backendWorkflowProfile
+
+cd ..\frontend
+npm run profile:backtest
+```
+
+The generated reports land in `AlgotradingBot/build/reports/backend-workflow-profile/report.md` and `frontend/build/reports/backtest-page-profile/report.md`.
+
 Notes:
 
 - Runtime uses PostgreSQL.

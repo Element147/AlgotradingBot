@@ -203,12 +203,15 @@ Acceptance Criteria
 ### 1C. Backend Optimization And Async Communications
 
 #### 1C.1 Profile slow backend endpoints and long-running workflows
-- [ ] Capture flame graphs or structured timing for backtest list, backtest detail, telemetry reconstruction, dataset listing, import progress, and execution startup.
+- [x] Capture flame graphs or structured timing for backtest list, backtest detail, telemetry reconstruction, dataset listing, import progress, and execution startup.
 Acceptance Criteria
 - The top backend bottlenecks are ranked by latency, memory, lock contention, serialization cost, or over-fetching.
 - At least one representative slow backtest page load is decomposed into backend time, network time, and frontend render time.
 - The profiling output is attached to this plan or linked from the implementation record.
 - The mandatory step completion protocol passes.
+Implementation record
+- Backend profiling report: `AlgotradingBot/build/reports/backend-workflow-profile/report.md`
+- Frontend page profile: `frontend/build/reports/backtest-page-profile/report.md`
 
 #### 1C.2 Split heavy command and query paths more aggressively
 - [ ] Refactor remaining synchronous or oversized endpoints into explicit command submission plus asynchronous progress plus query retrieval patterns.

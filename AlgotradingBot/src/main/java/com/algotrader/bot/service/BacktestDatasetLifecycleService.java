@@ -25,23 +25,29 @@ public class BacktestDatasetLifecycleService {
     private final BacktestDatasetRepository backtestDatasetRepository;
     private final BacktestResultRepository backtestResultRepository;
     private final OperatorAuditService operatorAuditService;
+    private final BackendOperationMetrics backendOperationMetrics;
 
     public BacktestDatasetLifecycleService(BacktestDatasetRepository backtestDatasetRepository,
                                            BacktestResultRepository backtestResultRepository,
-                                           OperatorAuditService operatorAuditService) {
+                                           OperatorAuditService operatorAuditService,
+                                           BackendOperationMetrics backendOperationMetrics) {
         this.backtestDatasetRepository = backtestDatasetRepository;
         this.backtestResultRepository = backtestResultRepository;
         this.operatorAuditService = operatorAuditService;
+        this.backendOperationMetrics = backendOperationMetrics;
     }
 
     public List<BacktestDatasetResponse> listDatasets() {
+        long startedAt = System.nanoTime();
         List<BacktestDataset> datasets = backtestDatasetRepository.findAllByOrderByUploadedAtDesc();
         Map<Long, DatasetUsageStats> usageStatsByDatasetId = getUsageStatsByDatasetId();
         Map<String, Integer> duplicateCountByChecksum = getDuplicateCountByChecksum(datasets);
 
-        return datasets.stream()
+        List<BacktestDatasetResponse> responses = datasets.stream()
             .map(dataset -> toResponse(dataset, usageStatsByDatasetId, duplicateCountByChecksum))
             .toList();
+        backendOperationMetrics.record("read", "dataset_listing", "inventory", System.nanoTime() - startedAt, responses.size(), 0L);
+        return responses;
     }
 
     public BacktestDatasetRetentionReportResponse getRetentionReport() {

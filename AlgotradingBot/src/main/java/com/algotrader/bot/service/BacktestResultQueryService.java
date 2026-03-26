@@ -34,21 +34,27 @@ public class BacktestResultQueryService {
     private final BacktestResultRepository backtestResultRepository;
     private final BacktestDatasetRepository backtestDatasetRepository;
     private final BacktestTelemetryService backtestTelemetryService;
+    private final BackendOperationMetrics backendOperationMetrics;
 
     public BacktestResultQueryService(BacktestResultRepository backtestResultRepository,
                                       BacktestDatasetRepository backtestDatasetRepository,
-                                      BacktestTelemetryService backtestTelemetryService) {
+                                      BacktestTelemetryService backtestTelemetryService,
+                                      BackendOperationMetrics backendOperationMetrics) {
         this.backtestResultRepository = backtestResultRepository;
         this.backtestDatasetRepository = backtestDatasetRepository;
         this.backtestTelemetryService = backtestTelemetryService;
+        this.backendOperationMetrics = backendOperationMetrics;
     }
 
     @Transactional(readOnly = true)
     public List<BacktestHistoryItemResponse> getHistory(int limit) {
+        long startedAt = System.nanoTime();
         int boundedLimit = sanitizeLimit(limit);
-        return backtestResultRepository.findAllByOrderByTimestampDesc(PageRequest.of(0, boundedLimit)).stream()
+        List<BacktestHistoryItemResponse> history = backtestResultRepository.findAllByOrderByTimestampDesc(PageRequest.of(0, boundedLimit)).stream()
             .map(this::toHistoryItem)
             .toList();
+        backendOperationMetrics.record("read", "backtest_history", "list", System.nanoTime() - startedAt, history.size(), 0L);
+        return history;
     }
 
     @Transactional(readOnly = true)
@@ -75,10 +81,27 @@ public class BacktestResultQueryService {
 
     @Transactional(readOnly = true)
     public BacktestDetailsResponse getDetails(Long backtestId) {
+        long startedAt = System.nanoTime();
         BacktestResult result = backtestResultRepository.findById(backtestId)
             .orElseThrow(() -> new EntityNotFoundException("Backtest not found: " + backtestId));
 
-        return toDetails(result);
+        BacktestDetailsResponse details = toDetails(result);
+        long payloadItems = (long) details.equityCurve().size()
+            + details.tradeSeries().size()
+            + details.telemetry().stream().mapToLong(series ->
+                (long) series.points().size()
+                    + series.actions().size()
+                    + series.indicators().stream().mapToLong(indicator -> indicator.points().size()).sum()
+            ).sum();
+        backendOperationMetrics.record(
+            "read",
+            "backtest_details",
+            "full_response",
+            System.nanoTime() - startedAt,
+            Math.toIntExact(Math.min(Integer.MAX_VALUE, payloadItems)),
+            0L
+        );
+        return details;
     }
 
     @Transactional(readOnly = true)

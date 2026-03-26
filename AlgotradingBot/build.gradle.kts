@@ -188,6 +188,18 @@ tasks.register<JavaExec>("legacyMarketDataFlowAudit") {
     )
 }
 
+tasks.register<JavaExec>("backendWorkflowProfile") {
+    group = "verification"
+    description = "Profile backend read paths and workflow startup, then write a markdown report."
+    dependsOn(tasks.named("testClasses"))
+    classpath = sourceSets["test"].runtimeClasspath
+    mainClass.set("com.algotrader.bot.analysis.BackendWorkflowProfileRunner")
+    systemProperty(
+        "backendWorkflowProfile.output",
+        layout.buildDirectory.file("reports/backend-workflow-profile/report.md").get().asFile.absolutePath
+    )
+}
+
 tasks.register<JavaExec>("migrateLegacyDatasets") {
     group = "migration"
     description = "Migrate legacy CSV-backed backtest datasets into the normalized market-data store."

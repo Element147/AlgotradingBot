@@ -2,6 +2,7 @@ package com.algotrader.bot.service.marketdata;
 
 import com.algotrader.bot.controller.MarketDataImportJobResponse;
 import com.algotrader.bot.entity.MarketDataImportJob;
+import com.algotrader.bot.service.BackendOperationMetrics;
 import com.algotrader.bot.websocket.WebSocketEventPublisher;
 import org.springframework.stereotype.Service;
 
@@ -10,14 +11,18 @@ public class MarketDataImportProgressService {
 
     private final WebSocketEventPublisher webSocketEventPublisher;
     private final MarketDataImportJobResponseMapper marketDataImportJobResponseMapper;
+    private final BackendOperationMetrics backendOperationMetrics;
 
     public MarketDataImportProgressService(WebSocketEventPublisher webSocketEventPublisher,
-                                           MarketDataImportJobResponseMapper marketDataImportJobResponseMapper) {
+                                           MarketDataImportJobResponseMapper marketDataImportJobResponseMapper,
+                                           BackendOperationMetrics backendOperationMetrics) {
         this.webSocketEventPublisher = webSocketEventPublisher;
         this.marketDataImportJobResponseMapper = marketDataImportJobResponseMapper;
+        this.backendOperationMetrics = backendOperationMetrics;
     }
 
     public void publish(MarketDataImportJob job) {
+        long startedAt = System.nanoTime();
         MarketDataImportJobResponse response = marketDataImportJobResponseMapper.toResponse(job);
         webSocketEventPublisher.publishMarketDataImportProgress(
             "test",
@@ -48,5 +53,6 @@ public class MarketDataImportProgressService {
             response.startedAt(),
             response.completedAt()
         );
+        backendOperationMetrics.record("publish", "market_data_import_progress", "websocket_payload", System.nanoTime() - startedAt, 1, 0L);
     }
 }

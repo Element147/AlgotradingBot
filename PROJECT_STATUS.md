@@ -62,6 +62,7 @@ Verified on March 20, 2026 against dataset `#12` (`Binance BTC/USDT +2 15m 2024-
 - Market-data ownership is now split so provider and job commands stay in `MarketDataImportService`, async download execution stays in `MarketDataImportExecutionService`, and import WebSocket publication stays in `MarketDataImportProgressService`.
 - Dataset catalog management is now split between `BacktestDatasetStorageService` for CSV persistence/downloads and `BacktestDatasetLifecycleService` for inventory, retention, archive, and restore behavior.
 - Liquibase now adds targeted query-shape indexes for dataset listing, backtest experiment and status scans, and market-data ready-job scheduling.
+- Backend profiling now records structured timing for backtest history, backtest detail assembly, telemetry reconstruction, dataset inventory, import-job listing or publish, and execution-startup stages, with reproducible backend and frontend profiling reports under each app's `build/reports` tree.
 
 ### Paper Trading And Operations
 

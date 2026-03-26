@@ -14,6 +14,7 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
+    "profile:backtest": "vitest run src/features/backtest/BacktestPerformanceProfile.test.tsx --environment jsdom",
     "contract:generate": "node ../scripts/sync-openapi-contract.mjs",
     "contract:check": "node ../scripts/sync-openapi-contract.mjs --check",
     "preview": "vite preview",

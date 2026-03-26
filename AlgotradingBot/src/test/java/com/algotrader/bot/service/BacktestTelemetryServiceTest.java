@@ -13,6 +13,7 @@ import com.algotrader.bot.service.marketdata.MarketDataQueryMode;
 import com.algotrader.bot.service.marketdata.MarketDataQueryResult;
 import com.algotrader.bot.service.marketdata.MarketDataQueriedCandle;
 import com.algotrader.bot.service.marketdata.MarketDataQueryService;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -41,7 +42,8 @@ class BacktestTelemetryServiceTest {
         marketDataQueryService = mock(MarketDataQueryService.class);
         backtestTelemetryService = new BacktestTelemetryService(
             marketDataQueryService,
-            new BacktestIndicatorCalculator()
+            new BacktestIndicatorCalculator(),
+            new BackendOperationMetrics(new SimpleMeterRegistry())
         );
     }
 

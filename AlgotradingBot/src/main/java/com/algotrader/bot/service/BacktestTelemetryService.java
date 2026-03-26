@@ -43,14 +43,18 @@ public class BacktestTelemetryService {
 
     private final MarketDataQueryService marketDataQueryService;
     private final BacktestIndicatorCalculator indicatorCalculator;
+    private final BackendOperationMetrics backendOperationMetrics;
 
     public BacktestTelemetryService(MarketDataQueryService marketDataQueryService,
-                                    BacktestIndicatorCalculator indicatorCalculator) {
+                                    BacktestIndicatorCalculator indicatorCalculator,
+                                    BackendOperationMetrics backendOperationMetrics) {
         this.marketDataQueryService = marketDataQueryService;
         this.indicatorCalculator = indicatorCalculator;
+        this.backendOperationMetrics = backendOperationMetrics;
     }
 
     public List<BacktestSymbolTelemetryResponse> buildTelemetry(BacktestResult result) {
+        long startedAt = System.nanoTime();
         if (result.getExecutionStatus() != BacktestResult.ExecutionStatus.COMPLETED
             || result.getDatasetId() == null) {
             return List.of();
@@ -91,7 +95,7 @@ public class BacktestTelemetryService {
 
         BacktestAlgorithmType resolvedAlgorithmType = resolveAlgorithmType(result.getStrategyId());
 
-        return candlesBySymbol.entrySet().stream()
+        List<BacktestSymbolTelemetryResponse> telemetry = candlesBySymbol.entrySet().stream()
             .map(entry -> buildSymbolTelemetry(
                 resolvedAlgorithmType,
                 entry.getKey(),
@@ -99,6 +103,20 @@ public class BacktestTelemetryService {
                 tradeWindowsBySymbol.getOrDefault(entry.getKey(), List.of())
             ))
             .toList();
+        long telemetryItems = telemetry.stream().mapToLong(series ->
+            (long) series.points().size()
+                + series.actions().size()
+                + series.indicators().stream().mapToLong(indicator -> indicator.points().size()).sum()
+        ).sum();
+        backendOperationMetrics.record(
+            "read",
+            "backtest_telemetry",
+            "reconstruction",
+            System.nanoTime() - startedAt,
+            Math.toIntExact(Math.min(Integer.MAX_VALUE, telemetryItems)),
+            0L
+        );
+        return telemetry;
     }
 
     private Set<String> resolveRelevantSymbols(BacktestResult result, List<MarketDataQueriedCandle> candles) {
