@@ -169,7 +169,7 @@ Acceptance Criteria
 - The mandatory step completion protocol passes.
 
 #### 1B.2 Reconcile migrated data against legacy datasets
-- [ ] Build automated reconciliation checks comparing legacy CSV-derived counts and time ranges with the new relational representation.
+- [x] Build automated reconciliation checks comparing legacy CSV-derived counts and time ranges with the new relational representation.
 Acceptance Criteria
 - For every migrated dataset, row counts, symbols, min timestamp, max timestamp, and checksums or derived hash summaries match expected values.
 - Any gap or duplicate discrepancy is reported with actionable detail rather than a silent pass or fail.

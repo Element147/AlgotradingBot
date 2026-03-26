@@ -1,6 +1,7 @@
 package com.algotrader.bot.service.marketdata;
 
 import com.algotrader.bot.entity.BacktestDataset;
+import com.algotrader.bot.entity.MarketDataCandle;
 import com.algotrader.bot.repository.BacktestDatasetRepository;
 import com.algotrader.bot.repository.MarketDataCandleRepository;
 import com.algotrader.bot.repository.MarketDataCandleSegmentRepository;
@@ -11,6 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Set;
 
@@ -117,6 +119,82 @@ class LegacyMarketDataMigrationServiceIntegrationTest {
         assertThat(marketDataSeriesRepository.count()).isZero();
         assertThat(marketDataCandleSegmentRepository.count()).isZero();
         assertThat(marketDataCandleRepository.count()).isZero();
+    }
+
+    @Test
+    void reconcile_reportsFullyMatchedDatasetAfterMigration() {
+        BacktestDataset dataset = backtestDatasetRepository.saveAndFlush(dataset(
+            "Reconciled dataset",
+            """
+                timestamp,symbol,open,high,low,close,volume
+                2025-01-01T00:00:00,BTC/USDT,100,101,99,100,10
+                2025-01-01T01:00:00,BTC/USDT,100,102,99,101,11
+                2025-01-01T02:00:00,BTC/USDT,101,103,100,102,12
+                """
+        ));
+
+        migrationService.migrate(new LegacyMarketDataMigrationRequest(false, Set.of(dataset.getId()), null));
+
+        LegacyMarketDataReconciliationSummary summary = migrationService.reconcile(
+            new LegacyMarketDataMigrationRequest(true, Set.of(dataset.getId()), null)
+        );
+
+        assertThat(summary.datasetResults()).hasSize(1);
+        assertThat(summary.datasetResults().getFirst().status()).isEqualTo("RECONCILED");
+        assertThat(summary.datasetResults().getFirst().discrepancies()).isEmpty();
+        assertThat(summary.failedDatasets()).isZero();
+    }
+
+    @Test
+    void reconcile_reportsMissingNormalizedDataWithRollbackGuidance() {
+        BacktestDataset dataset = backtestDatasetRepository.saveAndFlush(dataset(
+            "Unmigrated dataset",
+            """
+                timestamp,symbol,open,high,low,close,volume
+                2025-01-01T00:00:00,BTC/USDT,100,101,99,100,10
+                2025-01-01T01:00:00,BTC/USDT,100,102,99,101,11
+                2025-01-01T02:00:00,BTC/USDT,101,103,100,102,12
+                """
+        ));
+
+        LegacyMarketDataReconciliationSummary summary = migrationService.reconcile(
+            new LegacyMarketDataMigrationRequest(true, Set.of(dataset.getId()), null)
+        );
+
+        assertThat(summary.datasetResults()).hasSize(1);
+        assertThat(summary.datasetResults().getFirst().status()).isEqualTo("FAILED");
+        assertThat(summary.datasetResults().getFirst().rollbackAction()).contains("Keep this dataset on the legacy CSV compatibility path");
+        assertThat(summary.datasetResults().getFirst().discrepancies())
+            .anyMatch(detail -> detail.contains("Missing normalized series"));
+    }
+
+    @Test
+    void reconcile_reportsCountAndChecksumDriftAfterNormalizedMutation() {
+        BacktestDataset dataset = backtestDatasetRepository.saveAndFlush(dataset(
+            "Drift dataset",
+            """
+                timestamp,symbol,open,high,low,close,volume
+                2025-01-01T00:00:00,BTC/USDT,100,101,99,100,10
+                2025-01-01T01:00:00,BTC/USDT,100,102,99,101,11
+                2025-01-01T02:00:00,BTC/USDT,101,103,100,102,12
+                """
+        ));
+
+        migrationService.migrate(new LegacyMarketDataMigrationRequest(false, Set.of(dataset.getId()), null));
+        MarketDataCandle mutatedCandle = marketDataCandleRepository.findAll().getFirst();
+        mutatedCandle.setClosePrice(new BigDecimal("999.00000000"));
+        marketDataCandleRepository.saveAndFlush(mutatedCandle);
+
+        LegacyMarketDataReconciliationSummary summary = migrationService.reconcile(
+            new LegacyMarketDataMigrationRequest(true, Set.of(dataset.getId()), null)
+        );
+
+        assertThat(summary.datasetResults()).hasSize(1);
+        assertThat(summary.datasetResults().getFirst().status()).isEqualTo("FAILED");
+        assertThat(summary.datasetResults().getFirst().discrepancies())
+            .anyMatch(detail -> detail.contains("Checksum mismatch"));
+        assertThat(summary.datasetResults().getFirst().discrepancies())
+            .anyMatch(detail -> detail.contains("Derived hash summary mismatch"));
     }
 
     private BacktestDataset dataset(String name, String csvBody) {

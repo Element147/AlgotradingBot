@@ -3,15 +3,15 @@ package com.algotrader.bot.migration;
 import com.algotrader.bot.BotApplication;
 import com.algotrader.bot.service.marketdata.LegacyMarketDataMigrationRequest;
 import com.algotrader.bot.service.marketdata.LegacyMarketDataMigrationService;
-import com.algotrader.bot.service.marketdata.LegacyMarketDataMigrationSummary;
+import com.algotrader.bot.service.marketdata.LegacyMarketDataReconciliationSummary;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 
-public final class LegacyMarketDataMigrationRunner {
+public final class LegacyMarketDataReconciliationRunner {
 
-    private LegacyMarketDataMigrationRunner() {
+    private LegacyMarketDataReconciliationRunner() {
     }
 
     public static void main(String[] args) {
@@ -23,11 +23,11 @@ public final class LegacyMarketDataMigrationRunner {
         try {
             LegacyMarketDataMigrationService migrationService = context.getBean(LegacyMarketDataMigrationService.class);
             LegacyMarketDataMigrationRequest request = new LegacyMarketDataMigrationRequest(
-                Boolean.parseBoolean(System.getProperty("legacyMigration.dryRun", "true")),
+                true,
                 LegacyMarketDataMigrationRunnerSupport.parseDatasetIds(System.getProperty("legacyMigration.datasetIds")),
                 LegacyMarketDataMigrationRunnerSupport.parseLimit(System.getProperty("legacyMigration.limit"))
             );
-            LegacyMarketDataMigrationSummary summary = migrationService.migrate(request);
+            LegacyMarketDataReconciliationSummary summary = migrationService.reconcile(request);
             summary.datasetResults().forEach(result -> System.out.println(result.toLogLine()));
             System.out.println(summary.renderReport());
             if (summary.failedDatasets() > 0) {

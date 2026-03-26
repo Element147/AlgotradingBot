@@ -210,6 +210,24 @@ tasks.register<JavaExec>("migrateLegacyDatasets") {
     }
 }
 
+tasks.register<JavaExec>("reconcileLegacyDatasets") {
+    group = "migration"
+    description = "Reconcile legacy CSV-backed backtest datasets against the normalized market-data store."
+    dependsOn(tasks.named("classes"))
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("com.algotrader.bot.migration.LegacyMarketDataReconciliationRunner")
+    systemProperty("spring.main.web-application-type", "none")
+    providers.gradleProperty("legacyMigrationSpringProfile").orNull?.let { profile ->
+        systemProperty("spring.profiles.active", profile)
+    }
+    providers.gradleProperty("legacyMigrationDatasetIds").orNull?.let { datasetIds ->
+        systemProperty("legacyMigration.datasetIds", datasetIds)
+    }
+    providers.gradleProperty("legacyMigrationLimit").orNull?.let { limit ->
+        systemProperty("legacyMigration.limit", limit)
+    }
+}
+
 tasks.withType<JavaCompile>().configureEach {
     options.release.set(targetJavaVersion.asInt())
     options.compilerArgs.add("-Xlint:deprecation")

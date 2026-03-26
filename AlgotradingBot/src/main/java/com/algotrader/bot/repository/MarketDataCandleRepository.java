@@ -69,4 +69,25 @@ public interface MarketDataCandleRepository extends JpaRepository<MarketDataCand
         @Param("windowStart") LocalDateTime windowStart,
         @Param("windowEnd") LocalDateTime windowEnd
     );
+
+    @Query("""
+        select candle
+        from MarketDataCandle candle
+        join fetch candle.series series
+        join fetch candle.segment segment
+        join fetch segment.dataset dataset
+        left join fetch segment.importJob importJob
+        where segment.dataset.id = :datasetId
+          and candle.id.seriesId = :seriesId
+          and candle.id.timeframe = :timeframe
+          and candle.id.bucketStart between :windowStart and :windowEnd
+        order by candle.id.bucketStart asc
+        """)
+    List<MarketDataCandle> findDatasetSeriesCandlesInRange(
+        @Param("datasetId") Long datasetId,
+        @Param("seriesId") Long seriesId,
+        @Param("timeframe") String timeframe,
+        @Param("windowStart") LocalDateTime windowStart,
+        @Param("windowEnd") LocalDateTime windowEnd
+    );
 }

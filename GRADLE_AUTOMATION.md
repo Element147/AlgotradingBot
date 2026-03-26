@@ -11,6 +11,7 @@ cd AlgotradingBot
 .\gradlew.bat build
 .\gradlew.bat bootRun
 .\gradlew.bat migrateLegacyDatasets -PlegacyMigrationDryRun=true
+.\gradlew.bat reconcileLegacyDatasets
 ```
 
 ## Current Rules
@@ -23,7 +24,8 @@ cd AlgotradingBot
 6. Use `-PbackendDebug=true -PbackendDebugPort=5005 -PbackendDebugSuspend=n` only when you explicitly need JDWP through `bootRun`; otherwise prefer `.\run.ps1 -DebugBackend`.
 7. Java 25 is the baseline across tests, build, audit, and runtime.
 8. The legacy dataset migration task defaults to dry-run mode; use `-PlegacyMigrationDryRun=false` only when you are ready to write normalized rows.
-9. Optional migration filters are available through Gradle properties such as `-PlegacyMigrationDatasetIds=1,2` and `-PlegacyMigrationLimit=10`.
+9. The legacy dataset reconciliation task is read-only and uses the same optional dataset filters as migration.
+10. Optional migration filters are available through Gradle properties such as `-PlegacyMigrationDatasetIds=1,2` and `-PlegacyMigrationLimit=10`.
 
 ## Related Files
 

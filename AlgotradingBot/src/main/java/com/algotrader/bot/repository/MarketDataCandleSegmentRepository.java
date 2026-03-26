@@ -41,4 +41,15 @@ public interface MarketDataCandleSegmentRepository extends JpaRepository<MarketD
         @Param("timeframe") String timeframe,
         @Param("checksumSha256") String checksumSha256
     );
+
+    @Query("""
+        select segment
+        from MarketDataCandleSegment segment
+        join fetch segment.series series
+        join fetch segment.dataset dataset
+        left join fetch segment.importJob importJob
+        where dataset.id = :datasetId
+        order by series.symbolNormalized asc, segment.timeframe asc, segment.coverageStart asc, segment.createdAt asc
+        """)
+    List<MarketDataCandleSegment> findByDatasetIdWithSeries(@Param("datasetId") Long datasetId);
 }
