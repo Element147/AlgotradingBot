@@ -58,4 +58,14 @@ public enum MarketDataTimeframe {
             .findFirst()
             .orElseThrow(() -> new IllegalArgumentException("Unsupported timeframe: " + value));
     }
+
+    public static MarketDataTimeframe fromStep(Duration step) {
+        if (step == null || step.isZero() || step.isNegative()) {
+            throw new IllegalArgumentException("Timeframe step must be positive");
+        }
+        return Arrays.stream(values())
+            .filter(candidate -> candidate.step.equals(step))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Unsupported timeframe step: " + step));
+    }
 }

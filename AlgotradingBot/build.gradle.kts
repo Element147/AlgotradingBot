@@ -188,6 +188,28 @@ tasks.register<JavaExec>("legacyMarketDataFlowAudit") {
     )
 }
 
+tasks.register<JavaExec>("migrateLegacyDatasets") {
+    group = "migration"
+    description = "Migrate legacy CSV-backed backtest datasets into the normalized market-data store."
+    dependsOn(tasks.named("classes"))
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("com.algotrader.bot.migration.LegacyMarketDataMigrationRunner")
+    systemProperty("spring.main.web-application-type", "none")
+    providers.gradleProperty("legacyMigrationSpringProfile").orNull?.let { profile ->
+        systemProperty("spring.profiles.active", profile)
+    }
+    systemProperty(
+        "legacyMigration.dryRun",
+        providers.gradleProperty("legacyMigrationDryRun").orElse("true").get()
+    )
+    providers.gradleProperty("legacyMigrationDatasetIds").orNull?.let { datasetIds ->
+        systemProperty("legacyMigration.datasetIds", datasetIds)
+    }
+    providers.gradleProperty("legacyMigrationLimit").orNull?.let { limit ->
+        systemProperty("legacyMigration.limit", limit)
+    }
+}
+
 tasks.withType<JavaCompile>().configureEach {
     options.release.set(targetJavaVersion.asInt())
     options.compilerArgs.add("-Xlint:deprecation")

@@ -161,7 +161,7 @@ Acceptance Criteria
 ### 1B. Data Migration Plan
 
 #### 1B.1 Build an idempotent migration utility
-- [ ] Implement a migration command, preferably as a Gradle task plus optional PowerShell wrapper, that reads legacy dataset rows and writes normalized candles and segments into the new relational store.
+- [x] Implement a migration command, preferably as a Gradle task plus optional PowerShell wrapper, that reads legacy dataset rows and writes normalized candles and segments into the new relational store.
 Acceptance Criteria
 - The migration can run in dry-run mode and produce a summary before writing anything.
 - The migration is idempotent and can resume safely after interruption.

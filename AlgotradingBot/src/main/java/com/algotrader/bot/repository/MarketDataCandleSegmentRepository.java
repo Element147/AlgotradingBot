@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface MarketDataCandleSegmentRepository extends JpaRepository<MarketDataCandleSegment, Long> {
 
@@ -24,5 +25,20 @@ public interface MarketDataCandleSegmentRepository extends JpaRepository<MarketD
         @Param("timeframe") String timeframe,
         @Param("requestedStart") LocalDateTime requestedStart,
         @Param("requestedEnd") LocalDateTime requestedEnd
+    );
+
+    @Query("""
+        select segment
+        from MarketDataCandleSegment segment
+        where segment.dataset.id = :datasetId
+          and segment.series.id = :seriesId
+          and segment.timeframe = :timeframe
+          and segment.checksumSha256 = :checksumSha256
+        """)
+    Optional<MarketDataCandleSegment> findByDatasetSeriesTimeframeAndChecksum(
+        @Param("datasetId") Long datasetId,
+        @Param("seriesId") Long seriesId,
+        @Param("timeframe") String timeframe,
+        @Param("checksumSha256") String checksumSha256
     );
 }

@@ -10,6 +10,7 @@ cd AlgotradingBot
 .\gradlew.bat test
 .\gradlew.bat build
 .\gradlew.bat bootRun
+.\gradlew.bat migrateLegacyDatasets -PlegacyMigrationDryRun=true
 ```
 
 ## Current Rules
@@ -21,6 +22,8 @@ cd AlgotradingBot
 5. Use direct `bootRun` only when you need backend-only iteration or a custom Gradle property flow.
 6. Use `-PbackendDebug=true -PbackendDebugPort=5005 -PbackendDebugSuspend=n` only when you explicitly need JDWP through `bootRun`; otherwise prefer `.\run.ps1 -DebugBackend`.
 7. Java 25 is the baseline across tests, build, audit, and runtime.
+8. The legacy dataset migration task defaults to dry-run mode; use `-PlegacyMigrationDryRun=false` only when you are ready to write normalized rows.
+9. Optional migration filters are available through Gradle properties such as `-PlegacyMigrationDatasetIds=1,2` and `-PlegacyMigrationLimit=10`.
 
 ## Related Files
 
