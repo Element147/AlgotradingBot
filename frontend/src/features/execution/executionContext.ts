@@ -44,6 +44,10 @@ export const resolveRouteExecutionContext = (pathname: string): ExecutionContext
     return executionContextMeta.research;
   }
 
+  if (pathname.startsWith('/forward-testing')) {
+    return executionContextMeta['forward-test'];
+  }
+
   if (
     pathname.startsWith('/paper') ||
     pathname.startsWith('/strategies') ||

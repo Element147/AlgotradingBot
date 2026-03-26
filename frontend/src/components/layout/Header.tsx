@@ -53,6 +53,11 @@ const routeMeta: Record<string, { title: string; subtitle: string }> = {
     subtitle:
       'Review workstation posture, paper state, and the next safe action without chasing multiple competing panels.',
   },
+  '/forward-testing': {
+    title: 'Forward Testing',
+    subtitle:
+      'Observe paper-safe signal flow, chart evidence, and operator follow-up without opening a live execution path.',
+  },
   '/paper': {
     title: 'Paper Trading',
     subtitle:

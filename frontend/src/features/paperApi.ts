@@ -1,6 +1,10 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 
-import { baseQueryWithEnvironment } from '@/services/api';
+import {
+  baseQueryWithEnvironment,
+  withExecutionContext,
+  type ExecutionContextOverride,
+} from '@/services/api';
 
 export interface PaperTradingState {
   paperMode: boolean;
@@ -50,18 +54,28 @@ export interface PlacePaperOrderPayload {
   executeNow: boolean;
 }
 
+interface PaperQueryOptions {
+  executionContext?: ExecutionContextOverride;
+}
+
 export const paperApi = createApi({
   reducerPath: 'paperApi',
   baseQuery: baseQueryWithEnvironment,
   tagTypes: ['PaperTrading', 'PaperOrders'],
   keepUnusedDataFor: 300,
   endpoints: (builder) => ({
-    getPaperTradingState: builder.query<PaperTradingState, void>({
-      query: () => '/api/paper/state',
+    getPaperTradingState: builder.query<PaperTradingState, PaperQueryOptions | void>({
+      query: (arg) =>
+        arg?.executionContext
+          ? withExecutionContext('/api/paper/state', arg.executionContext)
+          : '/api/paper/state',
       providesTags: ['PaperTrading'],
     }),
-    getPaperOrders: builder.query<PaperOrder[], void>({
-      query: () => '/api/paper/orders',
+    getPaperOrders: builder.query<PaperOrder[], PaperQueryOptions | void>({
+      query: (arg) =>
+        arg?.executionContext
+          ? withExecutionContext('/api/paper/orders', arg.executionContext)
+          : '/api/paper/orders',
       providesTags: ['PaperOrders'],
     }),
     placePaperOrder: builder.mutation<PaperOrder, PlacePaperOrderPayload>({

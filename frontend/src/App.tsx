@@ -15,6 +15,7 @@ import './App.css';
 // Lazy load page components for code splitting and performance
 const LoginPage = lazy(() => import('./features/auth/LoginPage'));
 const DashboardPage = lazy(() => import('./features/dashboard/DashboardPage'));
+const ForwardTestingPage = lazy(() => import('./features/forwardTesting/ForwardTestingPage'));
 const PaperTradingPage = lazy(() => import('./features/paper/PaperTradingPage'));
 const StrategiesPage = lazy(() => import('./features/strategies/StrategiesPage'));
 const TradesPage = lazy(() => import('./features/trades/TradesPage'));
@@ -71,6 +72,16 @@ function App() {
                   <ErrorBoundary>
                     <ProtectedRoute>
                       <DashboardPage />
+                    </ProtectedRoute>
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="/forward-testing"
+                element={
+                  <ErrorBoundary>
+                    <ProtectedRoute>
+                      <ForwardTestingPage />
                     </ProtectedRoute>
                   </ErrorBoundary>
                 }

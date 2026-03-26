@@ -371,7 +371,7 @@ Implementation record
 - Contract and regression coverage: `contracts/openapi.json`, `frontend/src/generated/openapi.d.ts`, `frontend/src/features/execution/executionContext.test.ts`, `AlgotradingBot/src/test/java/com/algotrader/bot/service/EnvironmentRequestResolverTest.java`
 
 #### 2C.2 Implement the Forward Testing tab
-- [ ] Build a dedicated `Forward Testing` workspace focused on strategy observation, signal investigation, chart review, and operator notes.
+- [x] Build a dedicated `Forward Testing` workspace focused on strategy observation, signal investigation, chart review, and operator notes.
 Required content
 - Strategy selection and configuration context.
 - Live or near-live charts with signal markers.
@@ -382,6 +382,11 @@ Acceptance Criteria
 - The workspace shows chart evidence, signal metadata, and investigation history in one place.
 - Forward testing remains paper-safe and auditable by default.
 - The mandatory step completion protocol passes.
+Implementation record
+- Added the dedicated `/forward-testing` route and shell navigation entry with route-owned `forward-test` context and explicit fail-closed messaging in `frontend/src/App.tsx`, `frontend/src/components/layout/Sidebar.tsx`, `frontend/src/components/layout/Header.tsx`, and `frontend/src/features/execution/executionContext.ts`.
+- Built the forward-testing workspace with strategy selection, observed performance metrics, a signal timeline chart, investigation history, active-algorithm detail, and local workstation operator notes in `frontend/src/features/forwardTesting/ForwardTestingPage.tsx`, `frontend/src/features/forwardTesting/ForwardSignalTimelineChart.tsx`, `frontend/src/features/forwardTesting/forwardTestingApi.ts`, and `frontend/src/features/forwardTesting/forwardTestingNotes.ts`.
+- Added route-scoped test-safe query overrides for strategies, trades, and paper-state reads so the workspace does not inherit unrelated operational mode changes in `frontend/src/features/strategies/strategiesApi.ts`, `frontend/src/features/trades/tradesApi.ts`, and `frontend/src/features/paperApi.ts`.
+- Regression coverage now includes route wiring, sidebar navigation, and the forward-testing workspace note flow in `frontend/src/App.test.tsx`, `frontend/src/components/layout/Sidebar.test.tsx`, and `frontend/src/features/forwardTesting/ForwardTestingPage.test.tsx`.
 
 #### 2C.3 Implement the Paper tab
 - [ ] Build a dedicated `Paper` tab that supports strategy selection per exchange, custom parameters, active-state review, and paper performance tracking.

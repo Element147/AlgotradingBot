@@ -1,6 +1,10 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 
-import { baseQueryWithEnvironment } from '@/services/api';
+import {
+  baseQueryWithEnvironment,
+  withExecutionContext,
+  type ExecutionContextOverride,
+} from '@/services/api';
 
 export interface Strategy {
   id: number;
@@ -46,14 +50,25 @@ export interface UpdateStrategyConfigPayload {
   shortSellingEnabled: boolean;
 }
 
+interface StrategyQueryOptions {
+  executionContext?: ExecutionContextOverride;
+}
+
+interface StrategyConfigHistoryQuery extends StrategyQueryOptions {
+  strategyId: number;
+}
+
 export const strategiesApi = createApi({
   reducerPath: 'strategiesApi',
   baseQuery: baseQueryWithEnvironment,
   tagTypes: ['Strategies'],
   keepUnusedDataFor: 300,
   endpoints: (builder) => ({
-    getStrategies: builder.query<Strategy[], void>({
-      query: () => '/api/strategies',
+    getStrategies: builder.query<Strategy[], StrategyQueryOptions | void>({
+      query: (arg) =>
+        arg?.executionContext
+          ? withExecutionContext('/api/strategies', arg.executionContext)
+          : '/api/strategies',
       providesTags: ['Strategies'],
     }),
     startStrategy: builder.mutation<{ strategyId: number; status: string }, number>({
@@ -108,8 +123,24 @@ export const strategiesApi = createApi({
       }),
       invalidatesTags: ['Strategies'],
     }),
-    getStrategyConfigHistory: builder.query<StrategyConfigHistoryEntry[], number>({
-      query: (strategyId) => `/api/strategies/${strategyId}/config-history`,
+    getStrategyConfigHistory: builder.query<
+      StrategyConfigHistoryEntry[],
+      number | StrategyConfigHistoryQuery | undefined
+    >({
+      query: (arg) => {
+        if (!arg) {
+          return '/api/strategies/0/config-history';
+        }
+
+        if (typeof arg === 'number') {
+          return `/api/strategies/${arg}/config-history`;
+        }
+
+        const request = `/api/strategies/${arg.strategyId}/config-history`;
+        return arg.executionContext
+          ? withExecutionContext(request, arg.executionContext)
+          : request;
+      },
     }),
   }),
 });

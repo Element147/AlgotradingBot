@@ -1,6 +1,10 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 
-import { baseQueryWithEnvironment } from '@/services/api';
+import {
+  baseQueryWithEnvironment,
+  withExecutionContext,
+  type ExecutionContextOverride,
+} from '@/services/api';
 
 export interface TradeHistoryItem {
   id: number;
@@ -31,6 +35,7 @@ export interface TradeHistoryQuery {
   sortBy?: string;
   sortDirection?: 'asc' | 'desc';
   searchId?: number;
+  executionContext?: ExecutionContextOverride;
 }
 
 export interface TradeHistoryResult {
@@ -80,10 +85,17 @@ export const tradesApi = createApi({
   keepUnusedDataFor: 300,
   endpoints: (builder) => ({
     getTradeHistory: builder.query<TradeHistoryResult, TradeHistoryQuery | void>({
-      query: (params) => ({
-        url: '/api/trades/history',
-        params: params ?? undefined,
-      }),
+      query: (params) => {
+        const { executionContext, ...queryParams } = params ?? {};
+        const request = {
+          url: '/api/trades/history',
+          params: Object.keys(queryParams).length > 0 ? queryParams : undefined,
+        };
+
+        return executionContext
+          ? withExecutionContext(request, executionContext)
+          : request;
+      },
       transformResponse: (
         response: TradeHistoryItem[] | TradeHistoryPagedResponse,
         _meta,
@@ -95,11 +107,20 @@ export const tradesApi = createApi({
         }),
       providesTags: ['TradeHistory'],
     }),
-    getTradeDetails: builder.query<TradeHistoryItem | null, { id: number; accountId?: number }>({
-      query: ({ id, accountId }) => ({
-        url: `/api/trades/${id}`,
-        params: accountId ? { accountId } : undefined,
-      }),
+    getTradeDetails: builder.query<
+      TradeHistoryItem | null,
+      { id: number; accountId?: number; executionContext?: ExecutionContextOverride }
+    >({
+      query: ({ id, accountId, executionContext }) => {
+        const request = {
+          url: `/api/trades/${id}`,
+          params: accountId ? { accountId } : undefined,
+        };
+
+        return executionContext
+          ? withExecutionContext(request, executionContext)
+          : request;
+      },
       providesTags: (_result, _error, arg) => [{ type: 'TradeHistory', id: arg.id }],
     }),
   }),
