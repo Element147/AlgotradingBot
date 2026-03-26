@@ -17,6 +17,7 @@ const LoginPage = lazy(() => import('./features/auth/LoginPage'));
 const DashboardPage = lazy(() => import('./features/dashboard/DashboardPage'));
 const ForwardTestingPage = lazy(() => import('./features/forwardTesting/ForwardTestingPage'));
 const PaperTradingPage = lazy(() => import('./features/paper/PaperTradingPage'));
+const LiveTradingPage = lazy(() => import('./features/live/LiveTradingPage'));
 const StrategiesPage = lazy(() => import('./features/strategies/StrategiesPage'));
 const TradesPage = lazy(() => import('./features/trades/TradesPage'));
 const BacktestPage = lazy(() => import('./features/backtest/BacktestPage'));
@@ -92,6 +93,16 @@ function App() {
                   <ErrorBoundary>
                     <ProtectedRoute>
                       <PaperTradingPage />
+                    </ProtectedRoute>
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="/live"
+                element={
+                  <ErrorBoundary>
+                    <ProtectedRoute>
+                      <LiveTradingPage />
                     </ProtectedRoute>
                   </ErrorBoundary>
                 }

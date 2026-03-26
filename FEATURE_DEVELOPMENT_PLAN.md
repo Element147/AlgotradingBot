@@ -402,12 +402,17 @@ Implementation record
 - Expanded regression coverage for the paper workspace assignment flow and order submission path in `frontend/src/features/paper/PaperTradingPage.test.tsx`.
 
 #### 2C.4 Implement the Live tab with capability gating
-- [ ] Build a dedicated `Live` tab for explicit live context, keeping routing fail-closed until approved capabilities exist.
+- [x] Build a dedicated `Live` tab for explicit live context, keeping routing fail-closed until approved capabilities exist.
 Acceptance Criteria
 - The tab distinguishes clearly between monitor-only live state and any future approved live execution capability.
 - Strategy selection per exchange and custom parameters are visible only when the backend reports the capability as supported.
 - If live execution is not yet approved, the tab still provides live monitoring, active-state review, performance, and signal charts without allowing orders.
 - The mandatory step completion protocol passes.
+Implementation record
+- Added the dedicated `/live` route, sidebar entry, header metadata, and route-owned `live` context resolution so the workstation exposes explicit live monitoring without depending on the global operations-mode toggle in `frontend/src/App.tsx`, `frontend/src/components/layout/Sidebar.tsx`, `frontend/src/components/layout/Header.tsx`, and `frontend/src/features/execution/executionContext.ts`.
+- Built a capability-gated live workspace that reuses shared execution primitives for posture rails, monitored strategy review, chart evidence, config lineage, and audit context while keeping strategy assignment, parameter edits, and order actions fail-closed until a backend capability is reported in `frontend/src/features/live/LiveTradingPage.tsx`.
+- Extended account RTK Query helpers with route-scoped execution-context overrides so the live route can request live-context balance, performance, positions, and recent-trade reads without mutating unrelated pages or relying on ad hoc headers in `frontend/src/features/account/accountApi.ts`.
+- Added regression coverage for live route wiring, shell navigation, header route context, and the monitor-only live workspace in `frontend/src/App.test.tsx`, `frontend/src/components/layout/Sidebar.test.tsx`, `frontend/src/components/layout/Header.test.tsx`, and `frontend/src/features/live/LiveTradingPage.test.tsx`.
 
 #### 2C.5 Build active-algorithm signal-explainer views
 - [ ] Add a shared active-algorithm detail surface used by Forward Testing, Paper, and Live tabs.

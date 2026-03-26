@@ -107,7 +107,9 @@ Current route surfaces:
 
 - `/login`
 - `/dashboard`
+- `/forward-testing`
 - `/paper`
+- `/live`
 - `/strategies`
 - `/trades`
 - `/backtest`
@@ -156,6 +158,7 @@ Shared frontend infrastructure:
 - Redux slices still track auth, operational environment mode, settings, and WebSocket connection state, but research pages now resolve their own execution context instead of inheriting the operational toggle.
 - `features/forwardTesting/ForwardTestingPage.tsx` is the first dedicated execution-workspace child route built on that model: it composes shared execution primitives with strategy config history, paper-state recovery signals, trade-history evidence, `/api/strategy/status` monitoring, audit history, and explicitly local operator notes to stay paper-safe while still useful for live-market observation.
 - `features/paper/PaperTradingPage.tsx` now extends the same route-owned model with exchange-scoped strategy assignment, selected-algorithm evidence review, and preserved simulated order-entry controls. Where the backend does not yet expose durable exchange-to-strategy paper assignment, the route uses explicit workstation-local persistence instead of silently inventing a server-backed capability.
+- `features/live/LiveTradingPage.tsx` now completes the execution-workspace split with an explicit live-context monitoring route. It requests live-scoped account reads through route-owned RTK Query overrides, shows backend capability failures plainly when live account reads are not wired, and keeps assignment, parameter, and order controls hidden until an explicit live-execution capability exists.
 - `WebSocketRuntime` subscribes to both test and live channel families after the authenticated handshake so route-owned contexts can observe the correct telemetry stream without reconnecting the entire app when operators review different contexts.
 - The frontend now treats connection-open and channel subscription as separate states: pages only consider live telemetry active after the backend acknowledges the requested channels.
 - Polling fallback remains available for progress views when the browser cannot establish or maintain the WebSocket connection.

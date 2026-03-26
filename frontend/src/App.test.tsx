@@ -33,6 +33,10 @@ vi.mock('./features/paper/PaperTradingPage', () => ({
   default: () => <div data-testid="paper-page">Paper Trading Page</div>,
 }));
 
+vi.mock('./features/live/LiveTradingPage', () => ({
+  default: () => <div data-testid="live-page">Live Monitoring Page</div>,
+}));
+
 vi.mock('./features/strategies/StrategiesPage', () => ({
   default: () => <div data-testid="strategies-page">Strategies Page</div>,
 }));
@@ -145,6 +149,21 @@ describe('App Routing', () => {
     it('should redirect to login when accessing /paper without authentication', async () => {
       const store = createMockStore(false);
       window.history.pushState({}, '', '/paper');
+
+      render(
+        <Provider store={store}>
+          <App />
+        </Provider>
+      );
+
+      await waitFor(() => {
+        expect(window.location.pathname).toBe('/login');
+      });
+    });
+
+    it('should redirect to login when accessing /live without authentication', async () => {
+      const store = createMockStore(false);
+      window.history.pushState({}, '', '/live');
 
       render(
         <Provider store={store}>
@@ -311,6 +330,21 @@ describe('App Routing', () => {
       await waitFor(() => {
         expect(screen.getByTestId('paper-page')).toBeInTheDocument();
       }, { timeout: 10000 });
+    });
+
+    it('should render live monitoring page when authenticated', async () => {
+      const store = createMockStore(true);
+      window.history.pushState({}, '', '/live');
+
+      render(
+        <Provider store={store}>
+          <App />
+        </Provider>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('live-page')).toBeInTheDocument();
+      });
     });
 
     it('should render forward testing page when authenticated', async () => {

@@ -56,5 +56,9 @@ export const resolveRouteExecutionContext = (pathname: string): ExecutionContext
     return executionContextMeta.paper;
   }
 
+  if (pathname.startsWith('/live')) {
+    return executionContextMeta.live;
+  }
+
   return null;
 };

@@ -157,6 +157,26 @@ describe('Header', () => {
     expect(screen.getByLabelText('Role: TRADER')).toBeInTheDocument();
   });
 
+  it('renders live route metadata when opened on /live', () => {
+    const store = createMockStore();
+
+    render(
+      <Provider store={store}>
+        <MemoryRouter initialEntries={['/live']}>
+          <Header {...defaultProps} />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    expect(screen.getByText('Live Monitoring')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Review explicit live-context posture, exchange health, and strategy evidence while the route remains fail-closed until approved capabilities exist.'
+      )
+    ).toBeInTheDocument();
+    expect(screen.getByText('Context: Live')).toBeInTheDocument();
+  });
+
   it('renders user avatar with first letter of username', () => {
     renderHeader();
 

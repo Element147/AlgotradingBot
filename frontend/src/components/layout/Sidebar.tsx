@@ -6,6 +6,7 @@ import {
   History as TradesIcon,
   ReceiptLong as PaperIcon,
   Security as RiskIcon,
+  Sensors as LiveIcon,
   Settings as SettingsIcon,
   ShowChart as StrategyIcon,
 } from '@mui/icons-material';
@@ -53,6 +54,7 @@ const navigationSections = [
         path: '/forward-testing',
       },
       { text: 'Paper', detail: 'Simulated order desk', icon: <PaperIcon />, path: '/paper' },
+      { text: 'Live', detail: 'Capability-gated monitor', icon: <LiveIcon />, path: '/live' },
     ],
   },
   {
@@ -138,6 +140,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
             </Typography>
             <Typography variant="body2" sx={{ fontWeight: 700 }}>
               3. Simulate in Paper
+            </Typography>
+            <Typography variant="body2" sx={{ fontWeight: 700 }}>
+              4. Monitor in Live
             </Typography>
           </Box>
         </Stack>

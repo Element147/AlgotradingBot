@@ -63,6 +63,11 @@ const routeMeta: Record<string, { title: string; subtitle: string }> = {
     subtitle:
       'Work from one simulated execution desk where order entry stays primary and recovery state stays separate.',
   },
+  '/live': {
+    title: 'Live Monitoring',
+    subtitle:
+      'Review explicit live-context posture, exchange health, and strategy evidence while the route remains fail-closed until approved capabilities exist.',
+  },
   '/strategies': {
     title: 'Strategies',
     subtitle:

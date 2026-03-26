@@ -8,10 +8,24 @@ import {
   normalizeRecentTrades,
 } from './accountContract';
 
-import { baseQueryWithEnvironment } from '@/services/api';
+import {
+  baseQueryWithEnvironment,
+  withExecutionContext,
+  type ExecutionContextOverride,
+} from '@/services/api';
 import type { Position, Trade } from '@/types/domain.types';
 
 export type { BalanceData, PerformanceMetrics, PerformanceTimeframe } from './accountContract';
+
+interface AccountQueryOptions {
+  executionContext?: ExecutionContextOverride;
+}
+
+type PerformanceQueryArg =
+  | PerformanceTimeframe
+  | (AccountQueryOptions & { timeframe?: PerformanceTimeframe });
+
+type RecentTradesQueryArg = number | (AccountQueryOptions & { limit?: number });
 
 /**
  * Account API slice for balance and performance data
@@ -36,8 +50,11 @@ export const accountApi = createApi({
      *
      * In live mode, polling is enabled with 60 second interval.
      */
-    getBalance: builder.query<BalanceData, void>({
-      query: () => '/api/account/balance',
+    getBalance: builder.query<BalanceData, AccountQueryOptions | void>({
+      query: (arg) =>
+        arg?.executionContext
+          ? withExecutionContext('/api/account/balance', arg.executionContext)
+          : '/api/account/balance',
       transformResponse: normalizeBalanceData,
       providesTags: ['Balance'],
     }),
@@ -49,11 +66,18 @@ export const accountApi = createApi({
      *
      * @param timeframe - Time period for metrics (today, week, month, all)
      */
-    getPerformance: builder.query<PerformanceMetrics, PerformanceTimeframe>({
-      query: (timeframe) => ({
-        url: '/api/account/performance',
-        params: { timeframe },
-      }),
+    getPerformance: builder.query<PerformanceMetrics, PerformanceQueryArg>({
+      query: (arg) => {
+        const timeframe = typeof arg === 'string' ? arg : (arg?.timeframe ?? 'month');
+        const request = {
+          url: '/api/account/performance',
+          params: { timeframe },
+        };
+
+        return typeof arg === 'object' && arg?.executionContext
+          ? withExecutionContext(request, arg.executionContext)
+          : request;
+      },
       transformResponse: normalizePerformanceMetrics,
       providesTags: ['Performance'],
     }),
@@ -64,8 +88,11 @@ export const accountApi = createApi({
      * Fetches all currently open positions for the active environment.
      * Updates in real-time via WebSocket events.
      */
-    getOpenPositions: builder.query<Position[], void>({
-      query: () => '/api/positions/open',
+    getOpenPositions: builder.query<Position[], AccountQueryOptions | void>({
+      query: (arg) =>
+        arg?.executionContext
+          ? withExecutionContext('/api/positions/open', arg.executionContext)
+          : '/api/positions/open',
       transformResponse: normalizeOpenPositions,
       providesTags: ['Positions'],
     }),
@@ -77,11 +104,18 @@ export const accountApi = createApi({
      *
      * @param limit - Number of trades to fetch (default: 10)
      */
-    getRecentTrades: builder.query<Trade[], number | void>({
-      query: (limit = 10) => ({
-        url: '/api/trades/recent',
-        params: { limit },
-      }),
+    getRecentTrades: builder.query<Trade[], RecentTradesQueryArg | void>({
+      query: (arg) => {
+        const limit = typeof arg === 'number' ? arg : (arg?.limit ?? 10);
+        const request = {
+          url: '/api/trades/recent',
+          params: { limit },
+        };
+
+        return typeof arg === 'object' && arg?.executionContext
+          ? withExecutionContext(request, arg.executionContext)
+          : request;
+      },
       transformResponse: normalizeRecentTrades,
       providesTags: ['Trades'],
     }),
