@@ -238,7 +238,7 @@ Acceptance Criteria
 - The mandatory step completion protocol passes.
 
 #### 1C.5 Add async monitoring, retry, and failure visibility
-- [ ] Harden async execution with queue visibility, retry boundaries, timeout handling, and operator-facing failure explanations.
+- [x] Harden async execution with queue visibility, retry boundaries, timeout handling, and operator-facing failure explanations.
 Acceptance Criteria
 - Backtest and import jobs expose queued, running, retry, failed, and completed states consistently.
 - Failure messages are user-legible and stored durably enough for audit and troubleshooting.

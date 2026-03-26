@@ -10,6 +10,7 @@ import com.algotrader.bot.controller.BacktestSummaryResponse;
 import com.algotrader.bot.controller.BacktestSymbolTelemetryResponse;
 import com.algotrader.bot.controller.BacktestTelemetryQueryResponse;
 import com.algotrader.bot.controller.BacktestTradeSeriesItemResponse;
+import com.algotrader.bot.controller.AsyncTaskMonitorResponse;
 import com.algotrader.bot.entity.BacktestDataset;
 import com.algotrader.bot.entity.BacktestResult;
 import com.algotrader.bot.repository.BacktestDatasetRepository;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -34,6 +36,8 @@ public class BacktestResultQueryService {
 
     private static final int DEFAULT_HISTORY_LIMIT = 20;
     private static final int MAX_HISTORY_LIMIT = 500;
+    private static final long QUEUE_TIMEOUT_SECONDS = 120;
+    private static final long RUNNING_TIMEOUT_SECONDS = 900;
 
     private final BacktestResultRepository backtestResultRepository;
     private final BacktestDatasetRepository backtestDatasetRepository;
@@ -299,7 +303,8 @@ public class BacktestResultQueryService {
             result.getStatusMessage(),
             result.getLastProgressAt(),
             result.getStartedAt(),
-            result.getCompletedAt()
+            result.getCompletedAt(),
+            buildAsyncMonitor(result)
         );
     }
 
@@ -342,7 +347,8 @@ public class BacktestResultQueryService {
             summary.startedAt(),
             summary.completedAt(),
             summary.errorMessage(),
-            resolveTelemetrySymbols(result)
+            resolveTelemetrySymbols(result),
+            summary.asyncMonitor()
         );
     }
 
@@ -384,7 +390,38 @@ public class BacktestResultQueryService {
             result.getLastProgressAt(),
             result.getStartedAt(),
             result.getCompletedAt(),
-            result.getErrorMessage()
+            result.getErrorMessage(),
+            buildAsyncMonitor(result)
+        );
+    }
+
+    private AsyncTaskMonitorResponse buildAsyncMonitor(BacktestResult result) {
+        String state = switch (result.getExecutionStatus()) {
+            case COMPLETED -> "COMPLETED";
+            case FAILED -> "FAILED";
+            case RUNNING -> "RUNNING";
+            case PENDING -> "QUEUED";
+        };
+        long timeoutThresholdSeconds = result.getExecutionStatus() == BacktestResult.ExecutionStatus.RUNNING
+            ? RUNNING_TIMEOUT_SECONDS
+            : QUEUE_TIMEOUT_SECONDS;
+        LocalDateTime heartbeatBase = result.getLastProgressAt() != null
+            ? result.getLastProgressAt()
+            : result.getTimestamp();
+        boolean timedOut = (result.getExecutionStatus() == BacktestResult.ExecutionStatus.PENDING
+            || result.getExecutionStatus() == BacktestResult.ExecutionStatus.RUNNING)
+            && heartbeatBase != null
+            && Duration.between(heartbeatBase, LocalDateTime.now()).getSeconds() > timeoutThresholdSeconds;
+
+        return new AsyncTaskMonitorResponse(
+            state,
+            result.getStartedAt() == null && result.getCompletedAt() == null ? 0 : 1,
+            1,
+            null,
+            result.getExecutionStatus() == BacktestResult.ExecutionStatus.FAILED
+                || result.getExecutionStatus() == BacktestResult.ExecutionStatus.COMPLETED,
+            timedOut,
+            timeoutThresholdSeconds
         );
     }
 

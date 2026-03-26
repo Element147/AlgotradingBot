@@ -4,6 +4,7 @@ import com.algotrader.bot.backtest.strategy.BacktestStrategyRegistry;
 import com.algotrader.bot.controller.BacktestAlgorithmResponse;
 import com.algotrader.bot.controller.BacktestRunResponse;
 import com.algotrader.bot.controller.RunBacktestRequest;
+import com.algotrader.bot.controller.AsyncTaskMonitorResponse;
 import com.algotrader.bot.entity.BacktestDataset;
 import com.algotrader.bot.entity.BacktestResult;
 import com.algotrader.bot.repository.BacktestResultRepository;
@@ -144,7 +145,12 @@ public class BacktestManagementService {
             "strategy=" + saved.getStrategyId() + ", datasetId=" + saved.getDatasetId()
         );
 
-        return new BacktestRunResponse(saved.getId(), saved.getExecutionStatus().name(), saved.getTimestamp());
+        return new BacktestRunResponse(
+            saved.getId(),
+            saved.getExecutionStatus().name(),
+            saved.getTimestamp(),
+            new AsyncTaskMonitorResponse("QUEUED", 0, 1, null, false, false, 120L)
+        );
     }
 
     @Transactional
@@ -209,7 +215,12 @@ public class BacktestManagementService {
             "sourceBacktestId=" + backtestId + ", datasetId=" + dataset.getId()
         );
 
-        return new BacktestRunResponse(saved.getId(), saved.getExecutionStatus().name(), saved.getTimestamp());
+        return new BacktestRunResponse(
+            saved.getId(),
+            saved.getExecutionStatus().name(),
+            saved.getTimestamp(),
+            new AsyncTaskMonitorResponse("QUEUED", 0, 1, null, false, false, 120L)
+        );
     }
 
     @Transactional

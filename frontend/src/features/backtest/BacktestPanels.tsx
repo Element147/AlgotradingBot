@@ -74,6 +74,9 @@ function HeaderCellWithTooltip({ label, description }: HeaderCellProps) {
   );
 }
 
+const asyncStateLabel = (item: BacktestHistoryItem) =>
+  item.asyncMonitor?.state ?? (item.executionStatus === 'PENDING' ? 'QUEUED' : item.executionStatus);
+
 interface BacktestTransportStatusAlertProps {
   transportConnected: boolean;
   lastLiveEventAt: string | null;
@@ -119,7 +122,7 @@ export function BacktestTrackedRunCard({
               </Typography>
             </Box>
             <Chip
-              label={trackedRun.executionStatus}
+              label={asyncStateLabel(trackedRun)}
               color={executionStatusColor(trackedRun.executionStatus)}
               variant={trackedRun.executionStatus === 'COMPLETED' ? 'filled' : 'outlined'}
             />
@@ -165,6 +168,12 @@ export function BacktestTrackedRunCard({
                 label: 'Last pushed event',
                 value: formatLiveEventTimestamp(lastLiveEventAt),
               },
+              {
+                label: 'Attempts',
+                value: trackedRun.asyncMonitor
+                  ? `${trackedRun.asyncMonitor.attemptCount} / ${trackedRun.asyncMonitor.maxAttempts ?? 1}`
+                  : '1 / 1',
+              },
             ]}
           />
           <Typography variant="body2" color="text.secondary">
@@ -174,6 +183,12 @@ export function BacktestTrackedRunCard({
             <Alert severity="warning">
               Live stream is not connected, so this page is temporarily relying on polling for
               execution updates.
+            </Alert>
+          ) : null}
+          {trackedRun.asyncMonitor?.timedOut ? (
+            <Alert severity="error">
+              This run has not reported progress within the expected timeout window. Use replay to
+              restart it if the worker does not recover.
             </Alert>
           ) : null}
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
@@ -672,7 +687,7 @@ export function BacktestHistoryPanel({
                     <Stack spacing={0.5}>
                       <Chip
                         size="small"
-                        label={`${item.executionStatus} | ${executionProgressValue(item)}%`}
+                        label={`${asyncStateLabel(item)} | ${executionProgressValue(item)}%`}
                         color={executionStatusColor(item.executionStatus)}
                         variant={item.executionStatus === 'COMPLETED' ? 'filled' : 'outlined'}
                       />
@@ -689,6 +704,15 @@ export function BacktestHistoryPanel({
                       <Typography variant="caption" color="text.secondary">
                         Last pushed event: {formatLiveEventTimestamp(lastLiveEventAt)}
                       </Typography>
+                      {item.asyncMonitor ? (
+                        <Typography variant="caption" color="text.secondary">
+                          Attempts: {item.asyncMonitor.attemptCount}
+                          {item.asyncMonitor.maxAttempts !== null
+                            ? ` / ${item.asyncMonitor.maxAttempts}`
+                            : ''}
+                          {item.asyncMonitor.timedOut ? ' | Timeout window exceeded' : ''}
+                        </Typography>
+                      ) : null}
                     </Stack>
                   </TableCell>
                   <TableCell sx={{ color: validationColor(item.validationStatus) }}>

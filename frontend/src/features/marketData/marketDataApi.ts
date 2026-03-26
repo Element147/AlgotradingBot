@@ -60,10 +60,21 @@ export interface MarketDataImportJob {
   datasetReady: boolean;
   currentChunkStart: string | null;
   attemptCount: number;
+  retryCount?: number;
+  maxRetryCount?: number;
   createdAt: string;
   updatedAt: string;
   startedAt: string | null;
   completedAt: string | null;
+  asyncMonitor?: {
+    state: 'QUEUED' | 'RUNNING' | 'WAITING_RETRY' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+    attemptCount: number;
+    maxAttempts: number | null;
+    nextRetryAt: string | null;
+    retryEligible: boolean;
+    timedOut: boolean;
+    timeoutThresholdSeconds: number | null;
+  };
 }
 
 export interface CreateMarketDataJobPayload {

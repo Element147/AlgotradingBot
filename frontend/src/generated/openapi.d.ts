@@ -1285,6 +1285,19 @@ export interface components {
             adjusted?: boolean;
             regularSessionOnly?: boolean;
         };
+        AsyncTaskMonitorResponse: {
+            state?: string;
+            /** Format: int32 */
+            attemptCount?: number;
+            /** Format: int32 */
+            maxAttempts?: number;
+            /** Format: date-time */
+            nextRetryAt?: string;
+            retryEligible?: boolean;
+            timedOut?: boolean;
+            /** Format: int64 */
+            timeoutThresholdSeconds?: number;
+        };
         MarketDataImportJobResponse: {
             /** Format: int64 */
             id?: number;
@@ -1318,6 +1331,10 @@ export interface components {
             currentChunkStart?: string;
             /** Format: int32 */
             attemptCount?: number;
+            /** Format: int32 */
+            retryCount?: number;
+            /** Format: int32 */
+            maxRetryCount?: number;
             /** Format: date-time */
             createdAt?: string;
             /** Format: date-time */
@@ -1326,6 +1343,7 @@ export interface components {
             startedAt?: string;
             /** Format: date-time */
             completedAt?: string;
+            asyncMonitor?: components["schemas"]["AsyncTaskMonitorResponse"];
         };
         BacktestRunResponse: {
             /** Format: int64 */
@@ -1333,6 +1351,7 @@ export interface components {
             status?: string;
             /** Format: date-time */
             submittedAt?: string;
+            asyncMonitor?: components["schemas"]["AsyncTaskMonitorResponse"];
         };
         /** @description Backtest run request. Provide `symbol` for single-symbol strategies. Omit `symbol` for dataset-universe strategies to evaluate the whole dataset universe. */
         RunBacktestRequest: {
@@ -1775,6 +1794,7 @@ export interface components {
             startedAt?: string;
             /** Format: date-time */
             completedAt?: string;
+            asyncMonitor?: components["schemas"]["AsyncTaskMonitorResponse"];
         };
         BacktestDetailsResponse: {
             /** Format: int64 */
@@ -1830,6 +1850,7 @@ export interface components {
             completedAt?: string;
             errorMessage?: string;
             availableTelemetrySymbols?: string[];
+            asyncMonitor?: components["schemas"]["AsyncTaskMonitorResponse"];
         };
         BacktestTradeSeriesItemResponse: {
             symbol?: string;
@@ -1962,6 +1983,7 @@ export interface components {
             /** Format: date-time */
             completedAt?: string;
             errorMessage?: string;
+            asyncMonitor?: components["schemas"]["AsyncTaskMonitorResponse"];
         };
         BacktestEquityPointResponse: {
             /** Format: date-time */

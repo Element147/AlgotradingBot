@@ -5,5 +5,6 @@ import java.time.LocalDateTime;
 public record BacktestRunResponse(
     Long id,
     String status,
-    LocalDateTime submittedAt
+    LocalDateTime submittedAt,
+    AsyncTaskMonitorResponse asyncMonitor
 ) {}

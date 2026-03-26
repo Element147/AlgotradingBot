@@ -27,6 +27,7 @@ public class MarketDataImportExecutionService {
         MarketDataImportJobStatus.WAITING_RETRY
     );
     private static final long WORK_SLICE_SECONDS = 20;
+    private static final long ACTIVE_TIMEOUT_SECONDS = 900;
 
     private final MarketDataImportJobRepository marketDataImportJobRepository;
     private final MarketDataProviderRegistry marketDataProviderRegistry;
@@ -207,8 +208,21 @@ public class MarketDataImportExecutionService {
 
     private void updateRetry(Long jobId, LocalDateTime retryAt, String message) {
         MarketDataImportJob job = getJob(jobId);
+        int nextRetryCount = job.getRetryCount() + 1;
+        job.setRetryCount(nextRetryCount);
+        if (job.getMaxRetryCount() != null && nextRetryCount > job.getMaxRetryCount()) {
+            markFailed(
+                jobId,
+                "Automatic retry limit reached after " + job.getRetryCount()
+                    + " wait windows. Review provider limits or credentials, then retry manually."
+            );
+            return;
+        }
         job.setStatus(MarketDataImportJobStatus.WAITING_RETRY);
-        job.setStatusMessage(message);
+        job.setStatusMessage(
+            (message == null || message.isBlank() ? "Provider asked the downloader to wait." : message)
+                + " Automatic retry " + nextRetryCount + " of " + job.getMaxRetryCount() + "."
+        );
         job.setNextRetryAt(retryAt);
         MarketDataImportJob saved = marketDataImportJobRepository.save(job);
         marketDataImportProgressService.publish(saved);

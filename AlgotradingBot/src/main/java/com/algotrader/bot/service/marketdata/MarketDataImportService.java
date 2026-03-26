@@ -29,6 +29,7 @@ public class MarketDataImportService {
         MarketDataImportJobStatus.WAITING_RETRY
     );
     private static final int READY_JOB_BATCH_SIZE = 2;
+    private static final int DEFAULT_MAX_RETRY_COUNT = 4;
 
     private final MarketDataImportJobRepository marketDataImportJobRepository;
     private final MarketDataProviderRegistry marketDataProviderRegistry;
@@ -145,6 +146,8 @@ public class MarketDataImportService {
         job.setCurrentChunkStart(request.startDate().atStartOfDay());
         job.setImportedRowCount(0);
         job.setAttemptCount(0);
+        job.setRetryCount(0);
+        job.setMaxRetryCount(DEFAULT_MAX_RETRY_COUNT);
 
         MarketDataImportJob saved = marketDataImportJobRepository.save(job);
         marketDataImportProgressService.publish(saved);
@@ -172,6 +175,8 @@ public class MarketDataImportService {
         job.setCurrentChunkStart(job.getStartDate().atStartOfDay());
         job.setImportedRowCount(0);
         job.setAttemptCount(0);
+        job.setRetryCount(0);
+        job.setMaxRetryCount(DEFAULT_MAX_RETRY_COUNT);
         job.setStagedCsvData(null);
         job.setDatasetId(null);
         job.setStartedAt(null);

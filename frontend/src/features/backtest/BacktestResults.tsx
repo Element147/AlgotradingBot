@@ -1077,6 +1077,12 @@ export function BacktestResults({
                   {details.statusMessage ??
                     'No backend status message was recorded for this run.'}
                 </Typography>
+                {details.asyncMonitor?.timedOut ? (
+                  <Alert severity="error">
+                    The async monitor flagged this run as stale because it exceeded the expected
+                    backend update window.
+                  </Alert>
+                ) : null}
                 {details.errorMessage ? <Alert severity="error">{details.errorMessage}</Alert> : null}
               </Stack>
             </SurfacePanel>

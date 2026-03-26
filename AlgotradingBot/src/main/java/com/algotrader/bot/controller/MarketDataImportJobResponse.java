@@ -26,9 +26,12 @@ public record MarketDataImportJobResponse(
     boolean datasetReady,
     LocalDateTime currentChunkStart,
     Integer attemptCount,
+    Integer retryCount,
+    Integer maxRetryCount,
     LocalDateTime createdAt,
     LocalDateTime updatedAt,
     LocalDateTime startedAt,
-    LocalDateTime completedAt
+    LocalDateTime completedAt,
+    AsyncTaskMonitorResponse asyncMonitor
 ) {
 }

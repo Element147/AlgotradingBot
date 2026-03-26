@@ -107,6 +107,14 @@ public class MarketDataImportJob {
     private Integer attemptCount;
 
     @NotNull
+    @Column(name = "retry_count", nullable = false)
+    private Integer retryCount;
+
+    @NotNull
+    @Column(name = "max_retry_count", nullable = false)
+    private Integer maxRetryCount;
+
+    @NotNull
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -144,6 +152,12 @@ public class MarketDataImportJob {
         }
         if (attemptCount == null) {
             attemptCount = 0;
+        }
+        if (retryCount == null) {
+            retryCount = 0;
+        }
+        if (maxRetryCount == null) {
+            maxRetryCount = 4;
         }
     }
 
@@ -298,6 +312,22 @@ public class MarketDataImportJob {
 
     public void setAttemptCount(Integer attemptCount) {
         this.attemptCount = attemptCount;
+    }
+
+    public Integer getRetryCount() {
+        return retryCount;
+    }
+
+    public void setRetryCount(Integer retryCount) {
+        this.retryCount = retryCount;
+    }
+
+    public Integer getMaxRetryCount() {
+        return maxRetryCount;
+    }
+
+    public void setMaxRetryCount(Integer maxRetryCount) {
+        this.maxRetryCount = maxRetryCount;
     }
 
     public LocalDateTime getCreatedAt() {

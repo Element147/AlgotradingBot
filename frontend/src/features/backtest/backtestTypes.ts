@@ -1,6 +1,13 @@
 export type BacktestSelectionMode = 'SINGLE_SYMBOL' | 'DATASET_UNIVERSE';
 
 export type BacktestExecutionStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+export type AsyncTaskState =
+  | 'QUEUED'
+  | 'RUNNING'
+  | 'WAITING_RETRY'
+  | 'FAILED'
+  | 'COMPLETED'
+  | 'CANCELLED';
 
 export type BacktestValidationStatus = 'PENDING' | 'PASSED' | 'FAILED' | 'PRODUCTION_READY';
 
@@ -95,6 +102,7 @@ export interface BacktestHistoryItem {
   lastProgressAt: string | null;
   startedAt: string | null;
   completedAt: string | null;
+  asyncMonitor?: AsyncTaskMonitor;
 }
 
 export interface BacktestDetails extends BacktestHistoryItem {
@@ -113,6 +121,7 @@ export interface BacktestDetails extends BacktestHistoryItem {
   endDate: string;
   errorMessage: string | null;
   availableTelemetrySymbols: string[];
+  asyncMonitor?: AsyncTaskMonitor;
 }
 
 export interface BacktestSummary extends BacktestHistoryItem {
@@ -130,6 +139,17 @@ export interface BacktestSummary extends BacktestHistoryItem {
   startDate: string;
   endDate: string;
   errorMessage: string | null;
+  asyncMonitor?: AsyncTaskMonitor;
+}
+
+export interface AsyncTaskMonitor {
+  state: AsyncTaskState;
+  attemptCount: number;
+  maxAttempts: number | null;
+  nextRetryAt: string | null;
+  retryEligible: boolean;
+  timedOut: boolean;
+  timeoutThresholdSeconds: number | null;
 }
 
 export interface BacktestSymbolTelemetry {
@@ -259,4 +279,5 @@ export interface BacktestRunSubmission {
   id: number;
   status: BacktestExecutionStatus;
   submittedAt: string;
+  asyncMonitor?: AsyncTaskMonitor;
 }

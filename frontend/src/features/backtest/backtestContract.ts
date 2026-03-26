@@ -25,6 +25,7 @@ type RawBacktestDatasetRetentionReport =
   components['schemas']['BacktestDatasetRetentionReportResponse'];
 type RawBacktestDetails = components['schemas']['BacktestDetailsResponse'] & {
   availableTelemetrySymbols?: string[];
+  asyncMonitor?: RawAsyncTaskMonitor;
 };
 type RawBacktestTelemetryQueryResponse = components['schemas']['BacktestTelemetryQueryResponse'] & {
   telemetry: RawBacktestSymbolTelemetry;
@@ -32,10 +33,25 @@ type RawBacktestTelemetryQueryResponse = components['schemas']['BacktestTelemetr
 type RawBacktestEquityPoint = components['schemas']['BacktestEquityPointResponse'];
 type RawBacktestTradeSeriesItem = components['schemas']['BacktestTradeSeriesItemResponse'];
 type RawBacktestExperimentSummary = components['schemas']['BacktestExperimentSummaryResponse'];
-type RawBacktestHistoryItem = components['schemas']['BacktestHistoryItemResponse'];
-type RawBacktestSummary = components['schemas']['BacktestSummaryResponse'];
+type RawBacktestHistoryItem = components['schemas']['BacktestHistoryItemResponse'] & {
+  asyncMonitor?: RawAsyncTaskMonitor;
+};
+type RawBacktestSummary = components['schemas']['BacktestSummaryResponse'] & {
+  asyncMonitor?: RawAsyncTaskMonitor;
+};
 type RawBacktestRunRequest = components['schemas']['RunBacktestRequest'];
-type RawBacktestRunSubmission = components['schemas']['BacktestRunResponse'];
+type RawBacktestRunSubmission = components['schemas']['BacktestRunResponse'] & {
+  asyncMonitor?: RawAsyncTaskMonitor;
+};
+type RawAsyncTaskMonitor = {
+  state: 'QUEUED' | 'RUNNING' | 'WAITING_RETRY' | 'FAILED' | 'COMPLETED' | 'CANCELLED';
+  attemptCount: number;
+  maxAttempts: number | null;
+  nextRetryAt: string | null;
+  retryEligible: boolean;
+  timedOut: boolean;
+  timeoutThresholdSeconds: number | null;
+};
 type RawBacktestSymbolTelemetry = {
   symbol: string;
   points: RawBacktestTelemetryPoint[];
@@ -82,6 +98,14 @@ const executionStageSchema = z.enum([
   'COMPLETED',
   'FAILED',
 ]);
+const asyncTaskStateSchema = z.enum([
+  'QUEUED',
+  'RUNNING',
+  'WAITING_RETRY',
+  'FAILED',
+  'COMPLETED',
+  'CANCELLED',
+]);
 const retentionStatusSchema = z.enum([
   'ACTIVE',
   'ACTIVE_DUPLICATE_RETAINED',
@@ -94,6 +118,16 @@ const tradeSideSchema = z.enum(['LONG', 'SHORT']);
 const actionTypeSchema = z.enum(['BUY', 'SELL', 'SHORT', 'COVER']);
 const indicatorPaneSchema = z.enum(['PRICE', 'OSCILLATOR']);
 const regimeSchema = z.enum(['WARMUP', 'RANGE', 'TREND_UP', 'TREND_DOWN']);
+
+const asyncTaskMonitorSchema = z.object({
+  state: asyncTaskStateSchema,
+  attemptCount: z.number().int(),
+  maxAttempts: z.number().int().nullable(),
+  nextRetryAt: z.string().nullable(),
+  retryEligible: z.boolean(),
+  timedOut: z.boolean(),
+  timeoutThresholdSeconds: z.number().int().nullable(),
+});
 
 const backtestAlgorithmSchema = z.object({
   id: z.string().min(1),
@@ -157,6 +191,7 @@ const backtestHistoryItemSchema = z.object({
   lastProgressAt: z.string().nullable(),
   startedAt: z.string().nullable(),
   completedAt: z.string().nullable(),
+  asyncMonitor: asyncTaskMonitorSchema,
 });
 
 const backtestEquityPointSchema = z.object({
@@ -303,6 +338,7 @@ const backtestRunSubmissionSchema = z.object({
   id: z.number().int(),
   status: executionStatusSchema,
   submittedAt: z.string().min(1),
+  asyncMonitor: asyncTaskMonitorSchema,
 });
 
 const backtestTelemetryQueryResponseSchema = z.object({
@@ -328,10 +364,23 @@ export const normalizeBacktestDatasetRetentionReport = (
 
 export const normalizeBacktestHistory = (
   response: RawBacktestHistoryItem[]
-): BacktestHistoryItem[] => z.array(backtestHistoryItemSchema).parse(response);
+): BacktestHistoryItem[] =>
+  z.array(backtestHistoryItemSchema).parse(
+    response.map((item) => ({
+      ...item,
+      asyncMonitor: normalizeAsyncTaskMonitor(item.asyncMonitor, item.executionStatus, item.lastProgressAt),
+    }))
+  );
 
 export const normalizeBacktestDetails = (response: RawBacktestDetails): BacktestDetails =>
-  backtestDetailsSchema.parse(response);
+  backtestDetailsSchema.parse({
+    ...response,
+    asyncMonitor: normalizeAsyncTaskMonitor(
+      response.asyncMonitor,
+      response.executionStatus,
+      response.lastProgressAt
+    ),
+  });
 
 export const normalizeBacktestEquityCurve = (
   response: RawBacktestEquityPoint[]
@@ -346,7 +395,14 @@ export const normalizeBacktestTelemetryResponse = (
 ): BacktestTelemetryQueryResponse => backtestTelemetryQueryResponseSchema.parse(response);
 
 export const normalizeBacktestSummary = (response: RawBacktestSummary): BacktestSummary =>
-  backtestSummarySchema.parse(response);
+  backtestSummarySchema.parse({
+    ...response,
+    asyncMonitor: normalizeAsyncTaskMonitor(
+      response.asyncMonitor,
+      response.executionStatus,
+      response.lastProgressAt
+    ),
+  });
 
 export const normalizeBacktestExperimentSummaries = (
   response: RawBacktestExperimentSummary[]
@@ -358,7 +414,33 @@ export const normalizeBacktestComparisonResponse = (
 
 export const normalizeBacktestRunSubmission = (
   response: RawBacktestRunSubmission
-): BacktestRunSubmission => backtestRunSubmissionSchema.parse(response);
+): BacktestRunSubmission =>
+  backtestRunSubmissionSchema.parse({
+    ...response,
+    asyncMonitor: normalizeAsyncTaskMonitor(response.asyncMonitor, response.status, response.submittedAt),
+  });
+
+const normalizeAsyncTaskMonitor = (
+  monitor: RawAsyncTaskMonitor | undefined,
+  executionStatus: string | undefined,
+  timestamp: string | null | undefined
+): RawAsyncTaskMonitor =>
+  monitor ?? {
+    state:
+      executionStatus === 'PENDING'
+        ? 'QUEUED'
+        : executionStatus === 'RUNNING'
+          ? 'RUNNING'
+          : executionStatus === 'FAILED'
+            ? 'FAILED'
+            : 'COMPLETED',
+    attemptCount: executionStatus === 'PENDING' ? 0 : 1,
+    maxAttempts: 1,
+    nextRetryAt: null,
+    retryEligible: executionStatus === 'FAILED' || executionStatus === 'COMPLETED',
+    timedOut: false,
+    timeoutThresholdSeconds: timestamp ? 120 : null,
+  };
 
 export const toRunBacktestRequest = (payload: RunBacktestPayload): RawBacktestRunRequest => {
   const request: RawBacktestRunRequest = {

@@ -39,5 +39,6 @@ public record BacktestSummaryResponse(
     LocalDateTime lastProgressAt,
     LocalDateTime startedAt,
     LocalDateTime completedAt,
-    String errorMessage
+    String errorMessage,
+    AsyncTaskMonitorResponse asyncMonitor
 ) {}

@@ -130,6 +130,12 @@ export function MarketDataTelemetryCard({
             label: 'Last pushed event',
             value: formatLiveImportEventTimestamp(lastImportEventAt),
           },
+          {
+            label: 'Retry windows',
+            value: `${trackedJob.retryCount ?? trackedJob.asyncMonitor?.attemptCount ?? 0} / ${
+              trackedJob.maxRetryCount ?? trackedJob.asyncMonitor?.maxAttempts ?? 'n/a'
+            }`,
+          },
         ]}
       />
       <Typography variant="body2" color="text.secondary">
@@ -152,6 +158,12 @@ export function MarketDataTelemetryCard({
         <Alert severity="warning">
           Live stream is not connected, so this page is temporarily relying on polling for import
           updates.
+        </Alert>
+      ) : null}
+      {trackedJob.asyncMonitor?.timedOut ? (
+        <Alert severity="error">
+          This job has exceeded the expected backend update window. Review the provider state and
+          retry manually if it does not recover.
         </Alert>
       ) : null}
     </SurfacePanel>
@@ -504,6 +516,9 @@ export function MarketDataJobsPanel({
                       <Typography variant="caption" color="text.secondary">
                         Rows imported: {formatNumber(job.importedRowCount)} | Attempts:{' '}
                         {job.attemptCount}
+                        {job.retryCount !== undefined && job.maxRetryCount !== undefined
+                          ? ` | Retry windows: ${job.retryCount} / ${job.maxRetryCount}`
+                          : ''}
                         {job.currentSymbol ? ` | Current symbol: ${job.currentSymbol}` : ''}
                         {job.currentChunkStart
                           ? ` | Chunk start: ${formatOptionalDateTime(job.currentChunkStart)}`
@@ -518,6 +533,7 @@ export function MarketDataJobsPanel({
                         {job.completedAt
                           ? ` | Completed: ${formatOptionalDateTime(job.completedAt)}`
                           : ''}
+                        {job.asyncMonitor?.timedOut ? ' | Timeout window exceeded' : ''}
                       </Typography>
                       <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                         {job.status === 'FAILED' || job.status === 'CANCELLED' ? (

@@ -41,5 +41,6 @@ public record BacktestDetailsResponse(
     LocalDateTime startedAt,
     LocalDateTime completedAt,
     String errorMessage,
-    List<String> availableTelemetrySymbols
+    List<String> availableTelemetrySymbols,
+    AsyncTaskMonitorResponse asyncMonitor
 ) {}
