@@ -496,26 +496,96 @@ export const handlers = [
       startedAt: '2026-03-10T09:58:00',
       completedAt: '2026-03-10T10:00:00',
       errorMessage: null,
-      equityCurve: [
-        { timestamp: '2025-01-01T00:00:00', equity: 1000, drawdownPct: 0 },
-        { timestamp: '2025-01-02T00:00:00', equity: 1080, drawdownPct: 0 },
-      ],
-      tradeSeries: [
-        {
-          symbol: 'BTC/USDT',
-          side: 'LONG',
-          entryTime: '2025-01-01T00:00:00',
-          exitTime: '2025-01-02T00:00:00',
-          entryPrice: 100,
-          exitPrice: 108,
-          quantity: 9.5,
-          entryValue: 950,
-          exitValue: 1026,
-          returnPct: 8,
-        },
-      ],
+      availableTelemetrySymbols: ['BTC/USDT', 'ETH/USDT'],
     })
   ),
+  http.get(`${API_BASE_URL}/api/backtests/:id/equity`, () =>
+    HttpResponse.json([
+      { timestamp: '2025-01-01T00:00:00', equity: 1000, drawdownPct: 0 },
+      { timestamp: '2025-01-02T00:00:00', equity: 1080, drawdownPct: 0 },
+    ])
+  ),
+  http.get(`${API_BASE_URL}/api/backtests/:id/trades`, () =>
+    HttpResponse.json([
+      {
+        symbol: 'BTC/USDT',
+        side: 'LONG',
+        entryTime: '2025-01-01T00:00:00',
+        exitTime: '2025-01-02T00:00:00',
+        entryPrice: 100,
+        exitPrice: 108,
+        quantity: 9.5,
+        entryValue: 950,
+        exitValue: 1026,
+        returnPct: 8,
+      },
+      {
+        symbol: 'ETH/USDT',
+        side: 'LONG',
+        entryTime: '2025-01-03T00:00:00',
+        exitTime: '2025-01-04T00:00:00',
+        entryPrice: 200,
+        exitPrice: 214,
+        quantity: 4.5,
+        entryValue: 900,
+        exitValue: 963,
+        returnPct: 7,
+      },
+    ])
+  ),
+  http.get(`${API_BASE_URL}/api/backtests/:id/telemetry`, ({ request }) => {
+    const url = new URL(request.url);
+    const symbol = url.searchParams.get('symbol') ?? 'BTC/USDT';
+    return HttpResponse.json({
+      requestedSymbol: url.searchParams.get('symbol'),
+      resolvedSymbol: symbol,
+      availableSymbols: ['BTC/USDT', 'ETH/USDT'],
+      telemetry: {
+        symbol,
+        points: [
+          {
+            timestamp: '2025-01-01T00:00:00',
+            open: 100,
+            high: 101,
+            low: 99,
+            close: 100,
+            volume: 1000,
+            exposurePct: 0,
+            regime: 'WARMUP',
+          },
+          {
+            timestamp: '2025-01-02T00:00:00',
+            open: 108,
+            high: 109,
+            low: 107,
+            close: 108,
+            volume: 1200,
+            exposurePct: 95,
+            regime: 'TREND_UP',
+          },
+        ],
+        actions: [
+          {
+            timestamp: '2025-01-01T00:00:00',
+            action: 'BUY',
+            price: 100,
+            label: 'Long entry',
+          },
+        ],
+        indicators: [
+          {
+            key: 'bb_middle_20',
+            label: 'Bollinger Mid (20)',
+            pane: 'PRICE',
+            points: [
+              { timestamp: '2025-01-01T00:00:00', value: null },
+              { timestamp: '2025-01-02T00:00:00', value: 104 },
+            ],
+          },
+        ],
+      },
+    });
+  }),
   http.get(`${API_BASE_URL}/api/backtests/:id/summary`, ({ params }) =>
     HttpResponse.json({
       id: Number(params.id),

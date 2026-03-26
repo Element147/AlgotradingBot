@@ -112,24 +112,7 @@ export interface BacktestDetails extends BacktestHistoryItem {
   startDate: string;
   endDate: string;
   errorMessage: string | null;
-  equityCurve: Array<{
-    timestamp: string;
-    equity: number;
-    drawdownPct: number;
-  }>;
-  tradeSeries: Array<{
-    symbol: string;
-    side: BacktestTradeSide;
-    entryTime: string;
-    exitTime: string;
-    entryPrice: number;
-    exitPrice: number;
-    quantity: number;
-    entryValue: number;
-    exitValue: number;
-    returnPct: number;
-  }>;
-  telemetry: BacktestSymbolTelemetry[];
+  availableTelemetrySymbols: string[];
 }
 
 export interface BacktestSummary extends BacktestHistoryItem {
@@ -154,6 +137,32 @@ export interface BacktestSymbolTelemetry {
   points: BacktestTelemetryPoint[];
   actions: BacktestActionMarker[];
   indicators: BacktestIndicatorSeries[];
+}
+
+export interface BacktestEquityPoint {
+  timestamp: string;
+  equity: number;
+  drawdownPct: number;
+}
+
+export interface BacktestTradeSeriesItem {
+  symbol: string;
+  side: BacktestTradeSide;
+  entryTime: string;
+  exitTime: string;
+  entryPrice: number;
+  exitPrice: number;
+  quantity: number;
+  entryValue: number;
+  exitValue: number;
+  returnPct: number;
+}
+
+export interface BacktestTelemetryQueryResponse {
+  requestedSymbol: string | null;
+  resolvedSymbol: string;
+  availableSymbols: string[];
+  telemetry: BacktestSymbolTelemetry;
 }
 
 export interface BacktestTelemetryPoint {

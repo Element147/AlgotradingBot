@@ -795,6 +795,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/backtests/{backtestId}/trades": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tradeSeries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/backtests/{backtestId}/telemetry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["telemetry"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/backtests/{backtestId}/summary": {
         parameters: {
             query?: never;
@@ -803,6 +835,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["summary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/backtests/{backtestId}/equity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["equityCurve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1728,13 +1776,6 @@ export interface components {
             /** Format: date-time */
             completedAt?: string;
         };
-        BacktestActionMarkerResponse: {
-            /** Format: date-time */
-            timestamp?: string;
-            action?: string;
-            price?: number;
-            label?: string;
-        };
         BacktestDetailsResponse: {
             /** Format: int64 */
             id?: number;
@@ -1788,15 +1829,28 @@ export interface components {
             /** Format: date-time */
             completedAt?: string;
             errorMessage?: string;
-            equityCurve?: components["schemas"]["BacktestEquityPointResponse"][];
-            tradeSeries?: components["schemas"]["BacktestTradeSeriesItemResponse"][];
-            telemetry?: components["schemas"]["BacktestSymbolTelemetryResponse"][];
+            availableTelemetrySymbols?: string[];
         };
-        BacktestEquityPointResponse: {
+        BacktestTradeSeriesItemResponse: {
+            symbol?: string;
+            side?: string;
+            /** Format: date-time */
+            entryTime?: string;
+            /** Format: date-time */
+            exitTime?: string;
+            entryPrice?: number;
+            exitPrice?: number;
+            quantity?: number;
+            entryValue?: number;
+            exitValue?: number;
+            returnPct?: number;
+        };
+        BacktestActionMarkerResponse: {
             /** Format: date-time */
             timestamp?: string;
-            equity?: number;
-            drawdownPct?: number;
+            action?: string;
+            price?: number;
+            label?: string;
         };
         BacktestIndicatorPointResponse: {
             /** Format: date-time */
@@ -1849,19 +1903,11 @@ export interface components {
             /** Format: date-time */
             coverageEnd?: string;
         };
-        BacktestTradeSeriesItemResponse: {
-            symbol?: string;
-            side?: string;
-            /** Format: date-time */
-            entryTime?: string;
-            /** Format: date-time */
-            exitTime?: string;
-            entryPrice?: number;
-            exitPrice?: number;
-            quantity?: number;
-            entryValue?: number;
-            exitValue?: number;
-            returnPct?: number;
+        BacktestTelemetryQueryResponse: {
+            requestedSymbol?: string;
+            resolvedSymbol?: string;
+            availableSymbols?: string[];
+            telemetry?: components["schemas"]["BacktestSymbolTelemetryResponse"];
         };
         BacktestSummaryResponse: {
             /** Format: int64 */
@@ -1916,6 +1962,12 @@ export interface components {
             /** Format: date-time */
             completedAt?: string;
             errorMessage?: string;
+        };
+        BacktestEquityPointResponse: {
+            /** Format: date-time */
+            timestamp?: string;
+            equity?: number;
+            drawdownPct?: number;
         };
         BacktestExperimentSummaryResponse: {
             experimentKey?: string;
@@ -3464,6 +3516,52 @@ export interface operations {
             };
         };
     };
+    tradeSeries: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                backtestId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BacktestTradeSeriesItemResponse"][];
+                };
+            };
+        };
+    };
+    telemetry: {
+        parameters: {
+            query?: {
+                symbol?: string;
+            };
+            header?: never;
+            path: {
+                backtestId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BacktestTelemetryQueryResponse"];
+                };
+            };
+        };
+    };
     summary: {
         parameters: {
             query?: never;
@@ -3482,6 +3580,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["BacktestSummaryResponse"];
+                };
+            };
+        };
+    };
+    equityCurve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                backtestId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BacktestEquityPointResponse"][];
                 };
             };
         };

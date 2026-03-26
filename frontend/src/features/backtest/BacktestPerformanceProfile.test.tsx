@@ -8,6 +8,58 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { BacktestResults } from './BacktestResults';
 
+let mockedEquityCurve: Array<{ timestamp: string; equity: number; drawdownPct: number }> = [];
+let mockedTradeSeries: Array<{
+  symbol: string;
+  side: 'LONG' | 'SHORT';
+  entryTime: string;
+  exitTime: string;
+  entryPrice: number;
+  exitPrice: number;
+  quantity: number;
+  entryValue: number;
+  exitValue: number;
+  returnPct: number;
+}> = [];
+let mockedTelemetryResponse:
+  | {
+      requestedSymbol: string;
+      resolvedSymbol: string;
+      availableSymbols: string[];
+      telemetry: {
+        symbol: string;
+        points: Array<{
+          timestamp: string;
+          open: number;
+          high: number;
+          low: number;
+          close: number;
+          volume: number;
+          exposurePct: number;
+          regime: 'WARMUP' | 'RANGE' | 'TREND_UP' | 'TREND_DOWN';
+        }>;
+        actions: Array<{
+          timestamp: string;
+          action: 'BUY' | 'SELL' | 'SHORT' | 'COVER';
+          price: number;
+          label: string;
+        }>;
+        indicators: Array<{
+          key: string;
+          label: string;
+          pane: 'PRICE' | 'OSCILLATOR';
+          points: Array<{ timestamp: string; value: number | null }>;
+        }>;
+      };
+    }
+  | undefined;
+
+vi.mock('./backtestApi', () => ({
+  useGetBacktestEquityCurveQuery: () => ({ data: mockedEquityCurve }),
+  useGetBacktestTradeSeriesQuery: () => ({ data: mockedTradeSeries }),
+  useGetBacktestTelemetryQuery: () => ({ data: mockedTelemetryResponse }),
+}));
+
 vi.mock('@/components/charts/EquityCurve', () => ({
   EquityCurve: () => <div>equity curve</div>,
 }));
@@ -31,12 +83,6 @@ vi.mock('./BacktestWorkspaceChart', () => ({
 }));
 
 const buildDetails = () => {
-  const equityCurve = Array.from({ length: 2400 }, (_, index) => ({
-    timestamp: new Date(Date.UTC(2025, 0, 1, index)).toISOString().slice(0, 19),
-    equity: 1000 + index * 2,
-    drawdownPct: Number((index % 25) * 0.1).toFixed(2),
-  }));
-
   const tradeSeries = Array.from({ length: 320 }, (_, index) => ({
     symbol: index % 2 === 0 ? 'BTC/USDT' : 'ETH/USDT',
     side: index % 3 === 0 ? 'SHORT' : 'LONG',
@@ -140,15 +186,84 @@ const buildDetails = () => {
     startedAt: '2026-03-25T10:00:00',
     completedAt: '2026-03-25T10:05:00',
     errorMessage: null,
-    equityCurve,
-    tradeSeries,
-    telemetry,
+    availableTelemetrySymbols: telemetry.map((series) => series.symbol),
   };
 };
 
 describe('BacktestPerformanceProfile', () => {
   it('writes a render profile report', { timeout: 20000 }, () => {
     const details = buildDetails();
+    mockedEquityCurve = Array.from({ length: 2400 }, (_, index) => ({
+      timestamp: new Date(Date.UTC(2025, 0, 1, index)).toISOString().slice(0, 19),
+      equity: 1000 + index * 2,
+      drawdownPct: Number((index % 25) * 0.1),
+    }));
+    mockedTradeSeries = Array.from({ length: 320 }, (_, index) => ({
+      symbol: index % 2 === 0 ? 'BTC/USDT' : 'ETH/USDT',
+      side: index % 3 === 0 ? 'SHORT' : 'LONG',
+      entryTime: new Date(Date.UTC(2025, 0, 1, index * 6)).toISOString().slice(0, 19),
+      exitTime: new Date(Date.UTC(2025, 0, 1, index * 6 + 4)).toISOString().slice(0, 19),
+      entryPrice: 100 + index,
+      exitPrice: 101 + index,
+      quantity: 1.25,
+      entryValue: 125 + index,
+      exitValue: 126 + index,
+      returnPct: Number(((index % 9) - 4) * 0.75),
+    }));
+    mockedTelemetryResponse = {
+      requestedSymbol: 'BTC/USDT',
+      resolvedSymbol: 'BTC/USDT',
+      availableSymbols: ['BTC/USDT', 'ETH/USDT'],
+      telemetry: {
+        symbol: 'BTC/USDT',
+        points: Array.from({ length: 2400 }, (_, index) => ({
+          timestamp: new Date(Date.UTC(2025, 0, 1, index)).toISOString().slice(0, 19),
+          open: 100 + index,
+          high: 101 + index,
+          low: 99 + index,
+          close: 100 + index,
+          volume: 1000 + index,
+          exposurePct: index % 2 === 0 ? 95 : 0,
+          regime: index < 200 ? 'WARMUP' : index % 3 === 0 ? 'TREND_UP' : 'RANGE',
+        })),
+        actions: mockedTradeSeries
+          .filter((trade) => trade.symbol === 'BTC/USDT')
+          .flatMap((trade) => [
+            {
+              timestamp: trade.entryTime,
+              action: trade.side === 'SHORT' ? 'SHORT' : 'BUY',
+              price: trade.entryPrice,
+              label: trade.side === 'SHORT' ? 'Short entry' : 'Long entry',
+            },
+            {
+              timestamp: trade.exitTime,
+              action: trade.side === 'SHORT' ? 'COVER' : 'SELL',
+              price: trade.exitPrice,
+              label: trade.side === 'SHORT' ? 'Cover short' : 'Exit long',
+            },
+          ]),
+        indicators: [
+          {
+            key: 'ema_50_0',
+            label: 'EMA 50',
+            pane: 'PRICE',
+            points: Array.from({ length: 2400 }, (_, index) => ({
+              timestamp: new Date(Date.UTC(2025, 0, 1, index)).toISOString().slice(0, 19),
+              value: index < 49 ? null : 100 + index * 0.98,
+            })),
+          },
+          {
+            key: 'adx_14_0',
+            label: 'ADX 14',
+            pane: 'OSCILLATOR',
+            points: Array.from({ length: 2400 }, (_, index) => ({
+              timestamp: new Date(Date.UTC(2025, 0, 1, index)).toISOString().slice(0, 19),
+              value: index < 14 ? null : 20 + (index % 20),
+            })),
+          },
+        ],
+      },
+    };
     const payloadBytes = new TextEncoder().encode(JSON.stringify(details)).length;
 
     const startedAt = performance.now();
@@ -165,10 +280,10 @@ Generated by \`npm run profile:backtest\` for task \`1C.1\`.
 
 - Payload size: ${(payloadBytes / 1024).toFixed(2)} KB
 - Render time: ${renderMs.toFixed(2)} ms
-- Equity points: ${details.equityCurve.length}
-- Trades: ${details.tradeSeries.length}
-- Telemetry symbols: ${details.telemetry.length}
-- Telemetry points per symbol: ${details.telemetry[0]?.points.length ?? 0}
+- Equity points: ${mockedEquityCurve.length}
+- Trades: ${mockedTradeSeries.length}
+- Telemetry symbols: ${details.availableTelemetrySymbols.length}
+- Telemetry points in active symbol payload: ${mockedTelemetryResponse?.telemetry.points.length ?? 0}
 
 Notes:
 - This profile isolates route and workspace render orchestration in jsdom while mocking the heaviest chart primitives, so it is best read as frontend render-preparation cost rather than a full browser paint metric.

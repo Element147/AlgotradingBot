@@ -7,10 +7,13 @@ import {
   normalizeBacktestDatasetRetentionReport,
   normalizeBacktestDatasets,
   normalizeBacktestDetails,
+  normalizeBacktestEquityCurve,
   normalizeBacktestExperimentSummaries,
   normalizeBacktestHistory,
   normalizeBacktestRunSubmission,
   normalizeBacktestSummary,
+  normalizeBacktestTelemetryResponse,
+  normalizeBacktestTradeSeries,
   toRunBacktestRequest,
 } from './backtestContract';
 import type {
@@ -19,10 +22,13 @@ import type {
   BacktestDataset,
   BacktestDatasetRetentionReport,
   BacktestDetails,
+  BacktestEquityPoint,
   BacktestExperimentSummary,
   BacktestHistoryItem,
   BacktestRunSubmission,
   BacktestSummary,
+  BacktestTelemetryQueryResponse,
+  BacktestTradeSeriesItem,
   RunBacktestPayload,
 } from './backtestTypes';
 
@@ -36,6 +42,7 @@ export type {
   BacktestDatasetRetentionReport,
   BacktestDatasetRetentionStatus,
   BacktestDetails,
+  BacktestEquityPoint,
   BacktestExecutionStage,
   BacktestExecutionStatus,
   BacktestExperimentSummary,
@@ -47,7 +54,9 @@ export type {
   BacktestIndicatorSeries,
   BacktestRegime,
   BacktestSymbolTelemetry,
+  BacktestTelemetryQueryResponse,
   BacktestTelemetryPoint,
+  BacktestTradeSeriesItem,
   BacktestTradeSide,
   BacktestValidationStatus,
   RunBacktestPayload,
@@ -73,6 +82,27 @@ export const backtestApi = createApi({
       query: (id) => `/api/backtests/${id}`,
       transformResponse: normalizeBacktestDetails,
       providesTags: (_result, _error, id) => [{ type: 'Backtests', id }],
+    }),
+    getBacktestEquityCurve: builder.query<BacktestEquityPoint[], number>({
+      query: (id) => `/api/backtests/${id}/equity`,
+      transformResponse: normalizeBacktestEquityCurve,
+      providesTags: (_result, _error, id) => [{ type: 'Backtests', id }],
+    }),
+    getBacktestTradeSeries: builder.query<BacktestTradeSeriesItem[], number>({
+      query: (id) => `/api/backtests/${id}/trades`,
+      transformResponse: normalizeBacktestTradeSeries,
+      providesTags: (_result, _error, id) => [{ type: 'Backtests', id }],
+    }),
+    getBacktestTelemetry: builder.query<
+      BacktestTelemetryQueryResponse,
+      { id: number; symbol?: string | null }
+    >({
+      query: ({ id, symbol }) =>
+        symbol
+          ? `/api/backtests/${id}/telemetry?symbol=${encodeURIComponent(symbol)}`
+          : `/api/backtests/${id}/telemetry`,
+      transformResponse: normalizeBacktestTelemetryResponse,
+      providesTags: (_result, _error, { id }) => [{ type: 'Backtests', id }],
     }),
     getBacktestSummary: builder.query<BacktestSummary, number>({
       query: (id) => `/api/backtests/${id}/summary`,
@@ -168,7 +198,10 @@ export const {
   useGetBacktestsQuery,
   useGetBacktestExperimentSummariesQuery,
   useGetBacktestDetailsQuery,
+  useGetBacktestEquityCurveQuery,
   useGetBacktestSummaryQuery,
+  useGetBacktestTelemetryQuery,
+  useGetBacktestTradeSeriesQuery,
   useGetBacktestAlgorithmsQuery,
   useGetBacktestDatasetsQuery,
   useGetBacktestDatasetRetentionReportQuery,

@@ -31,7 +31,13 @@ import { jsPDF } from 'jspdf';
 import { useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-import type { BacktestDetails } from './backtestApi';
+import {
+  useGetBacktestEquityCurveQuery,
+  useGetBacktestTelemetryQuery,
+  useGetBacktestTradeSeriesQuery,
+  type BacktestDetails,
+  type BacktestTradeSeriesItem,
+} from './backtestApi';
 import { getPreferredTelemetrySymbol } from './backtestTelemetry';
 import {
   formatBacktestMarketLabel,
@@ -92,7 +98,8 @@ interface BacktestResultsProps {
 }
 
 interface BacktestResearchWorkspaceProps {
-  details: BacktestDetails;
+  tradeSeries: BacktestTradeSeriesItem[];
+  availableTelemetrySymbols: string[];
   activeTelemetry: BacktestSymbolTelemetry;
   selectedTelemetrySymbol: string;
   onTelemetrySelect: (symbol: string) => void;
@@ -174,7 +181,8 @@ const compareTradeValues = (
 };
 
 function BacktestResearchWorkspace({
-  details,
+  tradeSeries,
+  availableTelemetrySymbols,
   activeTelemetry,
   selectedTelemetrySymbol,
   onTelemetrySelect,
@@ -193,8 +201,8 @@ function BacktestResearchWorkspace({
     [activeTelemetry]
   );
   const workspaceTrades = useMemo(
-    () => buildWorkspaceTrades(details, activeTelemetry.symbol, activeTelemetry.actions),
-    [activeTelemetry, details]
+    () => buildWorkspaceTrades(tradeSeries, activeTelemetry.symbol, activeTelemetry.actions),
+    [activeTelemetry, tradeSeries]
   );
   const workspaceMarkers = useMemo(
     () => buildWorkspaceMarkers(workspaceTrades),
@@ -361,15 +369,15 @@ function BacktestResearchWorkspace({
             title="Chart workspace"
             description={`${summarizeMarkerFilter(markerFilter, visibleMarkers.length)} on ${activeTelemetry.symbol}. Click a marker or trade row to keep the chart and inspector in sync.`}
             actions={
-              details.telemetry.length > 1 ? (
+              availableTelemetrySymbols.length > 1 ? (
                 <Select
                   size="small"
                   value={selectedTelemetrySymbol}
                   onChange={(event) => onTelemetrySelect(String(event.target.value))}
                 >
-                  {details.telemetry.map((series) => (
-                    <MenuItem key={series.symbol} value={series.symbol}>
-                      {series.symbol}
+                  {availableTelemetrySymbols.map((symbol) => (
+                    <MenuItem key={symbol} value={symbol}>
+                      {symbol}
                     </MenuItem>
                   ))}
                 </Select>
@@ -809,10 +817,22 @@ export function BacktestResults({
   const exportRef = useRef<HTMLDivElement | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
-  const equityCurve = useMemo(() => createEquityCurve(details), [details]);
+  const requestedTelemetrySymbol = searchParams.get('symbol');
+  const preferredTelemetrySymbol = getPreferredTelemetrySymbol(
+    details.symbol,
+    details.availableTelemetrySymbols
+  );
+  const telemetrySymbol = requestedTelemetrySymbol ?? preferredTelemetrySymbol ?? undefined;
+  const { data: equitySeries = [] } = useGetBacktestEquityCurveQuery(details.id);
+  const { data: tradeSeries = [] } = useGetBacktestTradeSeriesQuery(details.id);
+  const { data: telemetryResponse } = useGetBacktestTelemetryQuery({
+    id: details.id,
+    symbol: telemetrySymbol,
+  });
+  const equityCurve = useMemo(() => createEquityCurve(details, equitySeries), [details, equitySeries]);
   const drawdownCurve = useMemo(() => createDrawdownCurve(equityCurve), [equityCurve]);
   const monthlyReturns = useMemo(() => createMonthlyReturns(equityCurve), [equityCurve]);
-  const tradeDistribution = useMemo(() => createTradeDistribution(details), [details]);
+  const tradeDistribution = useMemo(() => createTradeDistribution(tradeSeries), [tradeSeries]);
   const hasCompleteProvenance = Boolean(
     details.datasetId &&
       details.datasetChecksumSha256 &&
@@ -822,13 +842,14 @@ export function BacktestResults({
   const lastUpdateLabel = details.lastProgressAt
     ? formatDistanceToNow(new Date(details.lastProgressAt))
     : 'No progress updates yet';
-  const preferredTelemetrySymbol = getPreferredTelemetrySymbol(details.symbol, details.telemetry);
-  const requestedTelemetrySymbol = searchParams.get('symbol');
-  const activeTelemetry =
-    details.telemetry.find((series) => series.symbol === requestedTelemetrySymbol) ??
-    details.telemetry.find((series) => series.symbol === preferredTelemetrySymbol) ??
-    details.telemetry[0] ??
-    null;
+  const availableTelemetrySymbols = Array.from(
+    new Set(
+      telemetryResponse?.resolvedSymbol
+        ? [...details.availableTelemetrySymbols, telemetryResponse.resolvedSymbol]
+        : details.availableTelemetrySymbols
+    )
+  );
+  const activeTelemetry = telemetryResponse?.telemetry ?? null;
 
   const exportPdf = async () => {
     if (!hasCompleteProvenance) {
@@ -964,7 +985,8 @@ export function BacktestResults({
       {activeTelemetry ? (
         <BacktestResearchWorkspace
           key={activeTelemetry.symbol}
-          details={details}
+          tradeSeries={tradeSeries}
+          availableTelemetrySymbols={availableTelemetrySymbols}
           activeTelemetry={activeTelemetry}
           selectedTelemetrySymbol={activeTelemetry.symbol}
           onTelemetrySelect={(symbol) => {

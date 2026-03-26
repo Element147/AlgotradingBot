@@ -230,7 +230,7 @@ Acceptance Criteria
 - The mandatory step completion protocol passes.
 
 #### 1C.4 Slim high-churn DTOs and split oversized backtest details
-- [ ] Rework DTO contracts so summary views, chart telemetry, trades, comparison payloads, and export payloads can be loaded independently.
+- [x] Rework DTO contracts so summary views, chart telemetry, trades, comparison payloads, and export payloads can be loaded independently.
 Acceptance Criteria
 - The history page does not fetch chart-heavy payloads just to display list items.
 - The backtest detail workspace can lazy-load heavy panes or symbol-specific telemetry on demand.

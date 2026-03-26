@@ -7,6 +7,8 @@ import com.algotrader.bot.controller.BacktestEquityPointResponse;
 import com.algotrader.bot.controller.BacktestExperimentSummaryResponse;
 import com.algotrader.bot.controller.BacktestHistoryItemResponse;
 import com.algotrader.bot.controller.BacktestSummaryResponse;
+import com.algotrader.bot.controller.BacktestSymbolTelemetryResponse;
+import com.algotrader.bot.controller.BacktestTelemetryQueryResponse;
 import com.algotrader.bot.controller.BacktestTradeSeriesItemResponse;
 import com.algotrader.bot.entity.BacktestDataset;
 import com.algotrader.bot.entity.BacktestResult;
@@ -23,6 +25,7 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -87,19 +90,12 @@ public class BacktestResultQueryService {
             .orElseThrow(() -> new EntityNotFoundException("Backtest not found: " + backtestId));
 
         BacktestDetailsResponse details = toDetails(result);
-        long payloadItems = (long) details.equityCurve().size()
-            + details.tradeSeries().size()
-            + details.telemetry().stream().mapToLong(series ->
-                (long) series.points().size()
-                    + series.actions().size()
-                    + series.indicators().stream().mapToLong(indicator -> indicator.points().size()).sum()
-            ).sum();
         backendOperationMetrics.record(
             "read",
             "backtest_details",
-            "full_response",
+            "overview",
             System.nanoTime() - startedAt,
-            Math.toIntExact(Math.min(Integer.MAX_VALUE, payloadItems)),
+            details.availableTelemetrySymbols().size(),
             0L
         );
         return details;
@@ -113,6 +109,93 @@ public class BacktestResultQueryService {
         BacktestSummaryResponse summary = toSummary(result);
         backendOperationMetrics.record("read", "backtest_summary", "single", System.nanoTime() - startedAt, 1, 0L);
         return summary;
+    }
+
+    @Transactional(readOnly = true)
+    public List<BacktestEquityPointResponse> getEquityCurve(Long backtestId) {
+        long startedAt = System.nanoTime();
+        BacktestResult result = backtestResultRepository.findById(backtestId)
+            .orElseThrow(() -> new EntityNotFoundException("Backtest not found: " + backtestId));
+        List<BacktestEquityPointResponse> equityCurve = result.getEquityPoints().stream()
+            .map(point -> new BacktestEquityPointResponse(
+                point.getPointTimestamp(),
+                point.getEquity(),
+                point.getDrawdownPct()
+            ))
+            .toList();
+        backendOperationMetrics.record(
+            "read",
+            "backtest_equity_curve",
+            "series",
+            System.nanoTime() - startedAt,
+            equityCurve.size(),
+            0L
+        );
+        return equityCurve;
+    }
+
+    @Transactional(readOnly = true)
+    public List<BacktestTradeSeriesItemResponse> getTradeSeries(Long backtestId) {
+        long startedAt = System.nanoTime();
+        BacktestResult result = backtestResultRepository.findById(backtestId)
+            .orElseThrow(() -> new EntityNotFoundException("Backtest not found: " + backtestId));
+        List<BacktestTradeSeriesItemResponse> tradeSeries = result.getTradeSeries().stream()
+            .map(item -> new BacktestTradeSeriesItemResponse(
+                item.getSymbol(),
+                item.getPositionSide().name(),
+                item.getEntryTime(),
+                item.getExitTime(),
+                item.getEntryPrice(),
+                item.getExitPrice(),
+                item.getQuantity(),
+                item.getEntryValue(),
+                item.getExitValue(),
+                item.getReturnPct()
+            ))
+            .toList();
+        backendOperationMetrics.record(
+            "read",
+            "backtest_trade_series",
+            "series",
+            System.nanoTime() - startedAt,
+            tradeSeries.size(),
+            0L
+        );
+        return tradeSeries;
+    }
+
+    @Transactional(readOnly = true)
+    public BacktestTelemetryQueryResponse getTelemetry(Long backtestId, String requestedSymbol) {
+        long startedAt = System.nanoTime();
+        BacktestResult result = backtestResultRepository.findById(backtestId)
+            .orElseThrow(() -> new EntityNotFoundException("Backtest not found: " + backtestId));
+
+        List<String> availableSymbols = resolveTelemetrySymbols(result);
+        BacktestSymbolTelemetryResponse telemetry = backtestTelemetryService.buildTelemetry(result, requestedSymbol)
+            .stream()
+            .findFirst()
+            .orElseThrow(() -> new EntityNotFoundException("Telemetry not available for backtest: " + backtestId));
+
+        LinkedHashSet<String> resolvedSymbols = new LinkedHashSet<>(availableSymbols);
+        resolvedSymbols.add(telemetry.symbol());
+
+        int payloadItems = telemetry.points().size()
+            + telemetry.actions().size()
+            + telemetry.indicators().stream().mapToInt(indicator -> indicator.points().size()).sum();
+        backendOperationMetrics.record(
+            "read",
+            "backtest_telemetry",
+            "symbol_response",
+            System.nanoTime() - startedAt,
+            payloadItems,
+            0L
+        );
+        return new BacktestTelemetryQueryResponse(
+            requestedSymbol,
+            telemetry.symbol(),
+            List.copyOf(resolvedSymbols),
+            telemetry
+        );
     }
 
     @Transactional(readOnly = true)
@@ -259,28 +342,7 @@ public class BacktestResultQueryService {
             summary.startedAt(),
             summary.completedAt(),
             summary.errorMessage(),
-            result.getEquityPoints().stream()
-                .map(point -> new BacktestEquityPointResponse(
-                    point.getPointTimestamp(),
-                    point.getEquity(),
-                    point.getDrawdownPct()
-                ))
-                .toList(),
-            result.getTradeSeries().stream()
-                .map(item -> new BacktestTradeSeriesItemResponse(
-                    item.getSymbol(),
-                    item.getPositionSide().name(),
-                    item.getEntryTime(),
-                    item.getExitTime(),
-                    item.getEntryPrice(),
-                    item.getExitPrice(),
-                    item.getQuantity(),
-                    item.getEntryValue(),
-                    item.getExitValue(),
-                    item.getReturnPct()
-                ))
-                .toList(),
-            backtestTelemetryService.buildTelemetry(result)
+            resolveTelemetrySymbols(result)
         );
     }
 
@@ -402,6 +464,21 @@ public class BacktestResultQueryService {
             return DEFAULT_HISTORY_LIMIT;
         }
         return Math.min(limit, MAX_HISTORY_LIMIT);
+    }
+
+    private List<String> resolveTelemetrySymbols(BacktestResult result) {
+        LinkedHashSet<String> symbols = new LinkedHashSet<>();
+        if (result.getSymbol() != null
+            && !result.getSymbol().isBlank()
+            && !"DATASET_UNIVERSE".equalsIgnoreCase(result.getSymbol())) {
+            symbols.add(result.getSymbol());
+        }
+        result.getTradeSeries().stream()
+            .map(item -> item.getSymbol())
+            .filter(Objects::nonNull)
+            .filter(symbol -> !symbol.isBlank())
+            .forEach(symbols::add);
+        return List.copyOf(symbols);
     }
 
     private record DatasetProvenance(

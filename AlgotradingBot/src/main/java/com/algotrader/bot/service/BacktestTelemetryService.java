@@ -54,6 +54,10 @@ public class BacktestTelemetryService {
     }
 
     public List<BacktestSymbolTelemetryResponse> buildTelemetry(BacktestResult result) {
+        return buildTelemetry(result, null);
+    }
+
+    public List<BacktestSymbolTelemetryResponse> buildTelemetry(BacktestResult result, String requestedSymbol) {
         long startedAt = System.nanoTime();
         if (result.getExecutionStatus() != BacktestResult.ExecutionStatus.COMPLETED
             || result.getDatasetId() == null) {
@@ -65,7 +69,7 @@ public class BacktestTelemetryService {
                 result.getTimeframe(),
                 result.getStartDate(),
                 result.getEndDate(),
-                resolveRequestedSymbols(result),
+                resolveRequestedSymbols(result, requestedSymbol),
                 MarketDataQueryMode.BEST_AVAILABLE
             ).candles().stream()
             .sorted(Comparator.comparing(MarketDataQueriedCandle::timestamp).thenComparing(MarketDataQueriedCandle::symbol))
@@ -74,7 +78,7 @@ public class BacktestTelemetryService {
             return List.of();
         }
 
-        Set<String> relevantSymbols = resolveRelevantSymbols(result, filteredCandles);
+        Set<String> relevantSymbols = resolveRelevantSymbols(result, filteredCandles, requestedSymbol);
         Map<String, List<MarketDataQueriedCandle>> candlesBySymbol = filteredCandles.stream()
             .filter(candle -> relevantSymbols.contains(candle.symbol()))
             .collect(Collectors.groupingBy(
@@ -119,11 +123,13 @@ public class BacktestTelemetryService {
         return telemetry;
     }
 
-    private Set<String> resolveRelevantSymbols(BacktestResult result, List<MarketDataQueriedCandle> candles) {
+    private Set<String> resolveRelevantSymbols(BacktestResult result,
+                                               List<MarketDataQueriedCandle> candles,
+                                               String requestedSymbol) {
         Set<String> availableSymbols = candles.stream()
             .map(MarketDataQueriedCandle::symbol)
             .collect(Collectors.toCollection(LinkedHashSet::new));
-        LinkedHashSet<String> symbols = new LinkedHashSet<>(resolveRequestedSymbols(result));
+        LinkedHashSet<String> symbols = new LinkedHashSet<>(resolveRequestedSymbols(result, requestedSymbol));
 
         if (!availableSymbols.isEmpty()) {
             symbols.retainAll(availableSymbols);
@@ -141,8 +147,14 @@ public class BacktestTelemetryService {
         return symbols.stream().limit(MAX_SYMBOLS).collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
-    private Set<String> resolveRequestedSymbols(BacktestResult result) {
+    private Set<String> resolveRequestedSymbols(BacktestResult result, String requestedSymbol) {
         LinkedHashSet<String> symbols = new LinkedHashSet<>();
+
+        if (requestedSymbol != null
+            && !requestedSymbol.isBlank()
+            && !"DATASET_UNIVERSE".equalsIgnoreCase(requestedSymbol)) {
+            symbols.add(requestedSymbol);
+        }
 
         if (result.getSymbol() != null
             && !result.getSymbol().isBlank()

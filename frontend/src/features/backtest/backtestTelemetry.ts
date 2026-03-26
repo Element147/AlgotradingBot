@@ -25,18 +25,18 @@ export const getTelemetryIndicatorsByPane = (
 
 export const getPreferredTelemetrySymbol = (
   symbol: string,
-  telemetry: BacktestSymbolTelemetry[]
+  availableSymbols: string[]
 ): string | null => {
-  if (telemetry.length === 0) {
+  if (availableSymbols.length === 0) {
     return null;
   }
 
-  const matchingSymbol = telemetry.find((entry) => entry.symbol === symbol);
+  const matchingSymbol = availableSymbols.find((entry) => entry === symbol);
   if (matchingSymbol) {
-    return matchingSymbol.symbol;
+    return matchingSymbol;
   }
 
-  return telemetry[0]?.symbol ?? null;
+  return availableSymbols[0] ?? null;
 };
 
 export const buildTelemetryChartRows = (series: BacktestSymbolTelemetry): TelemetryChartRow[] => {

@@ -1,9 +1,9 @@
 import type {
   BacktestActionMarker,
   BacktestActionType,
-  BacktestDetails,
   BacktestIndicatorSeries,
   BacktestSymbolTelemetry,
+  BacktestTradeSeriesItem,
   BacktestTradeSide,
 } from './backtestTypes';
 
@@ -97,11 +97,11 @@ const findActionLabel = (
 };
 
 export const buildWorkspaceTrades = (
-  details: BacktestDetails,
+  tradeSeries: BacktestTradeSeriesItem[],
   symbol: string,
   actions: BacktestActionMarker[]
 ): WorkspaceTrade[] =>
-  details.tradeSeries
+  tradeSeries
     .filter((trade) => trade.symbol === symbol)
     .map((trade, index) => {
       const tradeId = `${trade.symbol}-${trade.entryTime}-${index}`;

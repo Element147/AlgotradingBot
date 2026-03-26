@@ -150,8 +150,8 @@ class BacktestManagementControllerIntegrationTest {
         BacktestResult result = new BacktestResult(
             "BOLLINGER_BANDS",
             "BTC/USDT",
-            LocalDateTime.now().minusDays(30),
-            LocalDateTime.now().minusDays(1),
+            LocalDateTime.parse("2025-01-01T00:00:00"),
+            LocalDateTime.parse("2025-01-01T23:00:00"),
             new BigDecimal("1000"),
             new BigDecimal("1100"),
             new BigDecimal("1.2"),
@@ -168,14 +168,14 @@ class BacktestManagementControllerIntegrationTest {
         result.setExperimentName("BTC Mean Reversion Retest");
         result.setExperimentKey("btc-mean-reversion-retest");
         BacktestEquityPoint equityPoint = new BacktestEquityPoint();
-        equityPoint.setPointTimestamp(LocalDateTime.now().minusDays(2));
+        equityPoint.setPointTimestamp(LocalDateTime.parse("2025-01-01T12:00:00"));
         equityPoint.setEquity(new BigDecimal("1000"));
         equityPoint.setDrawdownPct(BigDecimal.ZERO);
         result.addEquityPoint(equityPoint);
         BacktestTradeSeriesItem tradeSeriesItem = new BacktestTradeSeriesItem();
         tradeSeriesItem.setSymbol("BTC/USDT");
-        tradeSeriesItem.setEntryTime(LocalDateTime.now().minusDays(3));
-        tradeSeriesItem.setExitTime(LocalDateTime.now().minusDays(2));
+        tradeSeriesItem.setEntryTime(LocalDateTime.parse("2025-01-01T10:00:00"));
+        tradeSeriesItem.setExitTime(LocalDateTime.parse("2025-01-01T12:00:00"));
         tradeSeriesItem.setEntryPrice(new BigDecimal("100"));
         tradeSeriesItem.setExitPrice(new BigDecimal("110"));
         tradeSeriesItem.setQuantity(new BigDecimal("5"));
@@ -188,8 +188,8 @@ class BacktestManagementControllerIntegrationTest {
         BacktestResult comparison = new BacktestResult(
             "SMA_CROSSOVER",
             "BTC/USDT",
-            LocalDateTime.now().minusDays(30),
-            LocalDateTime.now().minusDays(1),
+            LocalDateTime.parse("2025-01-01T00:00:00"),
+            LocalDateTime.parse("2025-01-01T23:00:00"),
             new BigDecimal("1000"),
             new BigDecimal("950"),
             new BigDecimal("0.7"),
@@ -239,8 +239,10 @@ class BacktestManagementControllerIntegrationTest {
             .andExpect(jsonPath("$.datasetArchived").value(false))
             .andExpect(jsonPath("$.executionStage").value("COMPLETED"))
             .andExpect(jsonPath("$.progressPercent").value(100))
-            .andExpect(jsonPath("$.equityCurve[0].equity").value(1000))
-            .andExpect(jsonPath("$.tradeSeries[0].returnPct").value(10.0000));
+            .andExpect(jsonPath("$.availableTelemetrySymbols", hasItem("BTC/USDT")))
+            .andExpect(jsonPath("$.equityCurve").doesNotExist())
+            .andExpect(jsonPath("$.tradeSeries").doesNotExist())
+            .andExpect(jsonPath("$.telemetry").doesNotExist());
     }
 
     @Test
@@ -258,6 +260,39 @@ class BacktestManagementControllerIntegrationTest {
             .andExpect(jsonPath("$.equityCurve").doesNotExist())
             .andExpect(jsonPath("$.tradeSeries").doesNotExist())
             .andExpect(jsonPath("$.telemetry").doesNotExist());
+    }
+
+    @Test
+    void equityCurve_returnsSeriesIndependently() throws Exception {
+        mockMvc.perform(get("/api/backtests/{backtestId}/equity", backtestId)
+                .header("Authorization", "Bearer " + authToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$", hasSize(1)))
+            .andExpect(jsonPath("$[0].equity").value(1000))
+            .andExpect(jsonPath("$[0].drawdownPct").value(0));
+    }
+
+    @Test
+    void tradeSeries_returnsSeriesIndependently() throws Exception {
+        mockMvc.perform(get("/api/backtests/{backtestId}/trades", backtestId)
+                .header("Authorization", "Bearer " + authToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$", hasSize(1)))
+            .andExpect(jsonPath("$[0].symbol").value("BTC/USDT"))
+            .andExpect(jsonPath("$[0].returnPct").value(10.0000));
+    }
+
+    @Test
+    void telemetry_returnsRequestedSymbolIndependently() throws Exception {
+        mockMvc.perform(get("/api/backtests/{backtestId}/telemetry", backtestId)
+                .param("symbol", "BTC/USDT")
+                .header("Authorization", "Bearer " + authToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.requestedSymbol").value("BTC/USDT"))
+            .andExpect(jsonPath("$.resolvedSymbol").value("BTC/USDT"))
+            .andExpect(jsonPath("$.availableSymbols", hasItem("BTC/USDT")))
+            .andExpect(jsonPath("$.telemetry.symbol").value("BTC/USDT"))
+            .andExpect(jsonPath("$.telemetry.points", hasSize(greaterThanOrEqualTo(1))));
     }
 
     @Test

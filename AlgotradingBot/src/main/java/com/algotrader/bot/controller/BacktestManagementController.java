@@ -110,6 +110,25 @@ public class BacktestManagementController {
         return ResponseEntity.ok(backtestResultQueryService.getDetails(backtestId));
     }
 
+    @GetMapping("/{backtestId}/equity")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<BacktestEquityPointResponse>> equityCurve(@PathVariable Long backtestId) {
+        return ResponseEntity.ok(backtestResultQueryService.getEquityCurve(backtestId));
+    }
+
+    @GetMapping("/{backtestId}/trades")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<BacktestTradeSeriesItemResponse>> tradeSeries(@PathVariable Long backtestId) {
+        return ResponseEntity.ok(backtestResultQueryService.getTradeSeries(backtestId));
+    }
+
+    @GetMapping("/{backtestId}/telemetry")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<BacktestTelemetryQueryResponse> telemetry(@PathVariable Long backtestId,
+                                                                    @RequestParam(required = false) String symbol) {
+        return ResponseEntity.ok(backtestResultQueryService.getTelemetry(backtestId, symbol));
+    }
+
     @DeleteMapping("/{backtestId}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> delete(@PathVariable Long backtestId) {

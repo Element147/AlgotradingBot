@@ -1,13 +1,16 @@
-import type { BacktestDetails } from './backtestApi';
+import type { BacktestDetails, BacktestEquityPoint, BacktestTradeSeriesItem } from './backtestApi';
 import type { MonthlyReturnCell } from './MonthlyReturnsHeatmap';
 import type { HistogramBin } from './TradeDistributionHistogram';
 
 import type { DrawdownPoint } from '@/components/charts/DrawdownChart';
 import type { EquityCurvePoint } from '@/components/charts/EquityCurve';
 
-export const createEquityCurve = (details: BacktestDetails): EquityCurvePoint[] => {
-  if (details.equityCurve.length > 0) {
-    return details.equityCurve.map((point) => ({
+export const createEquityCurve = (
+  details: BacktestDetails,
+  equityCurve: BacktestEquityPoint[]
+): EquityCurvePoint[] => {
+  if (equityCurve.length > 0) {
+    return equityCurve.map((point) => ({
       timestamp: point.timestamp,
       equity: point.equity,
     }));
@@ -55,7 +58,7 @@ export const createMonthlyReturns = (equity: EquityCurvePoint[]): MonthlyReturnC
   });
 };
 
-export const createTradeDistribution = (details: BacktestDetails): HistogramBin[] => {
+export const createTradeDistribution = (tradeSeries: BacktestTradeSeriesItem[]): HistogramBin[] => {
   const bins = [
     { rangeLabel: '< -5%', count: 0 },
     { rangeLabel: '-5% to -2%', count: 0 },
@@ -65,7 +68,7 @@ export const createTradeDistribution = (details: BacktestDetails): HistogramBin[
     { rangeLabel: '> 5%', count: 0 },
   ];
 
-  details.tradeSeries.forEach((trade) => {
+  tradeSeries.forEach((trade) => {
     const value = trade.returnPct;
     if (value < -5) {
       bins[0].count += 1;

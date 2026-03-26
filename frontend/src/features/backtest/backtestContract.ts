@@ -6,9 +6,12 @@ import type {
   BacktestDataset,
   BacktestDatasetRetentionReport,
   BacktestDetails,
+  BacktestEquityPoint,
   BacktestExperimentSummary,
   BacktestHistoryItem,
   BacktestSummary,
+  BacktestTelemetryQueryResponse,
+  BacktestTradeSeriesItem,
   BacktestRunSubmission,
   RunBacktestPayload,
 } from './backtestTypes';
@@ -21,8 +24,13 @@ type RawBacktestDataset = components['schemas']['BacktestDatasetResponse'];
 type RawBacktestDatasetRetentionReport =
   components['schemas']['BacktestDatasetRetentionReportResponse'];
 type RawBacktestDetails = components['schemas']['BacktestDetailsResponse'] & {
-  telemetry?: RawBacktestSymbolTelemetry[];
+  availableTelemetrySymbols?: string[];
 };
+type RawBacktestTelemetryQueryResponse = components['schemas']['BacktestTelemetryQueryResponse'] & {
+  telemetry: RawBacktestSymbolTelemetry;
+};
+type RawBacktestEquityPoint = components['schemas']['BacktestEquityPointResponse'];
+type RawBacktestTradeSeriesItem = components['schemas']['BacktestTradeSeriesItemResponse'];
 type RawBacktestExperimentSummary = components['schemas']['BacktestExperimentSummaryResponse'];
 type RawBacktestHistoryItem = components['schemas']['BacktestHistoryItemResponse'];
 type RawBacktestSummary = components['schemas']['BacktestSummaryResponse'];
@@ -222,9 +230,7 @@ const backtestDetailsSchema = backtestHistoryItemSchema.extend({
   startDate: z.string().min(1),
   endDate: z.string().min(1),
   errorMessage: z.string().nullable(),
-  equityCurve: z.array(backtestEquityPointSchema),
-  tradeSeries: z.array(backtestTradeSeriesItemSchema),
-  telemetry: z.array(backtestSymbolTelemetrySchema).default([]),
+  availableTelemetrySymbols: z.array(z.string().min(1)).default([]),
 });
 
 const backtestSummarySchema = backtestHistoryItemSchema.extend({
@@ -299,6 +305,13 @@ const backtestRunSubmissionSchema = z.object({
   submittedAt: z.string().min(1),
 });
 
+const backtestTelemetryQueryResponseSchema = z.object({
+  requestedSymbol: z.string().nullable(),
+  resolvedSymbol: z.string().min(1),
+  availableSymbols: z.array(z.string().min(1)).default([]),
+  telemetry: backtestSymbolTelemetrySchema,
+});
+
 export const normalizeBacktestAlgorithms = (
   response: RawBacktestAlgorithm[]
 ): BacktestAlgorithm[] => z.array(backtestAlgorithmSchema).parse(response);
@@ -319,6 +332,18 @@ export const normalizeBacktestHistory = (
 
 export const normalizeBacktestDetails = (response: RawBacktestDetails): BacktestDetails =>
   backtestDetailsSchema.parse(response);
+
+export const normalizeBacktestEquityCurve = (
+  response: RawBacktestEquityPoint[]
+): BacktestEquityPoint[] => z.array(backtestEquityPointSchema).parse(response);
+
+export const normalizeBacktestTradeSeries = (
+  response: RawBacktestTradeSeriesItem[]
+): BacktestTradeSeriesItem[] => z.array(backtestTradeSeriesItemSchema).parse(response);
+
+export const normalizeBacktestTelemetryResponse = (
+  response: RawBacktestTelemetryQueryResponse
+): BacktestTelemetryQueryResponse => backtestTelemetryQueryResponseSchema.parse(response);
 
 export const normalizeBacktestSummary = (response: RawBacktestSummary): BacktestSummary =>
   backtestSummarySchema.parse(response);
