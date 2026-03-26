@@ -42,26 +42,62 @@ interface BacktestWorkspaceChartProps {
 const toChartTime = (timestamp: string): UTCTimestamp =>
   Math.floor(new Date(timestamp).getTime() / 1000) as UTCTimestamp;
 
+const toChartTimeNumber = (timestamp: string): number | null => {
+  const timestampMs = new Date(timestamp).getTime();
+  if (!Number.isFinite(timestampMs)) {
+    return null;
+  }
+
+  return Math.floor(timestampMs / 1000);
+};
+
 const compareTimestampAsc = (left: string, right: string) =>
   new Date(left).getTime() - new Date(right).getTime();
 
-const normalizeTelemetryPoints = (points: BacktestTelemetryPoint[]) =>
-  Array.from(
-    points.reduce<Map<string, BacktestTelemetryPoint>>((lookup, point) => {
-      lookup.set(point.timestamp, point);
-      return lookup;
-    }, new Map()).values()
-  ).sort((left, right) => compareTimestampAsc(left.timestamp, right.timestamp));
+const normalizeTelemetryPoints = (points: BacktestTelemetryPoint[]) => {
+  const lookup = new Map<number, BacktestTelemetryPoint>();
+
+  points
+    .slice()
+    .sort((left, right) => compareTimestampAsc(left.timestamp, right.timestamp))
+    .forEach((point) => {
+      const chartTime = toChartTimeNumber(point.timestamp);
+      if (chartTime === null) {
+        return;
+      }
+
+      lookup.set(chartTime, point);
+    });
+
+  return Array.from(lookup.entries())
+    .sort(([leftTime], [rightTime]) => leftTime - rightTime)
+    .map(([, point]) => point);
+};
+
+const normalizeIndicatorPoints = (points: BacktestIndicatorSeries['points']) => {
+  const lookup = new Map<number, (typeof points)[number]>();
+
+  points
+    .slice()
+    .sort((left, right) => compareTimestampAsc(left.timestamp, right.timestamp))
+    .forEach((point) => {
+      const chartTime = toChartTimeNumber(point.timestamp);
+      if (chartTime === null) {
+        return;
+      }
+
+      lookup.set(chartTime, point);
+    });
+
+  return Array.from(lookup.entries())
+    .sort(([leftTime], [rightTime]) => leftTime - rightTime)
+    .map(([, point]) => point);
+};
 
 const normalizeIndicatorSeries = (indicators: BacktestIndicatorSeries[]) =>
   indicators.map((indicator) => ({
     ...indicator,
-    points: Array.from(
-      indicator.points.reduce<Map<string, (typeof indicator.points)[number]>>((lookup, point) => {
-        lookup.set(point.timestamp, point);
-        return lookup;
-      }, new Map()).values()
-    ).sort((left, right) => compareTimestampAsc(left.timestamp, right.timestamp)),
+    points: normalizeIndicatorPoints(indicator.points),
   }));
 
 const normalizeChartSeries = (series: BacktestSymbolTelemetry): BacktestSymbolTelemetry => ({
@@ -121,7 +157,14 @@ export function BacktestWorkspaceChart({
   const priceSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const logicalIndexLookup = useMemo(
     () =>
-      new Map(normalizedSeries.points.map((point, index) => [point.timestamp, index])),
+      new Map(
+        normalizedSeries.points
+          .map<[number, number] | null>((point, index) => {
+            const chartTime = toChartTimeNumber(point.timestamp);
+            return chartTime === null ? null : [chartTime, index];
+          })
+          .filter((entry): entry is [number, number] => entry !== null)
+      ),
     [normalizedSeries.points]
   );
   const filteredMarkers = useMemo(
@@ -354,7 +397,12 @@ export function BacktestWorkspaceChart({
       return;
     }
 
-    const logicalIndex = logicalIndexLookup.get(focusTimestamp);
+    const focusChartTime = toChartTimeNumber(focusTimestamp);
+    if (focusChartTime === null) {
+      return;
+    }
+
+    const logicalIndex = logicalIndexLookup.get(focusChartTime);
     if (logicalIndex !== undefined) {
       chart.timeScale().setVisibleLogicalRange({
         from: Math.max(logicalIndex - 45, 0),
@@ -362,11 +410,13 @@ export function BacktestWorkspaceChart({
       });
     }
 
-    const focusPoint = normalizedSeries.points.find((point) => point.timestamp === focusTimestamp);
+    const focusPoint = normalizedSeries.points.find(
+      (point) => toChartTimeNumber(point.timestamp) === focusChartTime
+    );
     if (focusPoint) {
       chart.setCrosshairPosition(
         focusPoint.close,
-        toChartTime(focusTimestamp),
+        focusChartTime as UTCTimestamp,
         priceSeries
       );
     }
