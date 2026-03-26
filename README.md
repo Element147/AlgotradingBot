@@ -48,6 +48,8 @@ Useful variants:
 ```powershell
 .\run.ps1 -DebugBackend
 .\run.ps1 -DebugBackend -SuspendBackend
+.\run.ps1 -BackendMaxHeapMb 3072
+.\run.ps1 -BackendInitialHeapMb 1024 -BackendMaxHeapMb 4096
 .\run-all.ps1
 .\run-all.ps1 -DebugBackend
 .\security-scan.ps1
@@ -58,6 +60,7 @@ Runtime script behavior:
 - `.\run.ps1` and `.\run-all.ps1` now wait for both backend and frontend readiness before declaring success.
 - Both startup scripts roll back partial startup if a later stage fails, so PostgreSQL, Docker services, or detached dev servers are not left running silently.
 - `.\run-all.ps1` also checks for a leftover local backend from fast mode before Docker startup.
+- `.\run.ps1` auto-sizes the local backend JVM heap from host RAM and accepts `-BackendInitialHeapMb`, `-BackendMaxHeapMb`, and `-BackendMaxMetaspaceMb` overrides when you want a roomier local backend.
 
 Local URLs:
 

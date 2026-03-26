@@ -12,6 +12,7 @@ Use this guide for local runtime scripts, Docker, Compose, PowerShell orchestrat
 - checks ports `8080` and `5173`
 - starts PostgreSQL in Docker
 - runs the backend locally with `.\gradlew.bat --no-daemon bootRun`
+- auto-sizes the backend JVM heap from host RAM and allows `-BackendInitialHeapMb`, `-BackendMaxHeapMb`, and `-BackendMaxMetaspaceMb` overrides
 - runs the frontend locally with `npm run dev`
 - waits for both backend and frontend HTTP readiness before reporting success
 - rolls back the partially started stack if a later startup stage fails
@@ -57,6 +58,7 @@ Debug variants:
 ```powershell
 .\run.ps1 -DebugBackend
 .\run.ps1 -DebugBackend -SuspendBackend
+.\run.ps1 -BackendMaxHeapMb 3072
 .\run-all.ps1 -DebugBackend
 ```
 
@@ -88,6 +90,7 @@ docker compose --project-name algotradingbot -f .\AlgotradingBot\compose.yaml do
 - Local scripts keep backend logs and runtime state in repo-local untracked directories.
 - The repo-local runtime state now includes `.runtime/local-jwt-secret.txt`, which is generated once and reused so local JWTs survive container restarts without falling back to a static shared secret.
 - Fast mode prefers reclaim-friendly memory behavior by using `--no-daemon` for the local backend path.
+- Fast mode currently targets a `2-4 GB` backend max heap depending on detected host RAM; Windows hosts with about `16 GB` available RAM resolve to a `3 GB` backend max heap unless overridden.
 
 ## Ports And Paths
 

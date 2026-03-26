@@ -197,15 +197,112 @@ function Set-LocalDockerComposeEnvironment {
     $env:JWT_SECRET = Get-LocalJwtSecret -RepoPaths $RepoPaths
 }
 
-function Get-LowMemoryBackendEnvironment {
+function Get-HostMemoryMb {
+    try {
+        $os = Get-CimInstance Win32_OperatingSystem -ErrorAction Stop
+        if ($os -and $os.TotalVisibleMemorySize) {
+            return [int][math]::Floor($os.TotalVisibleMemorySize / 1024)
+        }
+    } catch {}
+
+    try {
+        $computerInfo = Get-ComputerInfo -Property "CsTotalPhysicalMemory" -ErrorAction Stop
+        if ($computerInfo.CsTotalPhysicalMemory) {
+            return [int][math]::Floor($computerInfo.CsTotalPhysicalMemory / 1MB)
+        }
+    } catch {}
+
+    return 8192
+}
+
+function Get-RecommendedBackendJvmSettings {
+    param(
+        [int]$HostMemoryMb = (Get-HostMemoryMb)
+    )
+
+    $maxHeapMb = if ($HostMemoryMb -ge 24576) {
+        4096
+    } elseif ($HostMemoryMb -ge 15360) {
+        3072
+    } elseif ($HostMemoryMb -ge 11264) {
+        2560
+    } else {
+        2048
+    }
+
+    $initialHeapMb = if ($maxHeapMb -ge 3072) {
+        1024
+    } elseif ($maxHeapMb -ge 2560) {
+        768
+    } else {
+        512
+    }
+
+    $maxMetaspaceMb = if ($maxHeapMb -ge 3072) {
+        512
+    } else {
+        384
+    }
+
+    return @{
+        HostMemoryMb = $HostMemoryMb
+        InitialHeapMb = $initialHeapMb
+        MaxHeapMb = $maxHeapMb
+        MaxMetaspaceMb = $maxMetaspaceMb
+    }
+}
+
+function Resolve-BackendJvmSettings {
+    param(
+        [int]$InitialHeapMb = 0,
+        [int]$MaxHeapMb = 0,
+        [int]$MaxMetaspaceMb = 0
+    )
+
+    $recommended = Get-RecommendedBackendJvmSettings
+
+    if ($InitialHeapMb -le 0) {
+        $InitialHeapMb = $recommended.InitialHeapMb
+    }
+
+    if ($MaxHeapMb -le 0) {
+        $MaxHeapMb = $recommended.MaxHeapMb
+    }
+
+    if ($MaxMetaspaceMb -le 0) {
+        $MaxMetaspaceMb = $recommended.MaxMetaspaceMb
+    }
+
+    if ($InitialHeapMb -gt $MaxHeapMb) {
+        throw "BackendInitialHeapMb ($InitialHeapMb) cannot be greater than BackendMaxHeapMb ($MaxHeapMb)."
+    }
+
+    return @{
+        HostMemoryMb = $recommended.HostMemoryMb
+        InitialHeapMb = $InitialHeapMb
+        MaxHeapMb = $MaxHeapMb
+        MaxMetaspaceMb = $MaxMetaspaceMb
+        JavaToolOptions = "-Xms${InitialHeapMb}m -Xmx${MaxHeapMb}m -XX:+UseZGC -XX:+ZGenerational -XX:MaxMetaspaceSize=${MaxMetaspaceMb}m"
+    }
+}
+
+function Get-BackendRuntimeEnvironment {
     param(
         [Parameter(Mandatory = $true)]
-        [hashtable]$RepoPaths
+        [hashtable]$RepoPaths,
+        [int]$InitialHeapMb = 0,
+        [int]$MaxHeapMb = 0,
+        [int]$MaxMetaspaceMb = 0
     )
+
+    $jvmSettings = Resolve-BackendJvmSettings `
+        -InitialHeapMb $InitialHeapMb `
+        -MaxHeapMb $MaxHeapMb `
+        -MaxMetaspaceMb $MaxMetaspaceMb
 
     $environment = Get-BackendLogEnvironment $RepoPaths
     $environment["JWT_SECRET"] = Get-LocalJwtSecret -RepoPaths $RepoPaths
-    $environment["JAVA_TOOL_OPTIONS"] = "-Xms512m -Xmx2g -XX:+UseZGC -XX:+ZGenerational -XX:MaxMetaspaceSize=512m"
+    $environment["JAVA_TOOL_OPTIONS"] = $jvmSettings.JavaToolOptions
 
     return $environment
 }

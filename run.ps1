@@ -1,7 +1,10 @@
 param(
     [switch]$DebugBackend,
     [int]$DebugPort = 5005,
-    [switch]$SuspendBackend
+    [switch]$SuspendBackend,
+    [int]$BackendInitialHeapMb = 0,
+    [int]$BackendMaxHeapMb = 0,
+    [int]$BackendMaxMetaspaceMb = 0
 )
 
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -86,7 +89,18 @@ Write-Host "[OK] PostgreSQL is healthy" -ForegroundColor Green
 
 Write-Host ""
 Write-Host "[2/3] Starting Backend (local bootRun, reclaim-friendly mode)..." -ForegroundColor Yellow
-$backendEnvironment = Get-LowMemoryBackendEnvironment -RepoPaths $repoPaths
+$backendJvmSettings = Resolve-BackendJvmSettings `
+    -InitialHeapMb $BackendInitialHeapMb `
+    -MaxHeapMb $BackendMaxHeapMb `
+    -MaxMetaspaceMb $BackendMaxMetaspaceMb
+$backendEnvironment = Get-BackendRuntimeEnvironment `
+    -RepoPaths $repoPaths `
+    -InitialHeapMb $backendJvmSettings.InitialHeapMb `
+    -MaxHeapMb $backendJvmSettings.MaxHeapMb `
+    -MaxMetaspaceMb $backendJvmSettings.MaxMetaspaceMb
+Write-Host ("      Backend JVM: {0} (host RAM detected: {1:N1} GB)" -f `
+    $backendJvmSettings.JavaToolOptions, `
+    ($backendJvmSettings.HostMemoryMb / 1024.0)) -ForegroundColor Gray
 $backendCommand = ".\gradlew.bat --no-daemon bootRun"
 if ($DebugBackend) {
     $debugSuspend = if ($SuspendBackend) { "y" } else { "n" }

@@ -84,6 +84,7 @@ Verified on March 20, 2026 against dataset `#12` (`Binance BTC/USDT +2 15m 2024-
 - Full-stack mode runs app, PostgreSQL, and Kafka in Docker with the frontend locally.
 - `.\run.ps1` and `.\run-all.ps1` now wait for both backend and frontend readiness and roll back partial startup if a later stage fails.
 - `.\run-all.ps1` now checks for leftover fast-mode backend processes and port conflicts before Docker startup.
+- `.\run.ps1` now auto-sizes the local backend JVM heap from detected host RAM and accepts explicit heap overrides for larger developer machines.
 - Compose identity is fixed to `algotradingbot`, with reusable named volumes for PostgreSQL, Kafka, and Kafka secrets.
 - Script-driven backend logs go to `.runtime/logs`.
 - Local PowerShell helpers now provision a stable repo-local JWT secret in `.runtime/local-jwt-secret.txt`; direct Compose usage must provide `JWT_SECRET` explicitly.
