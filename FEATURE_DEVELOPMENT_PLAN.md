@@ -262,12 +262,14 @@ Implementation record
 - Workstation audit: `docs/WORKSTATION_EXPERIENCE_AUDIT.md`
 
 #### 2A.2 Define the new execution information architecture
-- [ ] Design an `Execution Workspace` that introduces dedicated `Forward Testing`, `Paper`, and `Live` tabs or child routes while preserving the current shell and safe defaults.
+- [x] Design an `Execution Workspace` that introduces dedicated `Forward Testing`, `Paper`, and `Live` tabs or child routes while preserving the current shell and safe defaults.
 Acceptance Criteria
 - The IA clearly separates research, forward testing, paper execution, and live monitoring or live execution capability.
 - A backward-compatible navigation approach is defined, such as redirecting `/paper` into the new execution workspace without breaking the SPA.
 - The new structure removes the "wall of text" feeling by giving each tab one dominant job and one dominant layout.
 - The mandatory step completion protocol passes.
+Implementation record
+- Execution-workspace IA: `docs/EXECUTION_WORKSPACE_INFORMATION_ARCHITECTURE.md`
 
 #### 2A.3 Produce wireframes and state diagrams for the new tabs
 - [ ] Create detailed desktop and mobile wireframes for `Forward Testing`, `Paper`, and `Live`, plus route-state diagrams for selection, drill-down, and failure modes.
