@@ -41,6 +41,7 @@ The repository is an operational local-first MVP for research and paper-trading 
 
 Verified on March 20, 2026 against dataset `#12` (`Binance BTC/USDT +2 15m 2024-03-12 to 2026-03-12`, checksum `b93c95da97c05f4edf4d706b80d33fcfab752f4f4d6f11f003fa3aca2fe2d326`, schema `ohlcv-v1`, symbols `BTC/USDT,ETH/USDT,SOL/USDT`):
 
+- The repo now freezes strategy reruns and later disposition changes against `docs/STRATEGY_AUDIT_PROTOCOL.md`, which records the required metadata, explicit `10` bps fee plus `3` bps slippage baseline, frozen holdout discipline, anchored walk-forward review, and the meaning of `reject`, `research-only`, `watchlist`, and `paper-monitor candidate`.
 - The first full `15m` audit exposed a realism bug: slower strategies were still being simulated on raw `15m` bars, which produced extreme overtrading under the configured `10` bps fees plus `3` bps slippage. Examples: `SMA_CROSSOVER` fell to `40.23` final balance after `1417` trades, and `TREND_FIRST_ADAPTIVE_ENSEMBLE` fell to `1.00` after `6654` trades.
 - After the execution-timing and timeframe-resampling fixes, the corrected audit used strategy-appropriate `4h` and `1d` runs. `BUY_AND_HOLD` returned `+1.02%`, `SMA_CROSSOVER` returned `+1.85%`, `VOLATILITY_MANAGED_DONCHIAN_BREAKOUT` returned `+28.56%` with `16.09%` max drawdown and was the only run that passed the current validator, `DUAL_MOMENTUM_ROTATION` returned `+28.30%`, `TREND_FIRST_ADAPTIVE_ENSEMBLE` returned `+7.91%`, and the new `ICHIMOKU_TREND` returned `+7.64%` with a look-ahead-safe cloud implementation.
 - The weaker catalog paths remained weak under the corrected model: `TREND_PULLBACK_CONTINUATION` returned `-21.26%`, `REGIME_FILTERED_MEAN_REVERSION` returned `-1.64%`, and `BOLLINGER_BANDS` returned `-16.95%` before hardening.
@@ -183,6 +184,7 @@ The staged non-destructive sequence for removing `backtest_datasets.csv_data` an
 
 - Keep canonical docs aligned with the actual system and avoid reintroducing progress-log style documentation.
 - Preserve the March 20 verified posture without reintroducing claims that exceed the current single-dataset research evidence.
+- Carry future catalog reruns through the frozen strategy-audit protocol before changing any disposition labels or paper-follow-up posture.
 - Carry the March 20 strategy audit and valid-holdout results into paper follow-up without overstating the single-dataset evidence.
 - Extend alerting and review workflows around paper-trading incidents and experiment governance.
 - Add market-data providers only when they close a concrete coverage gap not served by the current free-provider set.

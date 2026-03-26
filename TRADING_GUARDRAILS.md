@@ -65,6 +65,7 @@ All should be reproducible:
 
 - Versioned strategy parameters
 - Versioned/identifiable datasets (checksum and schema metadata)
+- Frozen audit methodology from `docs/STRATEGY_AUDIT_PROTOCOL.md`
 - Fees and slippage included in analysis
 - Requested timeframe honored through explicit aggregation or resampling; never label a run as `4h` or `1d` if it executed on finer raw candles
 - Signal timing assumptions made explicit; if fills are not next-bar-open or another clearly documented model, the report must say so

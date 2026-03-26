@@ -451,12 +451,15 @@ Goal: audit the current catalog honestly, define a disciplined small-account str
 ### 3A. Current Strategy Audit
 
 #### 3A.1 Define the audit protocol before judging any strategy
-- [ ] Freeze an audit methodology covering datasets, costs, holdout rules, walk-forward windows, minimum trade counts, and rejection criteria.
+- [x] Freeze an audit methodology covering datasets, costs, holdout rules, walk-forward windows, minimum trade counts, and rejection criteria.
 Acceptance Criteria
 - Every strategy is evaluated with explicit fees, slippage, timeframe handling, and look-ahead-safe execution assumptions.
 - The protocol defines what qualifies as `reject`, `research-only`, `watchlist`, or `paper-monitor candidate`.
 - The protocol states clearly that "not profitable enough" is a valid outcome.
 - The mandatory step completion protocol passes.
+Implementation record
+- Added `docs/STRATEGY_AUDIT_PROTOCOL.md` as the frozen methodology for current-catalog reruns, explicitly locking the audit record fields, `10` bps fee plus `3` bps slippage baseline, full-sample plus frozen-holdout plus anchored walk-forward review bundle, minimum-sample handling, and the disposition labels `reject`, `research-only`, `watchlist`, and `paper-monitor candidate`.
+- Aligned canonical docs with that methodology in `README.md`, `PROJECT_STATUS.md`, and `TRADING_GUARDRAILS.md` so later strategy reruns and paper-follow-up decisions reference one durable protocol instead of ad hoc criteria.
 
 #### 3A.2 Build a representative audit dataset pack
 - [ ] Assemble reproducible datasets for liquid crypto and small-account-friendly equity or ETF research with provenance, timeframe coverage, and holdout windows.

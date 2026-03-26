@@ -98,6 +98,7 @@ Supporting references:
 - `QUICK_START.md`
 - `GRADLE_AUTOMATION.md`
 - `docs/LEGACY_DATASET_RETIREMENT_PLAN.md`
+- `docs/STRATEGY_AUDIT_PROTOCOL.md`
 - `.codex/agents/README.md`
 - `docs/adr/`: architecture decision records for durable backend and platform choices
 - `docs/USER_WORKFLOW_GUIDE.md`
