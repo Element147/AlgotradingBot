@@ -159,15 +159,15 @@ describe('BacktestResults', () => {
     expect(screen.getByRole('button', { name: /Export PDF/i })).toBeDisabled();
   });
 
-  it('renders telemetry review charts when telemetry is available', () => {
+  it('renders telemetry review charts when telemetry is available', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/backtest?section=workspace']}>
         <BacktestResults details={baseDetails} />
       </MemoryRouter>
     );
 
-    expect(screen.getByText('Chart workspace')).toBeInTheDocument();
-    expect(screen.getByText('chart workspace BTC/USDT')).toBeInTheDocument();
-    expect(screen.getByText('Trade review table')).toBeInTheDocument();
+    expect(await screen.findByText('Chart workspace')).toBeInTheDocument();
+    expect(await screen.findByText('chart workspace BTC/USDT')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Trades/i })).toBeInTheDocument();
   });
 });

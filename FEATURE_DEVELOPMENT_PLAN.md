@@ -306,12 +306,15 @@ Implementation record
 - Companion backend workflow report: `AlgotradingBot/build/reports/backend-workflow-profile/report.md`
 
 #### 2B.2 Split heavy backtest payloads and lazy-load expensive panels
-- [ ] Refactor the route so summary metrics, chart workspace, trades, analytics, and export data are loaded independently and only when needed.
+- [x] Refactor the route so summary metrics, chart workspace, trades, analytics, and export data are loaded independently and only when needed.
 Acceptance Criteria
 - The initial run-selection experience no longer waits for every chart and analytics component to finish work.
 - Heavy symbol telemetry or comparison views load lazily and show intentional skeleton or pending states.
 - `BacktestPage` and `BacktestResults` become orchestration-first surfaces with expensive logic pushed into smaller feature modules.
 - The mandatory step completion protocol passes.
+Implementation record
+- Lazy section controller: `frontend/src/features/backtest/BacktestResults.tsx`
+- Section modules: `frontend/src/features/backtest/BacktestOverviewPanel.tsx`, `frontend/src/features/backtest/BacktestWorkspacePanel.tsx`, `frontend/src/features/backtest/BacktestTradeReviewPanel.tsx`, `frontend/src/features/backtest/BacktestAnalyticsPanel.tsx`
 
 #### 2B.3 Reduce render churn and large in-browser transformations
 - [ ] Move expensive derived calculations out of hot render paths and introduce virtualization or progressive rendering where the dataset size justifies it.

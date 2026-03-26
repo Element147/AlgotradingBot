@@ -3,88 +3,18 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import DownloadIcon from '@mui/icons-material/Download';
 import ReplayIcon from '@mui/icons-material/Replay';
 import TableRowsIcon from '@mui/icons-material/TableRows';
-import {
-  Alert,
-  Box,
-  Button,
-  InputAdornment,
-  Grid,
-  MenuItem,
-  Select,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  TableContainer,
-  TableSortLabel,
-  TextField,
-  useMediaQuery,
-  useTheme,
-  ToggleButton,
-  ToggleButtonGroup,
-  Typography,
-} from '@mui/material';
+import { Alert, Box, Button, Stack, Tab, Tabs } from '@mui/material';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
-import { useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-import {
-  useGetBacktestEquityCurveQuery,
-  useGetBacktestTelemetryQuery,
-  useGetBacktestTradeSeriesQuery,
-  type BacktestDetails,
-  type BacktestTradeSeriesItem,
-} from './backtestApi';
-import { getPreferredTelemetrySymbol } from './backtestTelemetry';
-import {
-  formatBacktestMarketLabel,
-  type BacktestSymbolTelemetry,
-} from './backtestTypes';
-import {
-  createDrawdownCurve,
-  createEquityCurve,
-  createMonthlyReturns,
-  createTradeDistribution,
-} from './backtestVisualization';
-import {
-  actionVisuals,
-  buildOverlayLegend,
-  buildWorkspaceMarkers,
-  buildWorkspaceTrades,
-  deriveWorkspaceFocusTime,
-  findMarkerById,
-  findTradeByMarkerId,
-  getDefaultVisibleOverlayKeys,
-  summarizeMarkerFilter,
-  type BacktestMarkerFilter,
-} from './backtestWorkspace';
-import { BacktestWorkspaceChart } from './BacktestWorkspaceChart';
-import { MonthlyReturnsHeatmap } from './MonthlyReturnsHeatmap';
-import { TradeDistributionHistogram } from './TradeDistributionHistogram';
+import type { BacktestDetails } from './backtestApi';
+import BacktestOverviewPanel from './BacktestOverviewPanel';
+import { formatBacktestMarketLabel } from './backtestTypes';
 
-import { DrawdownChart } from '@/components/charts/DrawdownChart';
-import { EquityCurve } from '@/components/charts/EquityCurve';
-import { KeyValueGrid } from '@/components/ui/KeyValueGrid';
-import {
-  EmptyState,
-  LegendList,
-  MetricCard,
-  NumericText,
-  RouteActionBar,
-  StatusPill,
-  SurfacePanel,
-} from '@/components/ui/Workbench';
-import { StickyInspectorPanel } from '@/components/workspace/StickyInspectorPanel';
-import {
-  formatCurrency,
-  formatDateTime,
-  formatDistanceToNow,
-  formatNumber,
-  formatPercentage,
-} from '@/utils/formatters';
+import { EmptyState, RouteActionBar, StatusPill } from '@/components/ui/Workbench';
+import { formatDateTime, formatDistanceToNow } from '@/utils/formatters';
 
 interface BacktestResultsProps {
   details: BacktestDetails;
@@ -97,61 +27,16 @@ interface BacktestResultsProps {
   onFocusHistory?: () => void;
 }
 
-interface BacktestResearchWorkspaceProps {
-  tradeSeries: BacktestTradeSeriesItem[];
-  availableTelemetrySymbols: string[];
-  activeTelemetry: BacktestSymbolTelemetry;
-  selectedTelemetrySymbol: string;
-  onTelemetrySelect: (symbol: string) => void;
-}
+type BacktestResultSection = 'overview' | 'workspace' | 'trades' | 'analytics';
 
-type TradeSortField =
-  | 'symbol'
-  | 'side'
-  | 'entryTime'
-  | 'exitTime'
-  | 'quantity'
-  | 'entryPrice'
-  | 'exitPrice'
-  | 'pnlValue'
-  | 'returnPct';
+const BacktestWorkspacePanel = lazy(() => import('./BacktestWorkspacePanel'));
+const BacktestTradeReviewPanel = lazy(() => import('./BacktestTradeReviewPanel'));
+const BacktestAnalyticsPanel = lazy(() => import('./BacktestAnalyticsPanel'));
 
-type TradeSortDirection = 'asc' | 'desc';
-type TradeSideFilter = 'ALL' | 'LONG' | 'SHORT';
-type TradePnlFilter = 'ALL' | 'WINNERS' | 'LOSERS';
+const resultSections: BacktestResultSection[] = ['overview', 'workspace', 'trades', 'analytics'];
 
-const workspaceMarkerFilters: BacktestMarkerFilter[] = [
-  'ALL',
-  'LONG',
-  'SHORT',
-  'EXITS',
-  'FORCED',
-];
-const workspacePaneKeys = ['exposure', 'oscillator'] as const;
-
-const parseWorkspaceMarkerFilter = (value: string | null): BacktestMarkerFilter =>
-  workspaceMarkerFilters.find((item) => item === value) ?? 'ALL';
-
-const parseParamList = (
-  value: string | null,
-  allowed: readonly string[],
-  fallback: string[]
-) => {
-  if (value === null) {
-    return fallback;
-  }
-
-  if (value === 'none') {
-    return [];
-  }
-
-  const parsed = value
-    .split(',')
-    .map((item) => item.trim())
-    .filter((item): item is string => Boolean(item) && allowed.includes(item));
-
-  return parsed.length > 0 ? parsed : fallback;
-};
+const parseResultSection = (value: string | null): BacktestResultSection =>
+  resultSections.find((section) => section === value) ?? 'overview';
 
 const validationTone = (status: BacktestDetails['validationStatus']) => {
   if (status === 'PASSED' || status === 'PRODUCTION_READY') {
@@ -166,642 +51,8 @@ const validationTone = (status: BacktestDetails['validationStatus']) => {
 const formatLiveEventLabel = (value: string | null | undefined) =>
   value ? formatDistanceToNow(new Date(value)) : 'No live progress event received yet';
 
-const compareTradeValues = (
-  left: string | number,
-  right: string | number,
-  direction: TradeSortDirection
-) => {
-  const multiplier = direction === 'asc' ? 1 : -1;
-
-  if (typeof left === 'number' && typeof right === 'number') {
-    return (left - right) * multiplier;
-  }
-
-  return String(left).localeCompare(String(right)) * multiplier;
-};
-
-function BacktestResearchWorkspace({
-  tradeSeries,
-  availableTelemetrySymbols,
-  activeTelemetry,
-  selectedTelemetrySymbol,
-  onTelemetrySelect,
-}: BacktestResearchWorkspaceProps) {
-  const theme = useTheme();
-  const isLargeScreen = useMediaQuery(theme.breakpoints.up('lg'));
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [tradeQuery, setTradeQuery] = useState('');
-  const [tradeSideFilter, setTradeSideFilter] = useState<TradeSideFilter>('ALL');
-  const [tradePnlFilter, setTradePnlFilter] = useState<TradePnlFilter>('ALL');
-  const [tradeSortField, setTradeSortField] = useState<TradeSortField>('entryTime');
-  const [tradeSortDirection, setTradeSortDirection] = useState<TradeSortDirection>('desc');
-
-  const overlayLegend = useMemo(
-    () => buildOverlayLegend(activeTelemetry),
-    [activeTelemetry]
-  );
-  const workspaceTrades = useMemo(
-    () => buildWorkspaceTrades(tradeSeries, activeTelemetry.symbol, activeTelemetry.actions),
-    [activeTelemetry, tradeSeries]
-  );
-  const workspaceMarkers = useMemo(
-    () => buildWorkspaceMarkers(workspaceTrades),
-    [workspaceTrades]
-  );
-  const updateWorkspaceParams = (update: (params: URLSearchParams) => void) => {
-    const nextParams = new URLSearchParams(searchParams);
-    update(nextParams);
-    setSearchParams(nextParams, { replace: true });
-  };
-  const selectedTradeId = searchParams.get('trade');
-  const selectedMarkerId = searchParams.get('marker');
-  const markerFilter = parseWorkspaceMarkerFilter(searchParams.get('filter'));
-  const overlayKeys = overlayLegend.map((item) => item.key);
-  const resolvedOverlayKeys = parseParamList(
-    searchParams.get('overlays'),
-    overlayKeys,
-    getDefaultVisibleOverlayKeys(activeTelemetry)
-  );
-  const visiblePanes = parseParamList(
-    searchParams.get('panes'),
-    workspacePaneKeys,
-    [...workspacePaneKeys]
-  );
-  const visibleMarkers = useMemo(
-    () =>
-      workspaceMarkers.filter((marker) => {
-        switch (markerFilter) {
-          case 'LONG':
-            return marker.side === 'LONG' && marker.category === 'ENTRY';
-          case 'SHORT':
-            return marker.side === 'SHORT' && marker.category === 'ENTRY';
-          case 'EXITS':
-            return marker.category === 'EXIT' || marker.category === 'FORCED';
-          case 'FORCED':
-            return marker.category === 'FORCED' || marker.isForced;
-          default:
-            return true;
-        }
-      }),
-    [markerFilter, workspaceMarkers]
-  );
-  const filteredTradeRows = useMemo(() => {
-    const normalizedQuery = tradeQuery.trim().toLowerCase();
-
-    return workspaceTrades
-      .filter((trade) => {
-        if (tradeSideFilter !== 'ALL' && trade.side !== tradeSideFilter) {
-          return false;
-        }
-
-        if (tradePnlFilter === 'WINNERS' && trade.pnlValue < 0) {
-          return false;
-        }
-
-        if (tradePnlFilter === 'LOSERS' && trade.pnlValue >= 0) {
-          return false;
-        }
-
-        if (!normalizedQuery) {
-          return true;
-        }
-
-        return [
-          trade.symbol,
-          trade.side,
-          trade.entryLabel,
-          trade.exitLabel,
-          formatDateTime(trade.entryTime),
-          formatDateTime(trade.exitTime),
-        ].some((value) => value.toLowerCase().includes(normalizedQuery));
-      })
-      .sort((left, right) => {
-        switch (tradeSortField) {
-          case 'symbol':
-          case 'side':
-            return compareTradeValues(left[tradeSortField], right[tradeSortField], tradeSortDirection);
-          case 'entryTime':
-          case 'exitTime':
-            return compareTradeValues(
-              new Date(left[tradeSortField]).getTime(),
-              new Date(right[tradeSortField]).getTime(),
-              tradeSortDirection
-            );
-          default:
-            return compareTradeValues(left[tradeSortField], right[tradeSortField], tradeSortDirection);
-        }
-      });
-  }, [
-    tradePnlFilter,
-    tradeQuery,
-    tradeSideFilter,
-    tradeSortDirection,
-    tradeSortField,
-    workspaceTrades,
-  ]);
-
-  const explicitMarker = useMemo(
-    () => findMarkerById(workspaceMarkers, selectedMarkerId),
-    [selectedMarkerId, workspaceMarkers]
-  );
-  const tradeFromExplicitMarker = useMemo(
-    () => findTradeByMarkerId(workspaceTrades, selectedMarkerId),
-    [selectedMarkerId, workspaceTrades]
-  );
-  const selectedTrade =
-    workspaceTrades.find((trade) => trade.id === selectedTradeId) ??
-    tradeFromExplicitMarker ??
-    workspaceTrades[0] ??
-    null;
-  const inspectorMarker =
-    explicitMarker ??
-    (selectedTrade ? findMarkerById(workspaceMarkers, selectedTrade.entryMarkerId) : null);
-  const visibleSelectedMarker =
-    visibleMarkers.find((marker) => marker.id === inspectorMarker?.id) ??
-    visibleMarkers.find((marker) => marker.tradeId === selectedTrade?.id) ??
-    visibleMarkers[0] ??
-    null;
-  const activeMarkerIndex = visibleSelectedMarker
-    ? visibleMarkers.findIndex((marker) => marker.id === visibleSelectedMarker.id)
-    : -1;
-  const focusTimestamp = deriveWorkspaceFocusTime(
-    inspectorMarker ?? visibleSelectedMarker,
-    selectedTrade
-  );
-
-  const selectTrade = (tradeId: string, preferredMarkerId?: string) => {
-    const trade = workspaceTrades.find((entry) => entry.id === tradeId) ?? null;
-    if (!trade) {
-      return;
-    }
-
-    updateWorkspaceParams((params) => {
-      params.set('trade', trade.id);
-      params.set('marker', preferredMarkerId ?? trade.entryMarkerId);
-    });
-  };
-
-  const stepMarker = (offset: number) => {
-    if (visibleMarkers.length === 0) {
-      return;
-    }
-
-    const nextIndex =
-      activeMarkerIndex === -1
-        ? 0
-        : Math.min(Math.max(activeMarkerIndex + offset, 0), visibleMarkers.length - 1);
-    const nextMarker = visibleMarkers[nextIndex];
-    if (!nextMarker) {
-      return;
-    }
-
-    updateWorkspaceParams((params) => {
-      params.set('marker', nextMarker.id);
-      params.set('trade', nextMarker.tradeId);
-    });
-  };
-
-  return (
-    <Stack spacing={2.5}>
-      <Grid container spacing={2.5} alignItems="flex-start">
-        <Grid size={{ xs: 12, xl: 8.25 }}>
-          <SurfacePanel
-            title="Chart workspace"
-            description={`${summarizeMarkerFilter(markerFilter, visibleMarkers.length)} on ${activeTelemetry.symbol}. Click a marker or trade row to keep the chart and inspector in sync.`}
-            actions={
-              availableTelemetrySymbols.length > 1 ? (
-                <Select
-                  size="small"
-                  value={selectedTelemetrySymbol}
-                  onChange={(event) => onTelemetrySelect(String(event.target.value))}
-                >
-                  {availableTelemetrySymbols.map((symbol) => (
-                    <MenuItem key={symbol} value={symbol}>
-                      {symbol}
-                    </MenuItem>
-                  ))}
-                </Select>
-              ) : undefined
-            }
-            contentSx={{ gap: 1.5 }}
-          >
-            <LegendList
-              items={[
-                {
-                  color: actionVisuals.BUY.color,
-                  label: 'BUY',
-                  detail: 'long entry',
-                  shape: actionVisuals.BUY.legendShape,
-                },
-                {
-                  color: actionVisuals.SELL.color,
-                  label: 'SELL',
-                  detail: 'long exit',
-                  shape: actionVisuals.SELL.legendShape,
-                },
-                {
-                  color: actionVisuals.SHORT.color,
-                  label: 'SHORT',
-                  detail: 'short entry',
-                  shape: actionVisuals.SHORT.legendShape,
-                },
-                {
-                  color: actionVisuals.COVER.color,
-                  label: 'COVER',
-                  detail: 'short exit',
-                  shape: actionVisuals.COVER.legendShape,
-                },
-              ]}
-            />
-
-            <Stack spacing={1.25}>
-              <Stack
-                direction={{ xs: 'column', lg: 'row' }}
-                spacing={1}
-                alignItems={{ xs: 'stretch', lg: 'center' }}
-              >
-                <ToggleButtonGroup
-                  size="small"
-                  exclusive
-                  value={markerFilter}
-                  onChange={(_, value: BacktestMarkerFilter | null) => {
-                    if (value) {
-                      updateWorkspaceParams((params) => {
-                        params.set('filter', value);
-                      });
-                    }
-                  }}
-                >
-                  <ToggleButton value="ALL">All</ToggleButton>
-                  <ToggleButton value="LONG">Long</ToggleButton>
-                  <ToggleButton value="SHORT">Short</ToggleButton>
-                  <ToggleButton value="EXITS">Exits</ToggleButton>
-                  <ToggleButton value="FORCED">Forced</ToggleButton>
-                </ToggleButtonGroup>
-
-                {overlayLegend.length > 0 ? (
-                  <ToggleButtonGroup
-                    size="small"
-                    value={resolvedOverlayKeys}
-                    onChange={(_, value: string[]) =>
-                      updateWorkspaceParams((params) => {
-                        params.set('overlays', value.length > 0 ? value.join(',') : 'none');
-                      })
-                    }
-                  >
-                    {overlayLegend.map((overlay) => (
-                      <ToggleButton key={overlay.key} value={overlay.key}>
-                        {overlay.label}
-                      </ToggleButton>
-                    ))}
-                  </ToggleButtonGroup>
-                ) : null}
-
-                <ToggleButtonGroup
-                  size="small"
-                  value={visiblePanes}
-                  onChange={(_, value: string[]) =>
-                    updateWorkspaceParams((params) => {
-                      params.set('panes', value.length > 0 ? value.join(',') : 'none');
-                    })
-                  }
-                >
-                  <ToggleButton value="exposure">Exposure pane</ToggleButton>
-                  <ToggleButton value="oscillator">Indicator pane</ToggleButton>
-                </ToggleButtonGroup>
-              </Stack>
-
-              <BacktestWorkspaceChart
-                series={activeTelemetry}
-                markers={workspaceMarkers}
-                selectedMarkerId={visibleSelectedMarker?.id ?? null}
-                markerFilter={markerFilter}
-                visibleOverlayKeys={resolvedOverlayKeys}
-                showExposurePane={visiblePanes.includes('exposure')}
-                showOscillatorPane={visiblePanes.includes('oscillator')}
-                focusTimestamp={focusTimestamp}
-                onMarkerSelect={(marker) => {
-                  updateWorkspaceParams((params) => {
-                    params.set('marker', marker.id);
-                    params.set('trade', marker.tradeId);
-                  });
-                }}
-              />
-            </Stack>
-          </SurfacePanel>
-        </Grid>
-
-        <Grid size={{ xs: 12, xl: 3.75 }}>
-          <StickyInspectorPanel
-            title="Inspector"
-            description="Selection follows chart markers and trade rows so context stays in one place."
-            actions={
-              selectedTrade ? (
-                <StatusPill
-                  label={`${selectedTrade.side} trade`}
-                  tone={selectedTrade.side === 'LONG' ? 'success' : 'error'}
-                  variant="filled"
-                />
-              ) : undefined
-            }
-            mobileBehavior="drawer"
-            mobileOpenLabel={selectedTrade ? 'Open trade detail' : 'Open inspector'}
-            mobilePreview={
-              selectedTrade ? (
-                <Stack spacing={1.25}>
-                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                    <StatusPill
-                      label={`${selectedTrade.side} trade`}
-                      tone={selectedTrade.side === 'LONG' ? 'success' : 'error'}
-                      variant="filled"
-                    />
-                    <StatusPill label={selectedTrade.symbol} tone="info" />
-                    <StatusPill
-                      label={`PnL ${formatCurrency(selectedTrade.pnlValue, 2)}`}
-                      tone={selectedTrade.pnlValue >= 0 ? 'success' : 'error'}
-                    />
-                  </Stack>
-                  <Typography variant="body2" color="text.secondary">
-                    Open the inspector to review entry and exit timing, return, duration, and linked event context while keeping the chart unobstructed.
-                  </Typography>
-                </Stack>
-              ) : (
-                <Typography variant="body2" color="text.secondary">
-                  Select a chart marker or trade row, then open the inspector to review the linked evidence in a focused bottom sheet.
-                </Typography>
-              )
-            }
-          >
-            {selectedTrade ? (
-              <>
-                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                  <StatusPill label={`Entry: ${selectedTrade.entryAction}`} tone="success" />
-                  <StatusPill label={`Exit: ${selectedTrade.exitAction}`} tone="info" />
-                  <StatusPill
-                    label={
-                      inspectorMarker?.category === 'FORCED'
-                        ? 'Forced or flagged event'
-                        : inspectorMarker?.category ?? 'Trade selection'
-                    }
-                    tone={inspectorMarker?.category === 'FORCED' ? 'warning' : 'default'}
-                  />
-                </Stack>
-
-                <KeyValueGrid
-                  items={[
-                    { label: 'Symbol', value: selectedTrade.symbol },
-                    { label: 'Entry time', value: formatDateTime(selectedTrade.entryTime) },
-                    { label: 'Exit time', value: formatDateTime(selectedTrade.exitTime) },
-                    { label: 'Duration', value: `${formatNumber(selectedTrade.durationMinutes)} min` },
-                    { label: 'Entry price', value: formatCurrency(selectedTrade.entryPrice, 4) },
-                    { label: 'Exit price', value: formatCurrency(selectedTrade.exitPrice, 4) },
-                    { label: 'Quantity', value: formatNumber(selectedTrade.quantity, 6) },
-                    {
-                      label: 'PnL',
-                      value: formatCurrency(selectedTrade.pnlValue, 2),
-                      tone: selectedTrade.pnlValue >= 0 ? 'success' : 'error',
-                    },
-                    {
-                      label: 'Return',
-                      value: formatPercentage(selectedTrade.returnPct, 2),
-                      tone: selectedTrade.returnPct >= 0 ? 'success' : 'error',
-                    },
-                    { label: 'Entry label', value: selectedTrade.entryLabel },
-                    { label: 'Exit label', value: selectedTrade.exitLabel },
-                  ]}
-                />
-
-                <Stack direction="row" spacing={1}>
-                  <Button
-                    variant="outlined"
-                    onClick={() => stepMarker(-1)}
-                    disabled={visibleMarkers.length === 0 || activeMarkerIndex <= 0}
-                  >
-                    Previous event
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    onClick={() => stepMarker(1)}
-                    disabled={
-                      visibleMarkers.length === 0 ||
-                      activeMarkerIndex === -1 ||
-                      activeMarkerIndex >= visibleMarkers.length - 1
-                    }
-                  >
-                    Next event
-                  </Button>
-                </Stack>
-              </>
-            ) : (
-              <EmptyState
-                title="Select a trade or marker"
-                description="Click a chart marker or a trade row to load entry, exit, and PnL details here."
-                tone="info"
-              />
-            )}
-          </StickyInspectorPanel>
-        </Grid>
-      </Grid>
-
-      <SurfacePanel
-        title="Trade review table"
-        description="Rows stay linked to chart focus. Use the filters to narrow the set, then sort columns to inspect trade timing and outcomes without the table spilling past the viewport."
-        contentSx={{ gap: 1.5 }}
-      >
-        {workspaceTrades.length > 0 ? (
-          <>
-            <Stack
-              direction={{ xs: 'column', lg: 'row' }}
-              spacing={1}
-              alignItems={{ xs: 'stretch', lg: 'center' }}
-            >
-              <TextField
-                size="small"
-                label="Filter trades"
-                value={tradeQuery}
-                onChange={(event) => setTradeQuery(event.target.value)}
-                placeholder="Symbol, side, label, timestamp"
-                sx={{ minWidth: { xs: '100%', lg: 280 } }}
-                slotProps={{
-                  input: {
-                    startAdornment: (
-                      <InputAdornment position="start">Find</InputAdornment>
-                    ),
-                  },
-                }}
-              />
-              <Select
-                size="small"
-                value={tradeSideFilter}
-                onChange={(event) => setTradeSideFilter(event.target.value as TradeSideFilter)}
-                sx={{ minWidth: 140 }}
-              >
-                <MenuItem value="ALL">All sides</MenuItem>
-                <MenuItem value="LONG">Long only</MenuItem>
-                <MenuItem value="SHORT">Short only</MenuItem>
-              </Select>
-              <Select
-                size="small"
-                value={tradePnlFilter}
-                onChange={(event) => setTradePnlFilter(event.target.value as TradePnlFilter)}
-                sx={{ minWidth: 150 }}
-              >
-                <MenuItem value="ALL">All outcomes</MenuItem>
-                <MenuItem value="WINNERS">Winners</MenuItem>
-                <MenuItem value="LOSERS">Losers</MenuItem>
-              </Select>
-              <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto' }}>
-                Showing {filteredTradeRows.length} of {workspaceTrades.length} trades
-              </Typography>
-            </Stack>
-
-            <TableContainer
-              sx={{
-                maxHeight: isLargeScreen ? 'calc(100vh - 19rem)' : 'min(60vh, 34rem)',
-                overflow: 'auto',
-                borderRadius: 2,
-                border: (currentTheme) => `1px solid ${currentTheme.palette.divider}`,
-              }}
-            >
-              <Table size="small" stickyHeader sx={{ minWidth: 920 }}>
-                <TableHead>
-                  <TableRow>
-                    {[
-                      ['symbol', 'Symbol', 'left'],
-                      ['side', 'Side', 'left'],
-                      ['entryTime', 'Entry', 'left'],
-                      ['exitTime', 'Exit', 'left'],
-                      ['quantity', 'Quantity', 'right'],
-                      ['entryPrice', 'Entry price', 'right'],
-                      ['exitPrice', 'Exit price', 'right'],
-                      ['pnlValue', 'PnL', 'right'],
-                      ['returnPct', 'Return', 'right'],
-                    ].map(([field, label, align]) => (
-                      <TableCell
-                        key={field}
-                        align={align as 'left' | 'right'}
-                        sortDirection={tradeSortField === field ? tradeSortDirection : false}
-                      >
-                        <TableSortLabel
-                          active={tradeSortField === field}
-                          direction={tradeSortField === field ? tradeSortDirection : 'asc'}
-                          onClick={() => {
-                            const nextField = field as TradeSortField;
-                            if (tradeSortField === nextField) {
-                              setTradeSortDirection((current) =>
-                                current === 'asc' ? 'desc' : 'asc'
-                              );
-                              return;
-                            }
-
-                            setTradeSortField(nextField);
-                            setTradeSortDirection(
-                              nextField === 'entryTime' || nextField === 'exitTime' ? 'desc' : 'asc'
-                            );
-                          }}
-                        >
-                          {label}
-                        </TableSortLabel>
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredTradeRows.map((trade, index) => (
-                    <TableRow
-                      key={trade.id}
-                      hover
-                      selected={trade.id === selectedTrade?.id}
-                      tabIndex={0}
-                      onClick={() => selectTrade(trade.id)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault();
-                          selectTrade(trade.id);
-                        }
-
-                        if (event.key === 'ArrowDown') {
-                          event.preventDefault();
-                          const nextTrade = filteredTradeRows[Math.min(index + 1, filteredTradeRows.length - 1)];
-                          if (nextTrade) {
-                            selectTrade(nextTrade.id);
-                          }
-                        }
-
-                        if (event.key === 'ArrowUp') {
-                          event.preventDefault();
-                          const previousTrade = filteredTradeRows[Math.max(index - 1, 0)];
-                          if (previousTrade) {
-                            selectTrade(previousTrade.id);
-                          }
-                        }
-                      }}
-                      sx={{
-                        cursor: 'pointer',
-                        '&:focus-visible': {
-                          outline: (currentTheme) =>
-                            `2px solid ${currentTheme.palette.primary.main}`,
-                          outlineOffset: '-2px',
-                        },
-                      }}
-                    >
-                      <TableCell>{trade.symbol}</TableCell>
-                      <TableCell>
-                        <StatusPill
-                          label={trade.side}
-                          tone={trade.side === 'LONG' ? 'success' : 'error'}
-                          variant="filled"
-                        />
-                      </TableCell>
-                      <TableCell>{formatDateTime(trade.entryTime)}</TableCell>
-                      <TableCell>{formatDateTime(trade.exitTime)}</TableCell>
-                      <TableCell align="right">
-                        <NumericText variant="body2">
-                          {formatNumber(trade.quantity, 6)}
-                        </NumericText>
-                      </TableCell>
-                      <TableCell align="right">
-                        <NumericText variant="body2">
-                          {formatCurrency(trade.entryPrice, 4)}
-                        </NumericText>
-                      </TableCell>
-                      <TableCell align="right">
-                        <NumericText variant="body2">
-                          {formatCurrency(trade.exitPrice, 4)}
-                        </NumericText>
-                      </TableCell>
-                      <TableCell align="right">
-                        <NumericText
-                          variant="body2"
-                          tone={trade.pnlValue >= 0 ? 'success' : 'error'}
-                        >
-                          {formatCurrency(trade.pnlValue, 2)}
-                        </NumericText>
-                      </TableCell>
-                      <TableCell align="right">
-                        <NumericText
-                          variant="body2"
-                          tone={trade.returnPct >= 0 ? 'success' : 'error'}
-                        >
-                          {formatPercentage(trade.returnPct, 2)}
-                        </NumericText>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </>
-        ) : (
-          <EmptyState
-            title="No trade windows for this symbol"
-            description="Switch the symbol or keep the analytics below for summary review."
-            tone="info"
-          />
-        )}
-      </SurfacePanel>
-    </Stack>
-  );
+function BacktestPanelPendingState({ message }: { message: string }) {
+  return <Alert severity="info">{message}</Alert>;
 }
 
 export function BacktestResults({
@@ -817,39 +68,14 @@ export function BacktestResults({
   const exportRef = useRef<HTMLDivElement | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
-  const requestedTelemetrySymbol = searchParams.get('symbol');
-  const preferredTelemetrySymbol = getPreferredTelemetrySymbol(
-    details.symbol,
-    details.availableTelemetrySymbols
-  );
-  const telemetrySymbol = requestedTelemetrySymbol ?? preferredTelemetrySymbol ?? undefined;
-  const { data: equitySeries = [] } = useGetBacktestEquityCurveQuery(details.id);
-  const { data: tradeSeries = [] } = useGetBacktestTradeSeriesQuery(details.id);
-  const { data: telemetryResponse } = useGetBacktestTelemetryQuery({
-    id: details.id,
-    symbol: telemetrySymbol,
-  });
-  const equityCurve = useMemo(() => createEquityCurve(details, equitySeries), [details, equitySeries]);
-  const drawdownCurve = useMemo(() => createDrawdownCurve(equityCurve), [equityCurve]);
-  const monthlyReturns = useMemo(() => createMonthlyReturns(equityCurve), [equityCurve]);
-  const tradeDistribution = useMemo(() => createTradeDistribution(tradeSeries), [tradeSeries]);
+  const activeSection = parseResultSection(searchParams.get('section'));
+  const selectedSymbol = searchParams.get('symbol') ?? details.symbol;
   const hasCompleteProvenance = Boolean(
     details.datasetId &&
       details.datasetChecksumSha256 &&
       details.datasetSchemaVersion &&
       details.datasetUploadedAt
   );
-  const lastUpdateLabel = details.lastProgressAt
-    ? formatDistanceToNow(new Date(details.lastProgressAt))
-    : 'No progress updates yet';
-  const availableTelemetrySymbols = Array.from(
-    new Set(
-      telemetryResponse?.resolvedSymbol
-        ? [...details.availableTelemetrySymbols, telemetryResponse.resolvedSymbol]
-        : details.availableTelemetrySymbols
-    )
-  );
-  const activeTelemetry = telemetryResponse?.telemetry ?? null;
 
   const exportPdf = async () => {
     if (!hasCompleteProvenance) {
@@ -882,10 +108,11 @@ export function BacktestResults({
       10,
       74
     );
+    doc.text(`Section: ${activeSection}`, 10, 80);
 
     if (exportRef.current) {
       const dataUrl = await toPng(exportRef.current, { pixelRatio: 1.3, cacheBust: true });
-      doc.addImage(dataUrl, 'PNG', 10, 82, 190, 114);
+      doc.addImage(dataUrl, 'PNG', 10, 88, 190, 108);
     }
 
     doc.save(`backtest_${details.id}_${new Date().toISOString().slice(0, 10)}.pdf`);
@@ -900,12 +127,64 @@ export function BacktestResults({
     }
   };
 
+  const renderActivePanel = () => {
+    switch (activeSection) {
+      case 'workspace':
+        return (
+          <Suspense
+            fallback={
+              <BacktestPanelPendingState message="Loading the chart workspace chunk and its telemetry boundary." />
+            }
+          >
+            <BacktestWorkspacePanel details={details} />
+          </Suspense>
+        );
+      case 'trades':
+        return (
+          <Suspense
+            fallback={
+              <BacktestPanelPendingState message="Loading the trade review chunk and its on-demand trade-series query." />
+            }
+          >
+            <BacktestTradeReviewPanel details={details} selectedSymbol={selectedSymbol} />
+          </Suspense>
+        );
+      case 'analytics':
+        return (
+          <Suspense
+            fallback={
+              <BacktestPanelPendingState message="Loading the analytics chunk and its deferred equity or trade queries." />
+            }
+          >
+            <BacktestAnalyticsPanel details={details} />
+          </Suspense>
+        );
+      case 'overview':
+        return (
+          <BacktestOverviewPanel
+            details={details}
+            transportLabel={transportLabel}
+            lastLiveEventAt={lastLiveEventAt}
+            transportError={transportError}
+          />
+        );
+      default:
+        return (
+          <EmptyState
+            title="Unknown review section"
+            description="Choose a valid backtest review section from the tabs above."
+            tone="warning"
+          />
+        );
+    }
+  };
+
   return (
     <Stack spacing={2.5}>
       <RouteActionBar
         sticky
         title={`Run #${details.id} research workspace`}
-        description="Review entries, exits, overlays, and trade evidence in one flow before moving to compare or replay actions."
+        description="Overview now opens first so the route can land on cheap summary data, while workspace, trades, and analytics load independently on demand."
         actions={
           <>
             {onReplay ? (
@@ -914,19 +193,11 @@ export function BacktestResults({
               </Button>
             ) : null}
             {onFocusHistory ? (
-              <Button
-                variant="outlined"
-                startIcon={<TableRowsIcon />}
-                onClick={onFocusHistory}
-              >
+              <Button variant="outlined" startIcon={<TableRowsIcon />} onClick={onFocusHistory}>
                 Compare in history
               </Button>
             ) : null}
-            <Button
-              variant="outlined"
-              startIcon={<ContentCopyIcon />}
-              onClick={() => void copyShareableLink()}
-            >
+            <Button variant="outlined" startIcon={<ContentCopyIcon />} onClick={() => void copyShareableLink()}>
               Copy link
             </Button>
             <Button
@@ -958,13 +229,8 @@ export function BacktestResults({
               variant="filled"
             />
             <StatusPill label={`Status: ${details.executionStatus}`} tone="info" />
-            <StatusPill
-              label={`Market: ${formatBacktestMarketLabel(details.symbol)} (${details.timeframe})`}
-            />
-            <StatusPill
-              label={`Transport: ${transportLabel}`}
-              tone={transportError ? 'warning' : 'success'}
-            />
+            <StatusPill label={`Market: ${formatBacktestMarketLabel(details.symbol)} (${details.timeframe})`} />
+            <StatusPill label={`Transport: ${transportLabel}`} tone={transportError ? 'warning' : 'success'} />
             <StatusPill
               label={`Last pushed event: ${formatLiveEventLabel(lastLiveEventAt)}`}
               tone={transportError ? 'warning' : 'default'}
@@ -982,159 +248,24 @@ export function BacktestResults({
         </Alert>
       ) : null}
 
-      {activeTelemetry ? (
-        <BacktestResearchWorkspace
-          key={activeTelemetry.symbol}
-          tradeSeries={tradeSeries}
-          availableTelemetrySymbols={availableTelemetrySymbols}
-          activeTelemetry={activeTelemetry}
-          selectedTelemetrySymbol={activeTelemetry.symbol}
-          onTelemetrySelect={(symbol) => {
-            const nextParams = new URLSearchParams(searchParams);
-            nextParams.set('symbol', symbol);
-            nextParams.delete('trade');
-            nextParams.delete('marker');
-            setSearchParams(nextParams, { replace: true });
-          }}
-        />
-      ) : (
-        <EmptyState
-          title="Telemetry was not persisted for this run"
-          description="Price-action review is unavailable, so use the analytics below for evidence review."
-          tone="info"
-        />
-      )}
+      <Tabs
+        value={activeSection}
+        onChange={(_, value: BacktestResultSection) => {
+          const nextParams = new URLSearchParams(searchParams);
+          nextParams.set('section', value);
+          setSearchParams(nextParams, { replace: true });
+        }}
+        variant="scrollable"
+        allowScrollButtonsMobile
+        aria-label="Backtest result sections"
+      >
+        <Tab value="overview" label="Overview" />
+        <Tab value="workspace" label="Workspace" />
+        <Tab value="trades" label="Trades" />
+        <Tab value="analytics" label="Analytics" />
+      </Tabs>
 
-      <Box ref={exportRef}>
-        <Grid container spacing={2}>
-          <Grid size={{ xs: 12, sm: 6, xl: 3 }}>
-            <MetricCard
-              label="Sharpe ratio"
-              value={details.sharpeRatio.toFixed(2)}
-              detail="Risk-adjusted return under the current cost model."
-              tone="info"
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, xl: 3 }}>
-            <MetricCard
-              label="Profit factor"
-              value={details.profitFactor.toFixed(2)}
-              detail="Gross profits divided by gross losses."
-              tone={details.profitFactor >= 1 ? 'success' : 'warning'}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, xl: 3 }}>
-            <MetricCard
-              label="Win rate"
-              value={`${details.winRate.toFixed(2)}%`}
-              detail={`${details.totalTrades} recorded trades`}
-              tone={details.winRate >= 50 ? 'success' : 'warning'}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, xl: 3 }}>
-            <MetricCard
-              label="Final balance"
-              value={details.finalBalance.toFixed(2)}
-              detail={`Initial balance ${details.initialBalance.toFixed(2)}`}
-              tone={details.finalBalance >= details.initialBalance ? 'success' : 'error'}
-            />
-          </Grid>
-
-          <Grid size={{ xs: 12, lg: 6 }}>
-            <SurfacePanel
-              title="Execution telemetry"
-              description="Runtime progress and transport context stay visible here so chart review never loses execution status."
-            >
-              <Stack spacing={0.75}>
-                <Typography variant="body2" color="text.secondary">
-                  Status: {details.executionStatus} | Stage: {details.executionStage} | Progress:{' '}
-                  {details.progressPercent}%
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Current data date:{' '}
-                  {details.currentDataTimestamp
-                    ? formatDateTime(details.currentDataTimestamp)
-                    : 'Waiting for first candle'}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Candles processed: {formatNumber(details.processedCandles)} /{' '}
-                  {formatNumber(details.totalCandles)} | Remaining{' '}
-                  {Math.max(0, 100 - details.progressPercent)}%
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Started: {details.startedAt ? formatDateTime(details.startedAt) : 'Queued only'} |
-                  Last update: {lastUpdateLabel}
-                  {details.completedAt
-                    ? ` | Completed: ${formatDateTime(details.completedAt)}`
-                    : ''}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Transport: {transportLabel} | Last pushed event:{' '}
-                  {formatLiveEventLabel(lastLiveEventAt)}
-                  {transportError ? ` | Stream status: ${transportError}` : ''}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {details.statusMessage ??
-                    'No backend status message was recorded for this run.'}
-                </Typography>
-                {details.asyncMonitor?.timedOut ? (
-                  <Alert severity="error">
-                    The async monitor flagged this run as stale because it exceeded the expected
-                    backend update window.
-                  </Alert>
-                ) : null}
-                {details.errorMessage ? <Alert severity="error">{details.errorMessage}</Alert> : null}
-              </Stack>
-            </SurfacePanel>
-          </Grid>
-
-          <Grid size={{ xs: 12, lg: 6 }}>
-            <SurfacePanel
-              title="Reproducibility"
-              description="Dataset identity, schema, and archive state stay explicit so this run remains evidence-backed."
-            >
-              {hasCompleteProvenance ? (
-                <Stack spacing={0.75}>
-                  <Typography variant="body2" color="text.secondary">
-                    Dataset #{details.datasetId} | {details.datasetName ?? '-'} | Schema{' '}
-                    {details.datasetSchemaVersion}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Experiment key: {details.experimentKey}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Checksum: {details.datasetChecksumSha256}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Uploaded: {formatDateTime(details.datasetUploadedAt ?? '')}
-                    {details.datasetArchived
-                      ? ' | Archived from active catalog'
-                      : ' | Active in dataset catalog'}
-                  </Typography>
-                </Stack>
-              ) : (
-                <Alert severity="warning">
-                  This run is missing full dataset provenance. Charts remain visible, but report
-                  export is intentionally blocked.
-                </Alert>
-              )}
-            </SurfacePanel>
-          </Grid>
-
-          <Grid size={{ xs: 12, lg: 6 }}>
-            <EquityCurve points={equityCurve} />
-          </Grid>
-          <Grid size={{ xs: 12, lg: 6 }}>
-            <DrawdownChart points={drawdownCurve} maxDrawdownLimitPct={25} />
-          </Grid>
-          <Grid size={{ xs: 12, lg: 6 }}>
-            <MonthlyReturnsHeatmap data={monthlyReturns} />
-          </Grid>
-          <Grid size={{ xs: 12, lg: 6 }}>
-            <TradeDistributionHistogram bins={tradeDistribution} />
-          </Grid>
-        </Grid>
-      </Box>
+      <Box ref={exportRef}>{renderActivePanel()}</Box>
     </Stack>
   );
 }

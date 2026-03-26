@@ -145,6 +145,7 @@ Shared frontend infrastructure:
 - RTK Query slices own backend contract adaptation.
 - Generated OpenAPI transport types are consumed through feature-owned contract modules where response normalization is needed, rather than leaking generated optional transport shapes into pages.
 - Backtest overview reads now carry run metadata plus `availableTelemetrySymbols`, while equity, trade, and telemetry payloads are loaded through dedicated endpoints so the UI can lazy-load heavy panes without recomputing strategy logic in the browser.
+- `BacktestResults` now acts as a section controller rather than one monolith: cheap overview content renders first, and the heavier `Workspace`, `Trades`, and `Analytics` panes are lazy-loaded in separate feature modules that own their own RTK Query boundaries.
 - Active backtest polling should prefer the lightweight summary endpoint, while completed-run review can request the slim overview plus the heavier equity, trade, and symbol-scoped telemetry payloads independently.
 - `features/backtest/BacktestWorkspaceChart.tsx` owns the trading-oriented price-review surface using `lightweight-charts`, while aggregate analytics remain on the existing Recharts-based components.
 - Redux slices handle auth, environment mode, settings, and WebSocket connection state.

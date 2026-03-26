@@ -394,9 +394,10 @@ describe('BacktestPerformanceProfile', () => {
       });
     };
 
+    const user = userEvent.setup();
     const renderStartedAt = performance.now();
     const view = render(
-      <MemoryRouter initialEntries={['/backtest?symbol=BTC%2FUSDT']}>
+      <MemoryRouter initialEntries={['/backtest?section=workspace&symbol=BTC%2FUSDT']}>
         <Profiler id="BacktestResults" onRender={onRender}>
           <BacktestResults details={details} />
         </Profiler>
@@ -407,14 +408,16 @@ describe('BacktestPerformanceProfile', () => {
 
     const initialMountSummary = summarizeProfilerSamples(profilerSamples, 'mount');
 
-    const tradeTable = await screen.findByRole('table');
+    await waitFor(() => expect(chartProfile.createChartCalls).toBeGreaterThan(0));
+    await user.click(screen.getByRole('tab', { name: /Trades/i }));
+    await screen.findByText('Trade review table', {}, { timeout: 5000 });
+    const tradeTable = await screen.findByRole('table', {}, { timeout: 5000 });
     const dataRows = within(tradeTable)
       .getAllByRole('row')
       .filter((row) => within(row).queryAllByRole('cell').length > 0);
     const interactionTargetRow = dataRows[Math.min(48, dataRows.length - 1)];
     expect(interactionTargetRow).toBeDefined();
 
-    const user = userEvent.setup();
     const tradeInteractionStartedAt = performance.now();
     await user.click(interactionTargetRow);
     await waitFor(() => expect(interactionTargetRow).toHaveClass('Mui-selected'));
