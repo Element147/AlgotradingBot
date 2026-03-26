@@ -114,6 +114,14 @@ public class MarketDataImportService {
         return jobs;
     }
 
+    @Transactional(readOnly = true)
+    public MarketDataImportJobResponse getJobResponse(Long jobId) {
+        long startedAt = System.nanoTime();
+        MarketDataImportJobResponse response = marketDataImportJobResponseMapper.toResponse(getJob(jobId));
+        backendOperationMetrics.record("read", "market_data_import_jobs", "single", System.nanoTime() - startedAt, 1, 0L);
+        return response;
+    }
+
     @Transactional
     public MarketDataImportJobResponse createJob(MarketDataImportJobRequest request) {
         MarketDataProvider provider = marketDataProviderRegistry.get(request.providerId());

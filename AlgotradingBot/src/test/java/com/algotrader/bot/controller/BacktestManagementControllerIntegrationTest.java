@@ -27,6 +27,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -328,7 +329,8 @@ class BacktestManagementControllerIntegrationTest {
                 .header("Authorization", "Bearer " + authToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isOk())
+            .andExpect(status().isAccepted())
+            .andExpect(header().string("Location", matchesPattern("/api/backtests/\\d+/summary")))
             .andExpect(jsonPath("$.id").exists())
             .andExpect(jsonPath("$.status").value("PENDING"));
     }
@@ -358,7 +360,8 @@ class BacktestManagementControllerIntegrationTest {
                 .header("Authorization", "Bearer " + authToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isOk())
+            .andExpect(status().isAccepted())
+            .andExpect(header().string("Location", matchesPattern("/api/backtests/\\d+/summary")))
             .andExpect(jsonPath("$.id").exists())
             .andExpect(jsonPath("$.status").value("PENDING"));
 
@@ -444,7 +447,8 @@ class BacktestManagementControllerIntegrationTest {
     void replayBacktest_createsPendingRecord() throws Exception {
         mockMvc.perform(post("/api/backtests/{backtestId}/replay", backtestId)
                 .header("Authorization", "Bearer " + authToken))
-            .andExpect(status().isOk())
+            .andExpect(status().isAccepted())
+            .andExpect(header().string("Location", matchesPattern("/api/backtests/\\d+/summary")))
             .andExpect(jsonPath("$.id").exists())
             .andExpect(jsonPath("$.status").value("PENDING"));
     }

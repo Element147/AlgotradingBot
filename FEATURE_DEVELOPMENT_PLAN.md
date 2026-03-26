@@ -222,7 +222,7 @@ Acceptance Criteria
 - The mandatory step completion protocol passes.
 
 #### 1C.3 Make UI-facing communication strictly asynchronous for heavy workflows
-- [ ] Standardize heavy API behavior so the UI never waits on synchronous backtest execution, dataset import processing, large export generation, or active algorithm state derivation.
+- [x] Standardize heavy API behavior so the UI never waits on synchronous backtest execution, dataset import processing, large export generation, or active algorithm state derivation.
 Acceptance Criteria
 - Heavy workflows use one of the approved async patterns: `202 Accepted + job id`, WebSocket event stream, polling fallback, or background export retrieval.
 - The UI can show optimistic command acceptance immediately and then follow progress asynchronously.

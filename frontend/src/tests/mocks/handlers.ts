@@ -624,7 +624,7 @@ export const handlers = [
       id: 43,
       status: 'PENDING',
       submittedAt: '2026-03-10T10:01:00',
-    })
+    }, { status: 202 })
   ),
 
   http.get(`${API_BASE_URL}/api/market-data/providers`, () =>
@@ -733,6 +733,36 @@ export const handlers = [
       },
     ])
   ),
+  http.get(`${API_BASE_URL}/api/market-data/jobs/:jobId`, ({ params }) =>
+    HttpResponse.json({
+      id: Number(params.jobId),
+      providerId: 'binance',
+      providerLabel: 'Binance',
+      assetType: 'CRYPTO',
+      datasetName: 'BTC majors 1h',
+      symbolsCsv: 'BTC/USDT,ETH/USDT',
+      timeframe: '1h',
+      startDate: '2024-03-12',
+      endDate: '2026-03-12',
+      adjusted: false,
+      regularSessionOnly: false,
+      status: 'QUEUED',
+      statusMessage: 'Queued. Waiting for downloader worker.',
+      nextRetryAt: null,
+      currentSymbolIndex: 0,
+      totalSymbols: 2,
+      currentSymbol: 'BTC/USDT',
+      importedRowCount: 0,
+      datasetId: null,
+      datasetReady: false,
+      currentChunkStart: '2024-03-12T00:00:00',
+      attemptCount: 0,
+      createdAt: '2026-03-12T09:10:00',
+      updatedAt: '2026-03-12T09:10:00',
+      startedAt: null,
+      completedAt: null,
+    })
+  ),
   http.post(`${API_BASE_URL}/api/market-data/jobs`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>;
     return HttpResponse.json({
@@ -762,7 +792,7 @@ export const handlers = [
       updatedAt: '2026-03-12T09:10:00',
       startedAt: null,
       completedAt: null,
-    });
+    }, { status: 202 });
   }),
   http.post(`${API_BASE_URL}/api/market-data/provider-credentials/:providerId`, async ({ request, params }) => {
     const body = (await request.json()) as Record<string, unknown>;
@@ -821,7 +851,7 @@ export const handlers = [
       updatedAt: '2026-03-12T09:10:00',
       startedAt: null,
       completedAt: null,
-    })
+    }, { status: 202 })
   ),
   http.post(`${API_BASE_URL}/api/market-data/jobs/:jobId/cancel`, ({ params }) =>
     HttpResponse.json({

@@ -118,7 +118,7 @@ if ($DebugBackend) {
 
 Write-Host ""
 Write-Host "Waiting for backend to be ready..." -ForegroundColor Yellow
-if (-not (Wait-HttpOk -Uri "http://localhost:8080/actuator/health" -MaxAttempts 45 -DelaySeconds 2)) {
+if (-not (Wait-HttpOk -Uri "http://localhost:8080/actuator/info" -MaxAttempts 45 -DelaySeconds 2)) {
     Write-Host "[X] Backend did not become healthy in time" -ForegroundColor Red
     Write-Host "Inspect the backend PowerShell window or logs in $($repoPaths.RuntimeLogDir)." -ForegroundColor Yellow
     Cleanup-FastModeStartup

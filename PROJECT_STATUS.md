@@ -21,6 +21,7 @@ The repository is an operational local-first MVP for research and paper-trading 
 - Backtest orchestration is now split across dedicated command, query, execution-lifecycle, and progress services so read mapping, async runtime work, and transactional persistence no longer live in one oversized service.
 - Fresh backtest submissions now dispatch only after the queueing transaction commits, so new runs start immediately instead of relying on startup recovery to pick up stranded `QUEUED` rows.
 - Backtest HTTP reads are now split more explicitly as well: command endpoints stay on `BacktestManagementService`, while history, experiment summaries, comparison, full details, and the lightweight `/api/backtests/{id}/summary` progress read route through `BacktestResultQueryService`.
+- Heavy workstation-facing backtest and market-data commands now standardize on immediate `202 Accepted` responses plus `Location` headers for async follow-up, while the UI keeps progress on the WebSocket-or-polling path instead of waiting for synchronous execution or import processing to finish.
 - Requested backtest timeframes are now honored by explicit candle resampling before simulation; a run labeled `4h` or `1d` no longer silently executes on the raw imported granularity.
 - The active simulation engine now queues signal decisions for next-bar-open fills instead of executing on the same bar close, which removes a look-ahead path from every strategy.
 - Experiment summaries no longer depend on loading the full backtest table into memory; they now come from a repository aggregation query backed by explicit Liquibase-managed indexes.
@@ -96,6 +97,7 @@ Verified on March 20, 2026 against dataset `#12` (`Binance BTC/USDT +2 15m 2024-
 - Local fast mode runs PostgreSQL in Docker with backend and frontend locally.
 - Full-stack mode runs app, PostgreSQL, and Kafka in Docker with the frontend locally.
 - `.\run.ps1` and `.\run-all.ps1` now wait for both backend and frontend readiness and roll back partial startup if a later stage fails.
+- The local startup scripts now treat `/actuator/info` as the backend readiness probe for smoke runs because the current local profile exposes Kubernetes-style readiness as `OUT_OF_SERVICE` even after the workstation API is serving traffic successfully.
 - `.\run-all.ps1` now checks for leftover fast-mode backend processes and port conflicts before Docker startup.
 - `.\run.ps1` now auto-sizes the local backend JVM heap from detected host RAM and accepts explicit heap overrides for larger developer machines.
 - Compose identity is fixed to `algotradingbot`, with reusable named volumes for PostgreSQL, Kafka, and Kafka secrets.

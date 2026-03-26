@@ -120,13 +120,19 @@ public class BacktestManagementController {
     @PostMapping("/run")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<BacktestRunResponse> run(@Valid @RequestBody RunBacktestRequest request) {
-        return ResponseEntity.ok(backtestManagementService.runBacktest(request));
+        BacktestRunResponse response = backtestManagementService.runBacktest(request);
+        return ResponseEntity.accepted()
+            .header(HttpHeaders.LOCATION, "/api/backtests/" + response.id() + "/summary")
+            .body(response);
     }
 
     @PostMapping("/{backtestId}/replay")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<BacktestRunResponse> replay(@PathVariable Long backtestId) {
-        return ResponseEntity.ok(backtestManagementService.replayBacktest(backtestId));
+        BacktestRunResponse response = backtestManagementService.replayBacktest(backtestId);
+        return ResponseEntity.accepted()
+            .header(HttpHeaders.LOCATION, "/api/backtests/" + response.id() + "/summary")
+            .body(response);
     }
 
     @GetMapping("/compare")

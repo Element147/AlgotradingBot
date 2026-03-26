@@ -2,6 +2,7 @@ package com.algotrader.bot.controller;
 
 import com.algotrader.bot.service.marketdata.MarketDataImportService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -42,10 +43,19 @@ public class MarketDataController {
         return ResponseEntity.ok(marketDataImportService.listJobs());
     }
 
+    @GetMapping("/jobs/{jobId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<MarketDataImportJobResponse> job(@PathVariable Long jobId) {
+        return ResponseEntity.ok(marketDataImportService.getJobResponse(jobId));
+    }
+
     @PostMapping("/jobs")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<MarketDataImportJobResponse> createJob(@Valid @RequestBody MarketDataImportJobRequest request) {
-        return ResponseEntity.ok(marketDataImportService.createJob(request));
+        MarketDataImportJobResponse created = marketDataImportService.createJob(request);
+        return ResponseEntity.accepted()
+            .header(HttpHeaders.LOCATION, "/api/market-data/jobs/" + created.id())
+            .body(created);
     }
 
     @PostMapping("/provider-credentials/{providerId}")
@@ -60,7 +70,10 @@ public class MarketDataController {
     @PostMapping("/jobs/{jobId}/retry")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<MarketDataImportJobResponse> retryJob(@PathVariable Long jobId) {
-        return ResponseEntity.ok(marketDataImportService.retryJob(jobId));
+        MarketDataImportJobResponse retried = marketDataImportService.retryJob(jobId);
+        return ResponseEntity.accepted()
+            .header(HttpHeaders.LOCATION, "/api/market-data/jobs/" + retried.id())
+            .body(retried);
     }
 
     @PostMapping("/jobs/{jobId}/cancel")

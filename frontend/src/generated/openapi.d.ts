@@ -730,6 +730,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/market-data/jobs/{jobId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["job"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/exchange/connection-status": {
         parameters: {
             query?: never;
@@ -3338,6 +3354,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["MarketDataProviderCredentialResponse"][];
+                };
+            };
+        };
+    };
+    job: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jobId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MarketDataImportJobResponse"];
                 };
             };
         };

@@ -8,12 +8,13 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
@@ -69,7 +70,8 @@ public class MarketDataCandleSegment {
 
     @NotNull
     @Size(min = 64, max = 64)
-    @Column(name = "checksum_sha256", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.CHAR)
+    @Column(name = "checksum_sha256", nullable = false, length = 64, columnDefinition = "char(64)")
     private String checksumSha256;
 
     @NotNull
@@ -104,7 +106,7 @@ public class MarketDataCandleSegment {
     @Column(name = "storage_encoding", nullable = false, length = 20)
     private String storageEncoding;
 
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(name = "lineage_json")
     private String lineageJson;
 

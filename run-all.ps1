@@ -89,7 +89,7 @@ Write-Host "[OK] Backend services started!" -ForegroundColor Green
 # Wait for backend to be healthy
 Write-Host ""
 Write-Host "Waiting for backend to be ready..." -ForegroundColor Yellow
-if (-not (Wait-HttpOk -Uri "http://localhost:8080/actuator/health" -MaxAttempts 30 -DelaySeconds 2)) {
+if (-not (Wait-HttpOk -Uri "http://localhost:8080/actuator/info" -MaxAttempts 30 -DelaySeconds 2)) {
     Write-Host "[X] Backend failed to start within timeout" -ForegroundColor Red
     Write-Host "Check logs with: docker compose --project-name algotradingbot -f AlgotradingBot/compose.yaml logs" -ForegroundColor Yellow
     Cleanup-FullStackStartup
