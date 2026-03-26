@@ -151,7 +151,7 @@ Acceptance Criteria
 - The mandatory step completion protocol passes.
 
 #### 1A.7 Add observability and performance guardrails around the new store
-- [ ] Add metrics and structured logs for storage growth, query latency, gap counts, overlap resolution, and cache hit behavior.
+- [x] Add metrics and structured logs for storage growth, query latency, gap counts, overlap resolution, and cache hit behavior.
 Acceptance Criteria
 - Metrics expose enough detail to compare pre-migration and post-migration behavior.
 - The backtest engine and telemetry services no longer require whole-dataset CSV parse logs on normal hot paths.

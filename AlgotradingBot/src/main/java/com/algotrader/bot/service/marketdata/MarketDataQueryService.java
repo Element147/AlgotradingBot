@@ -29,20 +29,24 @@ import java.util.stream.Collectors;
 public class MarketDataQueryService {
 
     private static final Logger logger = LoggerFactory.getLogger(MarketDataQueryService.class);
+    private static final long SLOW_QUERY_THRESHOLD_MILLIS = 500L;
 
     private final MarketDataCandleRepository marketDataCandleRepository;
     private final BacktestDatasetStorageService backtestDatasetStorageService;
     private final BacktestDatasetCandleCache backtestDatasetCandleCache;
     private final MarketDataResampler marketDataResampler;
+    private final MarketDataQueryMetrics marketDataQueryMetrics;
 
     public MarketDataQueryService(MarketDataCandleRepository marketDataCandleRepository,
                                   BacktestDatasetStorageService backtestDatasetStorageService,
                                   BacktestDatasetCandleCache backtestDatasetCandleCache,
-                                  MarketDataResampler marketDataResampler) {
+                                  MarketDataResampler marketDataResampler,
+                                  MarketDataQueryMetrics marketDataQueryMetrics) {
         this.marketDataCandleRepository = marketDataCandleRepository;
         this.backtestDatasetStorageService = backtestDatasetStorageService;
         this.backtestDatasetCandleCache = backtestDatasetCandleCache;
         this.marketDataResampler = marketDataResampler;
+        this.marketDataQueryMetrics = marketDataQueryMetrics;
     }
 
     public List<MarketDataQueriedCandle> loadCandlesForSeries(Long seriesId,
@@ -57,16 +61,31 @@ public class MarketDataQueryService {
                                                        LocalDateTime windowStart,
                                                        LocalDateTime windowEnd,
                                                        MarketDataQueryMode queryMode) {
+        long startedAt = System.nanoTime();
         List<MarketDataQueriedCandle> exactCandles = marketDataCandleRepository.findCandlesInRange(seriesId, timeframe, windowStart, windowEnd).stream()
             .map(this::toQueriedCandle)
             .sorted(Comparator.comparing(MarketDataQueriedCandle::timestamp).thenComparing(MarketDataQueriedCandle::symbol))
             .toList();
-        return new MarketDataQueryResult(
+        MarketDataQueryResult result = new MarketDataQueryResult(
             exactCandles,
             buildGaps(exactCandles, timeframe, windowStart, windowEnd, Set.of()),
             timeframe,
             queryMode
         );
+        recordQueryObservation(
+            "series",
+            "series_id=" + seriesId,
+            timeframe,
+            queryMode,
+            windowStart,
+            windowEnd,
+            Set.of(),
+            Set.of(),
+            false,
+            startedAt,
+            result
+        );
+        return result;
     }
 
     public List<MarketDataQueriedCandle> loadCandlesForDataset(Long datasetId,
@@ -90,10 +109,12 @@ public class MarketDataQueryService {
                                                         LocalDateTime windowEnd,
                                                         Set<String> requestedSymbols,
                                                         MarketDataQueryMode queryMode) {
+        long startedAt = System.nanoTime();
         Set<String> normalizedSymbols = normalizeRequestedSymbols(requestedSymbols);
         List<MarketDataQueriedCandle> exactCandles = loadExactDatasetCandles(datasetId, timeframe, windowStart, windowEnd, normalizedSymbols);
         List<MarketDataQueriedCandle> mergedCandles = exactCandles;
         String sourceTimeframe = timeframe;
+        Set<String> rollupSourceTimeframes = new LinkedHashSet<>();
 
         boolean relationalSourceSeen = !exactCandles.isEmpty();
         if (queryMode.allowsRollup()) {
@@ -105,6 +126,7 @@ public class MarketDataQueryService {
                 normalizedSymbols
             );
             List<MarketDataQueriedCandle> rolledCandles = rollupAttempt.candles();
+            rollupSourceTimeframes.addAll(rollupAttempt.sourceTimeframes());
             relationalSourceSeen = relationalSourceSeen || rollupAttempt.sourceSeen();
             if (!rolledCandles.isEmpty()) {
                 mergedCandles = mergeCandles(exactCandles, rolledCandles);
@@ -120,24 +142,53 @@ public class MarketDataQueryService {
 
         List<MarketDataQueryGap> gaps = buildGaps(mergedCandles, timeframe, windowStart, windowEnd, normalizedSymbols);
         if (!mergedCandles.isEmpty() || relationalSourceSeen) {
-            return new MarketDataQueryResult(mergedCandles, gaps, sourceTimeframe, queryMode);
+            MarketDataQueryResult result = new MarketDataQueryResult(mergedCandles, gaps, sourceTimeframe, queryMode);
+            recordQueryObservation(
+                "dataset",
+                "dataset_id=" + datasetId,
+                timeframe,
+                queryMode,
+                windowStart,
+                windowEnd,
+                normalizedSymbols,
+                rollupSourceTimeframes,
+                false,
+                startedAt,
+                result
+            );
+            return result;
         }
 
         logger.info(
-            "No relational candles found for dataset {} timeframe {} symbols {} in window {} to {}. Falling back to legacy CSV compatibility path.",
+            "market_data_query event=legacy_fallback dataset_id={} timeframe={} query_mode={} symbols={} window_start={} window_end={} reason=no_relational_source",
             datasetId,
             timeframe,
+            queryMode,
             normalizedSymbols.isEmpty() ? "<all>" : normalizedSymbols,
             windowStart,
             windowEnd
         );
         List<MarketDataQueriedCandle> legacyCandles = loadLegacyCandles(datasetId, timeframe, windowStart, windowEnd, normalizedSymbols);
-        return new MarketDataQueryResult(
+        MarketDataQueryResult result = new MarketDataQueryResult(
             legacyCandles,
             buildGaps(legacyCandles, timeframe, windowStart, windowEnd, normalizedSymbols),
             timeframe,
             queryMode
         );
+        recordQueryObservation(
+            "dataset",
+            "dataset_id=" + datasetId,
+            timeframe,
+            queryMode,
+            windowStart,
+            windowEnd,
+            normalizedSymbols,
+            rollupSourceTimeframes,
+            true,
+            startedAt,
+            result
+        );
+        return result;
     }
 
     private List<MarketDataQueriedCandle> loadExactDatasetCandles(Long datasetId,
@@ -167,6 +218,7 @@ public class MarketDataQueryService {
         MarketDataTimeframe requestedTimeframe = MarketDataTimeframe.from(timeframe);
         Map<String, MarketDataQueriedCandle> merged = new LinkedHashMap<>();
         boolean sourceSeen = false;
+        Set<String> sourceTimeframes = new LinkedHashSet<>();
         for (MarketDataTimeframe candidate : finerTimeframesFor(requestedTimeframe)) {
             List<MarketDataQueriedCandle> sourceCandles = loadExactDatasetCandles(
                 datasetId,
@@ -179,6 +231,7 @@ public class MarketDataQueryService {
                 continue;
             }
             sourceSeen = true;
+            sourceTimeframes.add(candidate.id());
 
             List<MarketDataQueriedCandle> rolledCandles = marketDataResampler.resampleQueriedCandles(
                 sourceCandles,
@@ -188,11 +241,12 @@ public class MarketDataQueryService {
             if (!rolledCandles.isEmpty()) {
                 rolledCandles.forEach(candle -> merged.putIfAbsent(bucketKey(candle.symbol(), candle.timestamp()), candle));
                 logger.info(
-                    "Rolled up {} {} candles into timeframe {} for dataset {} between {} and {}.",
-                    sourceCandles.size(),
+                    "market_data_query event=rollup dataset_id={} source_timeframe={} target_timeframe={} source_candles={} rolled_candles={} window_start={} window_end={}",
+                    datasetId,
                     candidate.id(),
                     timeframe,
-                    datasetId,
+                    sourceCandles.size(),
+                    rolledCandles.size(),
                     windowStart,
                     windowEnd
                 );
@@ -202,7 +256,8 @@ public class MarketDataQueryService {
             merged.values().stream()
                 .sorted(Comparator.comparing(MarketDataQueriedCandle::timestamp).thenComparing(MarketDataQueriedCandle::symbol))
                 .toList(),
-            sourceSeen
+            sourceSeen,
+            sourceTimeframes
         );
     }
 
@@ -340,6 +395,120 @@ public class MarketDataQueryService {
         );
     }
 
-    private record RollupAttemptResult(List<MarketDataQueriedCandle> candles, boolean sourceSeen) {
+    private void recordQueryObservation(String scope,
+                                        String scopeIdentifier,
+                                        String requestedTimeframe,
+                                        MarketDataQueryMode queryMode,
+                                        LocalDateTime windowStart,
+                                        LocalDateTime windowEnd,
+                                        Set<String> normalizedSymbols,
+                                        Set<String> rollupSourceTimeframes,
+                                        boolean legacyFallbackUsed,
+                                        long startedAt,
+                                        MarketDataQueryResult result) {
+        long durationNanos = System.nanoTime() - startedAt;
+        long durationMillis = durationNanos / 1_000_000L;
+        int distinctSegmentCount = (int) result.candles().stream()
+            .map(MarketDataQueriedCandle::provenance)
+            .filter(Objects::nonNull)
+            .map(MarketDataCandleProvenance::segmentId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .count();
+        String resultSource = classifyResultSource(result, legacyFallbackUsed);
+        marketDataQueryMetrics.recordQuery(
+            scope,
+            queryMode,
+            requestedTimeframe,
+            resultSource,
+            result.candles().size(),
+            result.gaps().size(),
+            distinctSegmentCount,
+            rollupSourceTimeframes.size(),
+            durationNanos
+        );
+
+        if (result.gaps().isEmpty() && distinctSegmentCount <= 1 && durationMillis < SLOW_QUERY_THRESHOLD_MILLIS) {
+            return;
+        }
+
+        if (!result.gaps().isEmpty()) {
+            logger.warn(
+                "market_data_query event=gaps {} timeframe={} query_mode={} result_source={} candles={} gaps={} rollup_sources={} symbols={} window_start={} window_end={} duration_ms={}",
+                scopeIdentifier,
+                requestedTimeframe,
+                queryMode,
+                resultSource,
+                result.candles().size(),
+                result.gaps().size(),
+                rollupSourceTimeframes.isEmpty() ? "<none>" : rollupSourceTimeframes,
+                normalizedSymbols.isEmpty() ? "<all>" : normalizedSymbols,
+                windowStart,
+                windowEnd,
+                durationMillis
+            );
+        }
+        if (distinctSegmentCount > 1) {
+            logger.info(
+                "market_data_query event=segment_stitch {} timeframe={} query_mode={} result_source={} distinct_segments={} candles={} symbols={} window_start={} window_end={} duration_ms={}",
+                scopeIdentifier,
+                requestedTimeframe,
+                queryMode,
+                resultSource,
+                distinctSegmentCount,
+                result.candles().size(),
+                normalizedSymbols.isEmpty() ? "<all>" : normalizedSymbols,
+                windowStart,
+                windowEnd,
+                durationMillis
+            );
+        }
+        if (durationMillis >= SLOW_QUERY_THRESHOLD_MILLIS) {
+            logger.warn(
+                "market_data_query event=slow_query {} timeframe={} query_mode={} result_source={} candles={} gaps={} symbols={} window_start={} window_end={} duration_ms={}",
+                scopeIdentifier,
+                requestedTimeframe,
+                queryMode,
+                resultSource,
+                result.candles().size(),
+                result.gaps().size(),
+                normalizedSymbols.isEmpty() ? "<all>" : normalizedSymbols,
+                windowStart,
+                windowEnd,
+                durationMillis
+            );
+        }
+    }
+
+    private String classifyResultSource(MarketDataQueryResult result, boolean legacyFallbackUsed) {
+        if (legacyFallbackUsed) {
+            return "legacy_csv";
+        }
+        if (result.candles().isEmpty()) {
+            return "empty";
+        }
+
+        boolean hasRollup = result.candles().stream()
+            .map(MarketDataQueriedCandle::provenance)
+            .filter(Objects::nonNull)
+            .map(MarketDataCandleProvenance::resolutionTier)
+            .anyMatch("DERIVED_ROLLUP"::equals);
+        boolean hasExact = result.candles().stream()
+            .map(MarketDataQueriedCandle::provenance)
+            .filter(Objects::nonNull)
+            .map(MarketDataCandleProvenance::resolutionTier)
+            .anyMatch("EXACT_RAW"::equals);
+        if (hasRollup && hasExact) {
+            return "mixed";
+        }
+        if (hasRollup) {
+            return "rollup";
+        }
+        return "exact";
+    }
+
+    private record RollupAttemptResult(List<MarketDataQueriedCandle> candles,
+                                       boolean sourceSeen,
+                                       Set<String> sourceTimeframes) {
     }
 }

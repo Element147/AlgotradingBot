@@ -14,8 +14,10 @@ import com.algotrader.bot.service.BacktestDatasetStorageService;
 import com.algotrader.bot.service.BacktestTelemetryService;
 import com.algotrader.bot.service.HistoricalDataCsvParser;
 import com.algotrader.bot.service.marketdata.MarketDataCsvSupport;
+import com.algotrader.bot.service.marketdata.MarketDataQueryMetrics;
 import com.algotrader.bot.service.marketdata.MarketDataQueryService;
 import com.algotrader.bot.service.marketdata.MarketDataResampler;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.mockito.Mockito;
 
 import java.io.IOException;
@@ -162,7 +164,8 @@ public final class LegacyMarketDataFlowAuditRunner {
             Mockito.mock(MarketDataCandleRepository.class),
             new BacktestDatasetStorageService(repository, parser),
             cache,
-            new MarketDataResampler()
+            new MarketDataResampler(),
+            new MarketDataQueryMetrics(new SimpleMeterRegistry())
         );
         BacktestTelemetryService telemetryService = new BacktestTelemetryService(
             marketDataQueryService,

@@ -9,6 +9,9 @@ import com.algotrader.bot.repository.BacktestDatasetRepository;
 import com.algotrader.bot.repository.MarketDataCandleRepository;
 import com.algotrader.bot.repository.MarketDataCandleSegmentRepository;
 import com.algotrader.bot.repository.MarketDataSeriesRepository;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -41,6 +44,9 @@ class MarketDataQueryServiceIntegrationTest {
 
     @Autowired
     private MarketDataCandleRepository marketDataCandleRepository;
+
+    @Autowired
+    private MeterRegistry meterRegistry;
 
     @Test
     void loadCandlesForDataset_prefersRelationalStoreAndKeepsProvenanceVisible() {
@@ -89,6 +95,14 @@ class MarketDataQueryServiceIntegrationTest {
             2025-01-01T02:00:00,BTC/USDT,101,103,100,102,12
             """.getBytes();
         BacktestDataset dataset = backtestDatasetRepository.saveAndFlush(dataset("Legacy dataset", csvData));
+        double legacyFallbacksBefore = counterValue(
+            "algotrading.market_data.query.legacy_fallbacks",
+            "scope", "dataset",
+            "query_mode", "best_available",
+            "requested_timeframe", "1h",
+            "result_source", "legacy_csv"
+        );
+        double cacheMissesBefore = gaugeValue("algotrading.backtests.dataset_cache.misses");
 
         List<MarketDataQueriedCandle> candles = marketDataQueryService.loadCandlesForDataset(
             dataset.getId(),
@@ -101,12 +115,34 @@ class MarketDataQueryServiceIntegrationTest {
         assertThat(candles).hasSize(3);
         assertThat(candles).extracting(candle -> candle.provenance().sourceType()).containsOnly("LEGACY_CSV");
         assertThat(candles).extracting(candle -> candle.provenance().resolutionTier()).containsOnly("LEGACY_FALLBACK");
+        assertThat(counterValue(
+            "algotrading.market_data.query.legacy_fallbacks",
+            "scope", "dataset",
+            "query_mode", "best_available",
+            "requested_timeframe", "1h",
+            "result_source", "legacy_csv"
+        )).isEqualTo(legacyFallbacksBefore + 1.0d);
+        assertThat(gaugeValue("algotrading.backtests.dataset_cache.misses")).isGreaterThanOrEqualTo(cacheMissesBefore + 1.0d);
     }
 
     @Test
     void queryCandlesForDataset_bestAvailablePrefersExactThenFillsWithRollup() {
         BacktestDataset dataset = backtestDatasetRepository.saveAndFlush(dataset("Best available dataset", "legacy".getBytes()));
         MarketDataSeries series = marketDataSeriesRepository.saveAndFlush(series("BTCUSDT", "BTC/USDT", "BTC", "USDT"));
+        double rollupQueriesBefore = counterValue(
+            "algotrading.market_data.query.rollup_queries",
+            "scope", "dataset",
+            "query_mode", "best_available",
+            "requested_timeframe", "1h",
+            "result_source", "mixed"
+        );
+        long latencySamplesBefore = timerCount(
+            "algotrading.market_data.query.latency",
+            "scope", "dataset",
+            "query_mode", "best_available",
+            "requested_timeframe", "1h",
+            "result_source", "mixed"
+        );
 
         MarketDataCandleSegment exactSegment = marketDataCandleSegmentRepository.saveAndFlush(segment(
             dataset,
@@ -151,6 +187,20 @@ class MarketDataQueryServiceIntegrationTest {
         assertThat(result.candles().get(1).provenance().resolutionTier()).isEqualTo("DERIVED_ROLLUP");
         assertThat(result.candles().get(2).provenance().resolutionTier()).isEqualTo("DERIVED_ROLLUP");
         assertThat(result.gaps()).isEmpty();
+        assertThat(counterValue(
+            "algotrading.market_data.query.rollup_queries",
+            "scope", "dataset",
+            "query_mode", "best_available",
+            "requested_timeframe", "1h",
+            "result_source", "mixed"
+        )).isEqualTo(rollupQueriesBefore + 1.0d);
+        assertThat(timerCount(
+            "algotrading.market_data.query.latency",
+            "scope", "dataset",
+            "query_mode", "best_available",
+            "requested_timeframe", "1h",
+            "result_source", "mixed"
+        )).isEqualTo(latencySamplesBefore + 1L);
     }
 
     @Test
@@ -354,5 +404,20 @@ class MarketDataQueryServiceIntegrationTest {
         marketDataCandleRepository.saveAndFlush(candle(series, segment, blockStart.plusMinutes(15), close.add(BigDecimal.ONE).toPlainString()));
         marketDataCandleRepository.saveAndFlush(candle(series, segment, blockStart.plusMinutes(30), close.add(BigDecimal.valueOf(2)).toPlainString()));
         marketDataCandleRepository.saveAndFlush(candle(series, segment, blockStart.plusMinutes(45), close.add(BigDecimal.valueOf(3)).toPlainString()));
+    }
+
+    private double counterValue(String name, String... tags) {
+        Counter counter = meterRegistry.find(name).tags(tags).counter();
+        return counter == null ? 0.0d : counter.count();
+    }
+
+    private long timerCount(String name, String... tags) {
+        Timer timer = meterRegistry.find(name).tags(tags).timer();
+        return timer == null ? 0L : timer.count();
+    }
+
+    private double gaugeValue(String name) {
+        Double value = meterRegistry.get(name).gauge().value();
+        return value == null ? 0.0d : value;
     }
 }
