@@ -101,7 +101,7 @@ Acceptance Criteria
 - The mandatory step completion protocol passes.
 
 #### 1A.2 Define the new relational market-data model
-- [ ] Produce an architecture decision record for a relational candle store that keeps `backtest_datasets` as provenance catalog metadata while moving candle execution reads to new normalized tables.
+- [x] Produce an architecture decision record for a relational candle store that keeps `backtest_datasets` as provenance catalog metadata while moving candle execution reads to new normalized tables.
 Target model
 - `market_data_series`: one logical instrument or venue stream per broker or exchange or provider or symbol or asset class.
 - `market_data_candle_segments`: provenance and coverage metadata for every imported batch and timeframe range.

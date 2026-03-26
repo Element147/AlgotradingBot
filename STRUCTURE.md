@@ -70,6 +70,7 @@ C:\Git\algotradingbot\
 ## Documentation Layout
 
 - Root docs: current-state product, architecture, status, plan, tech, and guardrails
+- `docs/adr/`: architecture decision records for durable structural choices that should survive individual feature branches
 - `docs/guides/`: task-oriented implementation and runtime guides
 - `docs/USER_WORKFLOW_GUIDE.md`: operator-facing usage guide
 - `docs/ROADMAP.md` and `docs/ACCEPTANCE_CRITERIA.md`: planning and quality gates

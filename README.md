@@ -95,6 +95,7 @@ Supporting references:
 - `QUICK_START.md`
 - `GRADLE_AUTOMATION.md`
 - `.codex/agents/README.md`
+- `docs/adr/`: architecture decision records for durable backend and platform choices
 - `docs/USER_WORKFLOW_GUIDE.md`
 - `docs/ROADMAP.md`
 - `docs/ACCEPTANCE_CRITERIA.md`
