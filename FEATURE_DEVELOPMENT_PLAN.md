@@ -272,12 +272,14 @@ Implementation record
 - Execution-workspace IA: `docs/EXECUTION_WORKSPACE_INFORMATION_ARCHITECTURE.md`
 
 #### 2A.3 Produce wireframes and state diagrams for the new tabs
-- [ ] Create detailed desktop and mobile wireframes for `Forward Testing`, `Paper`, and `Live`, plus route-state diagrams for selection, drill-down, and failure modes.
+- [x] Create detailed desktop and mobile wireframes for `Forward Testing`, `Paper`, and `Live`, plus route-state diagrams for selection, drill-down, and failure modes.
 Acceptance Criteria
 - Each tab documents primary panels, secondary panels, chart behavior, log views, and danger-zone behavior.
 - Selection state, filters, and active algorithm drill-down are defined before implementation starts.
 - The design keeps environment, risk, connection, and capability cues visible without duplicating shell chrome.
 - The mandatory step completion protocol passes.
+Implementation record
+- Execution-workspace wireframes and state diagrams: `docs/EXECUTION_WORKSPACE_WIREFRAMES_AND_STATE_DIAGRAMS.md`
 
 #### 2A.4 Extend the design system only where the new workflow needs it
 - [ ] Add or refine shared UI primitives for strategy status rails, execution cards, investigation logs, live metric strips, and active-algo detail drawers.
