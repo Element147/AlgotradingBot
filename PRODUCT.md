@@ -33,6 +33,7 @@ Build a local-first platform for safe strategy research, backtesting, market-dat
 4. Reproducibility: datasets, parameters, experiments, and exports should be traceable.
 5. Incremental delivery: prefer small, verified changes over broad rewrites.
 6. Operator trust: the shell should make safety-critical state readable at a glance on both desktop and mobile.
+7. Explainability by default: moving from an active algorithm list into detail should show trade-trigger evidence, risk, exposure, and incident context in one or two clicks.
 
 ## Strategy Catalog Posture
 

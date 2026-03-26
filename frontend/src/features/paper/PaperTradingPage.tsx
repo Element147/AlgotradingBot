@@ -31,8 +31,8 @@ import {
   PageMetricStrip,
 } from '@/components/layout/PageContent';
 import { EmptyState, NumericText, StatusPill, SurfacePanel } from '@/components/ui/Workbench';
+import { ActiveAlgorithmExplainabilityPanel } from '@/components/workspace/ActiveAlgorithmExplainabilityPanel';
 import {
-  ActiveAlgorithmDetailDrawer,
   ExecutionCard,
   ExecutionStatusRail,
   InvestigationLogPanel,
@@ -690,19 +690,28 @@ export default function PaperTradingPage() {
           </Grid>
 
           <Grid size={{ xs: 12, xl: 5 }}>
-            <ActiveAlgorithmDetailDrawer
+            <ActiveAlgorithmExplainabilityPanel
               title={selectedAlgorithm ? `${selectedAlgorithm.name} paper detail` : 'Paper algorithm detail'}
               description="Selecting an assigned paper algorithm keeps signal evidence, parameters, and order events together."
-              loading={isOrdersLoading}
-              statusChips={
-                selectedAlgorithm ? (
-                  <>
-                    <StatusPill label={selectedAlgorithm.status} tone={selectedAlgorithm.status === 'RUNNING' ? 'success' : 'default'} variant="filled" />
-                    <StatusPill label={selectedAlgorithm.symbol} tone="info" />
-                    <StatusPill label={selectedAlgorithm.timeframe} tone="info" />
-                  </>
-                ) : null
+              subject={
+                selectedAlgorithm
+                  ? {
+                      name: selectedAlgorithm.name,
+                      status: selectedAlgorithm.status,
+                      symbol: selectedAlgorithm.symbol,
+                      timeframe: selectedAlgorithm.timeframe,
+                      riskPerTrade: selectedAlgorithm.riskPerTrade,
+                      minPositionSize: selectedAlgorithm.minPositionSize,
+                      maxPositionSize: selectedAlgorithm.maxPositionSize,
+                      configVersion: selectedAlgorithm.configVersion,
+                      lastConfigChangedAt: selectedAlgorithm.lastConfigChangedAt,
+                    }
+                  : null
               }
+              profile={selectedAlgorithm ? getStrategyProfile(selectedAlgorithm.type) : null}
+              trades={selectedTrades}
+              incidents={investigationEntries}
+              loading={isOrdersLoading}
               summary={
                 selectedAlgorithm ? (
                   <Stack spacing={1}>
@@ -720,7 +729,7 @@ export default function PaperTradingPage() {
                   </Stack>
                 ) : null
               }
-              sections={detailSections}
+              extraSections={detailSections}
             />
 
             <InvestigationLogPanel

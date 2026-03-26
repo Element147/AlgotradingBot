@@ -141,6 +141,7 @@ Shared frontend infrastructure:
 - `src/components/layout/PageContent.tsx`: shared page intro, metric-strip, and section-header primitives used to keep route spacing, section rhythm, and primary-action placement consistent across the SPA
 - `src/components/ui/Workbench.tsx`: shared workstation primitives such as `SurfacePanel`, `StatusPill`, `MetricCard`, route action bars, empty states, and chart legends
 - `src/components/workspace/StickyInspectorPanel.tsx`: sticky detail rail used by Backtest and other selection-heavy review flows
+- `src/components/workspace/ActiveAlgorithmExplainabilityPanel.tsx`: shared algorithm-evidence detail surface used by the execution workspace tabs to standardize decision evidence, risk and PnL, exposure, and incident review
 
 ### Frontend Data Flow
 
@@ -159,6 +160,7 @@ Shared frontend infrastructure:
 - `features/forwardTesting/ForwardTestingPage.tsx` is the first dedicated execution-workspace child route built on that model: it composes shared execution primitives with strategy config history, paper-state recovery signals, trade-history evidence, `/api/strategy/status` monitoring, audit history, and explicitly local operator notes to stay paper-safe while still useful for live-market observation.
 - `features/paper/PaperTradingPage.tsx` now extends the same route-owned model with exchange-scoped strategy assignment, selected-algorithm evidence review, and preserved simulated order-entry controls. Where the backend does not yet expose durable exchange-to-strategy paper assignment, the route uses explicit workstation-local persistence instead of silently inventing a server-backed capability.
 - `features/live/LiveTradingPage.tsx` now completes the execution-workspace split with an explicit live-context monitoring route. It requests live-scoped account reads through route-owned RTK Query overrides, shows backend capability failures plainly when live account reads are not wired, and keeps assignment, parameter, and order controls hidden until an explicit live-execution capability exists.
+- `ActiveAlgorithmExplainabilityPanel` now sits above the generic drawer primitive and gives Forward Testing, Paper, and Live a common evidence model: recent entry or exit markers, signal reason, current risk and PnL, position exposure, and recent incident or override review all come from route-supplied trade plus audit data instead of per-route bespoke drawer logic.
 - `WebSocketRuntime` subscribes to both test and live channel families after the authenticated handshake so route-owned contexts can observe the correct telemetry stream without reconnecting the entire app when operators review different contexts.
 - The frontend now treats connection-open and channel subscription as separate states: pages only consider live telemetry active after the backend acknowledges the requested channels.
 - Polling fallback remains available for progress views when the browser cannot establish or maintain the WebSocket connection.

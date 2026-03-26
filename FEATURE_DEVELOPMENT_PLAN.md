@@ -415,7 +415,7 @@ Implementation record
 - Added regression coverage for live route wiring, shell navigation, header route context, and the monitor-only live workspace in `frontend/src/App.test.tsx`, `frontend/src/components/layout/Sidebar.test.tsx`, `frontend/src/components/layout/Header.test.tsx`, and `frontend/src/features/live/LiveTradingPage.test.tsx`.
 
 #### 2C.5 Build active-algorithm signal-explainer views
-- [ ] Add a shared active-algorithm detail surface used by Forward Testing, Paper, and Live tabs.
+- [x] Add a shared active-algorithm detail surface used by Forward Testing, Paper, and Live tabs.
 Required evidence on selection
 - Entry and exit markers.
 - Signal or decision reason.
@@ -427,6 +427,10 @@ Acceptance Criteria
 - Signal charts match recorded orders and current profitability state without hidden client-side recomputation of trading logic.
 - The view remains responsive on desktop and mobile.
 - The mandatory step completion protocol passes.
+Implementation record
+- Added `frontend/src/components/workspace/ActiveAlgorithmExplainabilityPanel.tsx` as a shared explainability surface on top of the existing sticky detail drawer so Forward Testing, Paper, and Live all expose the same evidence model for entry and exit markers, signal reason, current risk and PnL, position exposure, and recent incidents or overrides.
+- Refactored `frontend/src/features/forwardTesting/ForwardTestingPage.tsx`, `frontend/src/features/paper/PaperTradingPage.tsx`, and `frontend/src/features/live/LiveTradingPage.tsx` to use that shared component while preserving route-specific supplemental sections such as config lineage, paper order events, and live capability posture.
+- Added regression coverage for the shared explainability component plus the three execution routes in `frontend/src/components/workspace/ActiveAlgorithmExplainabilityPanel.test.tsx`, `frontend/src/features/forwardTesting/ForwardTestingPage.test.tsx`, `frontend/src/features/paper/PaperTradingPage.test.tsx`, and `frontend/src/features/live/LiveTradingPage.test.tsx`.
 
 #### 2C.6 Update navigation, contracts, tests, and docs for the new execution model
 - [ ] Finish the route wiring, API adaptation, tests, and canonical documentation updates required by the execution workspace split.

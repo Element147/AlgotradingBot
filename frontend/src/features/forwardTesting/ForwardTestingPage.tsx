@@ -20,8 +20,8 @@ import {
 import { AppLayout } from '@/components/layout/AppLayout';
 import { PageContent, PageIntro } from '@/components/layout/PageContent';
 import { EmptyState, NumericText, StatusPill, SurfacePanel } from '@/components/ui/Workbench';
+import { ActiveAlgorithmExplainabilityPanel } from '@/components/workspace/ActiveAlgorithmExplainabilityPanel';
 import {
-  ActiveAlgorithmDetailDrawer,
   ExecutionCard,
   ExecutionStatusRail,
   InvestigationLogPanel,
@@ -522,23 +522,28 @@ export default function ForwardTestingPage() {
           </Grid>
 
           <Grid size={{ xs: 12, xl: 5 }}>
-            <ActiveAlgorithmDetailDrawer
+            <ActiveAlgorithmExplainabilityPanel
               title={selectedStrategy ? `${selectedStrategy.name} detail` : 'Forward-testing detail'}
               description="Move from strategy selection to signal explanation, config lineage, and recent observed state without leaving the workspace."
-              loading={isHistoryLoading || isTradeHistoryLoading}
-              statusChips={
-                selectedStrategy ? (
-                  <>
-                    <StatusPill
-                      label={selectedStrategy.status}
-                      tone={selectedStrategy.status === 'RUNNING' ? 'success' : 'default'}
-                      variant="filled"
-                    />
-                    <StatusPill label={selectedStrategy.symbol} tone="info" />
-                    <StatusPill label={selectedStrategy.timeframe} tone="info" />
-                  </>
-                ) : null
+              subject={
+                selectedStrategy
+                  ? {
+                      name: selectedStrategy.name,
+                      status: selectedStrategy.status,
+                      symbol: selectedStrategy.symbol,
+                      timeframe: selectedStrategy.timeframe,
+                      riskPerTrade: selectedStrategy.riskPerTrade,
+                      minPositionSize: selectedStrategy.minPositionSize,
+                      maxPositionSize: selectedStrategy.maxPositionSize,
+                      configVersion: selectedStrategy.configVersion,
+                      lastConfigChangedAt: selectedStrategy.lastConfigChangedAt,
+                    }
+                  : null
               }
+              profile={profile}
+              trades={trades}
+              incidents={investigationEntries}
+              loading={isHistoryLoading || isTradeHistoryLoading}
               summary={
                 selectedStrategy ? (
                   <Stack spacing={1.2}>
@@ -575,7 +580,7 @@ export default function ForwardTestingPage() {
                   </Stack>
                 ) : null
               }
-              sections={detailSections}
+              extraSections={detailSections}
             />
 
             <InvestigationLogPanel

@@ -4,8 +4,8 @@ import { useMemo, useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { PageContent, PageIntro } from '@/components/layout/PageContent';
 import { EmptyState, StatusPill, SurfacePanel } from '@/components/ui/Workbench';
+import { ActiveAlgorithmExplainabilityPanel } from '@/components/workspace/ActiveAlgorithmExplainabilityPanel';
 import {
-  ActiveAlgorithmDetailDrawer,
   ExecutionCard,
   ExecutionStatusRail,
   InvestigationLogPanel,
@@ -543,9 +543,27 @@ export default function LiveTradingPage() {
           </Grid>
 
           <Grid size={{ xs: 12, xl: 5 }}>
-            <ActiveAlgorithmDetailDrawer
+            <ActiveAlgorithmExplainabilityPanel
               title={selectedStrategy ? `${selectedStrategy.name} live detail` : 'Live algorithm detail'}
               description="The live drawer keeps capability state, config lineage, and signal context together while the route remains read-only."
+              subject={
+                selectedStrategy
+                  ? {
+                      name: selectedStrategy.name,
+                      status: selectedStrategy.status,
+                      symbol: selectedStrategy.symbol,
+                      timeframe: selectedStrategy.timeframe,
+                      riskPerTrade: selectedStrategy.riskPerTrade,
+                      minPositionSize: selectedStrategy.minPositionSize,
+                      maxPositionSize: selectedStrategy.maxPositionSize,
+                      configVersion: selectedStrategy.configVersion,
+                      lastConfigChangedAt: selectedStrategy.lastConfigChangedAt,
+                    }
+                  : null
+              }
+              profile={selectedStrategy ? getStrategyProfile(selectedStrategy.type) : null}
+              trades={selectedTrades}
+              incidents={investigationEntries}
               loading={isHistoryLoading || isStrategyTradeHistoryLoading}
               statusChips={
                 selectedStrategy ? (
@@ -582,7 +600,7 @@ export default function LiveTradingPage() {
                   </Stack>
                 ) : null
               }
-              sections={detailSections}
+              extraSections={detailSections}
             />
 
             <InvestigationLogPanel
