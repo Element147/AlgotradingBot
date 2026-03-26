@@ -114,7 +114,7 @@ Acceptance Criteria
 - The mandatory step completion protocol passes.
 
 #### 1A.3 Define overlap merge, deduplication, and compression policy
-- [ ] Specify how overlapping `1h` and `15m` imports are merged without losing exact-timeframe queryability.
+- [x] Specify how overlapping `1h` and `15m` imports are merged without losing exact-timeframe queryability.
 Required policy decisions
 - Exact timeframe queries must remain possible.
 - Backtest execution must have a deterministic "best available" path.

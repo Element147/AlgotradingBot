@@ -86,8 +86,14 @@ Required columns:
 - `row_count` integer not null
 - `checksum_sha256` char(64) not null
 - `schema_version` varchar(32) not null
+- `resolution_tier` varchar(20) not null
+- `source_priority` smallint not null
 - `segment_status` varchar(20) not null
+- `supersedes_segment_id` bigint null references `market_data_candle_segments(id)`
+- `duplicate_of_segment_id` bigint null references `market_data_candle_segments(id)`
 - `storage_encoding` varchar(20) not null
+- `lineage_json` text null
+- `compressed_artifact_uri` varchar(255) null
 - `archived` boolean not null
 - `archived_at` timestamp null
 - `archive_reason` varchar(255) null
@@ -99,6 +105,9 @@ Design intent:
 
 - Segment rows are immutable evidence for replay and reconciliation.
 - `dataset_id` keeps the existing dataset catalog authoritative for provenance.
+- `resolution_tier` distinguishes `EXACT_RAW`, `DERIVED_ROLLUP`, and `COARSER_FALLBACK` behavior without forcing that meaning into the timeframe column.
+- `source_priority`, `supersedes_segment_id`, and `duplicate_of_segment_id` support deterministic overlap resolution without silent data loss.
+- `lineage_json` captures rollup ancestry or compression manifests without introducing another table before the need is proven.
 - Later overlap or dedup policy can mark segments `ACTIVE`, `SUPERSEDED`, `DUPLICATE`, or `ARCHIVED` without rewriting dataset history.
 - `storage_encoding` supports future cold-storage compression decisions without changing the logical model.
 
@@ -178,6 +187,7 @@ Required indexes:
 Required indexes:
 
 - `(series_id, timeframe, coverage_start, coverage_end)`
+- `(series_id, timeframe, resolution_tier, source_priority, coverage_start)`
 - `(dataset_id)`
 - `(import_job_id)`
 - `(segment_status, archived)`
@@ -187,6 +197,7 @@ Purpose:
 - fast coverage checks
 - provenance tracing from dataset to segments
 - overlap and reconciliation scans
+- deterministic winning-segment selection
 
 ### `market_data_candles`
 
