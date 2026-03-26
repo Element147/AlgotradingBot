@@ -343,12 +343,16 @@ Implementation record
 - Chart-density regression coverage: `frontend/src/features/backtest/backtestWorkspace.test.ts`
 
 #### 2B.5 Add frontend observability and regression budgets
-- [ ] Introduce measurable performance budgets for route load time, chart mount time, and large-query render time.
+- [x] Introduce measurable performance budgets for route load time, chart mount time, and large-query render time.
 Acceptance Criteria
 - Performance budgets are documented and enforced through repeatable profiling or tests where practical.
 - The team can tell when a change regresses the backtest or execution workspace before users feel it.
 - Residual risks or known slow cases are documented honestly.
 - The mandatory step completion protocol passes.
+Implementation record
+- Shared repeatable frontend budget definitions for route load, chart mount, and large-query render paths: `frontend/src/features/backtest/backtestPerformanceBudget.ts`
+- Backtest profile harness now enforces budgets while still publishing the markdown report and diagnostic timings: `frontend/src/features/backtest/BacktestPerformanceProfile.test.tsx`
+- Verification guide now documents the enforced profiling workflow and budget ownership: `docs/guides/TESTING_AND_CONTRACTS.md`
 
 ### 2C. Decoupled Execution Environments
 

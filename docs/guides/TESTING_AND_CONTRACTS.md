@@ -50,8 +50,12 @@ The backtest-page profile report now records:
 - split endpoint payload sizes for the current route
 - React Profiler mount and update timings
 - chart setup timing for the workspace chart wrapper
+- enforced frontend budgets for route load time, chart mount time, and representative large-query render time
 - client-side transformation timings for equity, telemetry, and trade-review shaping
 - trade-table interaction timing for a representative row-selection flow
+
+The frontend backtest budget definitions live in `frontend/src/features/backtest/backtestPerformanceBudget.ts`.
+The `npm run profile:backtest` runner both writes the markdown report and fails if any of these repeatable jsdom budgets regress beyond their documented threshold.
 
 Notes:
 
