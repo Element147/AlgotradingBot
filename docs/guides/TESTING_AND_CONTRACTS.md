@@ -45,6 +45,14 @@ npm run profile:backtest
 
 The generated reports land in `AlgotradingBot/build/reports/backend-workflow-profile/report.md` and `frontend/build/reports/backtest-page-profile/report.md`.
 
+The backtest-page profile report now records:
+
+- split endpoint payload sizes for the current route
+- React Profiler mount and update timings
+- chart setup timing for the workspace chart wrapper
+- client-side transformation timings for equity, telemetry, and trade-review shaping
+- trade-table interaction timing for a representative row-selection flow
+
 Notes:
 
 - Runtime uses PostgreSQL.

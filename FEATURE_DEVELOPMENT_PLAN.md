@@ -296,11 +296,14 @@ Implementation record
 ### 2B. Frontend Performance Fixes
 
 #### 2B.1 Profile the slow backtest page end to end
-- [ ] Capture React Profiler traces, network traces, chart timing, and large-payload analysis for the current backtest route.
+- [x] Capture React Profiler traces, network traces, chart timing, and large-payload analysis for the current backtest route.
 Acceptance Criteria
 - The slowest user flows are identified with real numbers, including first meaningful paint, detail load time, chart mount time, and trade-table interaction time.
 - The trace explicitly shows whether the bottleneck is backend payload size, client-side transformation cost, re-renders, or chart library work.
 - The mandatory step completion protocol passes.
+Implementation record
+- Backtest page profile report: `frontend/build/reports/backtest-page-profile/report.md`
+- Companion backend workflow report: `AlgotradingBot/build/reports/backend-workflow-profile/report.md`
 
 #### 2B.2 Split heavy backtest payloads and lazy-load expensive panels
 - [ ] Refactor the route so summary metrics, chart workspace, trades, analytics, and export data are loaded independently and only when needed.
