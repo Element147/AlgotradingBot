@@ -9,6 +9,7 @@ import com.algotrader.bot.backtest.strategy.BacktestStrategyRegistry;
 import com.algotrader.bot.backtest.strategy.BacktestStrategySelectionMode;
 import com.algotrader.bot.entity.BacktestDataset;
 import com.algotrader.bot.entity.BacktestResult;
+import com.algotrader.bot.service.marketdata.MarketDataQueryMode;
 import com.algotrader.bot.service.marketdata.MarketDataQueryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,13 +95,14 @@ public class BacktestExecutionService {
             BacktestAlgorithmType algorithmType = BacktestAlgorithmType.from(context.strategyId());
             String primarySymbol = resolvePrimarySymbol(context.symbol(), dataset.getSymbolsCsv());
             Set<String> requestedSymbols = resolveRequestedSymbols(algorithmType, primarySymbol);
-            List<OHLCVData> simulationCandles = marketDataQueryService.loadCandlesForDataset(
+            List<OHLCVData> simulationCandles = marketDataQueryService.queryCandlesForDataset(
                     context.datasetId(),
                     context.timeframe(),
                     context.startDate(),
                     context.endDate(),
-                    requestedSymbols
-                ).stream()
+                    requestedSymbols,
+                    MarketDataQueryMode.BEST_AVAILABLE
+                ).candles().stream()
                 .map(candle -> candle.toOhlcvData())
                 .sorted(Comparator.comparing(OHLCVData::getTimestamp).thenComparing(OHLCVData::getSymbol))
                 .toList();

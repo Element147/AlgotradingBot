@@ -33,4 +33,26 @@ public record MarketDataCandleProvenance(
             null
         );
     }
+
+    public static MarketDataCandleProvenance derivedRollup(MarketDataCandleProvenance source,
+                                                           String targetTimeframe,
+                                                           LocalDateTime coverageStart,
+                                                           LocalDateTime coverageEnd) {
+        return new MarketDataCandleProvenance(
+            source == null ? null : source.datasetId(),
+            source == null ? null : source.importJobId(),
+            source == null ? null : source.segmentId(),
+            source == null ? null : source.seriesId(),
+            source == null ? null : source.providerId(),
+            source == null ? null : source.exchangeId(),
+            source == null ? null : source.symbol(),
+            targetTimeframe,
+            "DERIVED_ROLLUP",
+            source == null || source.sourceType() == null
+                ? "DERIVED_ROLLUP"
+                : source.sourceType() + "_ROLLED_UP",
+            coverageStart,
+            coverageEnd
+        );
+    }
 }

@@ -39,6 +39,14 @@ public enum MarketDataTimeframe {
         return this != ONE_DAY;
     }
 
+    public boolean isFinerThan(MarketDataTimeframe other) {
+        return this.step.compareTo(other.step) < 0;
+    }
+
+    public boolean isCoarserThan(MarketDataTimeframe other) {
+        return this.step.compareTo(other.step) > 0;
+    }
+
     public static MarketDataTimeframe from(String value) {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException("Timeframe is required");

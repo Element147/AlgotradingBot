@@ -50,7 +50,9 @@ Verified on March 20, 2026 against dataset `#12` (`Binance BTC/USDT +2 15m 2024-
 - Import progress is streamed through WebSocket events with polling fallback.
 - Provider credentials can be stored encrypted in PostgreSQL or supplied through environment variables.
 - Liquibase migration `0017` now provisions the normalized `market_data_series`, `market_data_candle_segments`, and `market_data_candles` tables plus repository-tested range and overlap query seams, and the runtime now queries that relational store directly for backtest execution and telemetry windows when normalized candles are present.
+- The relational query path now supports explicit exact-timeframe, best-available, and deterministic finer-to-coarser rollup reads, so `1h` execution windows can prefer imported `1h` candles or derive them from complete `15m` coverage without silently fabricating partial bars.
 - Unmigrated datasets still have an explicit legacy CSV compatibility fallback for execution and telemetry reads so the current catalog remains runnable before the later migration and import cutover tasks finish.
+- When normalized coverage exists but leaves holes, the query layer now reports explicit bucket gaps instead of silently falling back to legacy CSV data for the same window, which keeps provenance and overlap behavior auditable during the migration period.
 - Market-data ownership is now split so provider and job commands stay in `MarketDataImportService`, async download execution stays in `MarketDataImportExecutionService`, and import WebSocket publication stays in `MarketDataImportProgressService`.
 - Dataset catalog management is now split between `BacktestDatasetStorageService` for CSV persistence/downloads and `BacktestDatasetLifecycleService` for inventory, retention, archive, and restore behavior.
 - Liquibase now adds targeted query-shape indexes for dataset listing, backtest experiment and status scans, and market-data ready-job scheduling.

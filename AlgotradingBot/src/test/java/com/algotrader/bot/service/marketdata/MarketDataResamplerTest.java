@@ -59,6 +59,20 @@ class MarketDataResamplerTest {
         assertEquals("Requested timeframe 15m is finer than dataset granularity 1h.", exception.getMessage());
     }
 
+    @Test
+    void resample_skipsIncompleteBucketsWhenFinerBarsHaveGaps() {
+        LocalDateTime start = LocalDateTime.parse("2025-01-01T00:00:00");
+        List<OHLCVData> bars = List.of(
+            candle(start, "BTC/USDT", bd("100"), bd("101"), bd("99"), bd("100.5"), bd("10")),
+            candle(start.plusMinutes(15), "BTC/USDT", bd("100.5"), bd("102"), bd("100"), bd("101.5"), bd("11")),
+            candle(start.plusMinutes(30), "BTC/USDT", bd("101.5"), bd("103"), bd("101"), bd("102.5"), bd("12"))
+        );
+
+        List<OHLCVData> resampled = marketDataResampler.resample(bars, "1h");
+
+        assertEquals(0, resampled.size());
+    }
+
     private OHLCVData candle(LocalDateTime timestamp,
                              String symbol,
                              BigDecimal open,

@@ -9,6 +9,8 @@ import com.algotrader.bot.entity.BacktestResult;
 import com.algotrader.bot.entity.BacktestTradeSeriesItem;
 import com.algotrader.bot.entity.PositionSide;
 import com.algotrader.bot.service.marketdata.MarketDataCandleProvenance;
+import com.algotrader.bot.service.marketdata.MarketDataQueryMode;
+import com.algotrader.bot.service.marketdata.MarketDataQueryResult;
 import com.algotrader.bot.service.marketdata.MarketDataQueriedCandle;
 import com.algotrader.bot.service.marketdata.MarketDataQueryService;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,13 +58,14 @@ class BacktestTelemetryServiceTest {
             new BigDecimal("325")
         ));
 
-        when(marketDataQueryService.loadCandlesForDataset(
+        when(marketDataQueryService.queryCandlesForDataset(
             1L,
             "1h",
             result.getStartDate(),
             result.getEndDate(),
-            Set.of("BTC/USDT")
-        )).thenReturn(candles);
+            Set.of("BTC/USDT"),
+            MarketDataQueryMode.BEST_AVAILABLE
+        )).thenReturn(new MarketDataQueryResult(candles, List.of(), "1h", MarketDataQueryMode.BEST_AVAILABLE));
 
         List<BacktestSymbolTelemetryResponse> telemetry = backtestTelemetryService.buildTelemetry(result);
 
@@ -93,13 +96,19 @@ class BacktestTelemetryServiceTest {
             new BigDecimal("130")
         ));
 
-        when(marketDataQueryService.loadCandlesForDataset(
+        when(marketDataQueryService.queryCandlesForDataset(
             2L,
             "1h",
             result.getStartDate(),
             result.getEndDate(),
-            Set.of("ETH/USDT")
-        )).thenReturn(candles.stream().filter(candle -> "ETH/USDT".equals(candle.symbol())).toList());
+            Set.of("ETH/USDT"),
+            MarketDataQueryMode.BEST_AVAILABLE
+        )).thenReturn(new MarketDataQueryResult(
+            candles.stream().filter(candle -> "ETH/USDT".equals(candle.symbol())).toList(),
+            List.of(),
+            "1h",
+            MarketDataQueryMode.BEST_AVAILABLE
+        ));
 
         List<BacktestSymbolTelemetryResponse> telemetry = backtestTelemetryService.buildTelemetry(result);
 
@@ -112,13 +121,14 @@ class BacktestTelemetryServiceTest {
         List<MarketDataQueriedCandle> candles = createRisingCandles("BTC/USDT", "1h", 240, new BigDecimal("100"));
         BacktestResult result = baseResult(4L, "BOLLINGER_BANDS", "BTC/USDT", candles);
 
-        when(marketDataQueryService.loadCandlesForDataset(
+        when(marketDataQueryService.queryCandlesForDataset(
             4L,
             "1h",
             result.getStartDate(),
             result.getEndDate(),
-            Set.of("BTC/USDT")
-        )).thenReturn(candles);
+            Set.of("BTC/USDT"),
+            MarketDataQueryMode.BEST_AVAILABLE
+        )).thenReturn(new MarketDataQueryResult(candles, List.of(), "1h", MarketDataQueryMode.BEST_AVAILABLE));
 
         List<BacktestSymbolTelemetryResponse> telemetry = backtestTelemetryService.buildTelemetry(result);
 
@@ -132,13 +142,14 @@ class BacktestTelemetryServiceTest {
         List<MarketDataQueriedCandle> candles = createRisingCandles("BTC/USDT", "1h", 240, new BigDecimal("100"));
         BacktestResult result = baseResult(5L, "ICHIMOKU_TREND", "BTC/USDT", candles);
 
-        when(marketDataQueryService.loadCandlesForDataset(
+        when(marketDataQueryService.queryCandlesForDataset(
             5L,
             "1h",
             result.getStartDate(),
             result.getEndDate(),
-            Set.of("BTC/USDT")
-        )).thenReturn(candles);
+            Set.of("BTC/USDT"),
+            MarketDataQueryMode.BEST_AVAILABLE
+        )).thenReturn(new MarketDataQueryResult(candles, List.of(), "1h", MarketDataQueryMode.BEST_AVAILABLE));
 
         List<BacktestSymbolTelemetryResponse> telemetry = backtestTelemetryService.buildTelemetry(result);
 

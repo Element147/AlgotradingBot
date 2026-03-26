@@ -143,7 +143,7 @@ Acceptance Criteria
 - The mandatory step completion protocol passes.
 
 #### 1A.6 Add resampling and best-available query behavior
-- [ ] Refactor resampling so the engine can request `exact timeframe`, `best available timeframe`, or `finer-to-coarser rollup` explicitly from the new store.
+- [x] Refactor resampling so the engine can request `exact timeframe`, `best available timeframe`, or `finer-to-coarser rollup` explicitly from the new store.
 Acceptance Criteria
 - A request for `15m` returns exact `15m` rows when present.
 - A request for `1h` can choose exact imported `1h` rows or deterministic rollup from finer data based on the documented policy.

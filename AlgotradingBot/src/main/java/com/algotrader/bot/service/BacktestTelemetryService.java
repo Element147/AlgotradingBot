@@ -12,6 +12,7 @@ import com.algotrader.bot.entity.BacktestResult;
 import com.algotrader.bot.entity.BacktestTradeSeriesItem;
 import com.algotrader.bot.entity.PositionSide;
 import com.algotrader.bot.service.marketdata.MarketDataCandleProvenance;
+import com.algotrader.bot.service.marketdata.MarketDataQueryMode;
 import com.algotrader.bot.service.marketdata.MarketDataQueriedCandle;
 import com.algotrader.bot.service.marketdata.MarketDataQueryService;
 import org.springframework.stereotype.Service;
@@ -55,13 +56,14 @@ public class BacktestTelemetryService {
             return List.of();
         }
 
-        List<MarketDataQueriedCandle> filteredCandles = marketDataQueryService.loadCandlesForDataset(
+        List<MarketDataQueriedCandle> filteredCandles = marketDataQueryService.queryCandlesForDataset(
                 result.getDatasetId(),
                 result.getTimeframe(),
                 result.getStartDate(),
                 result.getEndDate(),
-                resolveRequestedSymbols(result)
-            ).stream()
+                resolveRequestedSymbols(result),
+                MarketDataQueryMode.BEST_AVAILABLE
+            ).candles().stream()
             .sorted(Comparator.comparing(MarketDataQueriedCandle::timestamp).thenComparing(MarketDataQueriedCandle::symbol))
             .toList();
         if (filteredCandles.isEmpty()) {

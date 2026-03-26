@@ -23,6 +23,12 @@ public class MarketDataResampler {
         return resample(bars, inferTimeframe(bars), MarketDataTimeframe.from(targetTimeframeId));
     }
 
+    public List<MarketDataQueriedCandle> resampleQueriedCandles(List<MarketDataQueriedCandle> candles,
+                                                                String sourceTimeframeId,
+                                                                String targetTimeframeId) {
+        return resampleQueriedCandles(candles, MarketDataTimeframe.from(sourceTimeframeId), MarketDataTimeframe.from(targetTimeframeId));
+    }
+
     private List<OHLCVData> resample(List<OHLCVData> bars,
                                      MarketDataTimeframe sourceTimeframe,
                                      MarketDataTimeframe targetTimeframe) {
@@ -33,18 +39,7 @@ public class MarketDataResampler {
             return sortedBars;
         }
 
-        long sourceMinutes = sourceTimeframe.step().toMinutes();
-        long targetMinutes = targetTimeframe.step().toMinutes();
-        if (targetMinutes < sourceMinutes) {
-            throw new IllegalArgumentException(
-                "Requested timeframe " + targetTimeframe.id() + " is finer than dataset granularity " + sourceTimeframe.id() + "."
-            );
-        }
-        if (targetMinutes % sourceMinutes != 0) {
-            throw new IllegalArgumentException(
-                "Requested timeframe " + targetTimeframe.id() + " is not aligned with dataset granularity " + sourceTimeframe.id() + "."
-            );
-        }
+        int expectedBarsPerBucket = expectedBarsPerBucket(sourceTimeframe, targetTimeframe);
 
         Map<String, Accumulator> grouped = new LinkedHashMap<>();
 
@@ -56,7 +51,37 @@ public class MarketDataResampler {
 
         List<OHLCVData> output = new ArrayList<>();
         for (Accumulator accumulator : grouped.values()) {
-            output.add(accumulator.toBar());
+            if (accumulator.isComplete(expectedBarsPerBucket)) {
+                output.add(accumulator.toBar());
+            }
+        }
+        return output;
+    }
+
+    private List<MarketDataQueriedCandle> resampleQueriedCandles(List<MarketDataQueriedCandle> candles,
+                                                                 MarketDataTimeframe sourceTimeframe,
+                                                                 MarketDataTimeframe targetTimeframe) {
+        List<MarketDataQueriedCandle> sortedCandles = candles.stream()
+            .sorted(Comparator.comparing(MarketDataQueriedCandle::symbol).thenComparing(MarketDataQueriedCandle::timestamp))
+            .toList();
+        if (sortedCandles.isEmpty() || sourceTimeframe == targetTimeframe) {
+            return sortedCandles;
+        }
+
+        int expectedBarsPerBucket = expectedBarsPerBucket(sourceTimeframe, targetTimeframe);
+        Map<String, QueriedAccumulator> grouped = new LinkedHashMap<>();
+        sortedCandles.forEach(candle -> {
+            LocalDateTime bucketStart = alignToBucket(candle.timestamp(), targetTimeframe);
+            String key = candle.symbol() + "|" + bucketStart;
+            grouped.computeIfAbsent(key, ignored -> new QueriedAccumulator(candle.symbol(), bucketStart, targetTimeframe.id()))
+                .add(candle);
+        });
+
+        List<MarketDataQueriedCandle> output = new ArrayList<>();
+        for (QueriedAccumulator accumulator : grouped.values()) {
+            if (accumulator.isComplete(expectedBarsPerBucket)) {
+                output.add(accumulator.toCandle());
+            }
         }
         return output;
     }
@@ -113,6 +138,22 @@ public class MarketDataResampler {
         return timestamp.toLocalDate().atStartOfDay().plusMinutes(bucketStartMinutes);
     }
 
+    private int expectedBarsPerBucket(MarketDataTimeframe sourceTimeframe, MarketDataTimeframe targetTimeframe) {
+        long sourceMinutes = sourceTimeframe.step().toMinutes();
+        long targetMinutes = targetTimeframe.step().toMinutes();
+        if (targetMinutes < sourceMinutes) {
+            throw new IllegalArgumentException(
+                "Requested timeframe " + targetTimeframe.id() + " is finer than dataset granularity " + sourceTimeframe.id() + "."
+            );
+        }
+        if (targetMinutes % sourceMinutes != 0) {
+            throw new IllegalArgumentException(
+                "Requested timeframe " + targetTimeframe.id() + " is not aligned with dataset granularity " + sourceTimeframe.id() + "."
+            );
+        }
+        return Math.toIntExact(targetMinutes / sourceMinutes);
+    }
+
     private static final class Accumulator {
         private final String symbol;
         private final LocalDateTime bucketStart;
@@ -121,6 +162,7 @@ public class MarketDataResampler {
         private BigDecimal low;
         private BigDecimal close;
         private BigDecimal volume = BigDecimal.ZERO;
+        private int barCount;
 
         private Accumulator(String symbol, LocalDateTime bucketStart) {
             this.symbol = symbol;
@@ -135,10 +177,69 @@ public class MarketDataResampler {
             low = low == null ? bar.getLow() : low.min(bar.getLow());
             close = bar.getClose();
             volume = volume.add(bar.getVolume());
+            barCount++;
+        }
+
+        private boolean isComplete(int expectedBarsPerBucket) {
+            return barCount == expectedBarsPerBucket;
         }
 
         private OHLCVData toBar() {
             return new OHLCVData(bucketStart, symbol, open, high, low, close, volume);
+        }
+    }
+
+    private static final class QueriedAccumulator {
+        private final String symbol;
+        private final LocalDateTime bucketStart;
+        private final String targetTimeframe;
+        private BigDecimal open;
+        private BigDecimal high;
+        private BigDecimal low;
+        private BigDecimal close;
+        private BigDecimal volume = BigDecimal.ZERO;
+        private int barCount;
+        private MarketDataCandleProvenance firstSource;
+        private LocalDateTime coverageStart;
+        private LocalDateTime coverageEnd;
+
+        private QueriedAccumulator(String symbol, LocalDateTime bucketStart, String targetTimeframe) {
+            this.symbol = symbol;
+            this.bucketStart = bucketStart;
+            this.targetTimeframe = targetTimeframe;
+        }
+
+        private void add(MarketDataQueriedCandle candle) {
+            if (open == null) {
+                open = candle.open();
+            }
+            high = high == null ? candle.high() : high.max(candle.high());
+            low = low == null ? candle.low() : low.min(candle.low());
+            close = candle.close();
+            volume = volume.add(candle.volume());
+            barCount++;
+            if (firstSource == null) {
+                firstSource = candle.provenance();
+            }
+            coverageStart = coverageStart == null || candle.timestamp().isBefore(coverageStart) ? candle.timestamp() : coverageStart;
+            coverageEnd = coverageEnd == null || candle.timestamp().isAfter(coverageEnd) ? candle.timestamp() : coverageEnd;
+        }
+
+        private boolean isComplete(int expectedBarsPerBucket) {
+            return barCount == expectedBarsPerBucket;
+        }
+
+        private MarketDataQueriedCandle toCandle() {
+            return new MarketDataQueriedCandle(
+                bucketStart,
+                symbol,
+                open,
+                high,
+                low,
+                close,
+                volume,
+                MarketDataCandleProvenance.derivedRollup(firstSource, targetTimeframe, coverageStart, coverageEnd)
+            );
         }
     }
 }
