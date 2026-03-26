@@ -357,12 +357,18 @@ Implementation record
 ### 2C. Decoupled Execution Environments
 
 #### 2C.1 Remove the global Live or Paper switch and replace it with explicit execution context ownership
-- [ ] Refactor the frontend and backend contract model so execution context is owned by the relevant tab or route, not by a global mode toggle that affects unrelated workflows.
+- [x] Refactor the frontend and backend contract model so execution context is owned by the relevant tab or route, not by a global mode toggle that affects unrelated workflows.
 Acceptance Criteria
 - Research routes such as Backtest and Market Data are no longer coupled to a global live or paper switch.
 - The new model distinguishes at least `research`, `forward-test`, `paper`, and `live` behavior explicitly, even if some contexts remain monitor-only at first.
 - Unsupported live actions fail closed with explicit capability messaging.
 - The mandatory step completion protocol passes.
+Implementation record
+- Shared frontend execution-context model with route ownership and environment mapping: `frontend/src/features/execution/executionContext.ts`
+- Research and paper routes now pin transport status and operator messaging to route-owned execution contexts instead of the global operational toggle: `frontend/src/features/backtest/BacktestPage.tsx`, `frontend/src/features/marketData/MarketDataPage.tsx`, `frontend/src/features/paper/PaperTradingPage.tsx`, `frontend/src/components/layout/Header.tsx`
+- API and Axios helpers now support `X-Execution-Context` while still deriving the conservative backend environment header: `frontend/src/services/api.ts`, `frontend/src/services/axiosClient.ts`
+- Backend request resolution now accepts execution-context query or header input and maps it fail-closed onto `test` or `live`: `AlgotradingBot/src/main/java/com/algotrader/bot/service/EnvironmentRequestResolver.java`, `AlgotradingBot/src/main/java/com/algotrader/bot/controller/AccountController.java`, `AlgotradingBot/src/main/java/com/algotrader/bot/controller/RiskController.java`
+- Contract and regression coverage: `contracts/openapi.json`, `frontend/src/generated/openapi.d.ts`, `frontend/src/features/execution/executionContext.test.ts`, `AlgotradingBot/src/test/java/com/algotrader/bot/service/EnvironmentRequestResolverTest.java`
 
 #### 2C.2 Implement the Forward Testing tab
 - [ ] Build a dedicated `Forward Testing` workspace focused on strategy observation, signal investigation, chart review, and operator notes.

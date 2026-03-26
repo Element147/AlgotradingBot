@@ -150,7 +150,7 @@ describe('Header', () => {
         'Review workstation posture, paper state, and the next safe action without chasing multiple competing panels.'
       )
     ).toBeInTheDocument();
-    expect(screen.getByText('Mode: TEST')).toBeInTheDocument();
+    expect(screen.getByText('Operations: TEST')).toBeInTheDocument();
     expect(screen.getByText('Exchange: BINANCE TESTNET')).toBeInTheDocument();
     expect(screen.getByText('Telemetry: Live stream')).toBeInTheDocument();
     expect(screen.getByText('Risk: Guarded')).toBeInTheDocument();

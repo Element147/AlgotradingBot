@@ -3,6 +3,10 @@ import axios, { type AxiosInstance, type InternalAxiosRequestConfig, type AxiosR
 import { store } from '../app/store';
 import { setToken, logout } from '../features/auth/authSlice';
 import { getStoredRefreshToken, redirectToLogin } from '../features/auth/authStorage';
+import {
+  resolveExecutionEnvironment,
+  type ExecutionContext,
+} from '../features/execution/executionContext';
 import { getOrCreateCsrfToken } from '../utils/security';
 
 /**
@@ -49,6 +53,17 @@ const extractTokenFromRefreshResponse = (data: unknown): string | null => {
   return typeof payload.accessToken === 'string' ? payload.accessToken : null;
 };
 
+const resolveHeaderEnvironment = (
+  headerExecutionContext: unknown,
+  fallbackEnvironment: 'test' | 'live'
+): 'test' | 'live' => {
+  if (typeof headerExecutionContext !== 'string') {
+    return fallbackEnvironment;
+  }
+
+  return resolveExecutionEnvironment(headerExecutionContext as ExecutionContext);
+};
+
 /**
  * Request interceptor
  * 
@@ -69,7 +84,11 @@ axiosClient.interceptors.request.use(
     
     // Add environment mode header (test/live)
     // Note: environmentSlice will be implemented in task 2.3
-    const environment = state.environment?.mode ?? 'test';
+    const requestedExecutionContext = config.headers?.['X-Execution-Context'];
+    const environment = resolveHeaderEnvironment(
+      requestedExecutionContext,
+      state.environment?.mode ?? 'test'
+    );
     if (config.headers) {
       config.headers['X-Environment'] = environment;
     }

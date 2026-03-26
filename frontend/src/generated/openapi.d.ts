@@ -2475,9 +2475,11 @@ export interface operations {
         parameters: {
             query?: {
                 env?: string;
+                context?: string;
             };
             header?: {
                 "X-Environment"?: string;
+                "X-Execution-Context"?: string;
             };
             path?: never;
             cookie?: never;
@@ -3089,6 +3091,8 @@ export interface operations {
             query?: {
                 /** @description Environment mode: test or live */
                 env?: string;
+                /** @description Execution context: research, forward-test, paper, or live */
+                context?: string;
                 /** @description Maximum number of trades to return */
                 limit?: number;
                 /** @description Account ID (optional, defaults to latest account) */
@@ -3097,6 +3101,8 @@ export interface operations {
             header?: {
                 /** @description Environment mode header: test or live */
                 "X-Environment"?: string;
+                /** @description Execution context header: research, forward-test, paper, or live */
+                "X-Execution-Context"?: string;
             };
             path?: never;
             cookie?: never;
@@ -3348,12 +3354,16 @@ export interface operations {
             query?: {
                 /** @description Environment mode: test or live */
                 env?: string;
+                /** @description Execution context: research, forward-test, paper, or live */
+                context?: string;
                 /** @description Account ID (optional, defaults to latest account) */
                 accountId?: number;
             };
             header?: {
                 /** @description Environment mode header: test or live */
                 "X-Environment"?: string;
+                /** @description Execution context header: research, forward-test, paper, or live */
+                "X-Execution-Context"?: string;
             };
             path?: never;
             cookie?: never;
@@ -3827,6 +3837,8 @@ export interface operations {
             query?: {
                 /** @description Environment mode: test or live */
                 env?: string;
+                /** @description Execution context: research, forward-test, paper, or live */
+                context?: string;
                 /** @description Timeframe: today, week, month, all-time */
                 timeframe?: string;
                 /** @description Account ID (optional, defaults to latest account) */
@@ -3835,6 +3847,8 @@ export interface operations {
             header?: {
                 /** @description Environment mode header: test or live */
                 "X-Environment"?: string;
+                /** @description Execution context header: research, forward-test, paper, or live */
+                "X-Execution-Context"?: string;
             };
             path?: never;
             cookie?: never;
@@ -3857,12 +3871,16 @@ export interface operations {
             query?: {
                 /** @description Environment mode: test or live */
                 env?: string;
+                /** @description Execution context: research, forward-test, paper, or live */
+                context?: string;
                 /** @description Account ID (optional, defaults to latest account) */
                 accountId?: number;
             };
             header?: {
                 /** @description Environment mode header: test or live */
                 "X-Environment"?: string;
+                /** @description Execution context header: research, forward-test, paper, or live */
+                "X-Execution-Context"?: string;
             };
             path?: never;
             cookie?: never;

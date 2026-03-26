@@ -53,10 +53,19 @@ public class AccountController {
             @RequestParam(required = false) String env,
             @Parameter(description = "Environment mode header: test or live")
             @RequestHeader(name = "X-Environment", required = false) String headerEnvironment,
+            @Parameter(description = "Execution context: research, forward-test, paper, or live")
+            @RequestParam(required = false) String context,
+            @Parameter(description = "Execution context header: research, forward-test, paper, or live")
+            @RequestHeader(name = "X-Execution-Context", required = false) String headerExecutionContext,
             @Parameter(description = "Account ID (optional, defaults to latest account)")
             @RequestParam(required = false) Long accountId) {
 
-        String environment = environmentRequestResolver.resolve(env, headerEnvironment);
+        String environment = environmentRequestResolver.resolve(
+            env,
+            headerEnvironment,
+            context,
+            headerExecutionContext
+        );
         logger.info("GET /api/account/balance - environment: {}, accountId: {}", environment, accountId);
 
         BalanceResponse balance = accountService.getBalance(environment, accountId);
@@ -82,12 +91,21 @@ public class AccountController {
             @RequestParam(required = false) String env,
             @Parameter(description = "Environment mode header: test or live")
             @RequestHeader(name = "X-Environment", required = false) String headerEnvironment,
+            @Parameter(description = "Execution context: research, forward-test, paper, or live")
+            @RequestParam(required = false) String context,
+            @Parameter(description = "Execution context header: research, forward-test, paper, or live")
+            @RequestHeader(name = "X-Execution-Context", required = false) String headerExecutionContext,
             @Parameter(description = "Timeframe: today, week, month, all-time")
             @RequestParam(defaultValue = "month") String timeframe,
             @Parameter(description = "Account ID (optional, defaults to latest account)")
             @RequestParam(required = false) Long accountId) {
 
-        String environment = environmentRequestResolver.resolve(env, headerEnvironment);
+        String environment = environmentRequestResolver.resolve(
+            env,
+            headerEnvironment,
+            context,
+            headerExecutionContext
+        );
         logger.info("GET /api/account/performance - environment: {}, timeframe: {}, accountId: {}",
                 environment, timeframe, accountId);
 
@@ -113,10 +131,19 @@ public class AccountController {
             @RequestParam(required = false) String env,
             @Parameter(description = "Environment mode header: test or live")
             @RequestHeader(name = "X-Environment", required = false) String headerEnvironment,
+            @Parameter(description = "Execution context: research, forward-test, paper, or live")
+            @RequestParam(required = false) String context,
+            @Parameter(description = "Execution context header: research, forward-test, paper, or live")
+            @RequestHeader(name = "X-Execution-Context", required = false) String headerExecutionContext,
             @Parameter(description = "Account ID (optional, defaults to latest account)")
             @RequestParam(required = false) Long accountId) {
 
-        String environment = environmentRequestResolver.resolve(env, headerEnvironment);
+        String environment = environmentRequestResolver.resolve(
+            env,
+            headerEnvironment,
+            context,
+            headerExecutionContext
+        );
         logger.info("GET /api/positions/open - environment: {}, accountId: {}", environment, accountId);
 
         List<OpenPositionResponse> positions = accountService.getOpenPositions(environment, accountId);
@@ -142,12 +169,21 @@ public class AccountController {
             @RequestParam(required = false) String env,
             @Parameter(description = "Environment mode header: test or live")
             @RequestHeader(name = "X-Environment", required = false) String headerEnvironment,
+            @Parameter(description = "Execution context: research, forward-test, paper, or live")
+            @RequestParam(required = false) String context,
+            @Parameter(description = "Execution context header: research, forward-test, paper, or live")
+            @RequestHeader(name = "X-Execution-Context", required = false) String headerExecutionContext,
             @Parameter(description = "Maximum number of trades to return")
             @RequestParam(defaultValue = "10") int limit,
             @Parameter(description = "Account ID (optional, defaults to latest account)")
             @RequestParam(required = false) Long accountId) {
 
-        String environment = environmentRequestResolver.resolve(env, headerEnvironment);
+        String environment = environmentRequestResolver.resolve(
+            env,
+            headerEnvironment,
+            context,
+            headerExecutionContext
+        );
         logger.info("GET /api/trades/recent - environment: {}, limit: {}, accountId: {}", environment, limit, accountId);
 
         List<RecentTradeResponse> trades = accountService.getRecentTrades(environment, accountId, limit);

@@ -35,7 +35,7 @@ import {
   type PageMetricItem,
   PageMetricStrip,
 } from '@/components/layout/PageContent';
-import { selectEnvironmentMode } from '@/features/environment/environmentSlice';
+import { executionContextMeta } from '@/features/execution/executionContext';
 import {
   selectConnectionError,
   selectIsConnected,
@@ -46,15 +46,16 @@ import { getApiErrorMessage } from '@/services/api';
 import { sanitizeText } from '@/utils/security';
 
 export default function MarketDataPage() {
-  const environmentMode = useAppSelector(selectEnvironmentMode);
   const websocketConnected = useAppSelector(selectIsConnected);
   const websocketError = useAppSelector(selectConnectionError);
   const subscribedChannels = useAppSelector(selectSubscribedChannels);
   const lastImportEventAt = useAppSelector((state) =>
     selectLastEventTimeForType(state, 'marketData.import.progress')
   );
+  const routeExecutionContext = executionContextMeta.research;
   const marketDataLiveTransportConnected =
-    websocketConnected && subscribedChannels.includes(`${environmentMode}.marketData`);
+    websocketConnected &&
+    subscribedChannels.includes(`${routeExecutionContext.environment}.marketData`);
   const marketDataPollingInterval = marketDataLiveTransportConnected ? 30000 : 5000;
 
   const [form, setForm] = useState<MarketDataFormState>(defaultMarketDataForm);
@@ -243,6 +244,12 @@ export default function MarketDataPage() {
             {feedback.message}
           </Alert>
         ) : null}
+
+        <Alert severity="info">
+          Market-data research owns the `{routeExecutionContext.label.toLowerCase()}` execution
+          context, so imports, retry telemetry, and dataset preparation stay on test-scoped
+          channels instead of inheriting the operational live-view toggle.
+        </Alert>
 
         <MarketDataTransportAlert
           transportConnected={marketDataLiveTransportConnected}

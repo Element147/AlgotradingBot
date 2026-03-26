@@ -152,8 +152,9 @@ Shared frontend infrastructure:
 - The chart path intentionally condenses dense marker windows for rendering, while the panel keeps the full marker dataset available for linked inspection so operator evidence is not lost when telemetry ranges get large.
 - `features/backtest/BacktestTradeReviewPanel.tsx` delegates dense row rendering to `features/backtest/BacktestVirtualizedTradeTable.tsx`, which virtualizes large browser-side trade tables while preserving a deterministic non-virtual fallback for jsdom profiling and tests.
 - `features/backtest/backtestPerformanceBudget.ts` defines repeatable jsdom performance budgets for route load, chart mount, and large-query render timing, and `BacktestPerformanceProfile.test.tsx` enforces those thresholds while emitting the profiling report used in status tracking.
-- Redux slices handle auth, environment mode, settings, and WebSocket connection state.
-- `WebSocketRuntime` subscribes the app to environment-aware channels and updates RTK Query caches for long-running task progress when the authenticated WebSocket handshake succeeds.
+- `features/execution/executionContext.ts` defines route-owned execution contexts (`research`, `forward-test`, `paper`, `live`) and maps them onto the conservative backend environment model until dedicated live capabilities are approved.
+- Redux slices still track auth, operational environment mode, settings, and WebSocket connection state, but research pages now resolve their own execution context instead of inheriting the operational toggle.
+- `WebSocketRuntime` subscribes to both test and live channel families after the authenticated handshake so route-owned contexts can observe the correct telemetry stream without reconnecting the entire app when operators review different contexts.
 - The frontend now treats connection-open and channel subscription as separate states: pages only consider live telemetry active after the backend acknowledges the requested channels.
 - Polling fallback remains available for progress views when the browser cannot establish or maintain the WebSocket connection.
 - UI async surfaces now keep the transport state and the backend async-monitor state separate: operators can see both whether updates are arriving by WebSocket or polling and whether the backend believes the job is queued, running, retrying, stale, failed, or completed.

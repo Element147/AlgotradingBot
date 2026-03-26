@@ -53,9 +53,16 @@ public class RiskController {
     public ResponseEntity<RiskConfigResponse> overrideCircuitBreaker(
         @RequestParam(required = false) String env,
         @RequestHeader(name = "X-Environment", required = false) String headerEnvironment,
+        @RequestParam(required = false) String context,
+        @RequestHeader(name = "X-Execution-Context", required = false) String headerExecutionContext,
         @Valid @RequestBody CircuitBreakerOverrideRequest request
     ) {
-        String environment = environmentRequestResolver.resolve(env, headerEnvironment);
+        String environment = environmentRequestResolver.resolve(
+            env,
+            headerEnvironment,
+            context,
+            headerExecutionContext
+        );
         return ResponseEntity.ok(riskManagementService.overrideCircuitBreaker(environment, request));
     }
 

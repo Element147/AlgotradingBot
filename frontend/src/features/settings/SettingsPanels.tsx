@@ -276,13 +276,13 @@ export function DisplaySettingsPanel({
             />
           </FieldTooltip>
 
-          <FieldTooltip title="Critical operating mode selector. Save before it takes effect across API requests and dashboards.">
+          <FieldTooltip title="Operational environment selector. Save before it changes dashboard, risk, and live-readiness surfaces. Research routes keep owning their own execution context.">
             <FormControl fullWidth>
-              <InputLabel id="environment-label">Active Mode</InputLabel>
+              <InputLabel id="environment-label">Operational Environment</InputLabel>
               <Select
                 labelId="environment-label"
                 value={displayDraft.environmentMode}
-                label="Active Mode"
+                label="Operational Environment"
                 onChange={(event) =>
                   onDisplayDraftChange((prev) => ({
                     ...prev,
@@ -290,7 +290,7 @@ export function DisplaySettingsPanel({
                   }))
                 }
               >
-                <MenuItem value="test">Test / Paper (recommended)</MenuItem>
+                <MenuItem value="test">Test / Paper Ops (recommended)</MenuItem>
                 <MenuItem value="live">Live data view</MenuItem>
               </Select>
             </FormControl>

@@ -179,6 +179,11 @@ export const buildEnvironmentChannels = (environment: 'test' | 'live'): string[]
   `${environment}.marketData`,
 ];
 
+export const buildDefaultSubscriptionChannels = (): string[] => [
+  ...buildEnvironmentChannels('test'),
+  ...buildEnvironmentChannels('live'),
+];
+
 export const resolveWebSocketUrl = (
   configuredUrl?: string,
   options: ResolveWebSocketUrlOptions = {}
@@ -478,7 +483,7 @@ export class WebSocketManager {
       return;
     }
 
-    const channels = buildEnvironmentChannels(this.environment);
+    const channels = buildDefaultSubscriptionChannels();
 
     this.ws.send(
       JSON.stringify({

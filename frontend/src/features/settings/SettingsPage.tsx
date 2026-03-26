@@ -570,11 +570,11 @@ export default function SettingsPage() {
       <PageContent maxWidth="research">
         <PageIntro
           eyebrow="Reference surface"
-          description="Keep credentials, display preferences, environment mode, and operator-facing tooling in one calmer layout where drafts, saved state, and advanced actions are easier to tell apart."
+          description="Keep credentials, display preferences, operational environment controls, and operator-facing tooling in one calmer layout where drafts, saved state, and advanced actions are easier to tell apart."
           chips={
             <>
               <Chip label="Draft changes save explicitly" variant="outlined" />
-              <Chip label="Environment mode stays visible" variant="outlined" />
+              <Chip label="Operational environment stays visible" variant="outlined" />
               <Chip label="Advanced tools remain available" variant="outlined" />
             </>
           }

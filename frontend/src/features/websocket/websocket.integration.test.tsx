@@ -207,7 +207,7 @@ describe('WebSocket Integration Tests', () => {
       expect(wsManager.getState()).toBe('open');
     });
 
-    it('should subscribe to environment-specific channels on connect', async () => {
+    it('should subscribe to default test and live channels on connect', async () => {
       // Start connection
       const connectPromise = wsManager.connect('test-token', 'live');
 
@@ -228,6 +228,8 @@ describe('WebSocket Integration Tests', () => {
 
       const subscribeMessage = JSON.parse(sentMessages[0]);
       expect(subscribeMessage.type).toBe('subscribe');
+      expect(subscribeMessage.channels).toContain('test.balance');
+      expect(subscribeMessage.channels).toContain('test.backtests');
       expect(subscribeMessage.channels).toContain('live.balance');
       expect(subscribeMessage.channels).toContain('live.trades');
       expect(subscribeMessage.channels).toContain('live.positions');
@@ -627,6 +629,8 @@ describe('WebSocket Integration Tests', () => {
 
         const subscribeMessage = JSON.parse(sentMessages[0]);
         expect(subscribeMessage.type).toBe('subscribe');
+        expect(subscribeMessage.channels).toContain('test.balance');
+        expect(subscribeMessage.channels).toContain('test.backtests');
         expect(subscribeMessage.channels).toContain('live.balance');
         expect(subscribeMessage.channels).toContain('live.backtests');
         expect(subscribeMessage.channels).toContain('live.marketData');

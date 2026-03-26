@@ -46,7 +46,7 @@ import {
   type PageMetricItem,
   PageMetricStrip,
 } from '@/components/layout/PageContent';
-import { selectEnvironmentMode } from '@/features/environment/environmentSlice';
+import { executionContextMeta } from '@/features/execution/executionContext';
 import { getStrategyProfile } from '@/features/strategies/strategyProfiles';
 import {
   selectConnectionError,
@@ -70,15 +70,15 @@ const parseBacktestIdListParam = (value: string | null) =>
 
 export default function BacktestPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const environmentMode = useAppSelector(selectEnvironmentMode);
   const websocketConnected = useAppSelector(selectIsConnected);
   const websocketError = useAppSelector(selectConnectionError);
   const subscribedChannels = useAppSelector(selectSubscribedChannels);
   const lastBacktestEventAt = useAppSelector((state) =>
     selectLastEventTimeForType(state, 'backtest.progress')
   );
+  const routeExecutionContext = executionContextMeta.research;
   const backtestLiveTransportConnected =
-    websocketConnected && subscribedChannels.includes(`${environmentMode}.backtests`);
+    websocketConnected && subscribedChannels.includes(`${routeExecutionContext.environment}.backtests`);
   const backtestPollingInterval = backtestLiveTransportConnected ? 30000 : 2000;
 
   const [form, setForm] = useState(initialBacktestForm);
@@ -449,12 +449,11 @@ export default function BacktestPage() {
           </Alert>
         ) : null}
 
-        {environmentMode === 'live' ? (
-          <Alert severity="warning">
-            The UI is currently set to `live`, but backtests and dataset operations remain
-            research-only workflows. Nothing on this page routes live orders to an exchange.
-          </Alert>
-        ) : null}
+        <Alert severity="info">
+          This workspace owns the `{routeExecutionContext.label.toLowerCase()}` execution context,
+          so backtests and dataset operations stay pinned to test-scoped telemetry even when
+          operational pages are reviewing live-readiness elsewhere.
+        </Alert>
 
         <BacktestTransportStatusAlert
           transportConnected={backtestLiveTransportConnected}

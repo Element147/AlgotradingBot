@@ -7,6 +7,10 @@ import type { RootState } from '../app/store';
 
 import { setToken, logout } from '@/features/auth/authSlice';
 import { getStoredRefreshToken, redirectToLogin } from '@/features/auth/authStorage';
+import {
+  resolveExecutionEnvironment,
+  type ExecutionContext,
+} from '@/features/execution/executionContext';
 import { getOrCreateCsrfToken } from '@/utils/security';
 
 // Mutex to prevent multiple simultaneous refresh attempts
@@ -32,6 +36,10 @@ const baseQuery = fetchBaseQuery({
   prepareHeaders: (headers, context) => {
     const { getState, arg } = context;
     const state = getState() as RootState;
+    const requestedExecutionContext =
+      typeof arg === 'string'
+        ? null
+        : getHeaderValue(arg.headers, 'X-Execution-Context');
     
     // Add authentication token if available
     // Note: authSlice will be implemented in task 1.4
@@ -46,8 +54,13 @@ const baseQuery = fetchBaseQuery({
       typeof arg === 'string'
         ? null
         : getHeaderValue(arg.headers, 'X-Environment');
-    const environment = requestedEnvironment ?? state.environment?.mode ?? 'test';
+    const environment = requestedExecutionContext
+      ? resolveExecutionEnvironment(requestedExecutionContext as ExecutionContext)
+      : requestedEnvironment ?? state.environment?.mode ?? 'test';
     headers.set('X-Environment', environment);
+    if (requestedExecutionContext) {
+      headers.set('X-Execution-Context', requestedExecutionContext);
+    }
     
     const method =
       typeof arg === 'string'
@@ -90,6 +103,7 @@ const getHeaderValue = (headers: FetchArgs['headers'], headerName: string): stri
 };
 
 export type EnvironmentOverride = 'test' | 'live';
+export type ExecutionContextOverride = ExecutionContext;
 
 export const withEnvironmentMode = (
   request: string | FetchArgs,
@@ -99,6 +113,26 @@ export const withEnvironmentMode = (
     typeof request === 'string' ? undefined : (request.headers as HeadersInit | undefined)
   );
   headers.set('X-Environment', environment);
+
+  if (typeof request === 'string') {
+    return { url: request, headers };
+  }
+
+  return {
+    ...request,
+    headers,
+  };
+};
+
+export const withExecutionContext = (
+  request: string | FetchArgs,
+  executionContext: ExecutionContextOverride
+): FetchArgs => {
+  const headers = new Headers(
+    typeof request === 'string' ? undefined : (request.headers as HeadersInit | undefined)
+  );
+  headers.set('X-Execution-Context', executionContext);
+  headers.set('X-Environment', resolveExecutionEnvironment(executionContext));
 
   if (typeof request === 'string') {
     return { url: request, headers };

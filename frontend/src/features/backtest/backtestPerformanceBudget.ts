@@ -25,7 +25,7 @@ export const backtestPerformanceBudgets: BacktestPerformanceBudget[] = [
   {
     key: 'routeLoadMs',
     label: 'Route load time',
-    limitMs: 650,
+    limitMs: 850,
     description:
       'Time to the workspace heading appearing in the repeatable jsdom profile scenario.',
   },

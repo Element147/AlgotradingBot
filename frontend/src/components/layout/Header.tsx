@@ -33,6 +33,7 @@ import {
   selectUser,
 } from '../../features/auth/authSlice';
 import { selectEnvironmentMode } from '../../features/environment/environmentSlice';
+import { resolveRouteExecutionContext } from '../../features/execution/executionContext';
 import { useGetRiskStatusQuery } from '../../features/risk/riskApi';
 import { useGetSavedExchangeConnectionsQuery } from '../../features/settings/exchangeApi';
 import {
@@ -113,9 +114,11 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     savedConnections?.connections.find(
       (connection) => connection.id === savedConnections.activeConnectionId
     ) ?? null;
+  const routeExecutionContext = resolveRouteExecutionContext(location.pathname);
+  const telemetryEnvironment = routeExecutionContext?.environment ?? environmentMode;
   const telemetryConnected =
     websocketConnected &&
-    subscribedChannels.some((channel) => channel.startsWith(`${environmentMode}.`));
+    subscribedChannels.some((channel) => channel.startsWith(`${telemetryEnvironment}.`));
   const currentRoute = routeMeta[location.pathname] ?? routeMeta['/dashboard'];
   const userRoleLabel = user?.role ? user.role.toUpperCase() : 'USER';
   const exchangeLabel = activeExchangeConnection
@@ -249,9 +252,16 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           </Stack>
 
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            {routeExecutionContext ? (
+              <StatusPill
+                tone={routeExecutionContext.context === 'live' ? 'error' : 'info'}
+                label={`Context: ${routeExecutionContext.label}`}
+                variant="filled"
+              />
+            ) : null}
             <StatusPill
               tone={environmentMode === 'live' ? 'error' : 'success'}
-              label={`Mode: ${environmentMode.toUpperCase()}`}
+              label={`Operations: ${environmentMode.toUpperCase()}`}
               variant="filled"
             />
             <StatusPill

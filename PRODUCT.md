@@ -46,7 +46,7 @@ Build a local-first platform for safe strategy research, backtesting, market-dat
 
 Live connectivity does not imply live trading is enabled.
 Live connectivity also does not imply live account reads are fully wired; unsupported live reads must fail explicitly with capability messaging.
-Research surfaces such as backtests and paper-order tools must keep warning copy explicit when the UI is set to `live`.
+Route-owned execution contexts come first: Backtest and Market Data stay in `research`, Paper stays in `paper`, and operational live-readiness controls are surfaced separately instead of acting like a global switch that rewires every route.
 
 ## Product Boundaries
 

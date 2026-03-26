@@ -7,7 +7,6 @@ import {
   PaperTradingSummaryPanel,
 } from './PaperTradingPanels';
 
-import { useAppSelector } from '@/app/hooks';
 import { AppLayout } from '@/components/layout/AppLayout';
 import {
   PageContent,
@@ -15,7 +14,7 @@ import {
   type PageMetricItem,
   PageMetricStrip,
 } from '@/components/layout/PageContent';
-import { selectEnvironmentMode } from '@/features/environment/environmentSlice';
+import { executionContextMeta } from '@/features/execution/executionContext';
 import {
   type PaperOrderSide,
   useCancelPaperOrderMutation,
@@ -44,7 +43,6 @@ const DEFAULT_FORM: PaperOrderFormState = {
 };
 
 export default function PaperTradingPage() {
-  const environmentMode = useAppSelector(selectEnvironmentMode);
   const { data: state, isLoading: isStateLoading, isError: isStateError } =
     useGetPaperTradingStateQuery(undefined, {
       pollingInterval: 15000,
@@ -65,6 +63,7 @@ export default function PaperTradingPage() {
   } | null>(null);
 
   const orderMutationBusy = isPlacing || isFilling || isCancelling;
+  const routeExecutionContext = executionContextMeta.paper;
   const summaryItems = useMemo<PageMetricItem[]>(() => {
     if (!state) {
       return [];
@@ -186,12 +185,10 @@ export default function PaperTradingPage() {
 
         {summaryItems.length > 0 ? <PageMetricStrip items={summaryItems} /> : null}
 
-        {environmentMode === 'live' ? (
-          <Alert severity="warning">
-            The UI is currently set to `live`, but this desk still uses paper-only backend
-            workflows. Orders placed here remain simulated and are not sent to an exchange.
-          </Alert>
-        ) : null}
+        <Alert severity="info">
+          This desk owns the `{routeExecutionContext.label.toLowerCase()}` execution context, so
+          orders remain simulated and review flows stay isolated from any future live-only routes.
+        </Alert>
 
         {feedback ? (
           <Alert severity={feedback.severity} onClose={() => setFeedback(null)}>
