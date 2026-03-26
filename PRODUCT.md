@@ -16,7 +16,7 @@ Build a local-first platform for safe strategy research, backtesting, market-dat
 
 - `Dashboard`: system health, environment posture, paper-trading state, alerts, and workstation-level research context
 - `Forward Testing`: paper-safe strategy observation, signal charts, audit-backed investigation history, and local operator notes
-- `Paper`: paper-order entry, fill/cancel controls, state review, and order history
+- `Paper`: exchange-scoped strategy assignment, active paper-algorithm review, simulated order entry, fill/cancel controls, and order history
 - `Strategies`: canonical catalog-backed paper templates, configuration, presets, and version history
 - `Backtest`: dataset management, run execution, progress, telemetry-rich details, replay, compare, and export
 - `Market Data`: provider selection, import job creation, progress tracking, and dataset ingestion

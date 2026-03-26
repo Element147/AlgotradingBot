@@ -1,5 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { Provider } from 'react-redux';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
@@ -12,7 +13,7 @@ const fillOrderMock = vi.fn();
 const cancelOrderMock = vi.fn();
 
 vi.mock('@/components/layout/AppLayout', () => ({
-  AppLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  AppLayout: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }));
 
 vi.mock('@/features/paperApi', () => ({
@@ -58,6 +59,137 @@ vi.mock('@/features/paperApi', () => ({
   usePlacePaperOrderMutation: () => [placeOrderMock, { isLoading: false }],
   useFillPaperOrderMutation: () => [fillOrderMock, { isLoading: false }],
   useCancelPaperOrderMutation: () => [cancelOrderMock, { isLoading: false }],
+}));
+
+vi.mock('@/features/settings/exchangeApi', () => ({
+  useGetSavedExchangeConnectionsQuery: () => ({
+    data: {
+      activeConnectionId: 'binance-paper',
+      connections: [
+        {
+          id: 'binance-paper',
+          name: 'Binance Paper',
+          exchange: 'binance',
+          apiKey: '',
+          apiSecret: '',
+          testnet: true,
+          active: true,
+        },
+      ],
+    },
+  }),
+  useGetAuditEventsQuery: () => ({
+    data: {
+      summary: {
+        visibleEventCount: 1,
+        totalMatchingEvents: 1,
+        successCount: 1,
+        failedCount: 0,
+        uniqueActors: 1,
+        uniqueActions: 1,
+        testEventCount: 0,
+        paperEventCount: 1,
+        liveEventCount: 0,
+        latestEventAt: '2026-03-20T09:00:00',
+      },
+      events: [
+        {
+          id: 91,
+          actor: 'operator',
+          action: 'PAPER_REVIEWED',
+          environment: 'paper',
+          targetType: 'STRATEGY',
+          targetId: '1',
+          outcome: 'SUCCESS',
+          details: 'Reviewed assigned paper strategy before session open.',
+          createdAt: '2026-03-20T09:00:00',
+        },
+      ],
+    },
+    isLoading: false,
+  }),
+}));
+
+vi.mock('@/features/strategies/strategiesApi', () => ({
+  useGetStrategiesQuery: () => ({
+    data: [
+      {
+        id: 1,
+        name: 'BTC Momentum Paper',
+        type: 'SMA_CROSSOVER',
+        status: 'RUNNING',
+        symbol: 'BTC/USDT',
+        timeframe: '1h',
+        riskPerTrade: 0.02,
+        minPositionSize: 0.01,
+        maxPositionSize: 0.1,
+        profitLoss: 88.45,
+        tradeCount: 9,
+        currentDrawdown: 3.2,
+        paperMode: true,
+        shortSellingEnabled: false,
+        configVersion: 2,
+        lastConfigChangedAt: '2026-03-20T08:00:00',
+      },
+    ],
+  }),
+  useGetStrategyConfigHistoryQuery: () => ({
+    data: [
+      {
+        id: 1,
+        versionNumber: 2,
+        changeReason: 'Tightened paper risk budget.',
+        symbol: 'BTC/USDT',
+        timeframe: '1h',
+        riskPerTrade: 0.02,
+        minPositionSize: 0.01,
+        maxPositionSize: 0.1,
+        status: 'RUNNING',
+        paperMode: true,
+        shortSellingEnabled: false,
+        changedAt: '2026-03-20T08:00:00',
+      },
+    ],
+  }),
+  useStartStrategyMutation: () => [vi.fn(), { isLoading: false }],
+  useStopStrategyMutation: () => [vi.fn(), { isLoading: false }],
+  useUpdateStrategyConfigMutation: () => [vi.fn(), { isLoading: false }],
+}));
+
+vi.mock('@/features/strategies/StrategyConfigModal', () => ({
+  StrategyConfigModal: () => <div>Edit Strategy Config</div>,
+}));
+
+vi.mock('@/features/trades/tradesApi', () => ({
+  useGetTradeHistoryQuery: () => ({
+    data: {
+      items: [
+        {
+          id: 20,
+          pair: 'BTC/USDT',
+          entryTime: '2026-03-20T09:00:00',
+          entryPrice: 50000,
+          exitTime: '2026-03-20T11:00:00',
+          exitPrice: 50500,
+          signal: 'BUY',
+          positionSide: 'LONG',
+          positionSize: 0.05,
+          riskAmount: 25,
+          pnl: 12.5,
+          feesActual: 0.8,
+          slippageActual: 0.4,
+          stopLoss: 49500,
+          takeProfit: 50800,
+        },
+      ],
+    },
+  }),
+}));
+
+vi.mock('@/features/forwardTesting/ForwardSignalTimelineChart', () => ({
+  ForwardSignalTimelineChart: ({ strategyName }: { strategyName: string }) => (
+    <div>{strategyName} paper signal chart</div>
+  ),
 }));
 
 vi.mock('@/services/api', () => ({
@@ -114,10 +246,24 @@ describe('PaperTradingPage', () => {
     renderPage();
 
     expect(screen.getByText('Paper-only execution')).toBeInTheDocument();
+    expect(screen.getByText('Exchange-scoped strategy assignment')).toBeInTheDocument();
+    expect(screen.getAllByText('BTC Momentum Paper').length).toBeGreaterThan(0);
+    expect(screen.getByText(/paper signal chart/i)).toBeInTheDocument();
+    expect(screen.getByText('Paper order events for selected strategy')).toBeInTheDocument();
     expect(screen.getByText('Order entry')).toBeInTheDocument();
-    expect(screen.getByText('Paper orders')).toBeInTheDocument();
     expect(screen.getAllByText('No paper incidents detected.').length).toBeGreaterThan(0);
     expect(screen.getByText('#11')).toBeInTheDocument();
+  });
+
+  it('assigns a strategy to the selected exchange profile locally', async () => {
+    renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Assign to exchange' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('BTC Momentum Paper assigned to Binance Paper.')).toBeInTheDocument();
+      expect(localStorage.getItem('paper-workspace-assignments')).toContain('binance-paper');
+    });
   });
 
   it('submits a paper order with parsed numeric fields', async () => {

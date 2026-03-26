@@ -389,12 +389,17 @@ Implementation record
 - Regression coverage now includes route wiring, sidebar navigation, and the forward-testing workspace note flow in `frontend/src/App.test.tsx`, `frontend/src/components/layout/Sidebar.test.tsx`, and `frontend/src/features/forwardTesting/ForwardTestingPage.test.tsx`.
 
 #### 2C.3 Implement the Paper tab
-- [ ] Build a dedicated `Paper` tab that supports strategy selection per exchange, custom parameters, active-state review, and paper performance tracking.
+- [x] Build a dedicated `Paper` tab that supports strategy selection per exchange, custom parameters, active-state review, and paper performance tracking.
 Acceptance Criteria
 - Operators can assign paper strategies per exchange profile without affecting unrelated routes.
 - Active paper algorithms display current status, performance, positions, incidents, and live or near-live data.
 - Selecting an active paper algorithm opens a chart showing the exact signals and order events that produced current state and profitability.
 - The mandatory step completion protocol passes.
+Implementation record
+- Reworked the paper route into an exchange-scoped workspace that layers assignment, active-algorithm review, chart evidence, and order-event context on top of the existing simulated order desk in `frontend/src/features/paper/PaperTradingPage.tsx`.
+- Added explicit workstation-local paper assignment persistence for exchange-profile-to-strategy mapping in `frontend/src/features/paper/paperWorkspaceAssignments.ts` so operators can scope paper monitoring per saved exchange connection without pretending the backend already exposes a durable assignment API.
+- Reused shared execution primitives plus the signal timeline chart to keep active paper algorithm posture, performance, order events, config lineage, and audit/incident context in one place, while keeping order entry and fill/cancel flows explicitly simulated.
+- Expanded regression coverage for the paper workspace assignment flow and order submission path in `frontend/src/features/paper/PaperTradingPage.test.tsx`.
 
 #### 2C.4 Implement the Live tab with capability gating
 - [ ] Build a dedicated `Live` tab for explicit live context, keeping routing fail-closed until approved capabilities exist.
