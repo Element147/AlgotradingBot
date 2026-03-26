@@ -317,12 +317,17 @@ Implementation record
 - Section modules: `frontend/src/features/backtest/BacktestOverviewPanel.tsx`, `frontend/src/features/backtest/BacktestWorkspacePanel.tsx`, `frontend/src/features/backtest/BacktestTradeReviewPanel.tsx`, `frontend/src/features/backtest/BacktestAnalyticsPanel.tsx`
 
 #### 2B.3 Reduce render churn and large in-browser transformations
-- [ ] Move expensive derived calculations out of hot render paths and introduce virtualization or progressive rendering where the dataset size justifies it.
+- [x] Move expensive derived calculations out of hot render paths and introduce virtualization or progressive rendering where the dataset size justifies it.
 Acceptance Criteria
 - Large trade tables and investigation logs are virtualized or windowed when needed.
 - Expensive calculations such as workspace trade building, chart marker derivation, and distribution generation are memoized or moved server-side based on profiling evidence.
 - Search and filter interactions remain responsive under large datasets.
 - The mandatory step completion protocol passes.
+Implementation record
+- Workspace derivation and marker lookup optimization: `frontend/src/features/backtest/backtestWorkspace.ts`
+- Memoized workspace selection pipeline: `frontend/src/features/backtest/BacktestWorkspacePanel.tsx`
+- Virtualized trade review table with jsdom-safe fallback: `frontend/src/features/backtest/BacktestVirtualizedTradeTable.tsx`, `frontend/src/features/backtest/BacktestTradeReviewPanel.tsx`
+- Updated repeatable profile harness: `frontend/src/features/backtest/BacktestPerformanceProfile.test.tsx`
 
 #### 2B.4 Harden chart performance for large telemetry windows
 - [ ] Optimize the primary chart workspace and supporting analytics for long time ranges, dense markers, and multi-symbol views.

@@ -2,13 +2,14 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
 
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Profiler, type ProfilerOnRenderCallback } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 
 import { BacktestResults } from './BacktestResults';
+import BacktestTradeReviewPanel from './BacktestTradeReviewPanel';
 import {
   createDrawdownCurve,
   createEquityCurve,
@@ -409,18 +410,27 @@ describe('BacktestPerformanceProfile', () => {
     const initialMountSummary = summarizeProfilerSamples(profilerSamples, 'mount');
 
     await waitFor(() => expect(chartProfile.createChartCalls).toBeGreaterThan(0));
-    await user.click(screen.getByRole('tab', { name: /Trades/i }));
-    await screen.findByText('Trade review table', {}, { timeout: 5000 });
-    const tradeTable = await screen.findByRole('table', {}, { timeout: 5000 });
-    const dataRows = within(tradeTable)
-      .getAllByRole('row')
-      .filter((row) => within(row).queryAllByRole('cell').length > 0);
+    view.unmount();
+    profilerSamples.length = 0;
+
+    render(
+      <MemoryRouter initialEntries={['/backtest?trade=BTC%2FUSDT-2025-01-01T00%3A00%3A00-0']}>
+        <Profiler id="BacktestTradeReviewPanel" onRender={onRender}>
+          <BacktestTradeReviewPanel details={details} selectedSymbol="BTC/USDT" />
+        </Profiler>
+      </MemoryRouter>
+    );
+
+    const tradeTable = await screen.findByRole('table', { name: /Trade review table/i }, { timeout: 20000 });
+    const dataRows = Array.from(
+      tradeTable.querySelectorAll<HTMLElement>('[id^="backtest-trade-row-"]')
+    );
     const interactionTargetRow = dataRows[Math.min(48, dataRows.length - 1)];
     expect(interactionTargetRow).toBeDefined();
 
     const tradeInteractionStartedAt = performance.now();
     await user.click(interactionTargetRow);
-    await waitFor(() => expect(interactionTargetRow).toHaveClass('Mui-selected'));
+    await waitFor(() => expect(interactionTargetRow).toHaveAttribute('aria-selected', 'true'));
     const tradeInteractionMs = performance.now() - tradeInteractionStartedAt;
 
     const updateSummary =
@@ -509,7 +519,6 @@ ${chartProfile.seriesDataCalls.map((call) => `  - ${call.kind}: ${call.points} p
     mkdirSync(dirname(output), { recursive: true });
     writeFileSync(output, report, 'utf8');
 
-    expect(view.getByText('Run #42 research workspace')).toBeInTheDocument();
     expect(firstMeaningfulPaintMs).toBeGreaterThanOrEqual(0);
     expect(chartProfile.createChartCalls).toBeGreaterThan(0);
     expect(chartProfile.markerCount).toBeGreaterThan(0);

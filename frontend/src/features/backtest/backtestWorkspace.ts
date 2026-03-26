@@ -52,8 +52,6 @@ export interface WorkspaceOverlayLegendItem {
   color: string;
 }
 
-const priceTolerance = 0.000001;
-
 const ACTION_COLORS: Record<BacktestActionType, string> = {
   BUY: '#1f8a5a',
   SELL: '#1f66d1',
@@ -80,19 +78,13 @@ const actionLookupKey = (
 ) => `${action}|${timestamp}|${price.toFixed(6)}`;
 
 const findActionLabel = (
-  actions: BacktestActionMarker[],
+  actionLookup: Map<string, BacktestActionMarker>,
   action: BacktestActionType,
   timestamp: string,
   price: number,
   fallback: string
 ) => {
-  const exactMatch = actions.find(
-    (marker) =>
-      marker.action === action &&
-      marker.timestamp === timestamp &&
-      Math.abs(marker.price - price) <= priceTolerance
-  );
-
+  const exactMatch = actionLookup.get(actionLookupKey(action, timestamp, price));
   return exactMatch?.label ?? fallback;
 };
 
@@ -100,22 +92,24 @@ export const buildWorkspaceTrades = (
   tradeSeries: BacktestTradeSeriesItem[],
   symbol: string,
   actions: BacktestActionMarker[]
-): WorkspaceTrade[] =>
-  tradeSeries
+): WorkspaceTrade[] => {
+  const actionLookup = buildActionLookup(actions);
+
+  return tradeSeries
     .filter((trade) => trade.symbol === symbol)
     .map((trade, index) => {
       const tradeId = `${trade.symbol}-${trade.entryTime}-${index}`;
       const entryAction = trade.side === 'SHORT' ? 'SHORT' : 'BUY';
       const exitAction = trade.side === 'SHORT' ? 'COVER' : 'SELL';
       const entryLabel = findActionLabel(
-        actions,
+        actionLookup,
         entryAction,
         trade.entryTime,
         trade.entryPrice,
         trade.side === 'SHORT' ? 'Short entry' : 'Long entry'
       );
       const exitLabel = findActionLabel(
-        actions,
+        actionLookup,
         exitAction,
         trade.exitTime,
         trade.exitPrice,
@@ -150,6 +144,7 @@ export const buildWorkspaceTrades = (
         exitMarkerId: `${tradeId}:exit`,
       };
     });
+};
 
 export const buildWorkspaceMarkers = (trades: WorkspaceTrade[]): WorkspaceMarker[] =>
   trades.flatMap((trade) => {
@@ -237,10 +232,14 @@ export const buildOverlayLegend = (series: BacktestSymbolTelemetry): WorkspaceOv
     color: OVERLAY_COLORS[index % OVERLAY_COLORS.length],
   }));
 
-export const getOverlayColor = (overlayKey: string, series: BacktestSymbolTelemetry) => {
-  const overlay = buildOverlayLegend(series).find((item) => item.key === overlayKey);
-  return overlay?.color ?? OVERLAY_COLORS[0];
-};
+export const buildOverlayColorLookup = (series: BacktestSymbolTelemetry) =>
+  series.indicators.reduce<Map<string, string>>((lookup, indicator, index) => {
+    lookup.set(indicator.key, OVERLAY_COLORS[index % OVERLAY_COLORS.length]);
+    return lookup;
+  }, new Map());
+
+export const getOverlayColor = (overlayKey: string, series: BacktestSymbolTelemetry) =>
+  buildOverlayColorLookup(series).get(overlayKey) ?? OVERLAY_COLORS[0];
 
 export const actionVisuals = {
   BUY: {

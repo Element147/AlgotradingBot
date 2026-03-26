@@ -4,24 +4,18 @@ import {
   MenuItem,
   Select,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TableSortLabel,
   TextField,
 } from '@mui/material';
-import { useMemo, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { useGetBacktestTradeSeriesQuery, type BacktestDetails } from './backtestApi';
+import { BacktestVirtualizedTradeTable } from './BacktestVirtualizedTradeTable';
 
-import { EmptyState, NumericText, StatusPill, SurfacePanel } from '@/components/ui/Workbench';
-import { formatCurrency, formatDateTime, formatNumber, formatPercentage } from '@/utils/formatters';
+import { EmptyState, SurfacePanel } from '@/components/ui/Workbench';
+import { formatDateTime } from '@/utils/formatters';
 
-type TradeSortField =
+export type TradeSortField =
   | 'symbol'
   | 'side'
   | 'entryTime'
@@ -32,9 +26,22 @@ type TradeSortField =
   | 'pnlValue'
   | 'returnPct';
 
-type TradeSortDirection = 'asc' | 'desc';
+export type TradeSortDirection = 'asc' | 'desc';
 type TradeSideFilter = 'ALL' | 'LONG' | 'SHORT';
 type TradePnlFilter = 'ALL' | 'WINNERS' | 'LOSERS';
+
+export interface TradeReviewRow {
+  id: string;
+  symbol: string;
+  side: 'LONG' | 'SHORT';
+  entryTime: string;
+  exitTime: string;
+  quantity: number;
+  entryPrice: number;
+  exitPrice: number;
+  pnlValue: number;
+  returnPct: number;
+}
 
 interface BacktestTradeReviewPanelProps {
   details: BacktestDetails;
@@ -65,6 +72,7 @@ export default function BacktestTradeReviewPanel({
   const [tradePnlFilter, setTradePnlFilter] = useState<TradePnlFilter>('ALL');
   const [tradeSortField, setTradeSortField] = useState<TradeSortField>('entryTime');
   const [tradeSortDirection, setTradeSortDirection] = useState<TradeSortDirection>('desc');
+  const deferredTradeQuery = useDeferredValue(tradeQuery);
 
   const {
     data: tradeSeries = [],
@@ -72,16 +80,22 @@ export default function BacktestTradeReviewPanel({
     isFetching,
   } = useGetBacktestTradeSeriesQuery(details.id);
 
-  const filteredTradeRows = useMemo(() => {
-    const normalizedQuery = tradeQuery.trim().toLowerCase();
+  const tradeRows = useMemo<TradeReviewRow[]>(
+    () =>
+      tradeSeries
+        .filter((trade) => trade.symbol === selectedSymbol)
+        .map((trade, index) => ({
+          ...trade,
+          id: `${trade.symbol}-${trade.entryTime}-${index}`,
+          pnlValue: trade.exitValue - trade.entryValue,
+        })),
+    [selectedSymbol, tradeSeries]
+  );
 
-    return tradeSeries
-      .filter((trade) => trade.symbol === selectedSymbol)
-      .map((trade, index) => ({
-        ...trade,
-        id: `${trade.symbol}-${trade.entryTime}-${index}`,
-        pnlValue: trade.exitValue - trade.entryValue,
-      }))
+  const filteredTradeRows = useMemo(() => {
+    const normalizedQuery = deferredTradeQuery.trim().toLowerCase();
+
+    return tradeRows
       .filter((trade) => {
         if (tradeSideFilter !== 'ALL' && trade.side !== tradeSideFilter) {
           return false;
@@ -126,7 +140,14 @@ export default function BacktestTradeReviewPanel({
             );
         }
       });
-  }, [selectedSymbol, tradePnlFilter, tradeQuery, tradeSeries, tradeSideFilter, tradeSortDirection, tradeSortField]);
+  }, [
+    deferredTradeQuery,
+    tradePnlFilter,
+    tradeRows,
+    tradeSideFilter,
+    tradeSortDirection,
+    tradeSortField,
+  ]);
 
   const selectedTradeId = searchParams.get('trade');
 
@@ -190,107 +211,26 @@ export default function BacktestTradeReviewPanel({
             </Select>
           </Stack>
 
-          <TableContainer
-            sx={{
-              maxHeight: 'min(65vh, 38rem)',
-              overflow: 'auto',
-              borderRadius: 2,
-              border: (theme) => `1px solid ${theme.palette.divider}`,
-            }}
-          >
-            <Table size="small" stickyHeader sx={{ minWidth: 920 }}>
-              <TableHead>
-                <TableRow>
-                  {[
-                    ['symbol', 'Symbol', 'left'],
-                    ['side', 'Side', 'left'],
-                    ['entryTime', 'Entry', 'left'],
-                    ['exitTime', 'Exit', 'left'],
-                    ['quantity', 'Quantity', 'right'],
-                    ['entryPrice', 'Entry price', 'right'],
-                    ['exitPrice', 'Exit price', 'right'],
-                    ['pnlValue', 'PnL', 'right'],
-                    ['returnPct', 'Return', 'right'],
-                  ].map(([field, label, align]) => (
-                    <TableCell
-                      key={field}
-                      align={align as 'left' | 'right'}
-                      sortDirection={tradeSortField === field ? tradeSortDirection : false}
-                    >
-                      <TableSortLabel
-                        active={tradeSortField === field}
-                        direction={tradeSortField === field ? tradeSortDirection : 'asc'}
-                        onClick={() => {
-                          const nextField = field as TradeSortField;
-                          if (tradeSortField === nextField) {
-                            setTradeSortDirection((current) => (current === 'asc' ? 'desc' : 'asc'));
-                            return;
-                          }
+          <BacktestVirtualizedTradeTable
+            rows={filteredTradeRows}
+            selectedTradeId={selectedTradeId}
+            sortField={tradeSortField}
+            sortDirection={tradeSortDirection}
+            onSortChange={(nextField) => {
+              if (tradeSortField === nextField) {
+                setTradeSortDirection((current) => (current === 'asc' ? 'desc' : 'asc'));
+                return;
+              }
 
-                          setTradeSortField(nextField);
-                          setTradeSortDirection(
-                            nextField === 'entryTime' || nextField === 'exitTime' ? 'desc' : 'asc'
-                          );
-                        }}
-                      >
-                        {label}
-                      </TableSortLabel>
-                    </TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredTradeRows.map((trade) => (
-                  <TableRow
-                    key={trade.id}
-                    hover
-                    selected={trade.id === selectedTradeId}
-                    tabIndex={0}
-                    onClick={() => {
-                      const nextParams = new URLSearchParams(searchParams);
-                      nextParams.set('trade', trade.id);
-                      setSearchParams(nextParams, { replace: true });
-                    }}
-                    sx={{ cursor: 'pointer' }}
-                  >
-                    <TableCell>{trade.symbol}</TableCell>
-                    <TableCell>
-                      <StatusPill
-                        label={trade.side}
-                        tone={trade.side === 'LONG' ? 'success' : 'error'}
-                        variant="filled"
-                      />
-                    </TableCell>
-                    <TableCell>{formatDateTime(trade.entryTime)}</TableCell>
-                    <TableCell>{formatDateTime(trade.exitTime)}</TableCell>
-                    <TableCell align="right">
-                      <NumericText variant="body2">{formatNumber(trade.quantity, 6)}</NumericText>
-                    </TableCell>
-                    <TableCell align="right">
-                      <NumericText variant="body2">
-                        {formatCurrency(trade.entryPrice, 4)}
-                      </NumericText>
-                    </TableCell>
-                    <TableCell align="right">
-                      <NumericText variant="body2">
-                        {formatCurrency(trade.exitPrice, 4)}
-                      </NumericText>
-                    </TableCell>
-                    <TableCell align="right">
-                      <NumericText variant="body2" tone={trade.pnlValue >= 0 ? 'success' : 'error'}>
-                        {formatCurrency(trade.pnlValue, 2)}
-                      </NumericText>
-                    </TableCell>
-                    <TableCell align="right">
-                      <NumericText variant="body2" tone={trade.returnPct >= 0 ? 'success' : 'error'}>
-                        {formatPercentage(trade.returnPct, 2)}
-                      </NumericText>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+              setTradeSortField(nextField);
+              setTradeSortDirection(nextField === 'entryTime' || nextField === 'exitTime' ? 'desc' : 'asc');
+            }}
+            onRowSelect={(trade) => {
+              const nextParams = new URLSearchParams(searchParams);
+              nextParams.set('trade', trade.id);
+              setSearchParams(nextParams, { replace: true });
+            }}
+          />
         </>
       ) : (
         <EmptyState

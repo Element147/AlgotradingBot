@@ -21,6 +21,7 @@ import type {
 } from './backtestTypes';
 import {
   actionVisuals,
+  buildOverlayColorLookup,
   getOverlayColor,
   markerMatchesFilter,
   type BacktestMarkerFilter,
@@ -152,6 +153,7 @@ export function BacktestWorkspaceChart({
     () => [...markers].sort((left, right) => compareTimestampAsc(left.timestamp, right.timestamp)),
     [markers]
   );
+  const overlayColorLookup = useMemo(() => buildOverlayColorLookup(normalizedSeries), [normalizedSeries]);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<ReturnType<typeof createChart> | null>(null);
   const priceSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
@@ -245,7 +247,7 @@ export function BacktestWorkspaceChart({
 
     visiblePriceIndicators.forEach((indicator) => {
       const overlaySeries = chart.addSeries(LineSeries, {
-        color: getOverlayColor(indicator.key, normalizedSeries),
+        color: overlayColorLookup.get(indicator.key) ?? getOverlayColor(indicator.key, normalizedSeries),
         lineWidth: 2,
         priceLineVisible: false,
         lastValueVisible: true,
@@ -296,7 +298,7 @@ export function BacktestWorkspaceChart({
         const oscillatorSeries = chart.addSeries(
           LineSeries,
           {
-            color: getOverlayColor(indicator.key, normalizedSeries),
+            color: overlayColorLookup.get(indicator.key) ?? getOverlayColor(indicator.key, normalizedSeries),
             lineWidth: 2,
             priceLineVisible: false,
             lastValueVisible: false,
@@ -383,6 +385,7 @@ export function BacktestWorkspaceChart({
   }, [
     filteredMarkers,
     normalizedSeries,
+    overlayColorLookup,
     onMarkerSelect,
     selectedMarkerId,
     showExposurePane,

@@ -8,6 +8,7 @@ import {
   ToggleButton,
   ToggleButtonGroup,
 } from '@mui/material';
+import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import {
@@ -92,6 +93,111 @@ export default function BacktestWorkspacePanel({ details }: BacktestWorkspacePan
     symbol: telemetrySymbol,
   });
 
+  const activeTelemetry = telemetryResponse?.telemetry ?? null;
+  const availableTelemetrySymbols = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          telemetryResponse?.resolvedSymbol
+            ? [...details.availableTelemetrySymbols, telemetryResponse.resolvedSymbol]
+            : details.availableTelemetrySymbols
+        )
+      ),
+    [details.availableTelemetrySymbols, telemetryResponse]
+  );
+  const overlayLegend = useMemo(
+    () => (activeTelemetry ? buildOverlayLegend(activeTelemetry) : []),
+    [activeTelemetry]
+  );
+  const workspaceTrades = useMemo(
+    () =>
+      activeTelemetry
+        ? buildWorkspaceTrades(tradeSeries, activeTelemetry.symbol, activeTelemetry.actions)
+        : [],
+    [activeTelemetry, tradeSeries]
+  );
+  const workspaceMarkers = useMemo(
+    () =>
+      buildWorkspaceMarkers(workspaceTrades).sort((left, right) =>
+        compareTimestampAsc(left.timestamp, right.timestamp)
+      ),
+    [workspaceTrades]
+  );
+  const selectedTradeId = searchParams.get('trade');
+  const selectedMarkerId = searchParams.get('marker');
+  const markerFilter = parseWorkspaceMarkerFilter(searchParams.get('filter'));
+  const overlayKeys = useMemo(() => overlayLegend.map((item) => item.key), [overlayLegend]);
+  const resolvedOverlayKeys = useMemo(
+    () =>
+      activeTelemetry
+        ? parseParamList(
+            searchParams.get('overlays'),
+            overlayKeys,
+            getDefaultVisibleOverlayKeys(activeTelemetry)
+          )
+        : [],
+    [activeTelemetry, overlayKeys, searchParams]
+  );
+  const visiblePanes = useMemo(
+    () => parseParamList(searchParams.get('panes'), workspacePaneKeys, [...workspacePaneKeys]),
+    [searchParams]
+  );
+  const explicitMarker = useMemo(
+    () => findMarkerById(workspaceMarkers, selectedMarkerId),
+    [selectedMarkerId, workspaceMarkers]
+  );
+  const tradeFromExplicitMarker = useMemo(
+    () => findTradeByMarkerId(workspaceTrades, selectedMarkerId),
+    [selectedMarkerId, workspaceTrades]
+  );
+  const selectedTrade = useMemo(
+    () =>
+      workspaceTrades.find((trade) => trade.id === selectedTradeId) ??
+      tradeFromExplicitMarker ??
+      workspaceTrades[0] ??
+      null,
+    [selectedTradeId, tradeFromExplicitMarker, workspaceTrades]
+  );
+  const inspectorMarker = useMemo(
+    () =>
+      explicitMarker ??
+      (selectedTrade ? findMarkerById(workspaceMarkers, selectedTrade.entryMarkerId) : null),
+    [explicitMarker, selectedTrade, workspaceMarkers]
+  );
+  const visibleMarkers = useMemo(
+    () =>
+      workspaceMarkers.filter((marker) => {
+        switch (markerFilter) {
+          case 'LONG':
+            return marker.side === 'LONG' && marker.category === 'ENTRY';
+          case 'SHORT':
+            return marker.side === 'SHORT' && marker.category === 'ENTRY';
+          case 'EXITS':
+            return marker.category === 'EXIT' || marker.category === 'FORCED';
+          case 'FORCED':
+            return marker.category === 'FORCED' || marker.isForced;
+          default:
+            return true;
+        }
+      }),
+    [markerFilter, workspaceMarkers]
+  );
+  const visibleSelectedMarker = useMemo(
+    () =>
+      visibleMarkers.find((marker) => marker.id === inspectorMarker?.id) ??
+      visibleMarkers.find((marker) => marker.tradeId === selectedTrade?.id) ??
+      visibleMarkers[0] ??
+      null,
+    [inspectorMarker, selectedTrade, visibleMarkers]
+  );
+  const activeMarkerIndex = visibleSelectedMarker
+    ? visibleMarkers.findIndex((marker) => marker.id === visibleSelectedMarker.id)
+    : -1;
+  const focusTimestamp = useMemo(
+    () => deriveWorkspaceFocusTime(inspectorMarker ?? visibleSelectedMarker, selectedTrade),
+    [inspectorMarker, selectedTrade, visibleSelectedMarker]
+  );
+
   if (tradesLoading || telemetryLoading) {
     return (
       <Alert severity="info">
@@ -105,7 +211,6 @@ export default function BacktestWorkspacePanel({ details }: BacktestWorkspacePan
     return <Alert severity="info">Refreshing the active telemetry symbol and linked trade evidence.</Alert>;
   }
 
-  const activeTelemetry = telemetryResponse?.telemetry ?? null;
   if (!activeTelemetry) {
     return (
       <EmptyState
@@ -115,58 +220,6 @@ export default function BacktestWorkspacePanel({ details }: BacktestWorkspacePan
       />
     );
   }
-
-  const availableTelemetrySymbols = Array.from(
-    new Set(
-      telemetryResponse?.resolvedSymbol
-        ? [...details.availableTelemetrySymbols, telemetryResponse.resolvedSymbol]
-        : details.availableTelemetrySymbols
-    )
-  );
-  const overlayLegend = buildOverlayLegend(activeTelemetry);
-  const workspaceTrades = buildWorkspaceTrades(tradeSeries, activeTelemetry.symbol, activeTelemetry.actions);
-  const workspaceMarkers = buildWorkspaceMarkers(workspaceTrades).sort((left, right) =>
-    compareTimestampAsc(left.timestamp, right.timestamp)
-  );
-  const selectedTradeId = searchParams.get('trade');
-  const selectedMarkerId = searchParams.get('marker');
-  const markerFilter = parseWorkspaceMarkerFilter(searchParams.get('filter'));
-  const overlayKeys = overlayLegend.map((item) => item.key);
-  const resolvedOverlayKeys = parseParamList(
-    searchParams.get('overlays'),
-    overlayKeys,
-    getDefaultVisibleOverlayKeys(activeTelemetry)
-  );
-  const visiblePanes = parseParamList(searchParams.get('panes'), workspacePaneKeys, [...workspacePaneKeys]);
-  const visibleMarkers = workspaceMarkers.filter((marker) => {
-    switch (markerFilter) {
-      case 'LONG':
-        return marker.side === 'LONG' && marker.category === 'ENTRY';
-      case 'SHORT':
-        return marker.side === 'SHORT' && marker.category === 'ENTRY';
-      case 'EXITS':
-        return marker.category === 'EXIT' || marker.category === 'FORCED';
-      case 'FORCED':
-        return marker.category === 'FORCED' || marker.isForced;
-      default:
-        return true;
-    }
-  });
-  const explicitMarker = findMarkerById(workspaceMarkers, selectedMarkerId);
-  const tradeFromExplicitMarker = findTradeByMarkerId(workspaceTrades, selectedMarkerId);
-  const selectedTrade =
-    workspaceTrades.find((trade) => trade.id === selectedTradeId) ?? tradeFromExplicitMarker ?? workspaceTrades[0] ?? null;
-  const inspectorMarker =
-    explicitMarker ?? (selectedTrade ? findMarkerById(workspaceMarkers, selectedTrade.entryMarkerId) : null);
-  const visibleSelectedMarker =
-    visibleMarkers.find((marker) => marker.id === inspectorMarker?.id) ??
-    visibleMarkers.find((marker) => marker.tradeId === selectedTrade?.id) ??
-    visibleMarkers[0] ??
-    null;
-  const activeMarkerIndex = visibleSelectedMarker
-    ? visibleMarkers.findIndex((marker) => marker.id === visibleSelectedMarker.id)
-    : -1;
-  const focusTimestamp = deriveWorkspaceFocusTime(inspectorMarker ?? visibleSelectedMarker, selectedTrade);
 
   const updateWorkspaceParams = (update: (params: URLSearchParams) => void) => {
     const nextParams = new URLSearchParams(searchParams);
