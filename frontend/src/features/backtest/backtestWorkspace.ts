@@ -177,6 +177,48 @@ export const buildWorkspaceMarkers = (trades: WorkspaceTrade[]): WorkspaceMarker
     ];
   });
 
+export const condenseMarkersForChart = (
+  markers: WorkspaceMarker[],
+  selectedMarkerId: string | null,
+  maxMarkers = 480
+): WorkspaceMarker[] => {
+  if (markers.length <= maxMarkers) {
+    return markers;
+  }
+
+  const selectedMarkerIndex =
+    selectedMarkerId === null ? -1 : markers.findIndex((marker) => marker.id === selectedMarkerId);
+  const prioritizedIndices = new Set<number>();
+
+  if (markers.length > 0) {
+    prioritizedIndices.add(0);
+    prioritizedIndices.add(markers.length - 1);
+  }
+  if (selectedMarkerIndex >= 0) {
+    prioritizedIndices.add(selectedMarkerIndex);
+  }
+
+  markers.forEach((marker, index) => {
+    if (marker.isForced && prioritizedIndices.size < maxMarkers) {
+      prioritizedIndices.add(index);
+    }
+  });
+
+  const remainingSlots = Math.max(maxMarkers - prioritizedIndices.size, 0);
+  const sampleStep = Math.max(Math.ceil(markers.length / Math.max(remainingSlots, 1)), 1);
+  for (let index = 0; index < markers.length && prioritizedIndices.size < maxMarkers; index += sampleStep) {
+    prioritizedIndices.add(index);
+  }
+  for (let index = 0; index < markers.length && prioritizedIndices.size < maxMarkers; index += 1) {
+    prioritizedIndices.add(index);
+  }
+
+  return Array.from(prioritizedIndices)
+    .sort((left, right) => left - right)
+    .map((index) => markers[index])
+    .filter((marker): marker is WorkspaceMarker => marker !== undefined);
+};
+
 export const markerMatchesFilter = (
   marker: WorkspaceMarker,
   filter: BacktestMarkerFilter

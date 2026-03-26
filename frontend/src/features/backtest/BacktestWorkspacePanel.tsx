@@ -22,6 +22,7 @@ import {
   buildOverlayLegend,
   buildWorkspaceMarkers,
   buildWorkspaceTrades,
+  condenseMarkersForChart,
   deriveWorkspaceFocusTime,
   findMarkerById,
   findTradeByMarkerId,
@@ -190,6 +191,11 @@ export default function BacktestWorkspacePanel({ details }: BacktestWorkspacePan
       null,
     [inspectorMarker, selectedTrade, visibleMarkers]
   );
+  const chartMarkers = useMemo(
+    () => condenseMarkersForChart(visibleMarkers, visibleSelectedMarker?.id ?? null),
+    [visibleMarkers, visibleSelectedMarker]
+  );
+  const condensedMarkerCount = Math.max(visibleMarkers.length - chartMarkers.length, 0);
   const activeMarkerIndex = visibleSelectedMarker
     ? visibleMarkers.findIndex((marker) => marker.id === visibleSelectedMarker.id)
     : -1;
@@ -307,6 +313,13 @@ export default function BacktestWorkspacePanel({ details }: BacktestWorkspacePan
             />
 
             <Stack spacing={1.25}>
+              {condensedMarkerCount > 0 ? (
+                <Alert severity="info">
+                  Dense marker windows are condensed for chart rendering to keep the workspace responsive.
+                  {` ${condensedMarkerCount} lower-priority markers remain available through the inspector and filter controls.`}
+                </Alert>
+              ) : null}
+
               <Stack direction={{ xs: 'column', lg: 'row' }} spacing={1} alignItems={{ xs: 'stretch', lg: 'center' }}>
                 <ToggleButtonGroup
                   size="small"
@@ -363,9 +376,8 @@ export default function BacktestWorkspacePanel({ details }: BacktestWorkspacePan
 
               <BacktestWorkspaceChart
                 series={activeTelemetry}
-                markers={workspaceMarkers}
+                markers={chartMarkers}
                 selectedMarkerId={visibleSelectedMarker?.id ?? null}
-                markerFilter={markerFilter}
                 visibleOverlayKeys={resolvedOverlayKeys}
                 showExposurePane={visiblePanes.includes('exposure')}
                 showOscillatorPane={visiblePanes.includes('oscillator')}

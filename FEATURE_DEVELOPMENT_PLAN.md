@@ -330,12 +330,17 @@ Implementation record
 - Updated repeatable profile harness: `frontend/src/features/backtest/BacktestPerformanceProfile.test.tsx`
 
 #### 2B.4 Harden chart performance for large telemetry windows
-- [ ] Optimize the primary chart workspace and supporting analytics for long time ranges, dense markers, and multi-symbol views.
+- [x] Optimize the primary chart workspace and supporting analytics for long time ranges, dense markers, and multi-symbol views.
 Acceptance Criteria
 - The chart remains responsive while switching symbols, overlays, or marker filters on representative large runs.
 - Marker density is handled without freezing the browser.
 - Mobile and tablet behavior stay usable without hiding essential evidence.
 - The mandatory step completion protocol passes.
+Implementation record
+- Dense marker condensation with selected-marker and forced-evidence preservation: `frontend/src/features/backtest/backtestWorkspace.ts`
+- Workspace chart normalization now scopes work to the active symbol and visible overlays, with O(1) focus lookups for crosshair inspection: `frontend/src/features/backtest/BacktestWorkspaceChart.tsx`
+- The workspace panel now feeds a condensed marker set to the chart while preserving the full review dataset for linked inspection and mobile/tablet evidence flows: `frontend/src/features/backtest/BacktestWorkspacePanel.tsx`
+- Chart-density regression coverage: `frontend/src/features/backtest/backtestWorkspace.test.ts`
 
 #### 2B.5 Add frontend observability and regression budgets
 - [ ] Introduce measurable performance budgets for route load time, chart mount time, and large-query render time.

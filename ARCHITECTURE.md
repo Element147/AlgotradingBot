@@ -149,6 +149,7 @@ Shared frontend infrastructure:
 - Active backtest polling should prefer the lightweight summary endpoint, while completed-run review can request the slim overview plus the heavier equity, trade, and symbol-scoped telemetry payloads independently.
 - `features/backtest/BacktestWorkspaceChart.tsx` owns the trading-oriented price-review surface using `lightweight-charts`, while aggregate analytics remain on the existing Recharts-based components.
 - `features/backtest/backtestWorkspace.ts` now owns the memoized workspace derivation seam for trade assembly, marker generation, and overlay-color lookup so expensive backtest review transforms stay out of hot component render paths.
+- The chart path intentionally condenses dense marker windows for rendering, while the panel keeps the full marker dataset available for linked inspection so operator evidence is not lost when telemetry ranges get large.
 - `features/backtest/BacktestTradeReviewPanel.tsx` delegates dense row rendering to `features/backtest/BacktestVirtualizedTradeTable.tsx`, which virtualizes large browser-side trade tables while preserving a deterministic non-virtual fallback for jsdom profiling and tests.
 - Redux slices handle auth, environment mode, settings, and WebSocket connection state.
 - `WebSocketRuntime` subscribes the app to environment-aware channels and updates RTK Query caches for long-running task progress when the authenticated WebSocket handshake succeeds.
