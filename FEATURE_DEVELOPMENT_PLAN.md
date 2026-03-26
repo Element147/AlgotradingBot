@@ -462,12 +462,15 @@ Implementation record
 - Aligned canonical docs with that methodology in `README.md`, `PROJECT_STATUS.md`, and `TRADING_GUARDRAILS.md` so later strategy reruns and paper-follow-up decisions reference one durable protocol instead of ad hoc criteria.
 
 #### 3A.2 Build a representative audit dataset pack
-- [ ] Assemble reproducible datasets for liquid crypto and small-account-friendly equity or ETF research with provenance, timeframe coverage, and holdout windows.
+- [x] Assemble reproducible datasets for liquid crypto and small-account-friendly equity or ETF research with provenance, timeframe coverage, and holdout windows.
 Acceptance Criteria
 - Each audit dataset has checksum, schema identity, timeframe coverage, venue metadata, and realistic date windows.
 - The dataset pack covers at least one crypto-major set and one equity or ETF set suitable for small-account research.
 - Known limits such as pattern-day-trading restrictions, exchange minimums, and short-proxy constraints are documented in the audit notes rather than ignored.
 - The mandatory step completion protocol passes.
+Implementation record
+- Added `docs/STRATEGY_AUDIT_DATASET_PACK.md` as the frozen pack definition, anchoring the existing crypto catalog dataset `#12` and documenting one checked-in ETF audit file plus manifest with checksum, schema identity, venue notes, timeframe coverage, and the shared holdout split.
+- Added `scripts/build-strategy-audit-equity-dataset.ps1` and generated `docs/audit-datasets/us-etf-daily-small-account-pack-2024-03-12-to-2026-03-12.csv` with companion manifest JSON so the small-account equity or ETF side is reproducible from repo-owned automation instead of a one-off manual download.
 
 #### 3A.3 Rerun the current strategy catalog under the frozen protocol
 - [ ] Rerun all current built-in strategies and capture full-sample, holdout, and walk-forward results.

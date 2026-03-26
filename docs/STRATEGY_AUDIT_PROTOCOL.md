@@ -54,7 +54,7 @@ If a later venue-specific audit uses different costs, the report must say why an
 
 ## Dataset Policy
 
-The dataset pack itself is defined in task `3A.2`, but the protocol freezes these requirements now:
+The current representative pack now lives in `docs/STRATEGY_AUDIT_DATASET_PACK.md`, and the protocol freezes these requirements:
 
 - at least one liquid crypto-major dataset
 - at least one small-account-friendly equity or ETF dataset
