@@ -2,8 +2,6 @@ package com.algotrader.bot.service;
 
 import com.algotrader.bot.controller.BackupResponse;
 import com.algotrader.bot.controller.SystemInfoResponse;
-import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,12 +21,10 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -42,7 +38,6 @@ public class SystemOperationsService {
 
     private final DataSource dataSource;
     private final BuildProperties buildProperties;
-    private final String kafkaBootstrapServers;
     private final Path backupDirectory;
     private final String datasourceUsername;
     private final String datasourcePassword;
@@ -52,7 +47,6 @@ public class SystemOperationsService {
     public SystemOperationsService(
         Optional<DataSource> dataSource,
         Optional<BuildProperties> buildProperties,
-        @Value("${spring.kafka.bootstrap-servers:}") String kafkaBootstrapServers,
         @Value("${algotrading.system.backup-dir:backups}") String backupDirectory,
         @Value("${spring.datasource.username:}") String datasourceUsername,
         @Value("${spring.datasource.password:}") String datasourcePassword,
@@ -60,7 +54,6 @@ public class SystemOperationsService {
     ) {
         this.dataSource = dataSource.orElse(null);
         this.buildProperties = buildProperties.orElse(null);
-        this.kafkaBootstrapServers = kafkaBootstrapServers;
         this.backupDirectory = Paths.get(backupDirectory);
         this.datasourceUsername = datasourceUsername;
         this.datasourcePassword = datasourcePassword;
@@ -76,8 +69,7 @@ public class SystemOperationsService {
         return new SystemInfoResponse(
             version,
             deploymentDate,
-            getDatabaseStatus(),
-            getKafkaStatus()
+            getDatabaseStatus()
         );
     }
 
@@ -252,26 +244,6 @@ public class SystemOperationsService {
             return "DOWN";
         }
     }
-
-    private String getKafkaStatus() {
-        if (kafkaBootstrapServers == null || kafkaBootstrapServers.isBlank()) {
-            return "not-configured";
-        }
-
-        Properties properties = new Properties();
-        properties.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBootstrapServers);
-        properties.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, "1000");
-        properties.put(AdminClientConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, "1000");
-        properties.put(AdminClientConfig.CLIENT_ID_CONFIG, "system-operations-health-check");
-
-        try (AdminClient adminClient = AdminClient.create(properties)) {
-            adminClient.describeCluster().nodes().get(1, TimeUnit.SECONDS);
-            return "UP";
-        } catch (Exception ex) {
-            return "DOWN (optional in local mode)";
-        }
-    }
-
     private record BackupExecutionResult(String databaseProduct, String method) {
     }
 

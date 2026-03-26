@@ -11,7 +11,7 @@ import java.util.Map;
 
 public final class RepairWorkspaceSupport {
 
-    private static final List<Integer> MANAGED_PORTS = List.of(5432, 8080, 5173, 9092);
+    private static final List<Integer> MANAGED_PORTS = List.of(5432, 8080, 5173);
     private static final String COMPOSE_PROJECT_NAME = "algotradingbot";
     private static final String MANAGED_NETWORK_NAME = COMPOSE_PROJECT_NAME + "_algotrading-network";
 
@@ -136,7 +136,6 @@ public final class RepairWorkspaceSupport {
     private ManagedService resolveManagedService(String serviceName) {
         return switch (serviceName == null ? "" : serviceName.trim().toLowerCase()) {
             case "postgres" -> ManagedService.POSTGRES;
-            case "kafka" -> ManagedService.KAFKA;
             case "algotrading-app", "app", "backend" -> ManagedService.APP;
             default -> throw new IllegalArgumentException("Unsupported managed service: " + serviceName);
         };
@@ -163,7 +162,6 @@ public final class RepairWorkspaceSupport {
 
     private enum ManagedService {
         POSTGRES("postgres", "algotrading-postgres"),
-        KAFKA("kafka", "algotrading-kafka"),
         APP("algotrading-app", "algotrading-app");
 
         private final String composeService;

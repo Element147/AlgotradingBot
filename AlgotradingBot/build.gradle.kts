@@ -70,9 +70,6 @@ dependencies {
     runtimeOnly("org.postgresql:postgresql")
     implementation("org.springframework.boot:spring-boot-starter-liquibase")
     
-    // Kafka
-    implementation("org.springframework.kafka:spring-kafka")
-    
     // Micrometer + Prometheus
     implementation("io.micrometer:micrometer-registry-prometheus")
     
@@ -82,7 +79,6 @@ dependencies {
     // Testing
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
-    testImplementation("org.springframework.kafka:spring-kafka-test")
     testImplementation("org.mockito:mockito-core")
     testImplementation("org.mockito:mockito-junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")

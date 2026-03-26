@@ -22,10 +22,6 @@ spring:
   liquibase:
     enabled: false
   
-  # Disable Kafka for tests
-  kafka:
-    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-  
 # JWT Configuration for Tests
 jwt:
   secret: testSecretKeyForJWTTokenGenerationThatIsAtLeast256BitsLongForHS256AlgorithmInTestEnvironment

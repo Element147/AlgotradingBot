@@ -16,19 +16,16 @@ docker compose --project-name algotradingbot -f .\compose.yaml down
 Containers:
 
 - `algotrading-postgres`
-- `algotrading-kafka`
 - `algotrading-app`
 
 Named volumes:
 
 - `algotradingbot_postgres_data`
-- `algotradingbot_kafka_data`
-- `algotradingbot_kafka_secrets`
 
 ## Related Run Modes
 
 - `.\run.ps1`: PostgreSQL in Docker, backend and frontend locally
-- `.\run-all.ps1`: app, PostgreSQL, and Kafka in Docker with frontend locally
+- `.\run-all.ps1`: app and PostgreSQL in Docker with frontend locally
 - `compose.debug.yaml`: opt-in backend JDWP overlay for Docker mode
 
 Use `docs/guides/LOCAL_DEV_DOCKER_MCP.md` for runtime, cleanup, and troubleshooting details.

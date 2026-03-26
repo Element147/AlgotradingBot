@@ -1555,7 +1555,6 @@ export interface components {
             applicationVersion?: string;
             lastDeploymentDate?: string;
             databaseStatus?: string;
-            kafkaStatus?: string;
         };
         OperatorAuditEventListResponse: {
             summary?: components["schemas"]["OperatorAuditSummaryResponse"];

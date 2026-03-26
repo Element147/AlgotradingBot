@@ -92,8 +92,7 @@ class ExchangeSystemControllerIntegrationTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.applicationVersion").exists())
             .andExpect(jsonPath("$.lastDeploymentDate").exists())
-            .andExpect(jsonPath("$.databaseStatus").value(anyOf(is("UP"), is("DOWN"), is("unavailable"))))
-            .andExpect(jsonPath("$.kafkaStatus").exists());
+            .andExpect(jsonPath("$.databaseStatus").value(anyOf(is("UP"), is("DOWN"), is("unavailable"))));
     }
 
     @Test

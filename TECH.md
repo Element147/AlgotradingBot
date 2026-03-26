@@ -10,7 +10,6 @@
 - PostgreSQL runtime
 - H2 `test` profile for backend tests and builds
 - Liquibase
-- Kafka
 - Spring WebSocket
 - JWT auth
 - Micrometer and Prometheus registry

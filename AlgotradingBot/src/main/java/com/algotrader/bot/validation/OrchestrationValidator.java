@@ -28,11 +28,6 @@ public class OrchestrationValidator {
             return postgresResult;
         }
         
-        ValidationResult kafkaResult = validateServiceHealth("kafka", Duration.ofSeconds(90));
-        if (kafkaResult.isFailed()) {
-            return kafkaResult;
-        }
-        
         ValidationResult appResult = validateServiceHealth("algotrading-app", Duration.ofSeconds(120));
         if (appResult.isFailed()) {
             return appResult;
@@ -47,12 +42,6 @@ public class OrchestrationValidator {
             List.of("HikariPool", "connection", "database"));
         if (dbConnResult.isFailed()) {
             return dbConnResult;
-        }
-        
-        ValidationResult kafkaConnResult = validateServiceLogs("algotrading-app", 
-            List.of("Kafka", "bootstrap", "connected"));
-        if (kafkaConnResult.isFailed()) {
-            return kafkaConnResult;
         }
         
         ValidationResult result = new ValidationResult(
@@ -236,17 +225,15 @@ public class OrchestrationValidator {
             
             String[] containers = output.toString().trim().split("\n");
             boolean hasPostgres = false;
-            boolean hasKafka = false;
             boolean hasApp = false;
             
             for (String container : containers) {
                 if (container.contains("postgres")) hasPostgres = true;
-                if (container.contains("kafka")) hasKafka = true;
                 if (container.contains("app")) hasApp = true;
             }
             
-            if (hasPostgres && hasKafka && hasApp) {
-                logger.info("All three containers are running");
+            if (hasPostgres && hasApp) {
+                logger.info("All required containers are running");
                 return new ValidationResult(
                     "REQ-8.8", 
                     "Containers Running", 
@@ -254,14 +241,12 @@ public class OrchestrationValidator {
                     "All containers running"
                 );
             } else {
-                logger.error("Not all containers running. Postgres: {}, Kafka: {}, App: {}", 
-                    hasPostgres, hasKafka, hasApp);
+                logger.error("Not all containers running. Postgres: {}, App: {}", hasPostgres, hasApp);
                 return new ValidationResult(
                     "REQ-8.8", 
                     "Containers Running", 
                     ValidationStatus.FAILED, 
-                    String.format("Missing containers - Postgres: %s, Kafka: %s, App: %s", 
-                        hasPostgres, hasKafka, hasApp)
+                    String.format("Missing containers - Postgres: %s, App: %s", hasPostgres, hasApp)
                 );
             }
         } catch (Exception e) {

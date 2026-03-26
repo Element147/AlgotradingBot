@@ -68,14 +68,9 @@ if (-not (Assert-PortAvailable -Port 5432 -Label "PostgreSQL")) {
     exit 1
 }
 
-if (-not (Assert-PortAvailable -Port 9092 -Label "Kafka")) {
-    Write-Host "Run .\stop-all.ps1 or free port 9092 before starting the full stack." -ForegroundColor Yellow
-    exit 1
-}
-
-# Start Backend with Docker Compose (includes PostgreSQL and Kafka)
+# Start Backend with Docker Compose (includes PostgreSQL)
 Write-Host ""
-Write-Host "[1/2] Starting Backend + Database + Kafka..." -ForegroundColor Yellow
+Write-Host "[1/2] Starting Backend + Database..." -ForegroundColor Yellow
 docker compose @($composeArgs) up -d
 $dockerResult = $LASTEXITCODE
 

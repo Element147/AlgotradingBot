@@ -351,9 +351,6 @@ export function DatabaseSettingsPanel({
                 <Typography variant="body2">
                   Database Status: {systemInfo?.databaseStatus ?? 'unknown'}
                 </Typography>
-                <Typography variant="body2">
-                  Kafka Status: {systemInfo?.kafkaStatus ?? 'optional in local run path'}
-                </Typography>
               </Stack>
             )}
           </CardContent>

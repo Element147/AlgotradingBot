@@ -68,7 +68,6 @@ export interface SystemInfo {
   applicationVersion: string;
   lastDeploymentDate: string;
   databaseStatus: string;
-  kafkaStatus: string;
 }
 
 export interface OperatorAuditEvent {

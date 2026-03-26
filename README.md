@@ -11,7 +11,7 @@ Local-first research platform for strategy design, backtesting, market-data impo
 
 ## What The System Does Now
 
-- Authenticated Spring Boot backend with JWT, Liquibase-managed PostgreSQL runtime, Kafka, WebSocket events, and audited system operations
+- Authenticated Spring Boot backend with JWT, Liquibase-managed PostgreSQL runtime, WebSocket events, and audited system operations
 - React/Vite dashboard for login, dashboard, strategies, backtests, market-data imports, trades, risk controls, and settings
 - Backtest engine with modular strategy registry, experiment grouping, replay and compare flows, persisted equity and trade series, and provenance-aware exports
 - Market-data import pipeline with provider-specific download adapters, retry-aware persistent jobs, encrypted provider credentials, and direct dataset ingestion into the backtest catalog

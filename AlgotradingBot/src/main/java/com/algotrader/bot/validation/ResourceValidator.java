@@ -11,8 +11,7 @@ public class ResourceValidator {
     private static final Logger logger = LoggerFactory.getLogger(ResourceValidator.class);
     private static final long MAX_APP_MEMORY_MB = 512;
     private static final long MAX_DB_MEMORY_MB = 256;
-    private static final long MAX_KAFKA_MEMORY_MB = 512;
-    private static final long MAX_TOTAL_MEMORY_MB = 1536; // 1.5GB
+    private static final long MAX_TOTAL_MEMORY_MB = 768;
     private static final long MAX_DISK_USAGE_GB = 2;
     private final RepairWorkspaceSupport workspaceSupport = RepairWorkspaceSupport.detect();
 
@@ -44,12 +43,6 @@ public class ResourceValidator {
             passed = false;
         }
         
-        if (metrics.getKafkaMetrics().getMemoryUsageMB() > MAX_KAFKA_MEMORY_MB) {
-            issues.append("Kafka memory ").append(metrics.getKafkaMetrics().getMemoryUsageMB())
-                  .append("MB exceeds ").append(MAX_KAFKA_MEMORY_MB).append("MB; ");
-            passed = false;
-        }
-        
         if (metrics.getTotalMemoryUsageMB() > MAX_TOTAL_MEMORY_MB) {
             issues.append("Total memory ").append(metrics.getTotalMemoryUsageMB())
                   .append("MB exceeds ").append(MAX_TOTAL_MEMORY_MB).append("MB; ");
@@ -62,10 +55,9 @@ public class ResourceValidator {
                 "REQ-11", 
                 "Memory Usage", 
                 ValidationStatus.PASSED, 
-                String.format("Memory within limits - App: %dMB, DB: %dMB, Kafka: %dMB, Total: %dMB",
+                String.format("Memory within limits - App: %dMB, DB: %dMB, Total: %dMB",
                     metrics.getApplicationMetrics().getMemoryUsageMB(),
                     metrics.getDatabaseMetrics().getMemoryUsageMB(),
-                    metrics.getKafkaMetrics().getMemoryUsageMB(),
                     metrics.getTotalMemoryUsageMB())
             );
             result.addMetadata("metrics", metrics);
@@ -100,7 +92,7 @@ public class ResourceValidator {
                         inVolumes = true;
                         continue;
                     }
-                    if (inVolumes && (line.contains("postgres_data") || line.contains("kafka_data"))) {
+                    if (inVolumes && line.contains("postgres_data")) {
                         String[] parts = line.split("\\s+");
                         if (parts.length >= 3) {
                             String sizeStr = parts[2];
@@ -171,9 +163,6 @@ public class ResourceValidator {
                         } else if (name.contains("postgres")) {
                             metrics.getDatabaseMetrics().setMemoryUsageMB(memMB);
                             metrics.getDatabaseMetrics().setCpuUsagePercent(cpu);
-                        } else if (name.contains("kafka")) {
-                            metrics.getKafkaMetrics().setMemoryUsageMB(memMB);
-                            metrics.getKafkaMetrics().setCpuUsagePercent(cpu);
                         }
                         
                         totalMemory += memMB;
@@ -197,7 +186,6 @@ public class ResourceValidator {
         report.append("=== RESOURCE USAGE REPORT ===\n");
         report.append("Application Memory: ").append(metrics.getApplicationMetrics().getMemoryUsageMB()).append(" MB\n");
         report.append("Database Memory: ").append(metrics.getDatabaseMetrics().getMemoryUsageMB()).append(" MB\n");
-        report.append("Kafka Memory: ").append(metrics.getKafkaMetrics().getMemoryUsageMB()).append(" MB\n");
         report.append("Total Memory: ").append(metrics.getTotalMemoryUsageMB()).append(" MB\n");
         report.append("Total Disk: ").append(metrics.getTotalDiskUsageGB()).append(" GB\n");
         return report.toString();

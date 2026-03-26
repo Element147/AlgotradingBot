@@ -164,7 +164,7 @@ Shared frontend infrastructure:
 - The normalized market-data tables already reserve hot-path indexes for `series_id + timeframe + bucket_start`, segment coverage scans, and venue or asset filters so the later execution cutover can move to range queries without another schema rewrite.
 - Operational metrics now expose normalized-store growth and query behavior through the shared Micrometer registry, which keeps pre-migration versus post-migration reads comparable from dashboards and alerts.
 - Backend profiling metrics also expose targeted timing for high-churn read paths and async workflow startup, and the repo now includes reproducible profiling runners for the backend workflow seam and the frontend backtest page render path.
-- Full-stack Docker runtime includes Kafka for the backend's event-driven paths.
+- Full-stack Docker runtime includes the Spring Boot app and PostgreSQL; WebSocket event delivery stays in-process within the backend.
 - Compose uses the explicit project name `algotradingbot` and named volumes for stable local reuse.
 - Script-driven local logs live in `.runtime/logs`; managed PID files live under `.pids`.
 - Local smoke scripts use `/actuator/info` as the backend startup probe because the current local profile keeps readiness-probe health `OUT_OF_SERVICE` while the workstation HTTP surface is already serving traffic.

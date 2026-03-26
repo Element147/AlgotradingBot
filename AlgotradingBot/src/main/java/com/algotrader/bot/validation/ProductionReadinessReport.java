@@ -65,7 +65,6 @@ public class ProductionReadinessReport {
         if (resourceMetrics != null) {
             report.append("  Application: ").append(resourceMetrics.getApplicationMetrics().getMemoryUsageMB()).append(" MB\n");
             report.append("  Database: ").append(resourceMetrics.getDatabaseMetrics().getMemoryUsageMB()).append(" MB\n");
-            report.append("  Kafka: ").append(resourceMetrics.getKafkaMetrics().getMemoryUsageMB()).append(" MB\n");
             report.append("  Total: ").append(resourceMetrics.getTotalMemoryUsageMB()).append(" MB\n");
         }
         

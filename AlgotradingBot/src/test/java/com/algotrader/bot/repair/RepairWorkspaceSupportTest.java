@@ -16,7 +16,6 @@ class RepairWorkspaceSupportTest {
         RepairWorkspaceSupport workspaceSupport = RepairWorkspaceSupport.detect();
 
         assertEquals("postgres", workspaceSupport.composeServiceFor("postgres"));
-        assertEquals("kafka", workspaceSupport.composeServiceFor("kafka"));
         assertEquals("algotrading-app", workspaceSupport.composeServiceFor("backend"));
         assertEquals("algotrading-app", workspaceSupport.composeServiceFor("app"));
     }

@@ -3,7 +3,7 @@
  *
  * Displays system health status including:
  * - Backend API/system info availability
- * - Database and Kafka status from the system endpoint
+ * - Database status from the system endpoint
  * - WebSocket connection status with reconnection attempts
  * - Last data update timestamp
  * - Circuit breaker state from the risk status endpoint
@@ -156,25 +156,6 @@ export const SystemHealthIndicator: React.FC = () => {
                 </Tooltip>
               ) : (
                 <Tooltip title={getApiErrorMessage(systemInfoQueryError, 'Database status is unavailable')}>
-                  <Chip icon={<WarningIcon />} label="Unknown" color="default" size="small" />
-                </Tooltip>
-              )}
-            </Stack>
-          </Box>
-
-          <Box>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Typography variant="body2" color="text.secondary" sx={{ minWidth: 120 }}>
-                Kafka:
-              </Typography>
-              {systemInfoLoading ? (
-                <Chip icon={<CircularProgress size={16} />} label="Checking" color="default" size="small" />
-              ) : systemInfo ? (
-                <Tooltip title={`Kafka status: ${systemInfo.kafkaStatus}`}>
-                  {renderDependencyChip(systemInfo.kafkaStatus)}
-                </Tooltip>
-              ) : (
-                <Tooltip title={getApiErrorMessage(systemInfoQueryError, 'Kafka status is unavailable')}>
                   <Chip icon={<WarningIcon />} label="Unknown" color="default" size="small" />
                 </Tooltip>
               )}

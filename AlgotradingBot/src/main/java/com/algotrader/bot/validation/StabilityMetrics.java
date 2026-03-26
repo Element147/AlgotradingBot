@@ -12,7 +12,6 @@ public class StabilityMetrics {
     private int containerRestarts;
     private int errorLogCount;
     private boolean databaseConnectionStable;
-    private boolean kafkaConnectionStable;
 
     public StabilityMetrics() {
         this.healthChecks = new ArrayList<>();
@@ -20,14 +19,12 @@ public class StabilityMetrics {
         this.containerRestarts = 0;
         this.errorLogCount = 0;
         this.databaseConnectionStable = true;
-        this.kafkaConnectionStable = true;
     }
 
     public boolean isStable() {
         return containerRestarts == 0 
             && errorLogCount == 0 
             && databaseConnectionStable 
-            && kafkaConnectionStable
             && healthChecks.stream().allMatch(HealthCheckResult::isHealthy);
     }
 
@@ -66,8 +63,6 @@ public class StabilityMetrics {
     public boolean isDatabaseConnectionStable() { return databaseConnectionStable; }
     public void setDatabaseConnectionStable(boolean stable) { this.databaseConnectionStable = stable; }
     
-    public boolean isKafkaConnectionStable() { return kafkaConnectionStable; }
-    public void setKafkaConnectionStable(boolean stable) { this.kafkaConnectionStable = stable; }
 }
 
 class HealthCheckResult {
@@ -93,21 +88,19 @@ class ResourceSnapshot {
     private LocalDateTime timestamp;
     private double appMemoryMB;
     private double dbMemoryMB;
-    private double kafkaMemoryMB;
     private double appCpuPercent;
     private double dbCpuPercent;
-    private double kafkaCpuPercent;
 
     public ResourceSnapshot() {
         this.timestamp = LocalDateTime.now();
     }
 
     public double getTotalMemoryMB() {
-        return appMemoryMB + dbMemoryMB + kafkaMemoryMB;
+        return appMemoryMB + dbMemoryMB;
     }
 
     public double getAverageCpuPercent() {
-        return (appCpuPercent + dbCpuPercent + kafkaCpuPercent) / 3.0;
+        return (appCpuPercent + dbCpuPercent) / 2.0;
     }
 
     // Getters and setters
@@ -116,12 +109,8 @@ class ResourceSnapshot {
     public void setAppMemoryMB(double appMemoryMB) { this.appMemoryMB = appMemoryMB; }
     public double getDbMemoryMB() { return dbMemoryMB; }
     public void setDbMemoryMB(double dbMemoryMB) { this.dbMemoryMB = dbMemoryMB; }
-    public double getKafkaMemoryMB() { return kafkaMemoryMB; }
-    public void setKafkaMemoryMB(double kafkaMemoryMB) { this.kafkaMemoryMB = kafkaMemoryMB; }
     public double getAppCpuPercent() { return appCpuPercent; }
     public void setAppCpuPercent(double appCpuPercent) { this.appCpuPercent = appCpuPercent; }
     public double getDbCpuPercent() { return dbCpuPercent; }
     public void setDbCpuPercent(double dbCpuPercent) { this.dbCpuPercent = dbCpuPercent; }
-    public double getKafkaCpuPercent() { return kafkaCpuPercent; }
-    public void setKafkaCpuPercent(double kafkaCpuPercent) { this.kafkaCpuPercent = kafkaCpuPercent; }
 }

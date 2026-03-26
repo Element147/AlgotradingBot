@@ -201,9 +201,6 @@ public class RepairEngine {
         if (searchText.contains("postgres")) {
             return "postgres";
         }
-        if (searchText.contains("kafka")) {
-            return "kafka";
-        }
         return "algotrading-app";
     }
 }

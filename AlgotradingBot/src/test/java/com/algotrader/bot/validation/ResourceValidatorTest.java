@@ -19,7 +19,6 @@ class ResourceValidatorTest {
         assertNotNull(metrics);
         assertNotNull(metrics.getApplicationMetrics());
         assertNotNull(metrics.getDatabaseMetrics());
-        assertNotNull(metrics.getKafkaMetrics());
     }
 
     @Test
@@ -27,8 +26,7 @@ class ResourceValidatorTest {
         ResourceMetrics metrics = new ResourceMetrics();
         metrics.getApplicationMetrics().setMemoryUsageMB(400);
         metrics.getDatabaseMetrics().setMemoryUsageMB(200);
-        metrics.getKafkaMetrics().setMemoryUsageMB(400);
-        metrics.setTotalMemoryUsageMB(1000);
+        metrics.setTotalMemoryUsageMB(600);
         
         assertTrue(metrics.isWithinLimits());
     }

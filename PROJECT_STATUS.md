@@ -98,12 +98,12 @@ Verified on March 20, 2026 against dataset `#12` (`Binance BTC/USDT +2 15m 2024-
 ### Platform And Developer Workflow
 
 - Local fast mode runs PostgreSQL in Docker with backend and frontend locally.
-- Full-stack mode runs app, PostgreSQL, and Kafka in Docker with the frontend locally.
+- Full-stack mode runs app and PostgreSQL in Docker with the frontend locally.
 - `.\run.ps1` and `.\run-all.ps1` now wait for both backend and frontend readiness and roll back partial startup if a later stage fails.
 - The local startup scripts now treat `/actuator/info` as the backend readiness probe for smoke runs because the current local profile exposes Kubernetes-style readiness as `OUT_OF_SERVICE` even after the workstation API is serving traffic successfully.
 - `.\run-all.ps1` now checks for leftover fast-mode backend processes and port conflicts before Docker startup.
 - `.\run.ps1` now auto-sizes the local backend JVM heap from detected host RAM and accepts explicit heap overrides for larger developer machines.
-- Compose identity is fixed to `algotradingbot`, with reusable named volumes for PostgreSQL, Kafka, and Kafka secrets.
+- Compose identity is fixed to `algotradingbot`, with a reusable named volume for PostgreSQL.
 - Script-driven backend logs go to `.runtime/logs`.
 - Local PowerShell helpers now provision a stable repo-local JWT secret in `.runtime/local-jwt-secret.txt`; direct Compose usage must provide `JWT_SECRET` explicitly.
 - Project-local Codex agents under `.codex/agents/` cover quant, Java/Spring, frontend, risk, security, and local ops workflows for this repository.

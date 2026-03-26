@@ -42,8 +42,6 @@ public class StabilityValidator {
             
             // Check connections
             checkDatabaseConnection(metrics);
-            checkKafkaConnection(metrics);
-            
             // Wait for next check interval or end
             long sleepTime = Math.min(CHECK_INTERVAL_MS, endTime - System.currentTimeMillis());
             if (sleepTime > 0) {
@@ -67,7 +65,7 @@ public class StabilityValidator {
     }
 
     private void performHealthChecks(StabilityMetrics metrics) {
-        String[] services = {"postgres", "kafka", "algotrading-app"};
+        String[] services = {"postgres", "algotrading-app"};
         for (String service : services) {
             try {
                 String containerName = workspaceSupport.containerNameFor(service);
@@ -130,9 +128,6 @@ public class StabilityValidator {
                         } else if (name.contains("postgres")) {
                             snapshot.setDbMemoryMB(memMB);
                             snapshot.setDbCpuPercent(cpu);
-                        } else if (name.contains("kafka")) {
-                            snapshot.setKafkaMemoryMB(memMB);
-                            snapshot.setKafkaCpuPercent(cpu);
                         }
                     }
                 }
@@ -140,8 +135,8 @@ public class StabilityValidator {
             
             process.waitFor();
             metrics.addResourceSnapshot(snapshot);
-            logger.debug("Resource snapshot collected - App: {} MB, DB: {} MB, Kafka: {} MB", 
-                snapshot.getAppMemoryMB(), snapshot.getDbMemoryMB(), snapshot.getKafkaMemoryMB());
+            logger.debug("Resource snapshot collected - App: {} MB, DB: {} MB",
+                snapshot.getAppMemoryMB(), snapshot.getDbMemoryMB());
         } catch (Exception e) {
             logger.error("Error collecting resource metrics", e);
         }
@@ -252,45 +247,6 @@ public class StabilityValidator {
         }
     }
 
-    private void checkKafkaConnection(StabilityMetrics metrics) {
-        try {
-            ProcessBuilder pb = new ProcessBuilder(
-                "docker",
-                "compose",
-                "--project-name",
-                workspaceSupport.composeProjectName(),
-                "-f",
-                workspaceSupport.composeFile().toString(),
-                "logs",
-                "--tail",
-                "100",
-                workspaceSupport.composeServiceFor("algotrading-app")
-            );
-            pb.directory(workspaceSupport.repoRoot().toFile());
-            pb.redirectErrorStream(true);
-            Process process = pb.start();
-            
-            boolean connectionIssue = false;
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    if (line.toLowerCase().contains("kafka") && 
-                        (line.toLowerCase().contains("error") || line.toLowerCase().contains("failed"))) {
-                        connectionIssue = true;
-                        break;
-                    }
-                }
-            }
-            
-            process.waitFor();
-            metrics.setKafkaConnectionStable(!connectionIssue);
-            logger.debug("Kafka connection stable: {}", !connectionIssue);
-        } catch (Exception e) {
-            logger.error("Error checking Kafka connection", e);
-            metrics.setKafkaConnectionStable(false);
-        }
-    }
-
     public ValidationResult generateStabilityReport(StabilityMetrics metrics) {
         logger.info("Generating stability report");
         
@@ -303,7 +259,6 @@ public class StabilityValidator {
         report.append("Average Memory: ").append(String.format("%.2f", metrics.getAverageMemoryUsageMB())).append(" MB\n");
         report.append("Average CPU: ").append(String.format("%.2f", metrics.getAverageCpuUsagePercent())).append("%\n");
         report.append("Database Connection Stable: ").append(metrics.isDatabaseConnectionStable()).append("\n");
-        report.append("Kafka Connection Stable: ").append(metrics.isKafkaConnectionStable()).append("\n");
         
         if (metrics.isStable()) {
             logger.info("Stability test PASSED");

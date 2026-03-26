@@ -15,7 +15,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * - Backtesting engine with validation
  * - REST API for strategy control
  * - PostgreSQL persistence
- * - Kafka event streaming
  * - Prometheus metrics
  * - Structured JSON logging
  */

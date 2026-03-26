@@ -21,7 +21,6 @@ class StabilityValidatorTest {
         assertEquals(0, metrics.getContainerRestarts());
         assertEquals(0, metrics.getErrorLogCount());
         assertTrue(metrics.isDatabaseConnectionStable());
-        assertTrue(metrics.isKafkaConnectionStable());
     }
 
     @Test

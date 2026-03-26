@@ -11,7 +11,6 @@ type SystemInfoHookResult = {
     applicationVersion: string;
     lastDeploymentDate: string;
     databaseStatus: string;
-    kafkaStatus: string;
   };
   isError: boolean;
   isLoading: boolean;
@@ -77,7 +76,6 @@ describe('SystemHealthIndicator', () => {
         applicationVersion: 'local-dev',
         lastDeploymentDate: '2026-03-09T11:00:00Z',
         databaseStatus: 'UP',
-        kafkaStatus: 'not-configured',
       },
       isError: false,
       isLoading: false,
@@ -111,13 +109,12 @@ describe('SystemHealthIndicator', () => {
     expect(screen.getByText('System Health')).toBeInTheDocument();
     expect(screen.getByText('Backend API:')).toBeInTheDocument();
     expect(screen.getByText('Database:')).toBeInTheDocument();
-    expect(screen.getByText('Kafka:')).toBeInTheDocument();
     expect(screen.getByText('WebSocket:')).toBeInTheDocument();
     expect(screen.getByText('Last Update:')).toBeInTheDocument();
     expect(screen.getByText('Circuit Breaker:')).toBeInTheDocument();
   });
 
-  it('shows backend, database, and kafka status from system info', () => {
+  it('shows backend and database status from system info', () => {
     const preloadedState: Partial<RootState> = {
       websocket: mockWebSocketState,
     };
@@ -126,7 +123,6 @@ describe('SystemHealthIndicator', () => {
 
     expect(screen.getAllByText('Connected').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('UP')).toBeInTheDocument();
-    expect(screen.getByText('not-configured')).toBeInTheDocument();
   });
 
   it('shows websocket connected status and last update age', () => {
@@ -211,6 +207,6 @@ describe('SystemHealthIndicator', () => {
     renderWithProviders(<SystemHealthIndicator />, { preloadedState });
 
     expect(screen.getAllByText('Disconnected').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('Unknown').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText('Unknown').length).toBeGreaterThanOrEqual(1);
   });
 });

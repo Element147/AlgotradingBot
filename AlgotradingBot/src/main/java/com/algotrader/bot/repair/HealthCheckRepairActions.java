@@ -156,12 +156,6 @@ public class HealthCheckRepairActions {
         return new RepairResult(true, "Postgres diagnosis: " + logResult.getMessage());
     }
 
-    public RepairResult diagnoseKafkaFailure() {
-        logger.info("Diagnosing Kafka failure");
-        RepairResult logResult = checkServiceLogs("kafka");
-        return new RepairResult(true, "Kafka diagnosis: " + logResult.getMessage());
-    }
-
     public RepairResult diagnoseApplicationFailure() {
         logger.info("Diagnosing application failure");
         RepairResult logResult = checkServiceLogs("algotrading-app");

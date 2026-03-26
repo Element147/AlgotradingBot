@@ -30,8 +30,8 @@ Use this guide for local runtime scripts, Docker, Compose, PowerShell orchestrat
 `.\run-all.ps1`:
 
 - stops any tracked local backend or frontend processes first
-- checks ports `8080`, `5173`, `5432`, and `9092`
-- starts `algotrading-app`, PostgreSQL, and Kafka in Docker
+- checks ports `8080`, `5173`, and `5432`
+- starts `algotrading-app` and PostgreSQL in Docker
 - runs the frontend locally
 - waits for both backend and frontend HTTP readiness before reporting success
 - rolls back the partially started stack if a later startup stage fails
@@ -69,8 +69,6 @@ The Compose project name is fixed to `algotradingbot`.
 Named volumes:
 
 - `algotradingbot_postgres_data`
-- `algotradingbot_kafka_data`
-- `algotradingbot_kafka_secrets`
 
 Direct Compose examples:
 
@@ -97,7 +95,6 @@ docker compose --project-name algotradingbot -f .\AlgotradingBot\compose.yaml do
 - Frontend dev server: `5173`
 - Backend HTTP: `8080`
 - PostgreSQL: `5432`
-- Kafka: `9092`
 - Managed PID files: `.pids`
 - Managed runtime logs and temp state: `.runtime`
 

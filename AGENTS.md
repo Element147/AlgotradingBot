@@ -8,7 +8,7 @@ This repository does not assume strategy profitability. Treat every strategy as 
 
 ## Scope
 
-- Backend: `AlgotradingBot/` Java 25, Spring Boot 4.0.3, Gradle, PostgreSQL, Kafka, WebSocket, JWT auth
+- Backend: `AlgotradingBot/` Java 25, Spring Boot 4.0.3, Gradle, PostgreSQL, WebSocket, JWT auth
 - Frontend: `frontend/` React 19, TypeScript, Vite, Redux Toolkit, RTK Query, React Router 7, MUI 7
 - Local orchestration: PowerShell scripts in repo root and Docker Compose in `AlgotradingBot/compose.yaml`
 
