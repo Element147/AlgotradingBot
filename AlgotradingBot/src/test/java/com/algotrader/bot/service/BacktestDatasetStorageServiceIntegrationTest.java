@@ -74,7 +74,7 @@ class BacktestDatasetStorageServiceIntegrationTest {
     }
 
     @Test
-    void storeImportedDataset_keepsCompatibilityDownloadBytesWhileRoutingQueriesThroughNormalizedStore() {
+    void storeImportedDataset_generatesDownloadsFromNormalizedStoreWhenCompatibilityBlobBecomesStale() {
         byte[] csvData = csv(
             """
                 timestamp,symbol,open,high,low,close,volume
@@ -90,6 +90,7 @@ class BacktestDatasetStorageServiceIntegrationTest {
             csvData,
             "Test Provider"
         );
+        dataset.setCsvData("corrupted,compatibility,blob".getBytes());
 
         BacktestDatasetDownloadResponse downloadResponse = backtestDatasetStorageService.downloadDataset(dataset.getId());
         List<MarketDataQueriedCandle> candles = marketDataQueryService.loadCandlesForDataset(
@@ -100,7 +101,8 @@ class BacktestDatasetStorageServiceIntegrationTest {
             Set.of("ETH/USDT")
         );
 
-        assertThat(downloadResponse.csvData()).isEqualTo(csvData);
+        assertThat(new String(downloadResponse.csvData())).isEqualTo(new String(csvData));
+        assertThat(downloadResponse.exportSource()).isEqualTo("NORMALIZED_EXPORT");
         assertThat(candles).hasSize(3);
         assertThat(candles).extracting(candle -> candle.provenance().sourceType()).containsOnly("IMPORT_JOB");
         assertThat(candles).extracting(candle -> candle.provenance().datasetId()).containsOnly(dataset.getId());

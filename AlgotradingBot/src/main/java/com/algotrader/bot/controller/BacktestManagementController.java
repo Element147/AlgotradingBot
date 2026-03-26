@@ -75,6 +75,7 @@ public class BacktestManagementController {
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + safeFilename + "\"")
             .header("X-Dataset-Checksum-Sha256", dataset.checksumSha256())
             .header("X-Dataset-Schema-Version", dataset.schemaVersion())
+            .header("X-Dataset-Download-Source", dataset.exportSource())
             .contentType(MediaType.parseMediaType("text/csv"))
             .body(dataset.csvData());
     }

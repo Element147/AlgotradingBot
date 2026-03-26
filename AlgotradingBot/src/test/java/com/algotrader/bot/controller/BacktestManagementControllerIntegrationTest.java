@@ -521,6 +521,7 @@ class BacktestManagementControllerIntegrationTest {
             .andExpect(status().isOk())
             .andExpect(header().exists("X-Dataset-Checksum-Sha256"))
             .andExpect(header().string("X-Dataset-Schema-Version", "ohlcv-v1"))
+            .andExpect(header().string("X-Dataset-Download-Source", "LEGACY_CSV_COMPATIBILITY"))
             .andExpect(content().string(containsString("timestamp,symbol,open,high,low,close,volume")));
     }
 

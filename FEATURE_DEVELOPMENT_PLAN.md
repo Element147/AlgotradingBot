@@ -185,7 +185,7 @@ Acceptance Criteria
 - The mandatory step completion protocol passes.
 
 #### 1B.4 Backfill existing datasets and validate runtime cutover
-- [ ] Migrate all existing backtest datasets, update the runtime read path, and validate backtests and telemetry against the new source.
+- [x] Migrate all existing backtest datasets, update the runtime read path, and validate backtests and telemetry against the new source.
 Acceptance Criteria
 - Existing datasets in the catalog are visible, queryable, and runnable after cutover.
 - Representative backtest reruns produce materially equivalent results once the same fees, slippage, and timeframe policy are applied.
@@ -193,7 +193,7 @@ Acceptance Criteria
 - The mandatory step completion protocol passes.
 
 #### 1B.5 Retire or quarantine legacy storage
-- [ ] Move legacy CSV blob fields to a clearly temporary compatibility state, then plan their removal once replay, download, and audit needs are fully covered.
+- [x] Move legacy CSV blob fields to a clearly temporary compatibility state, then plan their removal once replay, download, and audit needs are fully covered.
 Acceptance Criteria
 - Legacy columns are no longer treated as authoritative.
 - The repo contains a documented removal sequence and rollback plan before destructive cleanup begins.

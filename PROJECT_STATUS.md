@@ -57,6 +57,8 @@ Verified on March 20, 2026 against dataset `#12` (`Binance BTC/USDT +2 15m 2024-
 - Structured `market_data_query` logs now call out rollup usage, fallback activation, stitched coverage, gap windows, and slow scans without reintroducing whole-dataset CSV parse logging on the normal relational execution and telemetry path.
 - The repo now includes an idempotent legacy-market-data migration path: `LegacyMarketDataMigrationService` and the Gradle `migrateLegacyDatasets` task can inspect or migrate selected datasets, default to dry-run mode, skip already-migrated dataset or series or timeframe or checksum segments, log per-dataset checksum, row-count, symbol, migrated-series, inserted-candle, duplicate-candle, and rejected-row summaries, and reconcile legacy CSV expectations against normalized candles through the Gradle `reconcileLegacyDatasets` task before cutover.
 - New dataset uploads and completed provider imports now hydrate the normalized market-data store during ingestion instead of waiting for a later migration pass. `csv_data` remains a temporary compatibility copy for explicit dataset download and legacy fallback, and completed import jobs clear `staged_csv_data` once the dataset record is written.
+- Startup recovery now includes a legacy-dataset backfill participant that migrates any catalog dataset still missing normalized segments, reconciles the result before marking success, and leaves execution plus telemetry on the relational store rather than the CSV parser or cache path during normal runtime use.
+- Dataset downloads now prefer normalized CSV export when a single exact-raw normalized representation exists, and the response exposes whether the payload came from `NORMALIZED_EXPORT` or the remaining `LEGACY_CSV_COMPATIBILITY` path.
 - Market-data ownership is now split so provider and job commands stay in `MarketDataImportService`, async download execution stays in `MarketDataImportExecutionService`, and import WebSocket publication stays in `MarketDataImportProgressService`.
 - Dataset catalog management is now split between `BacktestDatasetStorageService` for CSV persistence/downloads and `BacktestDatasetLifecycleService` for inventory, retention, archive, and restore behavior.
 - Liquibase now adds targeted query-shape indexes for dataset listing, backtest experiment and status scans, and market-data ready-job scheduling.
@@ -154,6 +156,10 @@ Verified on March 20, 2026:
 ## Contradiction Register
 
 No current contradictions are recorded after the March 20 cleanup pass aligned the backtest and dataset-ownership docs with the verified codebase.
+
+## Legacy Compatibility Removal Plan
+
+The staged non-destructive sequence for removing `backtest_datasets.csv_data` and the remaining import staging compatibility path now lives in `docs/LEGACY_DATASET_RETIREMENT_PLAN.md`. The current rollback posture is to keep legacy blobs intact for any dataset that cannot yet pass reconciliation or normalized export safely.
 
 ## Active Priorities
 

@@ -3,43 +3,60 @@ package com.algotrader.bot.service;
 import com.algotrader.bot.backtest.OHLCVData;
 import com.algotrader.bot.controller.BacktestDatasetDownloadResponse;
 import com.algotrader.bot.entity.BacktestDataset;
+import com.algotrader.bot.entity.MarketDataCandle;
+import com.algotrader.bot.entity.MarketDataCandleSegment;
 import com.algotrader.bot.repository.BacktestDatasetRepository;
+import com.algotrader.bot.repository.MarketDataCandleRepository;
+import com.algotrader.bot.repository.MarketDataCandleSegmentRepository;
 import com.algotrader.bot.service.marketdata.LegacyMarketDataMigrationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.charset.StandardCharsets;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HexFormat;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 @Service
 public class BacktestDatasetStorageService {
 
     private static final long MAX_UPLOAD_BYTES = 25L * 1024L * 1024L;
+    private static final DateTimeFormatter CSV_TIMESTAMP_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
     private final BacktestDatasetRepository backtestDatasetRepository;
     private final HistoricalDataCsvParser historicalDataCsvParser;
     private final LegacyMarketDataMigrationService legacyMarketDataMigrationService;
+    private final MarketDataCandleSegmentRepository marketDataCandleSegmentRepository;
+    private final MarketDataCandleRepository marketDataCandleRepository;
 
     public BacktestDatasetStorageService(BacktestDatasetRepository backtestDatasetRepository,
                                          HistoricalDataCsvParser historicalDataCsvParser) {
-        this(backtestDatasetRepository, historicalDataCsvParser, null);
+        this(backtestDatasetRepository, historicalDataCsvParser, null, null, null);
     }
 
     @Autowired
     public BacktestDatasetStorageService(BacktestDatasetRepository backtestDatasetRepository,
                                          HistoricalDataCsvParser historicalDataCsvParser,
-                                         LegacyMarketDataMigrationService legacyMarketDataMigrationService) {
+                                         LegacyMarketDataMigrationService legacyMarketDataMigrationService,
+                                         MarketDataCandleSegmentRepository marketDataCandleSegmentRepository,
+                                         MarketDataCandleRepository marketDataCandleRepository) {
         this.backtestDatasetRepository = backtestDatasetRepository;
         this.historicalDataCsvParser = historicalDataCsvParser;
         this.legacyMarketDataMigrationService = legacyMarketDataMigrationService;
+        this.marketDataCandleSegmentRepository = marketDataCandleSegmentRepository;
+        this.marketDataCandleRepository = marketDataCandleRepository;
     }
 
     public BacktestDataset storeUploadedDataset(String requestedName, MultipartFile file) {
@@ -76,11 +93,13 @@ public class BacktestDatasetStorageService {
 
     public BacktestDatasetDownloadResponse downloadDataset(Long datasetId) {
         BacktestDataset dataset = getDataset(datasetId);
+        byte[] normalizedCsv = buildNormalizedCsv(dataset);
         return new BacktestDatasetDownloadResponse(
             dataset.getOriginalFilename(),
             dataset.getChecksumSha256(),
             dataset.getSchemaVersion(),
-            dataset.getCsvData()
+            normalizedCsv == null ? dataset.getCsvData() : normalizedCsv,
+            normalizedCsv == null ? "LEGACY_CSV_COMPATIBILITY" : "NORMALIZED_EXPORT"
         );
     }
 
@@ -151,5 +170,88 @@ public class BacktestDatasetStorageService {
         } catch (NoSuchAlgorithmException exception) {
             throw new IllegalStateException("SHA-256 not available", exception);
         }
+    }
+
+    private byte[] buildNormalizedCsv(BacktestDataset dataset) {
+        if (marketDataCandleSegmentRepository == null || marketDataCandleRepository == null) {
+            return null;
+        }
+
+        List<MarketDataCandleSegment> segments = marketDataCandleSegmentRepository.findByDatasetIdWithSeries(dataset.getId());
+        if (segments.isEmpty()) {
+            return null;
+        }
+
+        Set<String> timeframes = segments.stream()
+            .map(MarketDataCandleSegment::getTimeframe)
+            .collect(Collectors.toSet());
+        if (timeframes.size() != 1) {
+            return null;
+        }
+        boolean exactRawOnly = segments.stream()
+            .allMatch(segment -> Objects.equals("EXACT_RAW", segment.getResolutionTier()));
+        if (!exactRawOnly) {
+            return null;
+        }
+
+        Map<SeriesTimeframeKey, List<MarketDataCandleSegment>> segmentsBySeries = segments.stream()
+            .collect(Collectors.groupingBy(
+                segment -> new SeriesTimeframeKey(segment.getSeries().getId(), segment.getTimeframe()),
+                LinkedHashMap::new,
+                Collectors.toList()
+            ));
+
+        List<MarketDataCandle> candles = segmentsBySeries.values().stream()
+            .flatMap(groupedSegments -> {
+                MarketDataCandleSegment first = groupedSegments.getFirst();
+                LocalDateTime coverageStart = groupedSegments.stream()
+                    .map(MarketDataCandleSegment::getCoverageStart)
+                    .min(LocalDateTime::compareTo)
+                    .orElseThrow();
+                LocalDateTime coverageEnd = groupedSegments.stream()
+                    .map(MarketDataCandleSegment::getCoverageEnd)
+                    .max(LocalDateTime::compareTo)
+                    .orElseThrow();
+                return marketDataCandleRepository.findDatasetSeriesCandlesInRange(
+                    dataset.getId(),
+                    first.getSeries().getId(),
+                    first.getTimeframe(),
+                    coverageStart,
+                    coverageEnd
+                ).stream();
+            })
+            .sorted((left, right) -> {
+                int timestampComparison = left.getId().getBucketStart().compareTo(right.getId().getBucketStart());
+                if (timestampComparison != 0) {
+                    return timestampComparison;
+                }
+                return left.getSeries().getSymbolDisplay().compareToIgnoreCase(right.getSeries().getSymbolDisplay());
+            })
+            .toList();
+        if (candles.isEmpty()) {
+            return null;
+        }
+
+        StringBuilder csv = new StringBuilder("timestamp,symbol,open,high,low,close,volume");
+        for (MarketDataCandle candle : candles) {
+            csv.append('\n')
+                .append(CSV_TIMESTAMP_FORMATTER.format(candle.getId().getBucketStart()))
+                .append(',')
+                .append(candle.getSeries().getSymbolDisplay())
+                .append(',')
+                .append(candle.getOpenPrice().toPlainString())
+                .append(',')
+                .append(candle.getHighPrice().toPlainString())
+                .append(',')
+                .append(candle.getLowPrice().toPlainString())
+                .append(',')
+                .append(candle.getClosePrice().toPlainString())
+                .append(',')
+                .append(candle.getVolume().toPlainString());
+        }
+        return csv.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    private record SeriesTimeframeKey(Long seriesId, String timeframe) {
     }
 }

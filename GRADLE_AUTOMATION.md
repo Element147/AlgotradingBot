@@ -27,9 +27,11 @@ cd AlgotradingBot
 9. The legacy dataset reconciliation task is read-only and uses the same optional dataset filters as migration.
 10. Optional migration filters are available through Gradle properties such as `-PlegacyMigrationDatasetIds=1,2` and `-PlegacyMigrationLimit=10`.
 11. New uploads and completed provider imports already hydrate normalized candles during ingestion, so the migration utilities are now for backfilling older datasets rather than for newly created ones.
+12. Startup recovery now backfills catalog datasets that still lack normalized segments, while the Gradle migration and reconciliation tasks remain the explicit operator tools for dry runs, targeted replays, and cutover verification.
 
 ## Related Files
 
 - Build definition: `AlgotradingBot/build.gradle.kts`
 - Verification guide: `docs/guides/TESTING_AND_CONTRACTS.md`
 - Runtime guide: `docs/guides/LOCAL_DEV_DOCKER_MCP.md`
+- Legacy compatibility removal plan: `docs/LEGACY_DATASET_RETIREMENT_PLAN.md`

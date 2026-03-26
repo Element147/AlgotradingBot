@@ -4,6 +4,7 @@ public record BacktestDatasetDownloadResponse(
     String originalFilename,
     String checksumSha256,
     String schemaVersion,
-    byte[] csvData
+    byte[] csvData,
+    String exportSource
 ) {
 }

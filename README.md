@@ -16,6 +16,7 @@ Local-first research platform for strategy design, backtesting, market-data impo
 - Backtest engine with modular strategy registry, experiment grouping, replay and compare flows, persisted equity and trade series, and provenance-aware exports
 - Market-data import pipeline with provider-specific download adapters, retry-aware persistent jobs, encrypted provider credentials, and direct dataset ingestion into the backtest catalog
 - New uploads and completed provider imports now hydrate the normalized market-data store at ingestion time; legacy CSV bytes remain only as a temporary compatibility copy for explicit download and fallback paths
+- Legacy catalog datasets without normalized segments are now backfilled on startup before operators use them, so backtest execution and telemetry stay on the relational market-data store even after runtime cutover
 - Paper-trading and operator oversight flows with circuit-breaker controls, audit history, incident alerts, exchange connection profiles, and environment-aware UI state
 - Local scripts for fast development mode and Docker-backed full-stack mode, plus CI-aligned contract and verification workflows
 
@@ -95,6 +96,7 @@ Supporting references:
 
 - `QUICK_START.md`
 - `GRADLE_AUTOMATION.md`
+- `docs/LEGACY_DATASET_RETIREMENT_PLAN.md`
 - `.codex/agents/README.md`
 - `docs/adr/`: architecture decision records for durable backend and platform choices
 - `docs/USER_WORKFLOW_GUIDE.md`

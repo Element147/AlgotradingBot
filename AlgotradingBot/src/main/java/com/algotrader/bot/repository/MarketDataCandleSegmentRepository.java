@@ -11,6 +11,8 @@ import java.util.Optional;
 
 public interface MarketDataCandleSegmentRepository extends JpaRepository<MarketDataCandleSegment, Long> {
 
+    boolean existsByDatasetId(Long datasetId);
+
     @Query("""
         select segment
         from MarketDataCandleSegment segment
