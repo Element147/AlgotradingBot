@@ -282,12 +282,16 @@ Implementation record
 - Execution-workspace wireframes and state diagrams: `docs/EXECUTION_WORKSPACE_WIREFRAMES_AND_STATE_DIAGRAMS.md`
 
 #### 2A.4 Extend the design system only where the new workflow needs it
-- [ ] Add or refine shared UI primitives for strategy status rails, execution cards, investigation logs, live metric strips, and active-algo detail drawers.
+- [x] Add or refine shared UI primitives for strategy status rails, execution cards, investigation logs, live metric strips, and active-algo detail drawers.
 Acceptance Criteria
 - New components live in shared workstation or feature-owned modules, not in oversized route files.
 - Accessibility, keyboard behavior, loading states, and empty states are specified for every new primitive.
 - The visual language remains consistent with the current workstation theme rather than becoming a disconnected mini-app.
 - The mandatory step completion protocol passes.
+Implementation record
+- Shared primitive spec: `docs/EXECUTION_WORKSPACE_SHARED_PRIMITIVES.md`
+- Shared components: `frontend/src/components/workspace/ExecutionWorkspacePrimitives.tsx`
+- Shared component tests: `frontend/src/components/workspace/ExecutionWorkspacePrimitives.test.tsx`
 
 ### 2B. Frontend Performance Fixes
 
