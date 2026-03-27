@@ -498,12 +498,15 @@ Implementation record
 ### 3B. New Edge Creation For Smaller Accounts
 
 #### 3B.1 Define the small-account execution and market constraints
-- [ ] Translate small-account realities into explicit research rules for notional size, liquidity, turnover, risk, and bearish behavior.
+- [x] Translate small-account realities into explicit research rules for notional size, liquidity, turnover, risk, and bearish behavior.
 Acceptance Criteria
 - The plan documents minimum-notional, lot-size, fractionality, session, and short-proxy assumptions by asset class.
 - High-turnover or low-latency strategies are explicitly excluded from the candidate set.
 - Bearish behavior defaults to `sell to cash` or approved proxy behavior unless direct shorting is explicitly supported in research or paper mode.
 - The mandatory step completion protocol passes.
+Implementation record
+- Added `docs/SMALL_ACCOUNT_EXECUTION_CONSTRAINTS.md` as the durable rulebook for the small-account roadmap, freezing the baseline `EUR 150` to `EUR 1,000` posture, approved asset classes, minimum-order handling, liquidity filters, session rules, turnover exclusions, risk limits, and bearish-behavior defaults before later strategy specs are written.
+- Updated `README.md`, `PROJECT_STATUS.md`, and `PRODUCT.md` so the canonical docs now point at those constraints and keep the product narrative aligned with the new small-account research guardrails.
 
 #### 3B.2 Define a reusable strategy-spec template
 - [ ] Standardize how every new strategy is described before code exists.

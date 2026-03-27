@@ -39,7 +39,8 @@ Build a local-first platform for safe strategy research, backtesting, market-dat
 
 - The built-in backtest catalog currently includes `BUY_AND_HOLD`, `DUAL_MOMENTUM_ROTATION`, `VOLATILITY_MANAGED_DONCHIAN_BREAKOUT`, `TREND_PULLBACK_CONTINUATION`, `REGIME_FILTERED_MEAN_REVERSION`, `TREND_FIRST_ADAPTIVE_ENSEMBLE`, `SMA_CROSSOVER`, `BOLLINGER_BANDS`, and `ICHIMOKU_TREND`.
 - `ICHIMOKU_TREND` is implemented as a conservative long/cash strategy with look-ahead-safe cloud handling and chart overlays, but it is still a research surface rather than a promoted operating strategy.
-- March 20, 2026 validation on the current crypto dataset kept the overall posture conservative: only `VOLATILITY_MANAGED_DONCHIAN_BREAKOUT` passed the present full-sample validator, while holdout evidence for the rest of the shortlist was mixed or flat.
+- The March 27, 2026 frozen audit keeps the overall posture conservative: `BUY_AND_HOLD` is `baseline only`, `SMA_CROSSOVER` is the sole `paper-monitor candidate`, four catalog paths stay `research only`, and three weak paths are now explicit `archive candidate` strategies.
+- The next small-account strategy phase is constrained by `docs/SMALL_ACCOUNT_EXECUTION_CONSTRAINTS.md`, which freezes the default `long/cash`, low-turnover, no-leverage posture before new strategy specs or implementations start.
 
 ## Environment Model
 
