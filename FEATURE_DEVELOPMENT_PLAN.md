@@ -681,12 +681,16 @@ Implementation notes
 Goal: identify the highest-value follow-on work once Phases 1 through 3 are complete and stable.
 
 #### 4.1 Portfolio lab and capital allocation engine
-- [ ] Add a follow-on roadmap item for multi-strategy portfolio simulation, capital allocation, and correlation-aware risk budgeting.
+- [x] Add a follow-on roadmap item for multi-strategy portfolio simulation, capital allocation, and correlation-aware risk budgeting.
 Acceptance Criteria
 - The follow-on scope explains how standalone strategy evidence will roll up into portfolio-level research.
 - The design includes max-allocation, correlation, and aggregate risk rules before capital allocator code exists.
 - Dependencies on the Phase 1 data model and Phase 3 audit outputs are explicit.
 - The mandatory step completion protocol passes.
+Implementation notes
+- Expanded `docs/ROADMAP.md` with a dedicated `Portfolio Lab And Capital Allocation Engine` follow-on section so the future-proofing scope now explains how standalone strategy scorecards become portfolio-level sleeves without bypassing the frozen strategy-audit posture.
+- Froze the first allocation rules before any code exists: per-sleeve max allocation, configurable cash floor, aggregate deployed-capital caps, rolling-correlation limits, and portfolio-level drawdown or turnover budgets that can force the lab back to cash.
+- Made the dependencies explicit by tying the future portfolio lab to the normalized Phase 1 market-data ownership and the Phase 3 audit evidence or disposition outputs, while keeping the entire scope research-only until broader cross-dataset evidence exists.
 
 #### 4.2 Experiment scheduler and governance automation
 - [ ] Add a follow-on roadmap item for scheduled backtests, walk-forward batches, parameter sweeps, and experiment approval workflow.

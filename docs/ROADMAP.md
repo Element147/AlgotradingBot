@@ -27,6 +27,41 @@
 1. Production-readiness automation for container health, startup order, and longer-running stability.
 2. Optional live-readiness evaluation only after paper evidence, auditability, rollback paths, and guardrails are all strong enough.
 3. Opt-in experiments with preview-only Java features behind explicit non-default profiles.
+4. Portfolio lab and capital allocation engine once strategy-level audit evidence is broad enough to support portfolio-level research.
+
+## Follow-On Scope
+
+### Portfolio Lab And Capital Allocation Engine
+
+Purpose:
+
+- Turn standalone strategy scorecards into portfolio-level research without weakening the current strategy-audit guardrails.
+
+Planned scope:
+
+- Simulate multi-strategy portfolios using the normalized Phase 1 market-data model so allocation studies can pull aligned candles, venue metadata, and timeframe-consistent history across symbols without returning to CSV-in-cell shortcuts.
+- Ingest Phase 3 audit outputs as portfolio inputs, meaning only strategy runs with frozen evidence sheets, explicit dispositions, and reproducible dataset identity can enter the portfolio lab as candidate sleeves.
+- Keep the first version research-only: no live or paper auto-allocation, no hidden execution path, and no implied promotion from portfolio simulation alone.
+
+Allocation and risk rules to freeze before implementation:
+
+- Max allocation per strategy sleeve, with a configurable cash floor and a hard cap on aggregate deployed capital.
+- Correlation-aware caps using rolling return relationships so highly correlated sleeves cannot quietly dominate the same market regime.
+- Aggregate portfolio drawdown, open-risk, and turnover budgets that can demote the allocator back to cash instead of forcing exposure.
+- Separate allowance buckets for `paper-monitor candidate`, `research-only`, and rejected/archive strategies so lower-quality evidence cannot silently absorb equal capital.
+
+Required outputs:
+
+- Portfolio equity, drawdown, and exposure curves.
+- Per-strategy contribution, turnover, and fee-drag breakdowns.
+- Correlation and concentration summaries that explain why the allocator increased, reduced, or blocked a sleeve.
+- Reproducible experiment metadata tying every portfolio result back to the exact strategy evidence inputs, datasets, and allocation rules used.
+
+Dependencies and entry gates:
+
+- Depends on the normalized `market_data_series`, `market_data_candle_segments`, and `market_data_candles` ownership from Phase 1 so cross-strategy simulation can query aligned historical data safely.
+- Depends on the frozen strategy-audit outputs from Phase 3, including disposition labels and evidence sheets, so portfolio research can distinguish baseline sleeves from candidate sleeves honestly.
+- Should not start until the strategy audit pack includes enough cross-dataset coverage that portfolio weights are not built on one lucky single-dataset result.
 
 ## Strategy R&D Focus Order
 
