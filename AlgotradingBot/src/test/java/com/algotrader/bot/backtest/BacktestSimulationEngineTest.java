@@ -14,6 +14,7 @@ import com.algotrader.bot.backtest.strategy.BacktestStrategyContext;
 import com.algotrader.bot.backtest.strategy.BacktestStrategyDecision;
 import com.algotrader.bot.backtest.strategy.BacktestStrategyDefinition;
 import com.algotrader.bot.backtest.strategy.BacktestStrategySelectionMode;
+import com.algotrader.bot.backtest.strategy.SqueezeBreakoutRegimeConfirmationBacktestStrategy;
 import com.algotrader.bot.backtest.strategy.SmaCrossoverBacktestStrategy;
 import com.algotrader.bot.backtest.strategy.TrendFirstAdaptiveEnsembleBacktestStrategy;
 import com.algotrader.bot.backtest.strategy.TrendPullbackContinuationBacktestStrategy;
@@ -52,7 +53,8 @@ class BacktestSimulationEngineTest {
             new OpeningRangeVwapBreakoutBacktestStrategy(indicatorCalculator),
             new VwapPullbackContinuationBacktestStrategy(indicatorCalculator),
             new ExhaustionReversalFadeBacktestStrategy(indicatorCalculator),
-            new MultiTimeframeEmaAdxPullbackBacktestStrategy(indicatorCalculator)
+            new MultiTimeframeEmaAdxPullbackBacktestStrategy(indicatorCalculator),
+            new SqueezeBreakoutRegimeConfirmationBacktestStrategy(indicatorCalculator)
         ));
 
         simulationEngine = new BacktestSimulationEngine(registry, new BacktestSimulationMetricsCalculator());

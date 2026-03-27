@@ -6,6 +6,7 @@ import com.algotrader.bot.controller.BacktestDetailsResponse;
 import com.algotrader.bot.controller.BacktestEquityPointResponse;
 import com.algotrader.bot.controller.BacktestExperimentSummaryResponse;
 import com.algotrader.bot.controller.BacktestHistoryItemResponse;
+import com.algotrader.bot.controller.BacktestStrategyMetricResponse;
 import com.algotrader.bot.controller.BacktestSummaryResponse;
 import com.algotrader.bot.controller.BacktestSymbolTelemetryResponse;
 import com.algotrader.bot.controller.BacktestTelemetryQueryResponse;
@@ -13,6 +14,7 @@ import com.algotrader.bot.controller.BacktestTradeSeriesItemResponse;
 import com.algotrader.bot.controller.AsyncTaskMonitorResponse;
 import com.algotrader.bot.entity.BacktestDataset;
 import com.algotrader.bot.entity.BacktestResult;
+import com.algotrader.bot.entity.BacktestTradeSeriesItem;
 import com.algotrader.bot.repository.BacktestDatasetRepository;
 import com.algotrader.bot.repository.BacktestResultRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -24,6 +26,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -347,6 +350,7 @@ public class BacktestResultQueryService {
             summary.startedAt(),
             summary.completedAt(),
             summary.errorMessage(),
+            summary.strategyMetrics(),
             resolveTelemetrySymbols(result),
             summary.asyncMonitor()
         );
@@ -391,6 +395,7 @@ public class BacktestResultQueryService {
             result.getStartedAt(),
             result.getCompletedAt(),
             result.getErrorMessage(),
+            strategyMetrics(result),
             buildAsyncMonitor(result)
         );
     }
@@ -437,6 +442,65 @@ public class BacktestResultQueryService {
             .divide(result.getInitialBalance(), 8, RoundingMode.HALF_UP)
             .multiply(BigDecimal.valueOf(100))
             .setScale(4, RoundingMode.HALF_UP);
+    }
+
+    private List<BacktestStrategyMetricResponse> strategyMetrics(BacktestResult result) {
+        if (!BacktestAlgorithmType.SQUEEZE_BREAKOUT_REGIME_CONFIRMATION.name().equalsIgnoreCase(result.getStrategyId())) {
+            return List.of();
+        }
+
+        List<BacktestTradeSeriesItem> trades = result.getTradeSeries();
+        if (trades.isEmpty()) {
+            return List.of(
+                new BacktestStrategyMetricResponse(
+                    "breakout_failure_rate",
+                    "Breakout failure rate",
+                    BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP),
+                    "0.00%",
+                    "Share of completed breakout trades that finished at or below zero return."
+                ),
+                new BacktestStrategyMetricResponse(
+                    "average_hold_hours",
+                    "Average hold",
+                    BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP),
+                    "0.00h",
+                    "Average completed trade duration measured in hours."
+                )
+            );
+        }
+
+        long failedTrades = trades.stream()
+            .filter(item -> item.getReturnPct() == null || item.getReturnPct().compareTo(BigDecimal.ZERO) <= 0)
+            .count();
+        BigDecimal failureRate = BigDecimal.valueOf(failedTrades)
+            .multiply(BigDecimal.valueOf(100))
+            .divide(BigDecimal.valueOf(trades.size()), 4, RoundingMode.HALF_UP)
+            .setScale(2, RoundingMode.HALF_UP);
+
+        BigDecimal totalHoldHours = trades.stream()
+            .map(item -> BigDecimal.valueOf(Duration.between(item.getEntryTime(), item.getExitTime()).toMinutes())
+                .divide(BigDecimal.valueOf(60), 4, RoundingMode.HALF_UP))
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal averageHoldHours = totalHoldHours
+            .divide(BigDecimal.valueOf(trades.size()), 4, RoundingMode.HALF_UP)
+            .setScale(2, RoundingMode.HALF_UP);
+
+        List<BacktestStrategyMetricResponse> metrics = new ArrayList<>();
+        metrics.add(new BacktestStrategyMetricResponse(
+            "breakout_failure_rate",
+            "Breakout failure rate",
+            failureRate,
+            failureRate.toPlainString() + "%",
+            "Share of completed breakout trades that finished at or below zero return."
+        ));
+        metrics.add(new BacktestStrategyMetricResponse(
+            "average_hold_hours",
+            "Average hold",
+            averageHoldHours,
+            averageHoldHours.toPlainString() + "h",
+            "Average completed trade duration measured in hours."
+        ));
+        return List.copyOf(metrics);
     }
 
     private String resolveExperimentName(BacktestResult result) {

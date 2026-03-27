@@ -143,6 +143,28 @@ export default function BacktestOverviewPanel({
           )}
         </SurfacePanel>
       </Grid>
+
+      {details.strategyMetrics && details.strategyMetrics.length > 0 ? (
+        <Grid size={{ xs: 12 }}>
+          <SurfacePanel
+            title="Strategy-specific metrics"
+            description="Supplemental run metrics that only apply to the active strategy hypothesis."
+          >
+            <Grid container spacing={2}>
+              {details.strategyMetrics.map((metric) => (
+                <Grid key={metric.key} size={{ xs: 12, sm: 6, xl: 3 }}>
+                  <MetricCard
+                    label={metric.label}
+                    value={metric.displayValue}
+                    detail={metric.description}
+                    tone="info"
+                  />
+                </Grid>
+              ))}
+            </Grid>
+          </SurfacePanel>
+        </Grid>
+      ) : null}
     </Grid>
   );
 }

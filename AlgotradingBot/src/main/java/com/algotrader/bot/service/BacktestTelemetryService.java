@@ -445,6 +445,22 @@ public class BacktestTelemetryService {
                 createSeries("atr_14", "ATR (14)", "OSCILLATOR", candles, 14,
                     index -> indicatorCalculator.averageTrueRange(candles, index, 14))
             );
+            case SQUEEZE_BREAKOUT_REGIME_CONFIRMATION -> List.of(
+                createSeries("ema_50", "Trend EMA (50)", "PRICE", candles, 49,
+                    index -> indicatorCalculator.exponentialMovingAverage(candles, index, 50)),
+                createSeries("ema_200", "Trend EMA (200)", "PRICE", candles, 199,
+                    index -> indicatorCalculator.exponentialMovingAverage(candles, index, 200)),
+                createSeries("breakout_high_20", "Breakout High (20)", "PRICE", candles, 20,
+                    index -> indicatorCalculator.highestHigh(candles, index - 1, 20)),
+                createSeries("bb_upper_20", "Bollinger Upper (20,2)", "PRICE", candles, 19,
+                    index -> indicatorCalculator.bollingerUpperBand(candles, index, 20, BOLLINGER_MULTIPLIER)),
+                createSeries("bb_lower_20", "Bollinger Lower (20,2)", "PRICE", candles, 19,
+                    index -> indicatorCalculator.bollingerLowerBand(candles, index, 20, BOLLINGER_MULTIPLIER)),
+                createSeries("adx_14", "ADX (14)", "OSCILLATOR", candles, 14,
+                    index -> indicatorCalculator.averageDirectionalIndex(candles, index, 14)),
+                createSeries("atr_14", "ATR (14)", "OSCILLATOR", candles, 14,
+                    index -> indicatorCalculator.averageTrueRange(candles, index, 14))
+            );
             case TREND_FIRST_ADAPTIVE_ENSEMBLE -> List.of(
                 createSeries("ema_200", "Trend EMA (200)", "PRICE", candles, 199,
                     index -> indicatorCalculator.exponentialMovingAverage(candles, index, 200)),

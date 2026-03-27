@@ -619,7 +619,7 @@ Implementation record
 - Added `AlgotradingBot/src/test/java/com/algotrader/bot/backtest/strategy/MultiTimeframeEmaAdxPullbackBacktestStrategyTest.java` plus expanded registry and telemetry coverage to prove trend alignment, pullback detection, continuation trigger confirmation, and support-failure exits as separate test-covered behaviors.
 
 #### 3C.5 Implement Intraday Strategy 2: Squeeze Breakout Regime Confirmation
-- [ ] Build a volatility-contraction breakout strategy using squeeze detection plus momentum confirmation plus higher-timeframe regime filter.
+- [x] Build a volatility-contraction breakout strategy using squeeze detection plus momentum confirmation plus higher-timeframe regime filter.
 Core idea
 - Wait for compression, then trade expansion only when trend or momentum confirmation says the breakout is likely meaningful.
 - Exit on failed expansion, volatility stop, or regime break.
@@ -628,6 +628,12 @@ Acceptance Criteria
 - Sideways false signals are filtered more aggressively than a plain breakout system.
 - Performance reporting includes breakout failure rate and average hold time.
 - The mandatory step completion protocol passes.
+Implementation notes
+- Added the pre-code strategy spec in `docs/strategy-specs/SQUEEZE_BREAKOUT_REGIME_CONFIRMATION.md`, freezing the squeeze definition, breakout trigger, confirmation stack, bearish posture, and research-only validation plan before implementation.
+- Implemented `AlgotradingBot/src/main/java/com/algotrader/bot/backtest/strategy/SqueezeBreakoutRegimeConfirmationBacktestStrategy.java`, which combines Bollinger-style compression, twenty-bar breakout detection, momentum confirmation, higher-timeframe regime alignment, and failed-expansion or ATR-based exits.
+- Extended `BacktestResultQueryService`, `BacktestDetailsResponse`, `BacktestSummaryResponse`, and the frontend backtest contract or overview surfaces so this strategy now reports breakout failure rate and average hold time as explicit operator-facing metrics.
+- Wired the strategy through `BacktestAlgorithmType`, `BacktestTelemetryService`, `StrategyManagementService`, `frontend/src/features/strategies/strategyProfiles.ts`, and the registry or simulation seams so the compression-breakout path is available end to end with telemetry overlays and paper-safe seed defaults.
+- Added `AlgotradingBot/src/test/java/com/algotrader/bot/backtest/strategy/SqueezeBreakoutRegimeConfirmationBacktestStrategyTest.java` plus expanded query, telemetry, registry, and simulation coverage to verify squeeze gating, breakout confirmation, false-signal filtering, failed-expansion exits, and strategy-specific reporting.
 
 #### 3C.6 Implement Intraday Strategy 3: Relative Strength Rotation With Intraday Entry Filter
 - [ ] Build a small-universe rotation strategy that ranks leaders with absolute momentum gating, then uses an intraday timing filter for entries and exits.

@@ -25,6 +25,7 @@ type RawBacktestDatasetRetentionReport =
   components['schemas']['BacktestDatasetRetentionReportResponse'];
 type RawBacktestDetails = components['schemas']['BacktestDetailsResponse'] & {
   availableTelemetrySymbols?: string[];
+  strategyMetrics?: RawBacktestStrategyMetric[];
   asyncMonitor?: RawAsyncTaskMonitor;
 };
 type RawBacktestTelemetryQueryResponse = components['schemas']['BacktestTelemetryQueryResponse'] & {
@@ -37,6 +38,7 @@ type RawBacktestHistoryItem = components['schemas']['BacktestHistoryItemResponse
   asyncMonitor?: RawAsyncTaskMonitor;
 };
 type RawBacktestSummary = components['schemas']['BacktestSummaryResponse'] & {
+  strategyMetrics?: RawBacktestStrategyMetric[];
   asyncMonitor?: RawAsyncTaskMonitor;
 };
 type RawBacktestRunRequest = components['schemas']['RunBacktestRequest'];
@@ -83,6 +85,13 @@ type RawBacktestIndicatorSeries = {
 type RawBacktestIndicatorPoint = {
   timestamp: string;
   value: number | null;
+};
+type RawBacktestStrategyMetric = {
+  key: string;
+  label: string;
+  value: number;
+  displayValue: string;
+  description: string;
 };
 
 const selectionModeSchema = z.enum(['SINGLE_SYMBOL', 'DATASET_UNIVERSE']);
@@ -243,6 +252,14 @@ const backtestIndicatorSeriesSchema = z.object({
   points: z.array(backtestIndicatorPointSchema),
 });
 
+const backtestStrategyMetricSchema = z.object({
+  key: z.string().min(1),
+  label: z.string().min(1),
+  value: z.number(),
+  displayValue: z.string().min(1),
+  description: z.string().min(1),
+});
+
 const backtestSymbolTelemetrySchema = z.object({
   symbol: z.string().min(1),
   points: z.array(backtestTelemetryPointSchema),
@@ -266,6 +283,7 @@ const backtestDetailsSchema = backtestHistoryItemSchema.extend({
   endDate: z.string().min(1),
   errorMessage: z.string().nullable(),
   availableTelemetrySymbols: z.array(z.string().min(1)).default([]),
+  strategyMetrics: z.array(backtestStrategyMetricSchema).default([]),
 });
 
 const backtestSummarySchema = backtestHistoryItemSchema.extend({
@@ -283,6 +301,7 @@ const backtestSummarySchema = backtestHistoryItemSchema.extend({
   startDate: z.string().min(1),
   endDate: z.string().min(1),
   errorMessage: z.string().nullable(),
+  strategyMetrics: z.array(backtestStrategyMetricSchema).default([]),
 });
 
 const backtestComparisonItemSchema = z.object({

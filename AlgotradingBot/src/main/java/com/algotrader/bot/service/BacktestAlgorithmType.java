@@ -15,7 +15,8 @@ public enum BacktestAlgorithmType {
     OPENING_RANGE_VWAP_BREAKOUT,
     VWAP_PULLBACK_CONTINUATION,
     EXHAUSTION_REVERSAL_FADE,
-    MULTI_TIMEFRAME_EMA_ADX_PULLBACK;
+    MULTI_TIMEFRAME_EMA_ADX_PULLBACK,
+    SQUEEZE_BREAKOUT_REGIME_CONFIRMATION;
 
     public static BacktestAlgorithmType from(String value) {
         try {

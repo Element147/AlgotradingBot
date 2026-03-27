@@ -269,6 +269,26 @@ const PROFILES: StrategyProfile[] = [
     timeframeOptions: ['1h'],
     configPreset: { timeframe: '1h', riskPerTrade: 0.01, minPositionSize: 15, maxPositionSize: 90 },
   },
+  {
+    key: 'SQUEEZE_BREAKOUT_REGIME_CONFIRMATION',
+    title: 'Squeeze Breakout Regime Confirmation',
+    shortDescription:
+      'Waits for volatility compression, then only takes the breakout when momentum and the higher-timeframe regime confirm that the expansion is likely meaningful.',
+    entryRule:
+      'Enter after Bollinger-width compression resolves through the recent breakout high while momentum and ADX confirm and the broader regime is not bearish.',
+    exitRule:
+      'Exit on failed expansion back through the breakout level, protective-stop breach, or regime break.',
+    bestFor: 'Liquid hourly names where compression-breakout moves need more filtering than a plain breakout system.',
+    riskNotes: 'Compression alone is not enough; the strategy is explicitly trying to reduce sideways false breaks and reports breakout failure rate for that reason.',
+    auditDisposition: 'RESEARCH_ONLY',
+    auditLabel: 'Research only',
+    auditTone: 'warning',
+    auditSummary:
+      'New Phase 3 small-account hypothesis. It is implemented for research, telemetry review, and breakout-quality reporting, not yet audit-cleared.',
+    operatorAction: 'Use only in controlled backtest research until the frozen audit protocol and paper evidence are completed.',
+    timeframeOptions: ['1h'],
+    configPreset: { timeframe: '1h', riskPerTrade: 0.01, minPositionSize: 15, maxPositionSize: 85 },
+  },
 ];
 
 const normalize = (value: string): string => value.trim().replace(/-/g, '_').toUpperCase();

@@ -2,6 +2,7 @@ package com.algotrader.bot.controller;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record BacktestSummaryResponse(
     Long id,
@@ -40,5 +41,6 @@ public record BacktestSummaryResponse(
     LocalDateTime startedAt,
     LocalDateTime completedAt,
     String errorMessage,
+    List<BacktestStrategyMetricResponse> strategyMetrics,
     AsyncTaskMonitorResponse asyncMonitor
 ) {}

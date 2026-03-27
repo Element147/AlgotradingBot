@@ -353,6 +353,8 @@ public class StrategyManagementService {
                 new BigDecimal("10.00"), new BigDecimal("60.00"));
             case MULTI_TIMEFRAME_EMA_ADX_PULLBACK -> new StrategySeedPreset("SPY", "1h", new BigDecimal("0.01"),
                 new BigDecimal("15.00"), new BigDecimal("90.00"));
+            case SQUEEZE_BREAKOUT_REGIME_CONFIRMATION -> new StrategySeedPreset("SPY", "1h", new BigDecimal("0.01"),
+                new BigDecimal("15.00"), new BigDecimal("85.00"));
         };
     }
 

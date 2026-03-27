@@ -105,6 +105,14 @@ export interface BacktestHistoryItem {
   asyncMonitor?: AsyncTaskMonitor;
 }
 
+export interface BacktestStrategyMetric {
+  key: string;
+  label: string;
+  value: number;
+  displayValue: string;
+  description: string;
+}
+
 export interface BacktestDetails extends BacktestHistoryItem {
   datasetId: number | null;
   experimentKey: string;
@@ -121,6 +129,7 @@ export interface BacktestDetails extends BacktestHistoryItem {
   endDate: string;
   errorMessage: string | null;
   availableTelemetrySymbols: string[];
+  strategyMetrics?: BacktestStrategyMetric[];
   asyncMonitor?: AsyncTaskMonitor;
 }
 
@@ -139,6 +148,7 @@ export interface BacktestSummary extends BacktestHistoryItem {
   startDate: string;
   endDate: string;
   errorMessage: string | null;
+  strategyMetrics?: BacktestStrategyMetric[];
   asyncMonitor?: AsyncTaskMonitor;
 }
 
