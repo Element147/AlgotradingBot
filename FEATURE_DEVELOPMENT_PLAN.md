@@ -6,10 +6,10 @@ This plan is intentionally aligned with the current repository reality documente
 
 ## Status
 
-- [ ] Phase 1: Data Architecture and Backend Performance
-- [ ] Phase 2: Frontend Performance and UI or UX Redesign
-- [ ] Phase 3: Quantitative Research and Strategy Development
-- [ ] Phase 4: Future Proofing
+- [x] Phase 1: Data Architecture and Backend Performance
+- [x] Phase 2: Frontend Performance and UI or UX Redesign
+- [x] Phase 3: Quantitative Research and Strategy Development
+- [x] Phase 4: Future Proofing
 - [ ] Final completion trigger executed
 
 ## Current Baseline To Respect
@@ -717,12 +717,16 @@ Implementation notes
 - Made the dependencies explicit by tying the future scope to the normalized Phase 1 relational market-data ownership plus the existing small-account execution constraints and Phase 3 audit posture, so later implementation extends the current provenance-aware data model instead of bypassing it.
 
 #### 4.4 Incident notifications and operator automation
-- [ ] Add a follow-on roadmap item for multi-channel alerts, recurring health checks, and operator runbooks around paper and live monitoring.
+- [x] Add a follow-on roadmap item for multi-channel alerts, recurring health checks, and operator runbooks around paper and live monitoring.
 Acceptance Criteria
 - The follow-on scope defines which incidents require notification and which can stay informational.
 - Alert routing, acknowledgement, and audit requirements are explicit.
 - The design builds on the existing WebSocket and audit infrastructure instead of inventing a disconnected system.
 - The mandatory step completion protocol passes.
+Implementation notes
+- Expanded `docs/ROADMAP.md` with a dedicated `Incident Notifications And Operator Automation` follow-on section so the future-proofing scope now formalizes incident taxonomy, multi-channel routing, recurring health checks, acknowledgement, suppression, and runbook expectations around paper and later live-monitoring workflows.
+- Froze the first severity and governance rules before any code exists: informational versus actionable versus urgent incidents stay distinct, channel routing remains environment-aware and conservative by default, repeated failures must be deduplicated, and any off-UI notification path needs durable acknowledgement and resolution metadata.
+- Made the dependencies explicit by tying the future scope to the current authenticated WebSocket transport, shared async-monitor state, execution-workspace incident surfaces, and durable operator-audit infrastructure, so later implementation extends the in-app baseline instead of introducing an untracked side-channel.
 
 ## Final Completion Trigger
 

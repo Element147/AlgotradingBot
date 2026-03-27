@@ -136,6 +136,41 @@ Dependencies and entry gates:
 - Depends on the small-account execution rules in `docs/SMALL_ACCOUNT_EXECUTION_CONSTRAINTS.md` and the strategy-spec or audit posture from Phase 3 so venue checks align with the existing long-or-cash defaults, minimum-order rules, and honest reporting standards.
 - Should not start by inventing a sidecar execution model; the intended design extends the current backtest, paper, import, and audit seams with richer data-quality and venue metadata rather than routing around them.
 
+### Incident Notifications And Operator Automation
+
+Purpose:
+
+- Extend the current in-app incident cues into explicit operator workflows so paper and later live-monitoring incidents are routed, acknowledged, and documented consistently without creating an unsupervised execution path.
+
+Planned scope:
+
+- Define one incident catalog across paper-trading state, market-data imports, risk breakers, connectivity posture, auth failures, stale telemetry, failed scheduled research work, and future live-monitor capability checks so every alert has an explicit severity, owner, and default handling rule.
+- Add multi-channel routing on top of the current in-app baseline, starting with operator-visible channels such as inbox or UI timeline, email, webhook, or desktop-safe notifications, while keeping environment-aware defaults conservative.
+- Add recurring health checks for the local-first stack, including WebSocket degradation, stale paper orders or positions, failed imports, circuit-breaker trips, exchange-profile connectivity, dataset freshness, and other operator-visible conditions that are currently only discoverable by manually scanning the UI.
+- Pair every actionable incident with a runbook entry, acknowledgement workflow, suppression or snooze rules, and explicit escalation guidance so operators know whether to investigate, retry, override, or stay fail-closed.
+- Keep the first version operator-in-the-loop: notifications may open review work, but they must not trigger autonomous trading, parameter changes, or hidden environment switches.
+
+Severity, routing, and governance rules to freeze before implementation:
+
+- Separate informational events from actionable incidents and urgent attention-required failures so low-signal churn does not drown out real paper or live-monitor problems.
+- Keep default routing conservative: research noise can stay in-app, while paper-trading incidents, risk-breaker trips, repeated import failures, or live-monitor capability regressions can escalate to additional channels only when explicitly enabled.
+- Require durable acknowledgement, assignee, and resolution metadata for any incident that leaves the in-app surface, and record who suppressed or re-opened it and why.
+- Deduplicate and rate-limit repeated notifications so transport reconnect loops, repeated stale-state checks, or recurring provider failures do not spam operators without adding new information.
+- Preserve fail-closed behavior: if an alerting channel is unavailable, the trading or monitoring workflow must remain safe and continue showing the incident in the local UI instead of assuming someone was notified elsewhere.
+
+Required outputs:
+
+- An incident catalog that maps each event family to severity, environment, default route, escalation threshold, and required operator response.
+- Operator-facing notification timelines and acknowledgement history tied back to the existing audit trail.
+- Recurring health-check results with explicit last-run, pass or fail state, linked runbook guidance, and durable failure summaries.
+- Runbook-oriented summaries that explain the context, recommended next step, and whether the incident is informational, retryable, override-gated, or blocking.
+
+Dependencies and entry gates:
+
+- Depends on the current WebSocket transport, async-monitor responses, and execution-workspace incident surfaces so notifications reuse the same state already visible in Backtest, Forward Testing, Paper, Live, Risk, and Market Data.
+- Depends on the durable operator-audit infrastructure so acknowledgements, suppressions, escalation changes, and runbook-triggered actions remain attributable and reviewable.
+- Should extend the current in-app incident baseline instead of inventing a disconnected notification subsystem or bypassing the existing paper-safe and monitor-only guardrails.
+
 ## Strategy R&D Focus Order
 
 1. Validate the current trend-first catalog under realistic costs.
