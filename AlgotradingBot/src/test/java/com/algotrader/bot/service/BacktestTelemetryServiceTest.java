@@ -160,6 +160,29 @@ class BacktestTelemetryServiceTest {
     }
 
     @Test
+    void buildTelemetry_openingRangeBreakoutIncludesSessionIndicators() {
+        List<MarketDataQueriedCandle> candles = createRisingCandles("SPY", "15m", 240, new BigDecimal("100"));
+        BacktestResult result = baseResult(7L, "OPENING_RANGE_VWAP_BREAKOUT", "SPY", candles);
+        result.setTimeframe("15m");
+
+        when(marketDataQueryService.queryCandlesForDataset(
+            7L,
+            "15m",
+            result.getStartDate(),
+            result.getEndDate(),
+            Set.of("SPY"),
+            MarketDataQueryMode.BEST_AVAILABLE
+        )).thenReturn(new MarketDataQueryResult(candles, List.of(), "15m", MarketDataQueryMode.BEST_AVAILABLE));
+
+        List<BacktestSymbolTelemetryResponse> telemetry = backtestTelemetryService.buildTelemetry(result);
+
+        assertEquals(1, telemetry.size());
+        assertTrue(telemetry.get(0).indicators().stream().anyMatch(series -> "session_vwap".equals(series.key())));
+        assertTrue(telemetry.get(0).indicators().stream().anyMatch(series -> "opening_range_high".equals(series.key())));
+        assertTrue(telemetry.get(0).indicators().stream().anyMatch(series -> "volume_ratio_20".equals(series.key())));
+    }
+
+    @Test
     void buildTelemetry_ichimokuTrendIncludesCloudIndicators() {
         List<MarketDataQueriedCandle> candles = createRisingCandles("BTC/USDT", "1h", 240, new BigDecimal("100"));
         BacktestResult result = baseResult(5L, "ICHIMOKU_TREND", "BTC/USDT", candles);

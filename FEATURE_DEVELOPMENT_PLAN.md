@@ -555,7 +555,7 @@ Implementation record
 Each strategy below must be treated as a research hypothesis, not a profitability claim.
 
 #### 3C.1 Implement Day Trading Strategy 1: Opening Range VWAP Breakout
-- [ ] Build a same-day breakout strategy that requires opening-range expansion plus VWAP alignment plus volume confirmation plus regime sanity checks.
+- [x] Build a same-day breakout strategy that requires opening-range expansion plus VWAP alignment plus volume confirmation plus regime sanity checks.
 Core idea
 - Trade breakouts only when the session bias, VWAP, and volume all agree.
 - Exit on failed breakout, ATR stop, VWAP loss, or mandatory end-of-session flattening.
@@ -564,6 +564,11 @@ Acceptance Criteria
 - The strategy exits to cash by the configured session cutoff.
 - Tests cover breakout validity, false-breakout rejection, stop logic, and session-close flattening.
 - The mandatory step completion protocol passes.
+Implementation record
+- Added the pre-code strategy spec in `docs/strategy-specs/OPENING_RANGE_VWAP_BREAKOUT.md`, using the Phase `3B.2` template to freeze the hypothesis, universe, same-day flatten rule, bearish-to-cash behavior, explainability requirements, and validation plan before code was promoted into the catalog.
+- Implemented `AlgotradingBot/src/main/java/com/algotrader/bot/backtest/strategy/OpeningRangeVwapBreakoutBacktestStrategy.java`, which reuses `StrategyFeatureLibrary` for opening-range or session anchors, VWAP alignment, volume confirmation, regime sanity, ATR-cap filtering, capped volatility-managed sizing, and mandatory session-cutoff exits.
+- Wired the new strategy through `BacktestAlgorithmType`, `BacktestTelemetryService`, `StrategyManagementService`, `frontend/src/features/strategies/strategyProfiles.ts`, and the registry or simulation tests so the same-day breakout path is available end to end with telemetry overlays and operator-facing metadata.
+- Added `AlgotradingBot/src/test/java/com/algotrader/bot/backtest/strategy/OpeningRangeVwapBreakoutBacktestStrategyTest.java` plus expanded registry and telemetry coverage to prove breakout validity, false-breakout rejection, protective-stop exits, session-cutoff flattening, and chart-review indicators.
 
 #### 3C.2 Implement Day Trading Strategy 2: VWAP Pullback Continuation
 - [ ] Build a same-day trend-continuation strategy that requires higher-timeframe bias plus pullback-to-VWAP or EMA plus momentum re-acceleration confirmation.

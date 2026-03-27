@@ -33,9 +33,11 @@ Current backtest strategy catalog:
 - `SMA_CROSSOVER`
 - `BOLLINGER_BANDS`
 - `ICHIMOKU_TREND`
+- `OPENING_RANGE_VWAP_BREAKOUT`
 
 Operator-managed strategy configurations now normalize to these same canonical IDs and seed missing paper-safe templates from the catalog. New/default strategy configs remain long-only unless short exposure is explicitly enabled.
 The catalog remains research-only. On the March 27, 2026 frozen crypto audit rerun against dataset `#12`, only `SMA_CROSSOVER` earned a `paper-monitor candidate` disposition, `BUY_AND_HOLD` stayed `baseline only`, `DUAL_MOMENTUM_ROTATION`, `VOLATILITY_MANAGED_DONCHIAN_BREAKOUT`, `TREND_FIRST_ADAPTIVE_ENSEMBLE`, and `ICHIMOKU_TREND` stayed `research only`, and `TREND_PULLBACK_CONTINUATION`, `REGIME_FILTERED_MEAN_REVERSION`, and `BOLLINGER_BANDS` moved to `archive candidate`. No strategy is being treated as production-ready or live-ready.
+The first new Phase 3 implementation, `OPENING_RANGE_VWAP_BREAKOUT`, is now available as a research-only same-day strategy with shared telemetry overlays and a frozen pre-code spec at `docs/strategy-specs/OPENING_RANGE_VWAP_BREAKOUT.md`; it is not yet part of the March 27 frozen audit dispositions.
 
 ## Quick Start
 
@@ -104,6 +106,7 @@ Supporting references:
 - `docs/STRATEGY_CATALOG_AUDIT_REPORT.md`
 - `docs/SMALL_ACCOUNT_EXECUTION_CONSTRAINTS.md`
 - `docs/STRATEGY_SPEC_TEMPLATE.md`
+- `docs/strategy-specs/OPENING_RANGE_VWAP_BREAKOUT.md`
 - `.codex/agents/README.md`
 - `docs/adr/`: architecture decision records for durable backend and platform choices
 - `docs/USER_WORKFLOW_GUIDE.md`

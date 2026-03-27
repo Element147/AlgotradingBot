@@ -189,6 +189,26 @@ const PROFILES: StrategyProfile[] = [
     timeframeOptions: ['4h', '1d'],
     configPreset: { timeframe: '1d', riskPerTrade: 0.015, minPositionSize: 20, maxPositionSize: 120 },
   },
+  {
+    key: 'OPENING_RANGE_VWAP_BREAKOUT',
+    title: 'Opening Range VWAP Breakout',
+    shortDescription:
+      'Trades same-session breakouts only when price clears the opening range with VWAP support, elevated volume, and a non-bearish regime backdrop.',
+    entryRule:
+      'Enter after price closes above the opening-range high with breakout expansion, VWAP alignment, volume confirmation, and bullish session bias.',
+    exitRule:
+      'Exit on failed breakout, VWAP loss, ATR or structural stop breach, or mandatory session-cutoff flattening.',
+    bestFor: 'Liquid ETF or crypto session-open windows where early directional discovery can continue cleanly.',
+    riskNotes: 'Opening volatility can fake out quickly, so late entries, weak volume, and oversized ATR conditions stay filtered out.',
+    auditDisposition: 'RESEARCH_ONLY',
+    auditLabel: 'Research only',
+    auditTone: 'warning',
+    auditSummary:
+      'New Phase 3 small-account hypothesis. It is implemented for research and explainability, not yet promoted or audit-cleared.',
+    operatorAction: 'Use only for controlled backtest research until the frozen audit protocol and paper evidence are completed.',
+    timeframeOptions: ['15m'],
+    configPreset: { timeframe: '15m', riskPerTrade: 0.01, minPositionSize: 10, maxPositionSize: 75 },
+  },
 ];
 
 const normalize = (value: string): string => value.trim().replace(/-/g, '_').toUpperCase();

@@ -345,6 +345,8 @@ public class StrategyManagementService {
                 new BigDecimal("10.00"), new BigDecimal("90.00"));
             case ICHIMOKU_TREND -> new StrategySeedPreset("BTC/USDT", "1d", new BigDecimal("0.015"),
                 new BigDecimal("20.00"), new BigDecimal("120.00"));
+            case OPENING_RANGE_VWAP_BREAKOUT -> new StrategySeedPreset("SPY", "15m", new BigDecimal("0.01"),
+                new BigDecimal("10.00"), new BigDecimal("75.00"));
         };
     }
 

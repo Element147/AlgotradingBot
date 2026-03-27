@@ -23,6 +23,7 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -54,6 +55,10 @@ public class BacktestTelemetryService {
             null,
             null
         );
+    private static final StrategyFeatureLibrary.SessionAnchorSpec OPENING_RANGE_SESSION_SPEC =
+        new StrategyFeatureLibrary.SessionAnchorSpec(4, LocalTime.of(15, 45));
+    private static final StrategyFeatureLibrary.VolumeConfirmationSpec OPENING_RANGE_VOLUME_SPEC =
+        new StrategyFeatureLibrary.VolumeConfirmationSpec(20, new BigDecimal("1.20"));
 
     private final MarketDataQueryService marketDataQueryService;
     private final BacktestIndicatorCalculator indicatorCalculator;
@@ -377,6 +382,22 @@ public class BacktestTelemetryService {
                     index -> indicatorCalculator.relativeStrengthIndex(candles, index, 3)),
                 createSeries("adx_14", "ADX (14)", "OSCILLATOR", candles, 14,
                     index -> indicatorCalculator.averageDirectionalIndex(candles, index, 14))
+            );
+            case OPENING_RANGE_VWAP_BREAKOUT -> List.of(
+                createSeries("ema_20", "Session Bias EMA (20)", "PRICE", candles, 19,
+                    index -> indicatorCalculator.exponentialMovingAverage(candles, index, 20)),
+                createSeries("ema_50", "Trend EMA (50)", "PRICE", candles, 49,
+                    index -> indicatorCalculator.exponentialMovingAverage(candles, index, 50)),
+                createSeries("session_vwap", "Session VWAP", "PRICE", candles, 3,
+                    index -> strategyFeatureLibrary.sessionAnchors(candles, index, OPENING_RANGE_SESSION_SPEC).sessionVwap()),
+                createSeries("opening_range_high", "Opening Range High", "PRICE", candles, 3,
+                    index -> strategyFeatureLibrary.sessionAnchors(candles, index, OPENING_RANGE_SESSION_SPEC).openingRangeHigh()),
+                createSeries("opening_range_low", "Opening Range Low", "PRICE", candles, 3,
+                    index -> strategyFeatureLibrary.sessionAnchors(candles, index, OPENING_RANGE_SESSION_SPEC).openingRangeLow()),
+                createSeries("volume_ratio_20", "Volume Ratio", "OSCILLATOR", candles, 19,
+                    index -> strategyFeatureLibrary.volumeConfirmation(candles, index, OPENING_RANGE_VOLUME_SPEC).ratio()),
+                createSeries("atr_14", "ATR (14)", "OSCILLATOR", candles, 14,
+                    index -> indicatorCalculator.averageTrueRange(candles, index, 14))
             );
             case TREND_FIRST_ADAPTIVE_ENSEMBLE -> List.of(
                 createSeries("ema_200", "Trend EMA (200)", "PRICE", candles, 199,

@@ -11,7 +11,8 @@ public enum BacktestAlgorithmType {
     TREND_FIRST_ADAPTIVE_ENSEMBLE,
     SMA_CROSSOVER,
     BOLLINGER_BANDS,
-    ICHIMOKU_TREND;
+    ICHIMOKU_TREND,
+    OPENING_RANGE_VWAP_BREAKOUT;
 
     public static BacktestAlgorithmType from(String value) {
         try {
