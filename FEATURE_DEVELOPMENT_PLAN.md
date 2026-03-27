@@ -705,12 +705,16 @@ Implementation notes
 - Added explicit anti-parameter-fishing and output rules by requiring pre-declared sweep ranges, immutable links to every tested configuration, durable comparison reports, alerting hooks for completed or failed or approval-blocked batches, and operator audit records for scheduling or promotion decisions.
 
 #### 4.3 Data quality and venue-constraint intelligence
-- [ ] Add a follow-on roadmap item for automatic detection of bad candles, missing coverage, splits or adjustments, minimum-order violations, and venue-specific execution constraints.
+- [x] Add a follow-on roadmap item for automatic detection of bad candles, missing coverage, splits or adjustments, minimum-order violations, and venue-specific execution constraints.
 Acceptance Criteria
 - The follow-on scope describes anomaly detection, exchange or broker rule ingestion, and fail-closed behavior.
 - The design closes the gap between theoretical signals and actually placeable orders.
 - The roadmap item depends on the relational market-data architecture rather than bypassing it.
 - The mandatory step completion protocol passes.
+Implementation notes
+- Expanded `docs/ROADMAP.md` with a dedicated `Data Quality And Venue-Constraint Intelligence` follow-on section so the future-proofing scope now treats candle anomalies, coverage gaps, split or adjustment lineage, and venue-rule mismatches as explicit research and paper-trading risks instead of passive cleanup work.
+- Froze the first fail-closed and operator-visible rules before any code exists: unresolved critical anomalies quarantine datasets, missing or stale venue metadata blocks placeability decisions, and skipped trades must carry explicit reasons when tick-size, lot-size, minimum-notional, fractionality, or session rules prevent execution.
+- Made the dependencies explicit by tying the future scope to the normalized Phase 1 relational market-data ownership plus the existing small-account execution constraints and Phase 3 audit posture, so later implementation extends the current provenance-aware data model instead of bypassing it.
 
 #### 4.4 Incident notifications and operator automation
 - [ ] Add a follow-on roadmap item for multi-channel alerts, recurring health checks, and operator runbooks around paper and live monitoring.

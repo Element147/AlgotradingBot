@@ -29,6 +29,7 @@
 3. Opt-in experiments with preview-only Java features behind explicit non-default profiles.
 4. Portfolio lab and capital allocation engine once strategy-level audit evidence is broad enough to support portfolio-level research.
 5. Experiment scheduler and governance automation once the frozen audit workflow is stable enough to batch safely.
+6. Data quality and venue-constraint intelligence once normalized candle coverage and venue metadata are stable enough to support fail-closed research and paper decisions.
 
 ## Follow-On Scope
 
@@ -101,6 +102,39 @@ Dependencies and entry gates:
 - Depends on the current async backtest execution and monitoring seams so scheduled work can reuse existing queue, retry, and failure visibility.
 - Depends on the frozen strategy-audit methodology and Phase 3 evidence posture so automated batches cannot bypass the same cost, holdout, and reporting rules used for manual audits.
 - Should not start until the portfolio and audit roadmap items define which outputs are promotion-relevant versus exploratory-only.
+
+### Data Quality And Venue-Constraint Intelligence
+
+Purpose:
+
+- Close the realism gap between clean theoretical signals and actually placeable orders by treating bad candles, incomplete coverage, unadjusted equity history, and venue-rule mismatches as first-class failures instead of silent assumptions.
+
+Planned scope:
+
+- Add anomaly detection on the normalized market-data store for missing coverage windows, duplicate buckets, timestamp disorder, impossible OHLC relationships, zero or negative price or volume rows, suspicious flatline segments, abnormal return spikes, and session or timeframe mismatches.
+- Add equity and ETF adjustment intelligence so split, dividend, and adjusted-versus-unadjusted lineage is explicit; mixed or stale price bases should be flagged before a backtest or comparison result is trusted.
+- Ingest broker and exchange execution constraints as durable symbol metadata, including tick size, lot size, minimum notional, fractional-share support, session calendar, shortability or borrow posture, inverse-ETF eligibility, and account-mode restrictions where they affect order realism.
+- Keep the first version operator-visible and fail-closed: suspicious datasets, stale venue rules, or unplaceable order assumptions should block promotion and paper-follow-up until the anomaly or constraint gap is reviewed explicitly.
+
+Fail-closed and governance rules to freeze before implementation:
+
+- Reject or quarantine datasets with unresolved critical anomalies instead of silently repairing them on the hot path.
+- Fail closed when a strategy, paper workflow, or later live-monitor path lacks the venue metadata needed to decide whether an order is valid.
+- Preserve anomaly provenance so operators can trace a rejected candle range or venue rule back to the source dataset, import batch, or metadata refresh.
+- Surface skipped-trade reasons explicitly when minimum-order, lot-size, tick-size, fractional-share, or session rules prevent an otherwise valid signal from becoming a placeable order.
+
+Required outputs:
+
+- Dataset and series quality scorecards with severity-tagged anomaly findings and reviewed/unreviewed state.
+- Venue-rule snapshots per symbol or broker or exchange context, including freshness metadata and the constraints that affected simulated or paper-safe orders.
+- Operator-facing skipped-trade and blocked-order explanations so research reports can distinguish weak strategy logic from impossible execution assumptions.
+- Audit-friendly reports tying anomaly outcomes and venue constraints back to the exact dataset, symbol, timeframe, and workflow that encountered them.
+
+Dependencies and entry gates:
+
+- Depends on the normalized `market_data_series`, `market_data_candle_segments`, and `market_data_candles` ownership from Phase 1 so anomaly scans, coverage checks, and price-basis lineage stay tied to authoritative relational provenance instead of bypassing the new store.
+- Depends on the small-account execution rules in `docs/SMALL_ACCOUNT_EXECUTION_CONSTRAINTS.md` and the strategy-spec or audit posture from Phase 3 so venue checks align with the existing long-or-cash defaults, minimum-order rules, and honest reporting standards.
+- Should not start by inventing a sidecar execution model; the intended design extends the current backtest, paper, import, and audit seams with richer data-quality and venue metadata rather than routing around them.
 
 ## Strategy R&D Focus Order
 
