@@ -100,6 +100,7 @@ Supporting references:
 - `docs/LEGACY_DATASET_RETIREMENT_PLAN.md`
 - `docs/STRATEGY_AUDIT_DATASET_PACK.md`
 - `docs/STRATEGY_AUDIT_PROTOCOL.md`
+- `docs/STRATEGY_CATALOG_AUDIT_REPORT.md`
 - `.codex/agents/README.md`
 - `docs/adr/`: architecture decision records for durable backend and platform choices
 - `docs/USER_WORKFLOW_GUIDE.md`

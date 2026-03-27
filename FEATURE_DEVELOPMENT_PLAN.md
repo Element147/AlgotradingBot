@@ -473,12 +473,16 @@ Implementation record
 - Added `scripts/build-strategy-audit-equity-dataset.ps1` and generated `docs/audit-datasets/us-etf-daily-small-account-pack-2024-03-12-to-2026-03-12.csv` with companion manifest JSON so the small-account equity or ETF side is reproducible from repo-owned automation instead of a one-off manual download.
 
 #### 3A.3 Rerun the current strategy catalog under the frozen protocol
-- [ ] Rerun all current built-in strategies and capture full-sample, holdout, and walk-forward results.
+- [x] Rerun all current built-in strategies and capture full-sample, holdout, and walk-forward results.
 Acceptance Criteria
 - Every current strategy receives a reproducible scorecard with return, drawdown, Sharpe, profit factor, win rate, trade count, exposure time, and fee drag.
 - Any strategy with sparse evidence, poor out-of-sample behavior, or unrealistic sensitivity is clearly downgraded.
 - No strategy is labeled profitable unless the evidence actually supports that claim.
 - The mandatory step completion protocol passes.
+Implementation record
+- Added `AlgotradingBot/src/test/java/com/algotrader/bot/analysis/StrategyCatalogAuditRunner.java` and the Gradle task `.\gradlew.bat strategyCatalogAudit --no-daemon`, which boot the backend in non-web mode, query dataset `#12` from the current market-data store, rerun all nine built-in strategies against the frozen full-sample and holdout windows, and emit a reproducible markdown report under `AlgotradingBot/build/reports/strategy-catalog-audit/report.md`.
+- Fixed a sparse-sample bug in `AlgotradingBot/src/main/java/com/algotrader/bot/backtest/BacktestMetrics.java` so one-trade windows no longer throw during p-value calculation.
+- Published the checked-in scorecard snapshot in `docs/STRATEGY_CATALOG_AUDIT_REPORT.md` and linked it from `README.md` and `PROJECT_STATUS.md` so the audit output is durable outside the local database.
 
 #### 3A.4 Publish the audit outcome and catalog actions
 - [ ] Decide which current strategies stay baseline-only, which need hardening, which should be archived, and which deserve paper shadow monitoring.

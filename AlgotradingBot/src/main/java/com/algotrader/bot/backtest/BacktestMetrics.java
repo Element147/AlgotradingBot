@@ -286,6 +286,10 @@ public class BacktestMetrics {
             return BigDecimal.ONE;
         }
 
+        if (count < 2) {
+            return BigDecimal.ONE;
+        }
+
         BigDecimal mean = sumPnL.divide(new BigDecimal(count), MC);
 
         // Calculate standard deviation

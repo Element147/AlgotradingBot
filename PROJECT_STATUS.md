@@ -50,6 +50,7 @@ Verified on March 20, 2026 against dataset `#12` (`Binance BTC/USDT +2 15m 2024-
 - The first frozen holdout split at `2025-09-12` was rejected for the daily `200`-bar strategies because the out-of-sample window was too short and produced explicit insufficient-candle failures. That failed attempt is retained as evidence that split discipline must respect each strategy's warm-up requirements.
 - The valid holdout split now freezes `2024-03-12` to `2025-07-01` as in-sample and `2025-07-01` to `2026-03-13` as out-of-sample. On that split, `SMA_CROSSOVER` stayed positive out of sample at `+7.08%`, `VOLATILITY_MANAGED_DONCHIAN_BREAKOUT`, `DUAL_MOMENTUM_ROTATION`, and `TREND_FIRST_ADAPTIVE_ENSEMBLE` produced no out-of-sample trades in the observed window, `ICHIMOKU_TREND` finished at `-1.49%` on one trade, and the passive benchmark lost `-40.06%`.
 - Current paper-follow-up posture stays conservative: `SMA_CROSSOVER` is the clearest immediate paper-watch candidate because it stayed positive on the valid holdout, while `VOLATILITY_MANAGED_DONCHIAN_BREAKOUT`, `DUAL_MOMENTUM_ROTATION`, and `ICHIMOKU_TREND` remain research-only and should only move to shadow paper monitoring with explicit caveats about sparse or mixed out-of-sample evidence.
+- A durable nine-strategy scorecard snapshot now lives in `docs/STRATEGY_CATALOG_AUDIT_REPORT.md`, generated from the repo-native `strategyCatalogAudit` runner so full-sample and frozen-holdout results are no longer trapped only in runtime logs or database rows.
 
 ### Market Data
 

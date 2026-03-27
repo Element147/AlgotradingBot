@@ -196,6 +196,18 @@ tasks.register<JavaExec>("backendWorkflowProfile") {
     )
 }
 
+tasks.register<JavaExec>("strategyCatalogAudit") {
+    group = "verification"
+    description = "Rerun the built-in strategy catalog against the frozen audit dataset and write a markdown report."
+    dependsOn(tasks.named("testClasses"))
+    classpath = sourceSets["test"].runtimeClasspath
+    mainClass.set("com.algotrader.bot.analysis.StrategyCatalogAuditRunner")
+    systemProperty(
+        "strategyCatalogAudit.output",
+        layout.buildDirectory.file("reports/strategy-catalog-audit/report.md").get().asFile.absolutePath
+    )
+}
+
 tasks.register<JavaExec>("migrateLegacyDatasets") {
     group = "migration"
     description = "Migrate legacy CSV-backed backtest datasets into the normalized market-data store."
