@@ -1,6 +1,7 @@
 package com.algotrader.bot.backtest.strategy;
 
 import com.algotrader.bot.service.BacktestAlgorithmType;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -17,6 +18,15 @@ public class RegimeFilteredMeanReversionBacktestStrategy implements BacktestStra
     private static final BigDecimal ADX_RANGE_THRESHOLD = new BigDecimal("20");
     private static final BigDecimal RSI_OVERSOLD_THRESHOLD = new BigDecimal("20");
     private static final BigDecimal BAND_MULTIPLIER = new BigDecimal("2.0");
+    private static final BigDecimal TREND_FLOOR_BUFFER = new BigDecimal("0.97");
+    private static final BigDecimal ENTRY_ALLOCATION = new BigDecimal("0.60");
+    private static final BigDecimal ATR_STOP_MULTIPLIER = new BigDecimal("1.5");
+    private static final StrategyFeatureLibrary.TrendFilterSpec TREND_FILTER_SPEC =
+        new StrategyFeatureLibrary.TrendFilterSpec(LONG_TREND_PERIOD, 0, 0, TREND_FLOOR_BUFFER);
+    private static final StrategyFeatureLibrary.RegimeClassifierSpec REGIME_SPEC =
+        new StrategyFeatureLibrary.RegimeClassifierSpec(LONG_TREND_PERIOD, ADX_PERIOD, ADX_RANGE_THRESHOLD);
+    private static final StrategyFeatureLibrary.LongRiskSpec LONG_RISK_SPEC =
+        new StrategyFeatureLibrary.LongRiskSpec(ATR_PERIOD, ATR_STOP_MULTIPLIER, null);
     private static final BacktestStrategyDefinition DEFINITION = new BacktestStrategyDefinition(
         BacktestAlgorithmType.REGIME_FILTERED_MEAN_REVERSION,
         "Regime-Filtered Mean Reversion",
@@ -26,9 +36,17 @@ public class RegimeFilteredMeanReversionBacktestStrategy implements BacktestStra
     );
 
     private final BacktestIndicatorCalculator indicatorCalculator;
+    private final StrategyFeatureLibrary strategyFeatureLibrary;
+
+    @Autowired
+    public RegimeFilteredMeanReversionBacktestStrategy(BacktestIndicatorCalculator indicatorCalculator,
+                                                       StrategyFeatureLibrary strategyFeatureLibrary) {
+        this.indicatorCalculator = indicatorCalculator;
+        this.strategyFeatureLibrary = strategyFeatureLibrary;
+    }
 
     public RegimeFilteredMeanReversionBacktestStrategy(BacktestIndicatorCalculator indicatorCalculator) {
-        this.indicatorCalculator = indicatorCalculator;
+        this(indicatorCalculator, new StrategyFeatureLibrary(indicatorCalculator));
     }
 
     @Override
@@ -44,7 +62,6 @@ public class RegimeFilteredMeanReversionBacktestStrategy implements BacktestStra
         }
 
         BigDecimal close = context.currentClose();
-        BigDecimal ema200 = indicatorCalculator.exponentialMovingAverage(context.candles(), index, LONG_TREND_PERIOD);
         BigDecimal middleBand = indicatorCalculator.simpleMovingAverage(context.candles(), index, BOLLINGER_PERIOD);
         BigDecimal lowerBand = indicatorCalculator.bollingerLowerBand(
             context.candles(),
@@ -53,24 +70,37 @@ public class RegimeFilteredMeanReversionBacktestStrategy implements BacktestStra
             BAND_MULTIPLIER
         );
         BigDecimal previousRsi = indicatorCalculator.relativeStrengthIndex(context.candles(), index - 1, RSI_PERIOD);
-        BigDecimal adx = indicatorCalculator.averageDirectionalIndex(context.candles(), index, ADX_PERIOD);
-        BigDecimal atr = indicatorCalculator.averageTrueRange(context.candles(), index, ATR_PERIOD);
         BigDecimal previousClose = context.candles().get(index - 1).getClose();
+        StrategyFeatureLibrary.TrendFilterSnapshot trend = strategyFeatureLibrary.trendFilter(
+            context.candles(),
+            index,
+            TREND_FILTER_SPEC
+        );
+        StrategyFeatureLibrary.RegimeSnapshot regime = strategyFeatureLibrary.classifyRegime(
+            context.candles(),
+            index,
+            REGIME_SPEC
+        );
 
-        boolean rangeRegime = adx.compareTo(ADX_RANGE_THRESHOLD) < 0
-            && close.compareTo(ema200.multiply(new BigDecimal("0.97"))) >= 0;
+        boolean rangeRegime = regime.rangeBound() && trend.aboveFloor();
         boolean oversoldSnapback = previousClose.compareTo(lowerBand) < 0
             && previousRsi.compareTo(RSI_OVERSOLD_THRESHOLD) < 0
             && close.compareTo(previousClose) > 0;
 
         if (!context.inPosition() && rangeRegime && oversoldSnapback) {
-            return BacktestStrategyDecision.buy(context.primarySymbol(), new BigDecimal("0.60"), "Oversold snapback in range regime");
+            return BacktestStrategyDecision.buy(context.primarySymbol(), ENTRY_ALLOCATION, "Oversold snapback in range regime");
         }
 
         if (context.inPosition()) {
-            BigDecimal stopLevel = context.openPosition().entryPrice().subtract(atr.multiply(new BigDecimal("1.5")));
+            StrategyFeatureLibrary.LongRiskLevels riskLevels = strategyFeatureLibrary.longRiskLevels(
+                context.candles(),
+                index,
+                context.openPosition().entryPrice(),
+                LONG_RISK_SPEC,
+                null
+            );
             if (close.compareTo(middleBand) >= 0
-                || close.compareTo(stopLevel) < 0
+                || close.compareTo(riskLevels.effectiveStop()) < 0
                 || context.holdingBars() >= MAX_HOLDING_BARS) {
                 return BacktestStrategyDecision.sell("Mean-reversion target, stop, or time stop reached");
             }

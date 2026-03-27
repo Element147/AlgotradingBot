@@ -1,6 +1,7 @@
 package com.algotrader.bot.backtest.strategy;
 
 import com.algotrader.bot.service.BacktestAlgorithmType;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -14,6 +15,22 @@ public class VolatilityManagedDonchianBreakoutBacktestStrategy implements Backte
     private static final int ATR_PERIOD = 20;
     private static final BigDecimal TARGET_VOL = new BigDecimal("0.02");
     private static final BigDecimal MIN_ALLOCATION = new BigDecimal("0.35");
+    private static final BigDecimal ATR_STOP_MULTIPLIER = new BigDecimal("2");
+    private static final StrategyFeatureLibrary.TrendFilterSpec TREND_FILTER_SPEC =
+        new StrategyFeatureLibrary.TrendFilterSpec(TREND_PERIOD, 0, 0, BigDecimal.ONE);
+    private static final StrategyFeatureLibrary.VolatilityFilterSpec VOLATILITY_FILTER_SPEC =
+        new StrategyFeatureLibrary.VolatilityFilterSpec(
+            ATR_PERIOD,
+            ATR_PERIOD,
+            TARGET_VOL,
+            MIN_ALLOCATION,
+            null,
+            0,
+            null,
+            null
+        );
+    private static final StrategyFeatureLibrary.LongRiskSpec LONG_RISK_SPEC =
+        new StrategyFeatureLibrary.LongRiskSpec(ATR_PERIOD, ATR_STOP_MULTIPLIER, null);
     private static final BacktestStrategyDefinition DEFINITION = new BacktestStrategyDefinition(
         BacktestAlgorithmType.VOLATILITY_MANAGED_DONCHIAN_BREAKOUT,
         "Volatility-Managed Donchian Breakout",
@@ -23,9 +40,17 @@ public class VolatilityManagedDonchianBreakoutBacktestStrategy implements Backte
     );
 
     private final BacktestIndicatorCalculator indicatorCalculator;
+    private final StrategyFeatureLibrary strategyFeatureLibrary;
+
+    @Autowired
+    public VolatilityManagedDonchianBreakoutBacktestStrategy(BacktestIndicatorCalculator indicatorCalculator,
+                                                             StrategyFeatureLibrary strategyFeatureLibrary) {
+        this.indicatorCalculator = indicatorCalculator;
+        this.strategyFeatureLibrary = strategyFeatureLibrary;
+    }
 
     public VolatilityManagedDonchianBreakoutBacktestStrategy(BacktestIndicatorCalculator indicatorCalculator) {
-        this.indicatorCalculator = indicatorCalculator;
+        this(indicatorCalculator, new StrategyFeatureLibrary(indicatorCalculator));
     }
 
     @Override
@@ -41,25 +66,36 @@ public class VolatilityManagedDonchianBreakoutBacktestStrategy implements Backte
         }
 
         BigDecimal close = context.currentClose();
-        BigDecimal trendEma = indicatorCalculator.exponentialMovingAverage(context.candles(), index, TREND_PERIOD);
         BigDecimal breakoutLevel = indicatorCalculator.highestHigh(context.candles(), index - 1, BREAKOUT_PERIOD);
         BigDecimal exitLevel = indicatorCalculator.lowestLow(context.candles(), index - 1, EXIT_PERIOD);
-        BigDecimal atr = indicatorCalculator.averageTrueRange(context.candles(), index, ATR_PERIOD);
+        StrategyFeatureLibrary.TrendFilterSnapshot trend = strategyFeatureLibrary.trendFilter(
+            context.candles(),
+            index,
+            TREND_FILTER_SPEC
+        );
+        StrategyFeatureLibrary.VolatilityFilterSnapshot volatility = strategyFeatureLibrary.volatilityFilter(
+            context.candles(),
+            index,
+            VOLATILITY_FILTER_SPEC
+        );
 
-        if (!context.inPosition() && close.compareTo(trendEma) > 0 && close.compareTo(breakoutLevel) > 0) {
-            BigDecimal allocation = indicatorCalculator.volatilityAdjustedAllocation(
-                context.candles(),
-                index,
-                ATR_PERIOD,
-                TARGET_VOL,
-                MIN_ALLOCATION
+        if (!context.inPosition() && trend.aboveLongLine() && close.compareTo(breakoutLevel) > 0) {
+            return BacktestStrategyDecision.buy(
+                context.primarySymbol(),
+                volatility.managedAllocation(),
+                "55-bar breakout above 200 EMA"
             );
-            return BacktestStrategyDecision.buy(context.primarySymbol(), allocation, "55-bar breakout above 200 EMA");
         }
 
         if (context.inPosition()) {
-            BigDecimal stopLevel = context.openPosition().entryPrice().subtract(atr.multiply(new BigDecimal("2")));
-            if (close.compareTo(exitLevel) < 0 || close.compareTo(stopLevel) < 0 || close.compareTo(trendEma) < 0) {
+            StrategyFeatureLibrary.LongRiskLevels riskLevels = strategyFeatureLibrary.longRiskLevels(
+                context.candles(),
+                index,
+                context.openPosition().entryPrice(),
+                LONG_RISK_SPEC,
+                null
+            );
+            if (close.compareTo(exitLevel) < 0 || close.compareTo(riskLevels.effectiveStop()) < 0 || !trend.aboveLongLine()) {
                 return BacktestStrategyDecision.sell("Breakout failed below trailing Donchian/ATR protection");
             }
         }

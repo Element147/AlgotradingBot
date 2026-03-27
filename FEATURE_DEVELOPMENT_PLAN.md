@@ -531,7 +531,7 @@ Implementation record
 - Updated `README.md`, `PROJECT_STATUS.md`, and `PRODUCT.md` so the canonical docs now point to that template and make the pre-implementation spec requirement part of the repo's durable strategy workflow.
 
 #### 3B.3 Build a shared confirmation and risk feature library
-- [ ] Implement or harden the reusable indicator and confirmation components needed by the new strategy set.
+- [x] Implement or harden the reusable indicator and confirmation components needed by the new strategy set.
 Required building blocks
 - Trend filters.
 - VWAP or session anchors where applicable.
@@ -545,6 +545,10 @@ Acceptance Criteria
 - Feature calculations are test-covered and safe against look-ahead bias.
 - Strategy telemetry can expose the feature values later for chart review.
 - The mandatory step completion protocol passes.
+Implementation record
+- Added `AlgotradingBot/src/main/java/com/algotrader/bot/backtest/strategy/StrategyFeatureLibrary.java`, centralizing reusable trend-filter, volume-confirmation, volatility-filter, regime-classification, ATR or structural-stop, and session-anchor calculations behind one backend seam for later small-account strategies.
+- Refactored `BollingerBandsBacktestStrategy`, `TrendPullbackContinuationBacktestStrategy`, `RegimeFilteredMeanReversionBacktestStrategy`, `VolatilityManagedDonchianBreakoutBacktestStrategy`, and `BacktestTelemetryService` to reuse that shared library instead of keeping duplicate regime, trend, volatility, and stop logic in each class, while telemetry now also exposes managed-allocation series for the Donchian path.
+- Added `AlgotradingBot/src/test/java/com/algotrader/bot/backtest/strategy/StrategyFeatureLibraryTest.java` and expanded `AlgotradingBot/src/test/java/com/algotrader/bot/service/BacktestTelemetryServiceTest.java` so the new feature seam is covered for look-ahead-safe trend checks, volume confirmation, volatility state, regime classification, protective stops, session anchors, and operator-facing telemetry overlays.
 
 ### 3C. Strategy Implementation
 

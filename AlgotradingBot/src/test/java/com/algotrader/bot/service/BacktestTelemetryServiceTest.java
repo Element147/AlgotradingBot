@@ -140,6 +140,26 @@ class BacktestTelemetryServiceTest {
     }
 
     @Test
+    void buildTelemetry_donchianIncludesManagedAllocationIndicator() {
+        List<MarketDataQueriedCandle> candles = createRisingCandles("BTC/USDT", "1h", 240, new BigDecimal("100"));
+        BacktestResult result = baseResult(6L, "VOLATILITY_MANAGED_DONCHIAN_BREAKOUT", "BTC/USDT", candles);
+
+        when(marketDataQueryService.queryCandlesForDataset(
+            6L,
+            "1h",
+            result.getStartDate(),
+            result.getEndDate(),
+            Set.of("BTC/USDT"),
+            MarketDataQueryMode.BEST_AVAILABLE
+        )).thenReturn(new MarketDataQueryResult(candles, List.of(), "1h", MarketDataQueryMode.BEST_AVAILABLE));
+
+        List<BacktestSymbolTelemetryResponse> telemetry = backtestTelemetryService.buildTelemetry(result);
+
+        assertEquals(1, telemetry.size());
+        assertTrue(telemetry.get(0).indicators().stream().anyMatch(series -> "volatility_allocation_20".equals(series.key())));
+    }
+
+    @Test
     void buildTelemetry_ichimokuTrendIncludesCloudIndicators() {
         List<MarketDataQueriedCandle> candles = createRisingCandles("BTC/USDT", "1h", 240, new BigDecimal("100"));
         BacktestResult result = baseResult(5L, "ICHIMOKU_TREND", "BTC/USDT", candles);

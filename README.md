@@ -14,6 +14,7 @@ Local-first research platform for strategy design, backtesting, market-data impo
 - Authenticated Spring Boot backend with JWT, Liquibase-managed PostgreSQL runtime, WebSocket events, and audited system operations
 - React/Vite workstation for login, dashboard, forward testing, paper trading, live monitoring, strategies, backtests, market-data imports, trades, risk controls, and settings
 - Backtest engine with modular strategy registry, experiment grouping, replay and compare flows, persisted equity and trade series, and provenance-aware exports
+- Shared strategy-research feature primitives for trend, regime, volatility, volume, session-anchor, and stop calculations, reused across the current strategy catalog and telemetry seams to support the next small-account strategy wave
 - Market-data import pipeline with provider-specific download adapters, retry-aware persistent jobs, encrypted provider credentials, and direct dataset ingestion into the backtest catalog
 - New uploads and completed provider imports now hydrate the normalized market-data store at ingestion time; legacy CSV bytes remain only as a temporary compatibility copy for explicit download and fallback paths
 - Legacy catalog datasets without normalized segments are now backfilled on startup before operators use them, so backtest execution and telemetry stay on the relational market-data store even after runtime cutover

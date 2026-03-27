@@ -2,6 +2,7 @@ package com.algotrader.bot.service;
 
 import com.algotrader.bot.backtest.OHLCVData;
 import com.algotrader.bot.backtest.strategy.BacktestIndicatorCalculator;
+import com.algotrader.bot.backtest.strategy.StrategyFeatureLibrary;
 import com.algotrader.bot.controller.BacktestActionMarkerResponse;
 import com.algotrader.bot.controller.BacktestIndicatorPointResponse;
 import com.algotrader.bot.controller.BacktestIndicatorSeriesResponse;
@@ -15,6 +16,7 @@ import com.algotrader.bot.service.marketdata.MarketDataCandleProvenance;
 import com.algotrader.bot.service.marketdata.MarketDataQueryMode;
 import com.algotrader.bot.service.marketdata.MarketDataQueriedCandle;
 import com.algotrader.bot.service.marketdata.MarketDataQueryService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -37,20 +39,47 @@ public class BacktestTelemetryService {
 
     private static final MathContext MC = new MathContext(10, RoundingMode.HALF_UP);
     private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
-    private static final BigDecimal RANGE_ADX_THRESHOLD = new BigDecimal("20");
     private static final BigDecimal BOLLINGER_MULTIPLIER = new BigDecimal("2.0");
     private static final int MAX_SYMBOLS = 6;
+    private static final StrategyFeatureLibrary.RegimeClassifierSpec DEFAULT_REGIME_SPEC =
+        new StrategyFeatureLibrary.RegimeClassifierSpec(200, 14, new BigDecimal("20"));
+    private static final StrategyFeatureLibrary.VolatilityFilterSpec DONCHIAN_VOLATILITY_SPEC =
+        new StrategyFeatureLibrary.VolatilityFilterSpec(
+            20,
+            20,
+            new BigDecimal("0.02"),
+            new BigDecimal("0.35"),
+            null,
+            0,
+            null,
+            null
+        );
 
     private final MarketDataQueryService marketDataQueryService;
     private final BacktestIndicatorCalculator indicatorCalculator;
+    private final StrategyFeatureLibrary strategyFeatureLibrary;
     private final BackendOperationMetrics backendOperationMetrics;
+
+    @Autowired
+    public BacktestTelemetryService(MarketDataQueryService marketDataQueryService,
+                                    BacktestIndicatorCalculator indicatorCalculator,
+                                    StrategyFeatureLibrary strategyFeatureLibrary,
+                                    BackendOperationMetrics backendOperationMetrics) {
+        this.marketDataQueryService = marketDataQueryService;
+        this.indicatorCalculator = indicatorCalculator;
+        this.strategyFeatureLibrary = strategyFeatureLibrary;
+        this.backendOperationMetrics = backendOperationMetrics;
+    }
 
     public BacktestTelemetryService(MarketDataQueryService marketDataQueryService,
                                     BacktestIndicatorCalculator indicatorCalculator,
                                     BackendOperationMetrics backendOperationMetrics) {
-        this.marketDataQueryService = marketDataQueryService;
-        this.indicatorCalculator = indicatorCalculator;
-        this.backendOperationMetrics = backendOperationMetrics;
+        this(
+            marketDataQueryService,
+            indicatorCalculator,
+            new StrategyFeatureLibrary(indicatorCalculator),
+            backendOperationMetrics
+        );
     }
 
     public List<BacktestSymbolTelemetryResponse> buildTelemetry(BacktestResult result) {
@@ -318,6 +347,8 @@ public class BacktestTelemetryService {
                     index -> indicatorCalculator.highestHigh(candles, index - 1, 55)),
                 createSeries("donchian_exit_20", "Donchian Exit (20)", "PRICE", candles, 20,
                     index -> indicatorCalculator.lowestLow(candles, index - 1, 20)),
+                createSeries("volatility_allocation_20", "Managed Allocation", "OSCILLATOR", candles, 20,
+                    index -> strategyFeatureLibrary.volatilityFilter(candles, index, DONCHIAN_VOLATILITY_SPEC).managedAllocation()),
                 createSeries("atr_20", "ATR (20)", "OSCILLATOR", candles, 20,
                     index -> indicatorCalculator.averageTrueRange(candles, index, 20))
             );
@@ -389,23 +420,7 @@ public class BacktestTelemetryService {
     }
 
     private String classifyRegime(List<OHLCVData> candles, int index) {
-        if (index < 199) {
-            return "WARMUP";
-        }
-
-        BigDecimal close = candles.get(index).getClose();
-        BigDecimal ema200 = indicatorCalculator.exponentialMovingAverage(candles, index, 200);
-        BigDecimal adx = index < 14
-            ? BigDecimal.ZERO
-            : indicatorCalculator.averageDirectionalIndex(candles, index, 14);
-
-        if (adx.compareTo(RANGE_ADX_THRESHOLD) < 0) {
-            return "RANGE";
-        }
-        if (close.compareTo(ema200) >= 0) {
-            return "TREND_UP";
-        }
-        return "TREND_DOWN";
+        return strategyFeatureLibrary.classifyRegime(candles, index, DEFAULT_REGIME_SPEC).regime().name();
     }
 
     private BigDecimal scale(BigDecimal value) {

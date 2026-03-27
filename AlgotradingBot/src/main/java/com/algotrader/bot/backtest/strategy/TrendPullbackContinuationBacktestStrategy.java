@@ -1,6 +1,7 @@
 package com.algotrader.bot.backtest.strategy;
 
 import com.algotrader.bot.service.BacktestAlgorithmType;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -15,6 +16,11 @@ public class TrendPullbackContinuationBacktestStrategy implements BacktestStrate
     private static final int RSI_PERIOD = 5;
     private static final int ATR_PERIOD = 20;
     private static final BigDecimal RSI_PULLBACK_THRESHOLD = new BigDecimal("35");
+    private static final BigDecimal ATR_STOP_MULTIPLIER = new BigDecimal("1.5");
+    private static final StrategyFeatureLibrary.TrendFilterSpec TREND_FILTER_SPEC =
+        new StrategyFeatureLibrary.TrendFilterSpec(LONG_TREND_PERIOD, MEDIUM_TREND_PERIOD, PULLBACK_EMA_PERIOD, BigDecimal.ONE);
+    private static final StrategyFeatureLibrary.LongRiskSpec LONG_RISK_SPEC =
+        new StrategyFeatureLibrary.LongRiskSpec(ATR_PERIOD, ATR_STOP_MULTIPLIER, null);
     private static final BacktestStrategyDefinition DEFINITION = new BacktestStrategyDefinition(
         BacktestAlgorithmType.TREND_PULLBACK_CONTINUATION,
         "Trend Pullback Continuation",
@@ -24,9 +30,17 @@ public class TrendPullbackContinuationBacktestStrategy implements BacktestStrate
     );
 
     private final BacktestIndicatorCalculator indicatorCalculator;
+    private final StrategyFeatureLibrary strategyFeatureLibrary;
+
+    @Autowired
+    public TrendPullbackContinuationBacktestStrategy(BacktestIndicatorCalculator indicatorCalculator,
+                                                     StrategyFeatureLibrary strategyFeatureLibrary) {
+        this.indicatorCalculator = indicatorCalculator;
+        this.strategyFeatureLibrary = strategyFeatureLibrary;
+    }
 
     public TrendPullbackContinuationBacktestStrategy(BacktestIndicatorCalculator indicatorCalculator) {
-        this.indicatorCalculator = indicatorCalculator;
+        this(indicatorCalculator, new StrategyFeatureLibrary(indicatorCalculator));
     }
 
     @Override
@@ -42,16 +56,17 @@ public class TrendPullbackContinuationBacktestStrategy implements BacktestStrate
         }
 
         BigDecimal close = context.currentClose();
-        BigDecimal ema200 = indicatorCalculator.exponentialMovingAverage(context.candles(), index, LONG_TREND_PERIOD);
-        BigDecimal ema50 = indicatorCalculator.exponentialMovingAverage(context.candles(), index, MEDIUM_TREND_PERIOD);
-        BigDecimal ema20 = indicatorCalculator.exponentialMovingAverage(context.candles(), index, PULLBACK_EMA_PERIOD);
+        StrategyFeatureLibrary.TrendFilterSnapshot trend = strategyFeatureLibrary.trendFilter(
+            context.candles(),
+            index,
+            TREND_FILTER_SPEC
+        );
         BigDecimal ema5 = indicatorCalculator.exponentialMovingAverage(context.candles(), index, RESUME_EMA_PERIOD);
         BigDecimal previousClose = context.candles().get(index - 1).getClose();
         BigDecimal rsi = indicatorCalculator.relativeStrengthIndex(context.candles(), index, RSI_PERIOD);
-        BigDecimal atr = indicatorCalculator.averageTrueRange(context.candles(), index, ATR_PERIOD);
 
-        boolean trendHealthy = close.compareTo(ema200) > 0 && ema50.compareTo(ema200) > 0;
-        boolean validPullback = rsi.compareTo(RSI_PULLBACK_THRESHOLD) < 0 || close.compareTo(ema20) <= 0;
+        boolean trendHealthy = trend.aboveLongLine() && trend.mediumLine().compareTo(trend.longLine()) > 0;
+        boolean validPullback = rsi.compareTo(RSI_PULLBACK_THRESHOLD) < 0 || close.compareTo(trend.fastLine()) <= 0;
         boolean continuationResumed = close.compareTo(ema5) > 0 && previousClose.compareTo(ema5) <= 0;
 
         if (!context.inPosition() && trendHealthy && validPullback && continuationResumed) {
@@ -59,8 +74,14 @@ public class TrendPullbackContinuationBacktestStrategy implements BacktestStrate
         }
 
         if (context.inPosition()) {
-            BigDecimal stopLevel = context.openPosition().entryPrice().subtract(atr.multiply(new BigDecimal("1.5")));
-            if (!trendHealthy || close.compareTo(stopLevel) < 0 || close.compareTo(ema20) < 0) {
+            StrategyFeatureLibrary.LongRiskLevels riskLevels = strategyFeatureLibrary.longRiskLevels(
+                context.candles(),
+                index,
+                context.openPosition().entryPrice(),
+                LONG_RISK_SPEC,
+                trend.fastLine()
+            );
+            if (!trendHealthy || close.compareTo(riskLevels.effectiveStop()) < 0) {
                 return BacktestStrategyDecision.sell("Trend continuation failed after pullback entry");
             }
         }

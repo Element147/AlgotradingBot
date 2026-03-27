@@ -53,6 +53,7 @@ Verified on March 20, 2026 against dataset `#12` (`Binance BTC/USDT +2 15m 2024-
 - A durable nine-strategy scorecard snapshot now lives in `docs/STRATEGY_CATALOG_AUDIT_REPORT.md`, generated from the repo-native `strategyCatalogAudit` runner so full-sample and frozen-holdout results are no longer trapped only in runtime logs or database rows.
 - The small-account roadmap now has an explicit execution-constraint document in `docs/SMALL_ACCOUNT_EXECUTION_CONSTRAINTS.md`, freezing the baseline rules for notional size, liquidity, turnover, session handling, risk, and bearish behavior before the next strategy wave is specified or implemented.
 - The next Phase 3 strategy wave now also has a mandatory pre-code specification template in `docs/STRATEGY_SPEC_TEMPLATE.md`, forcing every proposed strategy to state its hypothesis, regime, universe, timeframe, signal stack, bearish behavior, risk model, validation plan, overfitting review, and minimum evidence threshold before implementation starts.
+- The Phase 3 implementation seam now includes a reusable `StrategyFeatureLibrary` for trend filters, volume confirmation, volatility filters, regime classification, session anchors, and ATR or structural stop logic, and the current Bollinger, pullback, mean-reversion, Donchian, and telemetry paths now reuse that shared feature layer instead of recalculating those primitives in isolation.
 
 ### Market Data
 

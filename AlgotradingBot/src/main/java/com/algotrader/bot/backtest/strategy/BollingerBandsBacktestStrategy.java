@@ -1,6 +1,7 @@
 package com.algotrader.bot.backtest.strategy;
 
 import com.algotrader.bot.service.BacktestAlgorithmType;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -16,6 +17,10 @@ public class BollingerBandsBacktestStrategy implements BacktestStrategy {
     private static final BigDecimal ENTRY_ALLOCATION = new BigDecimal("0.75");
     private static final BigDecimal TREND_FLOOR_BUFFER = new BigDecimal("0.97");
     private static final BigDecimal ATR_STOP_MULTIPLIER = new BigDecimal("1.5");
+    private static final StrategyFeatureLibrary.TrendFilterSpec TREND_FILTER_SPEC =
+        new StrategyFeatureLibrary.TrendFilterSpec(TREND_FILTER_PERIOD, 0, 0, TREND_FLOOR_BUFFER);
+    private static final StrategyFeatureLibrary.LongRiskSpec LONG_RISK_SPEC =
+        new StrategyFeatureLibrary.LongRiskSpec(ATR_PERIOD, ATR_STOP_MULTIPLIER, null);
     private static final BacktestStrategyDefinition DEFINITION = new BacktestStrategyDefinition(
         BacktestAlgorithmType.BOLLINGER_BANDS,
         "Bollinger Bands",
@@ -25,9 +30,17 @@ public class BollingerBandsBacktestStrategy implements BacktestStrategy {
     );
 
     private final BacktestIndicatorCalculator indicatorCalculator;
+    private final StrategyFeatureLibrary strategyFeatureLibrary;
+
+    @Autowired
+    public BollingerBandsBacktestStrategy(BacktestIndicatorCalculator indicatorCalculator,
+                                          StrategyFeatureLibrary strategyFeatureLibrary) {
+        this.indicatorCalculator = indicatorCalculator;
+        this.strategyFeatureLibrary = strategyFeatureLibrary;
+    }
 
     public BollingerBandsBacktestStrategy(BacktestIndicatorCalculator indicatorCalculator) {
-        this.indicatorCalculator = indicatorCalculator;
+        this(indicatorCalculator, new StrategyFeatureLibrary(indicatorCalculator));
     }
 
     @Override
@@ -46,12 +59,13 @@ public class BollingerBandsBacktestStrategy implements BacktestStrategy {
         BigDecimal previousClose = context.candles().get(index - 1).getClose();
         BigDecimal middleBand = indicatorCalculator.simpleMovingAverage(context.candles(), index, PERIOD);
         BigDecimal previousLowerBand = indicatorCalculator.bollingerLowerBand(context.candles(), index - 1, PERIOD, MULTIPLIER);
-        BigDecimal trendEma = indicatorCalculator.exponentialMovingAverage(context.candles(), index, TREND_FILTER_PERIOD);
-        BigDecimal previousTrendEma = indicatorCalculator.exponentialMovingAverage(context.candles(), index - 1, TREND_FILTER_PERIOD);
-        BigDecimal trendFloor = trendEma.multiply(TREND_FLOOR_BUFFER);
+        StrategyFeatureLibrary.TrendFilterSnapshot trend = strategyFeatureLibrary.trendFilter(
+            context.candles(),
+            index,
+            TREND_FILTER_SPEC
+        );
 
-        boolean trendIntact = trendEma.compareTo(previousTrendEma) >= 0
-            && currentClose.compareTo(trendFloor) >= 0;
+        boolean trendIntact = trend.longTrendUp() && trend.aboveFloor();
         boolean confirmedSnapback = previousClose.compareTo(previousLowerBand) < 0
             && currentClose.compareTo(previousClose) > 0;
 
@@ -64,13 +78,17 @@ public class BollingerBandsBacktestStrategy implements BacktestStrategy {
         }
 
         if (context.inPosition()) {
-            BigDecimal atr = indicatorCalculator.averageTrueRange(context.candles(), index, ATR_PERIOD);
-            BigDecimal stopLevel = context.openPosition().entryPrice()
-                .subtract(atr.multiply(ATR_STOP_MULTIPLIER));
+            StrategyFeatureLibrary.LongRiskLevels riskLevels = strategyFeatureLibrary.longRiskLevels(
+                context.candles(),
+                index,
+                context.openPosition().entryPrice(),
+                LONG_RISK_SPEC,
+                null
+            );
 
             if (!trendIntact
                 || currentClose.compareTo(middleBand) >= 0
-                || currentClose.compareTo(stopLevel) < 0
+                || currentClose.compareTo(riskLevels.effectiveStop()) < 0
                 || context.holdingBars() >= MAX_HOLDING_BARS) {
                 return BacktestStrategyDecision.sell("Mean-reversion target, trend break, time stop, or ATR stop reached");
             }
