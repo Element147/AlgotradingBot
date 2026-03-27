@@ -38,7 +38,14 @@ describe('ActiveAlgorithmExplainabilityPanel', () => {
             shortDescription: 'Trend-following pullback entry with reclaim confirmation.',
             entryRule: 'Buy pullbacks after reclaim and trend confirmation.',
             exitRule: 'Exit on failed reclaim or target hit.',
+            standAsideRule: 'Stand aside when trend alignment or reclaim confirmation is missing.',
             bestFor: 'Trending sessions with controlled retracements.',
+            timeframeGuidance: 'Use 1h bars and review EMA plus RSI overlays together.',
+            entryReasons: ['trend aligned', 'pullback confirmed'],
+            exitReasons: ['support failed', 'target hit'],
+            standAsideReasons: ['trend misaligned', 'reclaim missing'],
+            indicatorChecklist: ['ema_20', 'ema_5', 'rsi_5'],
+            operatorNotes: ['research only', 'not audit-cleared'],
           }}
           trades={[
             {
@@ -73,10 +80,13 @@ describe('ActiveAlgorithmExplainabilityPanel', () => {
 
     expect(screen.getByText('Entry and exit evidence')).toBeInTheDocument();
     expect(screen.getByText('Signal and decision reason')).toBeInTheDocument();
+    expect(screen.getByText('Reason labels and evidence')).toBeInTheDocument();
     expect(screen.getByText('Current risk and PnL stats')).toBeInTheDocument();
     expect(screen.getByText('Position state and exposure')).toBeInTheDocument();
     expect(screen.getByText('Recent incidents or overrides')).toBeInTheDocument();
     expect(screen.getByText(/Buy pullbacks after reclaim and trend confirmation/i)).toBeInTheDocument();
+    expect(screen.getByText(/Stand aside when trend alignment or reclaim confirmation is missing/i)).toBeInTheDocument();
+    expect(screen.getByText(/trend aligned, pullback confirmed/i)).toBeInTheDocument();
     expect(screen.getByText(/OVERRIDE_REVIEWED success/i)).toBeInTheDocument();
   });
 });

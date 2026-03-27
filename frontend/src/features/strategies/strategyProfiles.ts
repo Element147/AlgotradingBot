@@ -4,8 +4,15 @@ export interface StrategyProfile {
   shortDescription: string;
   entryRule: string;
   exitRule: string;
+  standAsideRule?: string;
   bestFor: string;
   riskNotes: string;
+  timeframeGuidance?: string;
+  entryReasons?: string[];
+  exitReasons?: string[];
+  standAsideReasons?: string[];
+  indicatorChecklist?: string[];
+  operatorNotes?: string[];
   auditDisposition: 'BASELINE_ONLY' | 'RESEARCH_ONLY' | 'ARCHIVE_CANDIDATE' | 'PAPER_MONITOR_CANDIDATE';
   auditLabel: string;
   auditTone: 'success' | 'info' | 'warning' | 'error';
@@ -198,8 +205,17 @@ const PROFILES: StrategyProfile[] = [
       'Enter after price closes above the opening-range high with breakout expansion, VWAP alignment, volume confirmation, and bullish session bias.',
     exitRule:
       'Exit on failed breakout, VWAP loss, ATR or structural stop breach, or mandatory session-cutoff flattening.',
+    standAsideRule:
+      'Stand aside when the opening range breaks without volume, price is not aligned with session VWAP, the regime is bearish, or the session is already too late.',
     bestFor: 'Liquid ETF or crypto session-open windows where early directional discovery can continue cleanly.',
     riskNotes: 'Opening volatility can fake out quickly, so late entries, weak volume, and oversized ATR conditions stay filtered out.',
+    timeframeGuidance:
+      'Run on 15m bars and treat it as a session-open strategy only; flatten by the configured cutoff instead of carrying overnight.',
+    entryReasons: ['opening range cleared', 'VWAP aligned', 'volume confirmed', 'regime supportive'],
+    exitReasons: ['breakout failed', 'VWAP lost', 'protective stop hit', 'session cutoff flatten'],
+    standAsideReasons: ['weak volume', 'VWAP misaligned', 'bearish regime', 'late session'],
+    indicatorChecklist: ['opening_range_high', 'session_vwap', 'volume_ratio_20', 'ema_20', 'ema_50', 'atr_14'],
+    operatorNotes: ['research only', 'same-day flatten required', 'not audit-cleared'],
     auditDisposition: 'RESEARCH_ONLY',
     auditLabel: 'Research only',
     auditTone: 'warning',
@@ -218,8 +234,17 @@ const PROFILES: StrategyProfile[] = [
       'Enter after a bullish higher-timeframe bias survives a pullback to session VWAP or EMA support and momentum re-accelerates.',
     exitRule:
       'Exit on VWAP loss, EMA support failure, protective-stop breach, or mandatory session-cutoff flattening.',
+    standAsideRule:
+      'Stand aside when the higher-timeframe bias is weak, the pullback never actually touches support, momentum does not reclaim, or the entry would be too late in the session.',
     bestFor: 'Liquid intraday names that trend cleanly but punish late chase entries more than controlled pullback entries.',
     riskNotes: 'Late-session entries, shallow pullbacks, and weak trend context are intentionally filtered out to avoid chasing exhausted moves.',
+    timeframeGuidance:
+      'Use 15m bars for same-session trend continuation and prefer names that respect VWAP or EMA support intraday.',
+    entryReasons: ['higher-timeframe bias aligned', 'support touched', 'RSI reset confirmed', 'fast EMA reclaimed'],
+    exitReasons: ['VWAP lost', 'EMA support lost', 'protective stop hit', 'session cutoff flatten'],
+    standAsideReasons: ['bias disagreed', 'no real pullback', 'momentum failed to resume', 'late session'],
+    indicatorChecklist: ['session_vwap', 'ema_5', 'ema_20', 'ema_50', 'rsi_5', 'atr_14'],
+    operatorNotes: ['research only', 'same-day flatten required', 'not audit-cleared'],
     auditDisposition: 'RESEARCH_ONLY',
     auditLabel: 'Research only',
     auditTone: 'warning',
@@ -238,8 +263,17 @@ const PROFILES: StrategyProfile[] = [
       'Enter after price extends below VWAP or the lower Bollinger band, volatility expands, RSI is oversold, and the reversal candle closes back in control.',
     exitRule:
       'Exit at the earlier of the mean-reversion target, time stop, hard stop, ATR stop breach, or mandatory session-cutoff flattening.',
+    standAsideRule:
+      'Stand aside when the selloff is ordinary rather than climactic, reversal confirmation never arrives, or the downtrend remains too strong to fade safely.',
     bestFor: 'Liquid intraday names where panic-style downside moves can mean revert cleanly without forcing overnight risk.',
     riskNotes: 'This is intentionally selective because fading ordinary downtrends is expensive; strong-trend overrides require climactic volume and deeper exhaustion evidence.',
+    timeframeGuidance:
+      'Use 15m bars and only on liquid names where panic-style extensions can revert before the session ends.',
+    entryReasons: ['downside stretch confirmed', 'climactic volume present', 'RSI oversold', 'bullish reversal candle'],
+    exitReasons: ['mean target hit', 'time stop hit', 'hard stop hit', 'session cutoff flatten'],
+    standAsideReasons: ['stretch too shallow', 'volume not climactic', 'trend too strong to fade', 'no reversal candle'],
+    indicatorChecklist: ['session_vwap', 'bb_lower_20', 'ema_20', 'ema_50', 'rsi_5', 'adx_14', 'volume_ratio_20', 'atr_14'],
+    operatorNotes: ['research only', 'same-day flatten required', 'not audit-cleared'],
     auditDisposition: 'RESEARCH_ONLY',
     auditLabel: 'Research only',
     auditTone: 'warning',
@@ -258,8 +292,17 @@ const PROFILES: StrategyProfile[] = [
       'Enter when the slow EMA stack is bullish, price pulls back into the medium EMA zone without breaking structure, and the fast EMA reclaim confirms continuation with ADX or volatility support.',
     exitRule:
       'Exit on medium-EMA support failure, higher-timeframe misalignment, or protective-stop breach.',
+    standAsideRule:
+      'Stand aside when the EMA stack is misaligned, the pullback is too shallow or too deep, or the trigger EMA never reasserts the continuation.',
     bestFor: 'Liquid intraday or hourly names where multi-hour continuation is cleaner than raw breakout chasing.',
     riskNotes: 'This remains a proxy higher-timeframe model on one feed, so the alignment logic must stay honest and research-only until broader audit evidence exists.',
+    timeframeGuidance:
+      'Use 1h bars and treat the slower EMA stack as a same-feed higher-timeframe proxy, not as a substitute for true resampled data.',
+    entryReasons: ['trend aligned', 'pullback detected', 'continuation resumed', 'ADX or volatility support'],
+    exitReasons: ['support failed', 'trend misaligned', 'protective stop hit'],
+    standAsideReasons: ['trend misaligned', 'pullback missing', 'trigger not reclaimed', 'volatility support absent'],
+    indicatorChecklist: ['ema_8', 'ema_21', 'ema_50', 'ema_200', 'adx_14', 'atr_14'],
+    operatorNotes: ['research only', 'same-feed higher-timeframe proxy', 'not audit-cleared'],
     auditDisposition: 'RESEARCH_ONLY',
     auditLabel: 'Research only',
     auditTone: 'warning',
@@ -278,8 +321,17 @@ const PROFILES: StrategyProfile[] = [
       'Enter after Bollinger-width compression resolves through the recent breakout high while momentum and ADX confirm and the broader regime is not bearish.',
     exitRule:
       'Exit on failed expansion back through the breakout level, protective-stop breach, or regime break.',
+    standAsideRule:
+      'Stand aside when compression exists without momentum, ADX stays weak, or the broader regime filter suggests the breakout is more likely to fail than follow through.',
     bestFor: 'Liquid hourly names where compression-breakout moves need more filtering than a plain breakout system.',
     riskNotes: 'Compression alone is not enough; the strategy is explicitly trying to reduce sideways false breaks and reports breakout failure rate for that reason.',
+    timeframeGuidance:
+      'Use 1h bars and treat this as a filtered expansion strategy, not a raw breakout system; review breakout failure rate alongside returns.',
+    entryReasons: ['squeeze active', 'breakout confirmed', 'momentum confirmed', 'regime supportive'],
+    exitReasons: ['failed expansion', 'regime break', 'protective stop hit'],
+    standAsideReasons: ['compression missing', 'momentum absent', 'ADX weak', 'bearish regime'],
+    indicatorChecklist: ['ema_50', 'ema_200', 'breakout_high_20', 'bb_upper_20', 'bb_lower_20', 'adx_14', 'atr_14'],
+    operatorNotes: ['research only', 'track breakout failure rate', 'not audit-cleared'],
     auditDisposition: 'RESEARCH_ONLY',
     auditLabel: 'Research only',
     auditTone: 'warning',
@@ -298,8 +350,17 @@ const PROFILES: StrategyProfile[] = [
       'Enter the top approved leader only when absolute momentum stays positive and the hourly timing trigger confirms with EMA or breakout follow-through.',
     exitRule:
       'Exit to cash when absolute momentum breaks or intraday support fails, and rotate only when a new approved leader clears the same timing gate.',
+    standAsideRule:
+      'Stand aside when the top-ranked leader is outside the approved liquid basket, absolute momentum is negative, or the fast timing trigger never confirms the leader cleanly.',
     bestFor: 'Small-account research that wants low-turnover leadership ranking without blindly buying every rank change.',
     riskNotes: 'A narrow basket and timing filter reduce unsupported broad-universe churn, but strong leaders can still reverse quickly after late-stage momentum bursts.',
+    timeframeGuidance:
+      'Use 1h bars and keep the basket fixed to a small approved liquid universe so the timing filter reduces churn instead of enabling broad-universe noise.',
+    entryReasons: ['approved leader selected', 'absolute momentum positive', 'trigger EMA reclaimed or breakout confirmed'],
+    exitReasons: ['absolute momentum broke', 'intraday support failed', 'new leader confirmed'],
+    standAsideReasons: ['leader outside approved basket', 'absolute momentum negative', 'timing filter not confirmed'],
+    indicatorChecklist: ['sma_200', 'ema_20', 'ema_5', 'return_21', 'return_63', 'breakout_high_5', 'rsi_5'],
+    operatorNotes: ['research only', 'cash fallback only', 'not audit-cleared'],
     auditDisposition: 'RESEARCH_ONLY',
     auditLabel: 'Research only',
     auditTone: 'warning',

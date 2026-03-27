@@ -6,6 +6,7 @@ import {
   MetricCard,
   SurfacePanel,
 } from '@/components/ui/Workbench';
+import { getStrategyProfile } from '@/features/strategies/strategyProfiles';
 import { formatDateTime, formatDistanceToNow, formatNumber } from '@/utils/formatters';
 
 interface BacktestOverviewPanelProps {
@@ -24,6 +25,7 @@ export default function BacktestOverviewPanel({
   lastLiveEventAt,
   transportError,
 }: BacktestOverviewPanelProps) {
+  const profile = getStrategyProfile(details.strategyId);
   const hasCompleteProvenance = Boolean(
     details.datasetId &&
       details.datasetChecksumSha256 &&
@@ -143,6 +145,48 @@ export default function BacktestOverviewPanel({
           )}
         </SurfacePanel>
       </Grid>
+
+      {profile ? (
+        <Grid size={{ xs: 12 }}>
+          <SurfacePanel
+            title="Strategy explainability"
+            description="The same rule labels and evidence checklist are reused by Backtest, Forward Testing, Paper, and Live review surfaces."
+          >
+            <Stack spacing={0.75}>
+              <Typography variant="body2" color="text.secondary">
+                {profile.bestFor}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Entry rule:</strong> {profile.entryRule}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Exit rule:</strong> {profile.exitRule}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Stand aside:</strong> {profile.standAsideRule ?? 'No explicit stand-aside rule recorded.'}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Timeframe guidance:</strong> {profile.timeframeGuidance ?? profile.timeframeOptions.join(', ')}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Entry labels:</strong> {profile.entryReasons?.join(', ') ?? 'Unavailable'}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Exit labels:</strong> {profile.exitReasons?.join(', ') ?? 'Unavailable'}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Stand-aside labels:</strong> {profile.standAsideReasons?.join(', ') ?? 'Unavailable'}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Evidence checklist:</strong> {profile.indicatorChecklist?.join(', ') ?? 'Unavailable'}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Operator notes:</strong> {profile.operatorNotes?.join(', ') ?? profile.operatorAction}
+              </Typography>
+            </Stack>
+          </SurfacePanel>
+        </Grid>
+      ) : null}
 
       {details.strategyMetrics && details.strategyMetrics.length > 0 ? (
         <Grid size={{ xs: 12 }}>

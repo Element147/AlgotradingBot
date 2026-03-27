@@ -46,7 +46,14 @@ export interface ActiveAlgorithmExplainabilityProfile {
   shortDescription?: string;
   entryRule?: string;
   exitRule?: string;
+  standAsideRule?: string;
   riskNotes?: string;
+  timeframeGuidance?: string;
+  entryReasons?: string[];
+  exitReasons?: string[];
+  standAsideReasons?: string[];
+  indicatorChecklist?: string[];
+  operatorNotes?: string[];
 }
 
 interface ActiveAlgorithmExplainabilityPanelProps {
@@ -93,6 +100,13 @@ const formatPercent = (value: number | null | undefined) =>
 
 const formatTimestamp = (value: string | null | undefined) =>
   value ? timestampFormatter.format(new Date(value)) : 'No recent update';
+
+const renderReasonList = (label: string, values?: string[]) =>
+  values && values.length > 0 ? (
+    <Typography variant="body2">
+      <strong>{label}:</strong> {values.join(', ')}
+    </Typography>
+  ) : null;
 
 const resolveIncidentTone = (incident?: InvestigationLogEntry): ExplainabilityTone => {
   if (!incident?.tone) {
@@ -159,7 +173,29 @@ export function ActiveAlgorithmExplainabilityPanel({
               <strong>Exit rule:</strong> {profile?.exitRule ?? 'Unavailable'}
             </Typography>
             <Typography variant="body2">
+              <strong>Stand aside:</strong> {profile?.standAsideRule ?? 'No stand-aside rule recorded'}
+            </Typography>
+            <Typography variant="body2">
               <strong>Latest trigger:</strong> {latestTrade ? latestTrade.signal : 'No recent trade trigger recorded'}
+            </Typography>
+          </Stack>
+        ),
+      },
+      {
+        id: 'reason-labels-evidence',
+        title: 'Reason labels and evidence',
+        content: (
+          <Stack spacing={0.75}>
+            <Typography variant="body2" color="text.secondary">
+              Use these strategy-specific labels when reviewing why the algorithm entered, exited, or stood aside across Backtest, Forward Testing, Paper, and Live.
+            </Typography>
+            {renderReasonList('Entry labels', profile?.entryReasons)}
+            {renderReasonList('Exit labels', profile?.exitReasons)}
+            {renderReasonList('Stand-aside labels', profile?.standAsideReasons)}
+            {renderReasonList('Evidence checklist', profile?.indicatorChecklist)}
+            {renderReasonList('Operator notes', profile?.operatorNotes)}
+            <Typography variant="body2">
+              <strong>Timeframe guidance:</strong> {profile?.timeframeGuidance ?? 'Use the configured timeframe and review the matching chart overlays.'}
             </Typography>
           </Stack>
         ),
@@ -234,7 +270,22 @@ export function ActiveAlgorithmExplainabilityPanel({
     ];
 
     return [...sharedSections, ...extraSections];
-  }, [extraSections, incidents, profile?.entryRule, profile?.exitRule, profile?.shortDescription, subject, trades]);
+  }, [
+    extraSections,
+    incidents,
+    profile?.entryReasons,
+    profile?.entryRule,
+    profile?.exitReasons,
+    profile?.exitRule,
+    profile?.indicatorChecklist,
+    profile?.operatorNotes,
+    profile?.shortDescription,
+    profile?.standAsideReasons,
+    profile?.standAsideRule,
+    profile?.timeframeGuidance,
+    subject,
+    trades,
+  ]);
 
   const defaultStatusChips =
     subject ? (

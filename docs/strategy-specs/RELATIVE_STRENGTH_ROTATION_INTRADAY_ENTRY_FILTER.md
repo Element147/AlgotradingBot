@@ -81,7 +81,7 @@ Ranking a very small basket of liquid symbols can keep the low-turnover strength
 - Exit to cash when the intraday timing structure breaks decisively below the `20` EMA with weak RSI.
 - Rotate only when a new approved leader clears both the ranking and timing requirements.
 
-## 11. Explainability And Telemetry
+## 11. Telemetry And Explainability
 
 - Required overlays:
 - `sma_200`
@@ -91,6 +91,8 @@ Ranking a very small basket of liquid symbols can keep the low-turnover strength
 - `return_63`
 - `breakout_high_5`
 - `rsi_5`
+- Required reason labels: approved leader selected, absolute momentum positive, trigger EMA reclaimed or breakout confirmed, absolute momentum broke, intraday support failed, new leader confirmed, leader outside approved basket, timing filter not confirmed.
+- Required operator-facing notes: research-only status, cash fallback instead of direct shorting, and warning that the strategy is not audit-cleared.
 
 ## 12. Validation Plan
 

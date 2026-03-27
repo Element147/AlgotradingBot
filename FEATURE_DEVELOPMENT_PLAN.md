@@ -652,12 +652,17 @@ Implementation notes
 - Added `AlgotradingBot/src/test/java/com/algotrader/bot/backtest/strategy/RelativeStrengthRotationIntradayEntryFilterBacktestStrategyTest.java` plus expanded telemetry, registry, simulation, and catalog integration coverage to verify approved-universe filtering, ranking, absolute-momentum gating, timing confirmation, and fallback-to-cash behavior.
 
 #### 3C.7 Add strategy telemetry, explainability, and operator-facing metadata
-- [ ] Ensure every new strategy can expose the indicators, reason labels, and signal evidence required by the redesigned chart workspaces.
+- [x] Ensure every new strategy can expose the indicators, reason labels, and signal evidence required by the redesigned chart workspaces.
 Acceptance Criteria
 - Operator-facing profiles exist for all six strategies with best-use notes, risk notes, and timeframe guidance.
 - Backtest and execution telemetry can show why the strategy entered, exited, or stood aside.
 - Signal explanations align with later Forward Testing, Paper, and Live tab requirements.
 - The mandatory step completion protocol passes.
+Implementation notes
+- Expanded `frontend/src/features/strategies/strategyProfiles.ts` so the six Phase `3C` strategies now carry explicit timeframe guidance, stand-aside rules, entry or exit or stand-aside reason labels, indicator evidence checklists, and operator notes in one shared profile contract.
+- Updated `frontend/src/components/workspace/ActiveAlgorithmExplainabilityPanel.tsx` to render those shared reason labels and evidence checklists directly inside the reusable Forward Testing, Paper, and Live explainability drawer instead of relying on generic rule text alone.
+- Updated `frontend/src/features/backtest/BacktestOverviewPanel.tsx` so backtest review now surfaces the same strategy explainability metadata, making the entry, exit, and stand-aside labels visible before operators open the heavier workspace tabs.
+- Aligned the frozen relative-strength spec in `docs/strategy-specs/RELATIVE_STRENGTH_ROTATION_INTRADAY_ENTRY_FILTER.md` with the earlier five specs by adding explicit telemetry, reason-label, and operator-note requirements, then extended `frontend/src/components/workspace/ActiveAlgorithmExplainabilityPanel.test.tsx` so the shared panel coverage now proves those richer explainability sections render.
 
 #### 3C.8 Compare the new strategies against benchmarks and current candidates
 - [ ] Run the six new strategies against the frozen audit protocol and compare them against `BUY_AND_HOLD` and the strongest current catalog paths.
