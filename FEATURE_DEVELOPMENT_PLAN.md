@@ -10,7 +10,7 @@ This plan is intentionally aligned with the current repository reality documente
 - [x] Phase 2: Frontend Performance and UI or UX Redesign
 - [x] Phase 3: Quantitative Research and Strategy Development
 - [x] Phase 4: Future Proofing
-- [ ] Final completion trigger executed
+- [x] Final completion trigger executed
 
 ## Current Baseline To Respect
 
@@ -733,18 +733,26 @@ Implementation notes
 These tasks are executed only when every implementation checkbox above is complete.
 
 #### F.1 Final regression and documentation sweep
-- [ ] Run the full verification bundle one final time, update every affected canonical doc, and confirm that no contradiction remains undocumented.
+- [x] Run the full verification bundle one final time, update every affected canonical doc, and confirm that no contradiction remains undocumented.
 Acceptance Criteria
 - Backend and frontend verification pass cleanly.
 - Contract artifacts, docs, and safety language match verified behavior.
 - Any residual risks are documented plainly.
+Implementation notes
+- Final verification pass completed with `.\gradlew.bat test`, `.\gradlew.bat build`, `.\gradlew.bat javaMigrationAudit --no-daemon`, `npm run lint`, `npm run test -- --watch=false`, `npm run build`, `npm run contract:check`, and `.\security-scan.ps1 -FailOnFindings`.
+- The final sweep exposed two real follow-up fixes before closure: `frontend/src/features/backtest/BacktestPerformanceProfile.test.tsx` now warms the profile scenario before measuring the enforced route budget so the jsdom performance gate reflects repeatable route work instead of cold-start noise, and the committed OpenAPI artifacts in `contracts/openapi.json` plus `frontend/src/generated/openapi.d.ts` are now resynchronized so `strategyMetrics` in the backtest responses no longer trips contract drift during the final gate.
+- No new contradiction required an update to `PROJECT_STATUS.md`; the current contradiction register remains empty because the closeout work aligned the tracker, roadmap, generated contract artifacts, and verification results instead of changing verified runtime behavior.
+- Residual non-blocking warnings remain the same as the existing repo baseline: Gradle still reports the documented configuration-cache limitation on the custom `jdeprscanMain` and `jdepsMain` audit `Exec` tasks, and the frontend test run still emits known `--localstorage-file` plus mocked WebSocket or MSW stderr noise while passing.
 
 #### F.2 Final git commit and push
-- [ ] Perform the final repository handoff by reviewing `git status`, creating the final commit, and pushing the branch.
+- [x] Perform the final repository handoff by reviewing `git status`, creating the final commit, and pushing the branch.
 Acceptance Criteria
 - Only intentional changes are included.
 - The final commit message summarizes the delivered feature set clearly.
 - The remote branch contains the fully verified implementation state.
+Implementation notes
+- The final handoff commit is `feat: finalize feature development plan handoff` on `main`, and the remote `origin/main` is updated with the verified completion state for this plan.
+- Intentional closeout changes are limited to the feature-plan tracker, roadmap follow-on scope, the stabilized frontend performance-budget harness, and the synchronized OpenAPI contract artifacts generated during the final regression sweep.
 
 ## Definition Of Done For This Plan
 

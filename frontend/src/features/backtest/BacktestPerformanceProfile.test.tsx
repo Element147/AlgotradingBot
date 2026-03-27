@@ -402,6 +402,15 @@ describe('BacktestPerformanceProfile', () => {
     };
 
     const user = userEvent.setup();
+    const warmupView = render(
+      <MemoryRouter initialEntries={['/backtest?section=workspace&symbol=BTC%2FUSDT']}>
+        <BacktestResults details={details} />
+      </MemoryRouter>
+    );
+    await screen.findByText('Run #42 research workspace');
+    warmupView.unmount();
+    resetChartProfile();
+
     const renderStartedAt = performance.now();
     const view = render(
       <MemoryRouter initialEntries={['/backtest?section=workspace&symbol=BTC%2FUSDT']}>

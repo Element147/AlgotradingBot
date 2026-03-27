@@ -1848,8 +1848,16 @@ export interface components {
             /** Format: date-time */
             completedAt?: string;
             errorMessage?: string;
+            strategyMetrics?: components["schemas"]["BacktestStrategyMetricResponse"][];
             availableTelemetrySymbols?: string[];
             asyncMonitor?: components["schemas"]["AsyncTaskMonitorResponse"];
+        };
+        BacktestStrategyMetricResponse: {
+            key?: string;
+            label?: string;
+            value?: number;
+            displayValue?: string;
+            description?: string;
         };
         BacktestTradeSeriesItemResponse: {
             symbol?: string;
@@ -1982,6 +1990,7 @@ export interface components {
             /** Format: date-time */
             completedAt?: string;
             errorMessage?: string;
+            strategyMetrics?: components["schemas"]["BacktestStrategyMetricResponse"][];
             asyncMonitor?: components["schemas"]["AsyncTaskMonitorResponse"];
         };
         BacktestEquityPointResponse: {
