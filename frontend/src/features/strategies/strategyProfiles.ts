@@ -6,6 +6,11 @@ export interface StrategyProfile {
   exitRule: string;
   bestFor: string;
   riskNotes: string;
+  auditDisposition: 'BASELINE_ONLY' | 'RESEARCH_ONLY' | 'ARCHIVE_CANDIDATE' | 'PAPER_MONITOR_CANDIDATE';
+  auditLabel: string;
+  auditTone: 'success' | 'info' | 'warning' | 'error';
+  auditSummary: string;
+  operatorAction: string;
   timeframeOptions: string[];
   configPreset: {
     timeframe: string;
@@ -25,6 +30,12 @@ const PROFILES: StrategyProfile[] = [
     exitRule: 'Single exit at the end of the selected period.',
     bestFor: 'Baseline comparison against active strategy logic.',
     riskNotes: 'No active reaction to volatility, drawdown, or changing market regime.',
+    auditDisposition: 'BASELINE_ONLY',
+    auditLabel: 'Baseline only',
+    auditTone: 'info',
+    auditSummary:
+      'Keep as the passive benchmark only. One-trade evidence is too sparse to treat it as an active candidate.',
+    operatorAction: 'Use for comparison and sanity checks, not as a promoted paper-monitor strategy.',
     timeframeOptions: ['1h', '4h', '1d'],
     configPreset: { timeframe: '1d', riskPerTrade: 0.02, minPositionSize: 10, maxPositionSize: 100 },
   },
@@ -37,6 +48,12 @@ const PROFILES: StrategyProfile[] = [
     exitRule: 'Rotate when leadership changes, or move to cash when absolute momentum turns negative.',
     bestFor: 'Small-account, lower-turnover trend allocation across a multi-symbol dataset.',
     riskNotes: 'Can suffer during sharp momentum crashes and fast trend reversals.',
+    auditDisposition: 'RESEARCH_ONLY',
+    auditLabel: 'Research only',
+    auditTone: 'warning',
+    auditSummary:
+      'Full-sample return was strong, but the frozen holdout produced no out-of-sample trades, so the evidence is still too sparse for promotion.',
+    operatorAction: 'Keep in the catalog for later dataset expansion and robustness work before any shadow paper monitoring.',
     timeframeOptions: ['4h', '1d'],
     configPreset: { timeframe: '1d', riskPerTrade: 0.02, minPositionSize: 25, maxPositionSize: 150 },
   },
@@ -49,6 +66,12 @@ const PROFILES: StrategyProfile[] = [
     exitRule: 'Exit on 20-bar breakdown, ATR stop failure, or regime deterioration.',
     bestFor: 'Directional trend phases with persistent continuation.',
     riskNotes: 'Can take repeated small losses in sideways markets.',
+    auditDisposition: 'RESEARCH_ONLY',
+    auditLabel: 'Research only',
+    auditTone: 'warning',
+    auditSummary:
+      'It was the strongest full-sample path, but zero holdout trades means the current rerun does not justify moving it beyond research.',
+    operatorAction: 'Retain as a hardened research candidate and rerun it on broader datasets before any paper shadowing.',
     timeframeOptions: ['1h', '4h', '1d'],
     configPreset: { timeframe: '4h', riskPerTrade: 0.02, minPositionSize: 20, maxPositionSize: 120 },
   },
@@ -61,6 +84,12 @@ const PROFILES: StrategyProfile[] = [
     exitRule: 'Exit when the continuation fails, the trend filter breaks, or ATR stop is breached.',
     bestFor: 'Trending markets where cleaner entries matter more than maximum trade count.',
     riskNotes: 'Repeated failed pullbacks can cluster near trend exhaustion.',
+    auditDisposition: 'ARCHIVE_CANDIDATE',
+    auditLabel: 'Archive candidate',
+    auditTone: 'error',
+    auditSummary:
+      'Both the full-sample and holdout windows stayed negative after realistic costs, so it should not be treated as an active candidate.',
+    operatorAction: 'Keep only as a historical comparison point until the logic is materially redesigned.',
     timeframeOptions: ['1h', '4h'],
     configPreset: { timeframe: '4h', riskPerTrade: 0.02, minPositionSize: 15, maxPositionSize: 100 },
   },
@@ -73,6 +102,12 @@ const PROFILES: StrategyProfile[] = [
     exitRule: 'Exit at the mean, on a fixed time stop, or after ATR stop failure.',
     bestFor: 'Sideways or choppy environments where trend systems tend to whipsaw.',
     riskNotes: 'Performs poorly if a real breakdown is mistaken for a range-bound dip.',
+    auditDisposition: 'ARCHIVE_CANDIDATE',
+    auditLabel: 'Archive candidate',
+    auditTone: 'error',
+    auditSummary:
+      'The audited windows stayed weak and sparse, which makes the current implementation a poor operator candidate.',
+    operatorAction: 'Archive from active consideration until a tighter regime filter or different market fit is proven.',
     timeframeOptions: ['15m', '1h', '4h'],
     configPreset: { timeframe: '1h', riskPerTrade: 0.015, minPositionSize: 10, maxPositionSize: 80 },
   },
@@ -85,6 +120,12 @@ const PROFILES: StrategyProfile[] = [
     exitRule: 'Exit when regime routing invalidates the active layer or a stronger asset takes over.',
     bestFor: 'Higher-potential multi-signal research once standalone strategies exist.',
     riskNotes: 'More complex and more vulnerable to false confidence if overfit.',
+    auditDisposition: 'RESEARCH_ONLY',
+    auditLabel: 'Research only',
+    auditTone: 'warning',
+    auditSummary:
+      'The full sample was positive, but the frozen holdout never triggered an out-of-sample trade and the model remains complexity-heavy.',
+    operatorAction: 'Keep for later robustness work after the simpler underlying components prove themselves.',
     timeframeOptions: ['4h', '1d'],
     configPreset: { timeframe: '4h', riskPerTrade: 0.015, minPositionSize: 20, maxPositionSize: 120 },
   },
@@ -99,6 +140,12 @@ const PROFILES: StrategyProfile[] = [
       'Exit on opposite crossover or when portfolio/risk guardrails trigger.',
     bestFor: 'Directional trend phases with persistent momentum.',
     riskNotes: 'Can whipsaw and overtrade in choppy market with no clear trend.',
+    auditDisposition: 'PAPER_MONITOR_CANDIDATE',
+    auditLabel: 'Paper-monitor candidate',
+    auditTone: 'success',
+    auditSummary:
+      'This remained the clearest encouraging path: holdout return stayed positive at 7.08%, but it still failed the stricter validator and is not promotion-ready.',
+    operatorAction: 'Allow cautious shadow paper monitoring with explicit caveats, not live promotion.',
     timeframeOptions: ['1h', '4h', '1d'],
     configPreset: { timeframe: '4h', riskPerTrade: 0.02, minPositionSize: 15, maxPositionSize: 110 },
   },
@@ -113,6 +160,12 @@ const PROFILES: StrategyProfile[] = [
       'Exit on move back to middle band, or when risk controls/circuit breaker are hit.',
     bestFor: 'Range-bound or sideways market with repeated rebounds.',
     riskNotes: 'Can perform poorly in strong one-direction trend where price keeps drifting away.',
+    auditDisposition: 'ARCHIVE_CANDIDATE',
+    auditLabel: 'Archive candidate',
+    auditTone: 'error',
+    auditSummary:
+      'The hardened variant cut damage, but both audited windows still finished negative after costs.',
+    operatorAction: 'Keep only as a constrained historical baseline unless the signal stack is materially reworked.',
     timeframeOptions: ['15m', '1h', '4h'],
     configPreset: { timeframe: '1h', riskPerTrade: 0.015, minPositionSize: 10, maxPositionSize: 90 },
   },
@@ -127,6 +180,12 @@ const PROFILES: StrategyProfile[] = [
       'Exit when price loses cloud/base support or the ATR fail-safe stop is breached.',
     bestFor: 'Lower-turnover directional regimes where trend confirmation matters more than early entries.',
     riskNotes: 'Can lag after sharp reversals, and the shifted-cloud logic must stay explicitly bias-free in tests and telemetry.',
+    auditDisposition: 'RESEARCH_ONLY',
+    auditLabel: 'Research only',
+    auditTone: 'warning',
+    auditSummary:
+      'The implementation is honest and bias-safe, but the holdout window stayed slightly negative with only one out-of-sample trade.',
+    operatorAction: 'Retain for later multi-dataset reruns, not for immediate paper shadow monitoring.',
     timeframeOptions: ['4h', '1d'],
     configPreset: { timeframe: '1d', riskPerTrade: 0.015, minPositionSize: 20, maxPositionSize: 120 },
   },

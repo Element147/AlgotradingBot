@@ -50,6 +50,20 @@ Frozen audit inputs:
 - `BOLLINGER_BANDS`: the hardened implementation reduced damage, but both full-sample and holdout results remained negative.
 - `ICHIMOKU_TREND`: honest long or cash implementation, but out-of-sample evidence stayed sparse and slightly negative.
 
+## Dispositions And Catalog Actions
+
+| Strategy | Disposition | Catalog Action |
+| --- | --- | --- |
+| `BUY_AND_HOLD` | `baseline only` | Keep as the passive benchmark for scorecards and sanity checks, not as a promoted active candidate. |
+| `DUAL_MOMENTUM_ROTATION` | `research only` | Keep for later robustness work on broader dataset packs before any shadow paper follow-up. |
+| `VOLATILITY_MANAGED_DONCHIAN_BREAKOUT` | `research only` | Retain as a hardened research candidate because the full sample was strong, but require more out-of-sample evidence first. |
+| `TREND_PULLBACK_CONTINUATION` | `archive candidate` | Leave visible only as a historical comparison point until the signal stack is materially redesigned. |
+| `REGIME_FILTERED_MEAN_REVERSION` | `archive candidate` | Archive from active consideration because the audited windows were weak and sparse. |
+| `TREND_FIRST_ADAPTIVE_ENSEMBLE` | `research only` | Keep for later robustness work after simpler component strategies prove themselves. |
+| `SMA_CROSSOVER` | `paper-monitor candidate` | Allow cautious shadow paper monitoring with explicit caveats; it is still not validator-passing or production-ready. |
+| `BOLLINGER_BANDS` | `archive candidate` | Keep only as a constrained historical baseline unless the logic is materially reworked. |
+| `ICHIMOKU_TREND` | `research only` | Retain for later multi-dataset reruns, not for immediate paper shadow monitoring. |
+
 ## Comparison Notes
 
 - `BUY_AND_HOLD` remains the passive benchmark for the single-symbol BTC review.

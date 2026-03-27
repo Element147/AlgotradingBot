@@ -51,6 +51,8 @@ describe('StrategiesPage', () => {
     expect(screen.getByText('Bollinger BTC Mean Reversion')).toBeInTheDocument();
     expect(screen.getByText('Saved strategy configs')).toBeInTheDocument();
     expect(screen.getByText('BTC/USDT (1h)')).toBeInTheDocument();
+    expect(screen.getAllByText('Archive candidate').length).toBeGreaterThan(0);
+    expect(screen.getByText('Paper-monitor candidate')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Edit config' })).toBeInTheDocument();
   });
 

@@ -78,6 +78,18 @@ function HeaderCellWithTooltip({ label, description }: HeaderCellProps) {
   );
 }
 
+const dispositionActionColor = (
+  disposition: 'BASELINE_ONLY' | 'RESEARCH_ONLY' | 'ARCHIVE_CANDIDATE' | 'PAPER_MONITOR_CANDIDATE'
+): 'success' | 'warning' | 'inherit' => {
+  if (disposition === 'PAPER_MONITOR_CANDIDATE') {
+    return 'success';
+  }
+  if (disposition === 'ARCHIVE_CANDIDATE') {
+    return 'warning';
+  }
+  return 'inherit';
+};
+
 export default function StrategiesPage() {
   const {
     data: strategies = [],
@@ -107,6 +119,12 @@ export default function StrategiesPage() {
     const longOnlyCount = strategies.filter(
       (strategy) => !strategy.shortSellingEnabled
     ).length;
+    const paperMonitorCandidateCount = strategyProfiles.filter(
+      (profile) => profile.auditDisposition === 'PAPER_MONITOR_CANDIDATE'
+    ).length;
+    const archiveCandidateCount = strategyProfiles.filter(
+      (profile) => profile.auditDisposition === 'ARCHIVE_CANDIDATE'
+    ).length;
 
     return [
       {
@@ -128,13 +146,19 @@ export default function StrategiesPage() {
         tone: 'success',
       },
       {
-        label: 'Beginner Rule',
-        value: 'Edit before Start',
-        detail: 'Review risk per trade, symbol, timeframe, and shorting before you enable a strategy.',
-        tone: 'warning',
+        label: 'Shadow Paper',
+        value: `${paperMonitorCandidateCount} candidate`,
+        detail: 'Only audited paper-monitor candidates should be treated as near-term follow-up paths.',
+        tone: paperMonitorCandidateCount > 0 ? 'success' : 'default',
+      },
+      {
+        label: 'Archive Queue',
+        value: `${archiveCandidateCount} strategy`,
+        detail: 'Archive candidates stay visible for comparison, not because they are equally ready.',
+        tone: archiveCandidateCount > 0 ? 'error' : 'default',
       },
     ];
-  }, [strategies, strategyProfiles.length]);
+  }, [strategies, strategyProfiles]);
 
   const runAction = async () => {
     if (!actionDialog) {
@@ -206,10 +230,16 @@ export default function StrategiesPage() {
           </Alert>
         ) : null}
 
+        <Alert severity="info">
+          The March 27, 2026 frozen audit currently leaves only `SMA_CROSSOVER` in the paper-monitor
+          candidate lane. Archive candidates remain visible for comparison, not because they are
+          equally ready to run.
+        </Alert>
+
         <Stack spacing={2}>
           <PageSectionHeader
             title="Strategy guide"
-            description="Use these quick notes when you are learning what each profile is trying to do. The table below remains the place to start, stop, and edit saved configs."
+            description="Use these quick notes when you are learning what each profile is trying to do. Each card now carries its audited disposition so the catalog does not present weak paths as equally ready."
           />
 
           <Grid container spacing={1.5}>
@@ -220,6 +250,13 @@ export default function StrategiesPage() {
                   description={profile.shortDescription}
                   sx={{ height: '100%' }}
                 >
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 1 }}>
+                    <StatusPill
+                      label={profile.auditLabel}
+                      tone={profile.auditTone}
+                      variant="filled"
+                    />
+                  </Stack>
                   <Typography variant="caption" display="block">
                     Entry: {profile.entryRule}
                   </Typography>
@@ -231,6 +268,12 @@ export default function StrategiesPage() {
                   </Typography>
                   <Typography variant="caption" display="block">
                     Risk note: {profile.riskNotes}
+                  </Typography>
+                  <Typography variant="caption" display="block" sx={{ mt: 0.75 }}>
+                    Audit note: {profile.auditSummary}
+                  </Typography>
+                  <Typography variant="caption" display="block">
+                    Operator action: {profile.operatorAction}
                   </Typography>
                 </SurfacePanel>
               </Grid>
@@ -346,6 +389,13 @@ export default function StrategiesPage() {
                           <Typography variant="caption" display="block" color="text.secondary">
                             Canonical ID: {strategy.type}
                           </Typography>
+                          {strategyProfile ? (
+                            <StatusPill
+                              label={strategyProfile.auditLabel}
+                              tone={strategyProfile.auditTone}
+                              sx={{ mt: 0.75 }}
+                            />
+                          ) : null}
                         </TableCell>
                         <TableCell>
                           <StatusPill
@@ -407,7 +457,9 @@ export default function StrategiesPage() {
                               <Button
                                 size="small"
                                 variant="outlined"
-                                color="warning"
+                                color={dispositionActionColor(
+                                  strategyProfile?.auditDisposition ?? 'RESEARCH_ONLY'
+                                )}
                                 disabled={isBusy}
                                 onClick={() => setActionDialog({ strategy, action: 'stop' })}
                               >
@@ -417,7 +469,9 @@ export default function StrategiesPage() {
                               <Button
                                 size="small"
                                 variant="outlined"
-                                color="success"
+                                color={dispositionActionColor(
+                                  strategyProfile?.auditDisposition ?? 'RESEARCH_ONLY'
+                                )}
                                 disabled={isBusy}
                                 onClick={() => setActionDialog({ strategy, action: 'start' })}
                               >

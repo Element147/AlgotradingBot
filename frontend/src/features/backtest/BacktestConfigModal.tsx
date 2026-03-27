@@ -75,6 +75,9 @@ export function BacktestConfigModal({
   const timeframeOptions = selectedAlgorithmProfile?.timeframeOptions ?? COMMON_TIMEFRAMES;
   const recommendedTimeframe =
     selectedAlgorithmProfile?.configPreset.timeframe ?? timeframeOptions[0] ?? '1h';
+  const dispositionHeadline = selectedAlgorithmProfile
+    ? `${selectedAlgorithmProfile.auditLabel}: ${selectedAlgorithmProfile.auditSummary}`
+    : null;
 
   useEffect(() => {
     if (requiresDatasetUniverse) {
@@ -204,6 +207,13 @@ export function BacktestConfigModal({
                   color="primary"
                   variant="outlined"
                 />
+                {selectedAlgorithmProfile ? (
+                  <Chip
+                    label={selectedAlgorithmProfile.auditLabel}
+                    color={selectedAlgorithmProfile.auditTone}
+                    variant="outlined"
+                  />
+                ) : null}
                 <Chip
                   label={`Recommended timeframe: ${recommendedTimeframe}`}
                   color="success"
@@ -262,10 +272,17 @@ export function BacktestConfigModal({
           </FieldTooltip>
 
           {selectedAlgorithmProfile ? (
-            <Alert severity="info">
+            <Alert severity={selectedAlgorithmProfile.auditTone}>
               <strong>{selectedAlgorithmProfile.title}:</strong>{' '}
               {selectedAlgorithmProfile.shortDescription} Best for:{' '}
-              {selectedAlgorithmProfile.bestFor}
+              {selectedAlgorithmProfile.bestFor} Audit outcome: {selectedAlgorithmProfile.auditLabel}.
+              {' '}Recommended action: {selectedAlgorithmProfile.operatorAction}
+            </Alert>
+          ) : null}
+
+          {dispositionHeadline ? (
+            <Alert severity={selectedAlgorithmProfile?.auditTone ?? 'info'}>
+              {dispositionHeadline}
             </Alert>
           ) : null}
 

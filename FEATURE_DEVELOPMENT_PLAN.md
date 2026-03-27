@@ -485,12 +485,15 @@ Implementation record
 - Published the checked-in scorecard snapshot in `docs/STRATEGY_CATALOG_AUDIT_REPORT.md` and linked it from `README.md` and `PROJECT_STATUS.md` so the audit output is durable outside the local database.
 
 #### 3A.4 Publish the audit outcome and catalog actions
-- [ ] Decide which current strategies stay baseline-only, which need hardening, which should be archived, and which deserve paper shadow monitoring.
+- [x] Decide which current strategies stay baseline-only, which need hardening, which should be archived, and which deserve paper shadow monitoring.
 Acceptance Criteria
 - The repo has an explicit disposition for every current strategy.
 - Weak or misleading strategies are not left presented as equally ready candidates.
 - Documentation and operator-facing labels match the verified evidence.
 - The mandatory step completion protocol passes.
+Implementation record
+- Published explicit catalog dispositions in `docs/STRATEGY_CATALOG_AUDIT_REPORT.md`, promoted that summary into `README.md` and `PROJECT_STATUS.md`, and aligned the repo narrative around one March 27, 2026 frozen-audit outcome.
+- Added audited disposition metadata to `frontend/src/features/strategies/strategyProfiles.ts` and surfaced it in `frontend/src/features/strategies/StrategiesPage.tsx` plus `frontend/src/features/backtest/BacktestConfigModal.tsx` so operators now see `baseline only`, `research only`, `archive candidate`, or `paper-monitor candidate` labels directly in the strategy desk and backtest launcher.
 
 ### 3B. New Edge Creation For Smaller Accounts
 

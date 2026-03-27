@@ -34,7 +34,7 @@ Current backtest strategy catalog:
 - `ICHIMOKU_TREND`
 
 Operator-managed strategy configurations now normalize to these same canonical IDs and seed missing paper-safe templates from the catalog. New/default strategy configs remain long-only unless short exposure is explicitly enabled.
-The catalog remains research-only. On the March 20, 2026 crypto rerun against dataset `#12`, only `VOLATILITY_MANAGED_DONCHIAN_BREAKOUT` passed the current full-sample validator, holdout results stayed mixed, and no strategy is being treated as production-ready or live-ready.
+The catalog remains research-only. On the March 27, 2026 frozen crypto audit rerun against dataset `#12`, only `SMA_CROSSOVER` earned a `paper-monitor candidate` disposition, `BUY_AND_HOLD` stayed `baseline only`, `DUAL_MOMENTUM_ROTATION`, `VOLATILITY_MANAGED_DONCHIAN_BREAKOUT`, `TREND_FIRST_ADAPTIVE_ENSEMBLE`, and `ICHIMOKU_TREND` stayed `research only`, and `TREND_PULLBACK_CONTINUATION`, `REGIME_FILTERED_MEAN_REVERSION`, and `BOLLINGER_BANDS` moved to `archive candidate`. No strategy is being treated as production-ready or live-ready.
 
 ## Quick Start
 
