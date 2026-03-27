@@ -693,12 +693,16 @@ Implementation notes
 - Made the dependencies explicit by tying the future portfolio lab to the normalized Phase 1 market-data ownership and the Phase 3 audit evidence or disposition outputs, while keeping the entire scope research-only until broader cross-dataset evidence exists.
 
 #### 4.2 Experiment scheduler and governance automation
-- [ ] Add a follow-on roadmap item for scheduled backtests, walk-forward batches, parameter sweeps, and experiment approval workflow.
+- [x] Add a follow-on roadmap item for scheduled backtests, walk-forward batches, parameter sweeps, and experiment approval workflow.
 Acceptance Criteria
 - The follow-on scope defines experiment metadata, retention, and promotion rules.
 - The design prevents silent parameter fishing by preserving reproducibility and auditability.
 - Output expectations include result storage, comparison reports, and alerting hooks.
 - The mandatory step completion protocol passes.
+Implementation notes
+- Expanded `docs/ROADMAP.md` with a dedicated `Experiment Scheduler And Governance Automation` follow-on section so the future scope now freezes scheduled backtests, walk-forward batches, bounded parameter sweeps, and approval workflow as one governed research surface.
+- Defined the required experiment metadata and retention rules before any code exists: strategy ID, parameter version, dataset identity, timeframe, cost assumptions, split definition, scheduler origin, approval state, full sweep grids, and longer-lived summary artifacts that still preserve replayability.
+- Added explicit anti-parameter-fishing and output rules by requiring pre-declared sweep ranges, immutable links to every tested configuration, durable comparison reports, alerting hooks for completed or failed or approval-blocked batches, and operator audit records for scheduling or promotion decisions.
 
 #### 4.3 Data quality and venue-constraint intelligence
 - [ ] Add a follow-on roadmap item for automatic detection of bad candles, missing coverage, splits or adjustments, minimum-order violations, and venue-specific execution constraints.
