@@ -23,12 +23,13 @@ class BacktestStrategyRegistryTest {
             new SmaCrossoverBacktestStrategy(indicatorCalculator),
             new BollingerBandsBacktestStrategy(indicatorCalculator),
             new IchimokuTrendBacktestStrategy(indicatorCalculator),
-            new OpeningRangeVwapBreakoutBacktestStrategy(indicatorCalculator)
+            new OpeningRangeVwapBreakoutBacktestStrategy(indicatorCalculator),
+            new VwapPullbackContinuationBacktestStrategy(indicatorCalculator)
         ));
 
         List<BacktestStrategyDefinition> definitions = registry.getDefinitions();
 
-        assertEquals(10, definitions.size());
+        assertEquals(11, definitions.size());
         assertEquals(BacktestAlgorithmType.BUY_AND_HOLD, definitions.get(0).type());
         assertEquals(BacktestAlgorithmType.DUAL_MOMENTUM_ROTATION, definitions.get(1).type());
         assertEquals(BacktestStrategySelectionMode.DATASET_UNIVERSE, definitions.get(1).selectionMode());
@@ -36,6 +37,7 @@ class BacktestStrategyRegistryTest {
         assertEquals(BacktestAlgorithmType.BOLLINGER_BANDS, definitions.get(7).type());
         assertEquals(BacktestAlgorithmType.ICHIMOKU_TREND, definitions.get(8).type());
         assertEquals(BacktestAlgorithmType.OPENING_RANGE_VWAP_BREAKOUT, definitions.get(9).type());
+        assertEquals(BacktestAlgorithmType.VWAP_PULLBACK_CONTINUATION, definitions.get(10).type());
     }
 
     @Test

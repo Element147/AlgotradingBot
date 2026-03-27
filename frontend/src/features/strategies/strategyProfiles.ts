@@ -209,6 +209,26 @@ const PROFILES: StrategyProfile[] = [
     timeframeOptions: ['15m'],
     configPreset: { timeframe: '15m', riskPerTrade: 0.01, minPositionSize: 10, maxPositionSize: 75 },
   },
+  {
+    key: 'VWAP_PULLBACK_CONTINUATION',
+    title: 'VWAP Pullback Continuation',
+    shortDescription:
+      'Buys same-session pullbacks to VWAP or EMA support only after the trend resumes with RSI reset or fast-EMA reclaim confirmation.',
+    entryRule:
+      'Enter after a bullish higher-timeframe bias survives a pullback to session VWAP or EMA support and momentum re-accelerates.',
+    exitRule:
+      'Exit on VWAP loss, EMA support failure, protective-stop breach, or mandatory session-cutoff flattening.',
+    bestFor: 'Liquid intraday names that trend cleanly but punish late chase entries more than controlled pullback entries.',
+    riskNotes: 'Late-session entries, shallow pullbacks, and weak trend context are intentionally filtered out to avoid chasing exhausted moves.',
+    auditDisposition: 'RESEARCH_ONLY',
+    auditLabel: 'Research only',
+    auditTone: 'warning',
+    auditSummary:
+      'New Phase 3 small-account hypothesis. It is implemented for research and telemetry review, not yet audit-cleared.',
+    operatorAction: 'Use only in controlled backtest research until the frozen audit protocol and paper evidence are completed.',
+    timeframeOptions: ['15m'],
+    configPreset: { timeframe: '15m', riskPerTrade: 0.01, minPositionSize: 10, maxPositionSize: 75 },
+  },
 ];
 
 const normalize = (value: string): string => value.trim().replace(/-/g, '_').toUpperCase();

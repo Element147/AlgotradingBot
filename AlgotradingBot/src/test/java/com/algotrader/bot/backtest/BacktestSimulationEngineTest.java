@@ -16,6 +16,7 @@ import com.algotrader.bot.backtest.strategy.SmaCrossoverBacktestStrategy;
 import com.algotrader.bot.backtest.strategy.TrendFirstAdaptiveEnsembleBacktestStrategy;
 import com.algotrader.bot.backtest.strategy.TrendPullbackContinuationBacktestStrategy;
 import com.algotrader.bot.backtest.strategy.VolatilityManagedDonchianBreakoutBacktestStrategy;
+import com.algotrader.bot.backtest.strategy.VwapPullbackContinuationBacktestStrategy;
 import com.algotrader.bot.entity.PositionSide;
 import com.algotrader.bot.service.BacktestAlgorithmType;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,7 +47,8 @@ class BacktestSimulationEngineTest {
             new TrendFirstAdaptiveEnsembleBacktestStrategy(indicatorCalculator),
             new SmaCrossoverBacktestStrategy(indicatorCalculator),
             new BollingerBandsBacktestStrategy(indicatorCalculator),
-            new OpeningRangeVwapBreakoutBacktestStrategy(indicatorCalculator)
+            new OpeningRangeVwapBreakoutBacktestStrategy(indicatorCalculator),
+            new VwapPullbackContinuationBacktestStrategy(indicatorCalculator)
         ));
 
         simulationEngine = new BacktestSimulationEngine(registry, new BacktestSimulationMetricsCalculator());

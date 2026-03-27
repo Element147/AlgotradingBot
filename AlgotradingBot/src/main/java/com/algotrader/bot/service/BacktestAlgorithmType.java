@@ -12,7 +12,8 @@ public enum BacktestAlgorithmType {
     SMA_CROSSOVER,
     BOLLINGER_BANDS,
     ICHIMOKU_TREND,
-    OPENING_RANGE_VWAP_BREAKOUT;
+    OPENING_RANGE_VWAP_BREAKOUT,
+    VWAP_PULLBACK_CONTINUATION;
 
     public static BacktestAlgorithmType from(String value) {
         try {

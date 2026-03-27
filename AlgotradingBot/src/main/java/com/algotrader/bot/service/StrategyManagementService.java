@@ -347,6 +347,8 @@ public class StrategyManagementService {
                 new BigDecimal("20.00"), new BigDecimal("120.00"));
             case OPENING_RANGE_VWAP_BREAKOUT -> new StrategySeedPreset("SPY", "15m", new BigDecimal("0.01"),
                 new BigDecimal("10.00"), new BigDecimal("75.00"));
+            case VWAP_PULLBACK_CONTINUATION -> new StrategySeedPreset("SPY", "15m", new BigDecimal("0.01"),
+                new BigDecimal("10.00"), new BigDecimal("75.00"));
         };
     }
 

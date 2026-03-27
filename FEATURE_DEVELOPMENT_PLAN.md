@@ -571,7 +571,7 @@ Implementation record
 - Added `AlgotradingBot/src/test/java/com/algotrader/bot/backtest/strategy/OpeningRangeVwapBreakoutBacktestStrategyTest.java` plus expanded registry and telemetry coverage to prove breakout validity, false-breakout rejection, protective-stop exits, session-cutoff flattening, and chart-review indicators.
 
 #### 3C.2 Implement Day Trading Strategy 2: VWAP Pullback Continuation
-- [ ] Build a same-day trend-continuation strategy that requires higher-timeframe bias plus pullback-to-VWAP or EMA plus momentum re-acceleration confirmation.
+- [x] Build a same-day trend-continuation strategy that requires higher-timeframe bias plus pullback-to-VWAP or EMA plus momentum re-acceleration confirmation.
 Core idea
 - Trade with the dominant intraday trend after controlled pullbacks, not after late chase entries.
 - Use confirmation from RSI reset or fast EMA reclaim or both.
@@ -580,6 +580,11 @@ Acceptance Criteria
 - Pullback and continuation confirmation are both required before entry.
 - Tests cover valid pullback entries, invalid chase entries, and same-day exit rules.
 - The mandatory step completion protocol passes.
+Implementation record
+- Added the pre-code strategy spec in `docs/strategy-specs/VWAP_PULLBACK_CONTINUATION.md`, freezing the higher-timeframe bias requirement, VWAP or EMA support pullback hypothesis, same-day flatten rule, bearish-to-cash posture, and telemetry review expectations before the implementation entered the catalog.
+- Implemented `AlgotradingBot/src/main/java/com/algotrader/bot/backtest/strategy/VwapPullbackContinuationBacktestStrategy.java`, which reuses `StrategyFeatureLibrary` for EMA trend bias, session VWAP support, RSI reset or fast-EMA reclaim continuation confirmation, ATR-capped risk control, and mandatory end-of-session exits.
+- Wired the strategy through `BacktestAlgorithmType`, `BacktestTelemetryService`, `StrategyManagementService`, `frontend/src/features/strategies/strategyProfiles.ts`, and the registry or simulation seams so the intraday pullback path is available end to end with indicator overlays and research-safe preset defaults.
+- Added `AlgotradingBot/src/test/java/com/algotrader/bot/backtest/strategy/VwapPullbackContinuationBacktestStrategyTest.java` plus expanded registry and telemetry coverage to prove valid pullback entries, higher-timeframe disagreement rejection, anti-chase enforcement, session-cutoff flattening, and chart-review indicators.
 
 #### 3C.3 Implement Day Trading Strategy 3: Exhaustion Reversal Fade
 - [ ] Build a same-day reversal strategy that requires volatility expansion plus price extension plus reversal confirmation and explicit range or exhaustion filters.

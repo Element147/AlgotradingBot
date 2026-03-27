@@ -399,6 +399,20 @@ public class BacktestTelemetryService {
                 createSeries("atr_14", "ATR (14)", "OSCILLATOR", candles, 14,
                     index -> indicatorCalculator.averageTrueRange(candles, index, 14))
             );
+            case VWAP_PULLBACK_CONTINUATION -> List.of(
+                createSeries("ema_5", "Resume EMA (5)", "PRICE", candles, 4,
+                    index -> indicatorCalculator.exponentialMovingAverage(candles, index, 5)),
+                createSeries("ema_20", "Pullback EMA (20)", "PRICE", candles, 19,
+                    index -> indicatorCalculator.exponentialMovingAverage(candles, index, 20)),
+                createSeries("ema_50", "Trend EMA (50)", "PRICE", candles, 49,
+                    index -> indicatorCalculator.exponentialMovingAverage(candles, index, 50)),
+                createSeries("session_vwap", "Session VWAP", "PRICE", candles, 3,
+                    index -> strategyFeatureLibrary.sessionAnchors(candles, index, OPENING_RANGE_SESSION_SPEC).sessionVwap()),
+                createSeries("rsi_5", "RSI (5)", "OSCILLATOR", candles, 5,
+                    index -> indicatorCalculator.relativeStrengthIndex(candles, index, 5)),
+                createSeries("atr_14", "ATR (14)", "OSCILLATOR", candles, 14,
+                    index -> indicatorCalculator.averageTrueRange(candles, index, 14))
+            );
             case TREND_FIRST_ADAPTIVE_ENSEMBLE -> List.of(
                 createSeries("ema_200", "Trend EMA (200)", "PRICE", candles, 199,
                     index -> indicatorCalculator.exponentialMovingAverage(candles, index, 200)),

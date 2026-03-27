@@ -410,7 +410,7 @@ describe('BacktestPerformanceProfile', () => {
         </Profiler>
       </MemoryRouter>
     );
-    await screen.findByText('Run #42 research workspace');
+    expect(screen.getByText('Run #42 research workspace')).toBeInTheDocument();
     const firstMeaningfulPaintMs = performance.now() - renderStartedAt;
 
     const initialMountSummary = summarizeProfilerSamples(profilerSamples, 'mount');
