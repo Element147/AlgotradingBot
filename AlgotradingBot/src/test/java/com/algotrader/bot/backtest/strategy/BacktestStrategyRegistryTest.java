@@ -25,12 +25,13 @@ class BacktestStrategyRegistryTest {
             new IchimokuTrendBacktestStrategy(indicatorCalculator),
             new OpeningRangeVwapBreakoutBacktestStrategy(indicatorCalculator),
             new VwapPullbackContinuationBacktestStrategy(indicatorCalculator),
-            new ExhaustionReversalFadeBacktestStrategy(indicatorCalculator)
+            new ExhaustionReversalFadeBacktestStrategy(indicatorCalculator),
+            new MultiTimeframeEmaAdxPullbackBacktestStrategy(indicatorCalculator)
         ));
 
         List<BacktestStrategyDefinition> definitions = registry.getDefinitions();
 
-        assertEquals(12, definitions.size());
+        assertEquals(13, definitions.size());
         assertEquals(BacktestAlgorithmType.BUY_AND_HOLD, definitions.get(0).type());
         assertEquals(BacktestAlgorithmType.DUAL_MOMENTUM_ROTATION, definitions.get(1).type());
         assertEquals(BacktestStrategySelectionMode.DATASET_UNIVERSE, definitions.get(1).selectionMode());
@@ -40,6 +41,7 @@ class BacktestStrategyRegistryTest {
         assertEquals(BacktestAlgorithmType.OPENING_RANGE_VWAP_BREAKOUT, definitions.get(9).type());
         assertEquals(BacktestAlgorithmType.VWAP_PULLBACK_CONTINUATION, definitions.get(10).type());
         assertEquals(BacktestAlgorithmType.EXHAUSTION_REVERSAL_FADE, definitions.get(11).type());
+        assertEquals(BacktestAlgorithmType.MULTI_TIMEFRAME_EMA_ADX_PULLBACK, definitions.get(12).type());
     }
 
     @Test

@@ -14,7 +14,8 @@ public enum BacktestAlgorithmType {
     ICHIMOKU_TREND,
     OPENING_RANGE_VWAP_BREAKOUT,
     VWAP_PULLBACK_CONTINUATION,
-    EXHAUSTION_REVERSAL_FADE;
+    EXHAUSTION_REVERSAL_FADE,
+    MULTI_TIMEFRAME_EMA_ADX_PULLBACK;
 
     public static BacktestAlgorithmType from(String value) {
         try {

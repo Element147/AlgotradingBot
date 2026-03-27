@@ -431,6 +431,20 @@ public class BacktestTelemetryService {
                 createSeries("volume_ratio_20", "Volume Ratio", "OSCILLATOR", candles, 19,
                     index -> strategyFeatureLibrary.volumeConfirmation(candles, index, OPENING_RANGE_VOLUME_SPEC).ratio())
             );
+            case MULTI_TIMEFRAME_EMA_ADX_PULLBACK -> List.of(
+                createSeries("ema_8", "Trigger EMA (8)", "PRICE", candles, 7,
+                    index -> indicatorCalculator.exponentialMovingAverage(candles, index, 8)),
+                createSeries("ema_21", "Pullback EMA (21)", "PRICE", candles, 20,
+                    index -> indicatorCalculator.exponentialMovingAverage(candles, index, 21)),
+                createSeries("ema_50", "Trend EMA (50)", "PRICE", candles, 49,
+                    index -> indicatorCalculator.exponentialMovingAverage(candles, index, 50)),
+                createSeries("ema_200", "Trend EMA (200)", "PRICE", candles, 199,
+                    index -> indicatorCalculator.exponentialMovingAverage(candles, index, 200)),
+                createSeries("adx_14", "ADX (14)", "OSCILLATOR", candles, 14,
+                    index -> indicatorCalculator.averageDirectionalIndex(candles, index, 14)),
+                createSeries("atr_14", "ATR (14)", "OSCILLATOR", candles, 14,
+                    index -> indicatorCalculator.averageTrueRange(candles, index, 14))
+            );
             case TREND_FIRST_ADAPTIVE_ENSEMBLE -> List.of(
                 createSeries("ema_200", "Trend EMA (200)", "PRICE", candles, 199,
                     index -> indicatorCalculator.exponentialMovingAverage(candles, index, 200)),

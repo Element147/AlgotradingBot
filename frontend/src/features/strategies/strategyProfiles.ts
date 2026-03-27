@@ -249,6 +249,26 @@ const PROFILES: StrategyProfile[] = [
     timeframeOptions: ['15m'],
     configPreset: { timeframe: '15m', riskPerTrade: 0.01, minPositionSize: 10, maxPositionSize: 60 },
   },
+  {
+    key: 'MULTI_TIMEFRAME_EMA_ADX_PULLBACK',
+    title: 'Multi-Timeframe EMA ADX Pullback',
+    shortDescription:
+      'Uses a slower EMA trend stack as the regime filter, then buys controlled pullbacks only when the lower-timeframe continuation trigger reasserts itself.',
+    entryRule:
+      'Enter when the slow EMA stack is bullish, price pulls back into the medium EMA zone without breaking structure, and the fast EMA reclaim confirms continuation with ADX or volatility support.',
+    exitRule:
+      'Exit on medium-EMA support failure, higher-timeframe misalignment, or protective-stop breach.',
+    bestFor: 'Liquid intraday or hourly names where multi-hour continuation is cleaner than raw breakout chasing.',
+    riskNotes: 'This remains a proxy higher-timeframe model on one feed, so the alignment logic must stay honest and research-only until broader audit evidence exists.',
+    auditDisposition: 'RESEARCH_ONLY',
+    auditLabel: 'Research only',
+    auditTone: 'warning',
+    auditSummary:
+      'New Phase 3 small-account hypothesis. It is implemented for research and telemetry review, not yet audit-cleared.',
+    operatorAction: 'Use only in controlled backtest research until the frozen audit protocol and paper evidence are completed.',
+    timeframeOptions: ['1h'],
+    configPreset: { timeframe: '1h', riskPerTrade: 0.01, minPositionSize: 15, maxPositionSize: 90 },
+  },
 ];
 
 const normalize = (value: string): string => value.trim().replace(/-/g, '_').toUpperCase();

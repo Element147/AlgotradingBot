@@ -6,6 +6,7 @@ import com.algotrader.bot.backtest.strategy.BollingerBandsBacktestStrategy;
 import com.algotrader.bot.backtest.strategy.BuyAndHoldBacktestStrategy;
 import com.algotrader.bot.backtest.strategy.DualMomentumRotationBacktestStrategy;
 import com.algotrader.bot.backtest.strategy.ExhaustionReversalFadeBacktestStrategy;
+import com.algotrader.bot.backtest.strategy.MultiTimeframeEmaAdxPullbackBacktestStrategy;
 import com.algotrader.bot.backtest.strategy.OpeningRangeVwapBreakoutBacktestStrategy;
 import com.algotrader.bot.backtest.strategy.RegimeFilteredMeanReversionBacktestStrategy;
 import com.algotrader.bot.backtest.strategy.BacktestStrategy;
@@ -50,7 +51,8 @@ class BacktestSimulationEngineTest {
             new BollingerBandsBacktestStrategy(indicatorCalculator),
             new OpeningRangeVwapBreakoutBacktestStrategy(indicatorCalculator),
             new VwapPullbackContinuationBacktestStrategy(indicatorCalculator),
-            new ExhaustionReversalFadeBacktestStrategy(indicatorCalculator)
+            new ExhaustionReversalFadeBacktestStrategy(indicatorCalculator),
+            new MultiTimeframeEmaAdxPullbackBacktestStrategy(indicatorCalculator)
         ));
 
         simulationEngine = new BacktestSimulationEngine(registry, new BacktestSimulationMetricsCalculator());

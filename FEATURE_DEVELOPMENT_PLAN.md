@@ -603,7 +603,7 @@ Implementation record
 - Added `AlgotradingBot/src/test/java/com/algotrader/bot/backtest/strategy/ExhaustionReversalFadeBacktestStrategyTest.java` plus expanded registry and telemetry coverage to prove range-bound entries, strong-trend blocking without the climactic override, override activation, profit-target exits, time-stop exits, and hard-stop exits.
 
 #### 3C.4 Implement Intraday Strategy 1: Multi-Timeframe EMA or ADX Pullback
-- [ ] Build a multi-hour trend strategy using higher-timeframe trend alignment plus lower-timeframe pullback plus ADX or volatility confirmation.
+- [x] Build a multi-hour trend strategy using higher-timeframe trend alignment plus lower-timeframe pullback plus ADX or volatility confirmation.
 Core idea
 - Favor cleaner continuation setups in liquid instruments where turnover stays moderate.
 - Use `15m` or `1h` triggers inside a slower `1h` or `4h` regime.
@@ -612,6 +612,11 @@ Acceptance Criteria
 - Stops and sizing respect the shared risk layer.
 - Telemetry exposes the trend and pullback context for chart review.
 - The mandatory step completion protocol passes.
+Implementation record
+- Added the pre-code strategy spec in `docs/strategy-specs/MULTI_TIMEFRAME_EMA_ADX_PULLBACK.md`, documenting the proxy higher-timeframe EMA stack, pullback zone, continuation trigger, and research-only validation posture before implementation.
+- Implemented `AlgotradingBot/src/main/java/com/algotrader/bot/backtest/strategy/MultiTimeframeEmaAdxPullbackBacktestStrategy.java`, which reuses the shared trend, volatility, and risk primitives to require separate higher-timeframe alignment, pullback definition, and continuation confirmation.
+- Wired the strategy through `BacktestAlgorithmType`, `BacktestTelemetryService`, `StrategyManagementService`, `frontend/src/features/strategies/strategyProfiles.ts`, and the registry or simulation seams so the multi-hour continuation path is available end to end with telemetry overlays and seed defaults.
+- Added `AlgotradingBot/src/test/java/com/algotrader/bot/backtest/strategy/MultiTimeframeEmaAdxPullbackBacktestStrategyTest.java` plus expanded registry and telemetry coverage to prove trend alignment, pullback detection, continuation trigger confirmation, and support-failure exits as separate test-covered behaviors.
 
 #### 3C.5 Implement Intraday Strategy 2: Squeeze Breakout Regime Confirmation
 - [ ] Build a volatility-contraction breakout strategy using squeeze detection plus momentum confirmation plus higher-timeframe regime filter.
