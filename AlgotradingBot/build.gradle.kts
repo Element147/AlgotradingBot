@@ -208,6 +208,18 @@ tasks.register<JavaExec>("strategyCatalogAudit") {
     )
 }
 
+tasks.register<JavaExec>("phaseThreeStrategyAudit") {
+    group = "verification"
+    description = "Audit the six Phase 3 strategies against the frozen protocol and write a markdown report."
+    dependsOn(tasks.named("testClasses"))
+    classpath = sourceSets["test"].runtimeClasspath
+    mainClass.set("com.algotrader.bot.analysis.PhaseThreeStrategyAuditRunner")
+    systemProperty(
+        "phaseThreeStrategyAudit.output",
+        layout.buildDirectory.file("reports/phase-three-strategy-audit/report.md").get().asFile.absolutePath
+    )
+}
+
 tasks.register<JavaExec>("migrateLegacyDatasets") {
     group = "migration"
     description = "Migrate legacy CSV-backed backtest datasets into the normalized market-data store."

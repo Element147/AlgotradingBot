@@ -665,12 +665,16 @@ Implementation notes
 - Aligned the frozen relative-strength spec in `docs/strategy-specs/RELATIVE_STRENGTH_ROTATION_INTRADAY_ENTRY_FILTER.md` with the earlier five specs by adding explicit telemetry, reason-label, and operator-note requirements, then extended `frontend/src/components/workspace/ActiveAlgorithmExplainabilityPanel.test.tsx` so the shared panel coverage now proves those richer explainability sections render.
 
 #### 3C.8 Compare the new strategies against benchmarks and current candidates
-- [ ] Run the six new strategies against the frozen audit protocol and compare them against `BUY_AND_HOLD` and the strongest current catalog paths.
+- [x] Run the six new strategies against the frozen audit protocol and compare them against `BUY_AND_HOLD` and the strongest current catalog paths.
 Acceptance Criteria
 - Each new strategy has a reproducible evidence sheet, not just a return number.
 - The plan identifies which strategies are rejected, which remain research-only, and which can move to shadow paper monitoring.
 - No new strategy is promoted without surviving out-of-sample and robustness checks.
 - The mandatory step completion protocol passes.
+Implementation notes
+- Added the repo-native `phaseThreeStrategyAudit` Gradle task plus `AlgotradingBot/src/test/java/com/algotrader/bot/analysis/PhaseThreeStrategyAuditRunner.java` so the six new Phase `3C` strategies now rerun under the same frozen `10` bps fee, `3` bps slippage, next-bar-open, holdout, and walk-forward audit posture already used for the earlier catalog snapshot.
+- Published the durable evidence sheet in `docs/PHASE3_STRATEGY_AUDIT_REPORT.md`, including comparator rows for `BUY_AND_HOLD`, `SMA_CROSSOVER`, `VOLATILITY_MANAGED_DONCHIAN_BREAKOUT`, and `DUAL_MOMENTUM_ROTATION` plus per-strategy benchmark deltas, disposition rationale, and catalog actions.
+- The March 27 rerun kept `OPENING_RANGE_VWAP_BREAKOUT`, `EXHAUSTION_REVERSAL_FADE`, `MULTI_TIMEFRAME_EMA_ADX_PULLBACK`, `SQUEEZE_BREAKOUT_REGIME_CONFIRMATION`, and `RELATIVE_STRENGTH_ROTATION_INTRADAY_ENTRY_FILTER` as `research-only`, rejected `VWAP_PULLBACK_CONTINUATION` for active consideration, and promoted none of the six because the frozen dataset pack still lacks an approved intraday ETF anchor for `15m` and `1h` hypotheses.
 
 ## Phase 4: Future Proofing
 

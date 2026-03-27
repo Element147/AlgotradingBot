@@ -42,7 +42,7 @@ Current backtest strategy catalog:
 
 Operator-managed strategy configurations now normalize to these same canonical IDs and seed missing paper-safe templates from the catalog. New/default strategy configs remain long-only unless short exposure is explicitly enabled.
 The catalog remains research-only. On the March 27, 2026 frozen crypto audit rerun against dataset `#12`, only `SMA_CROSSOVER` earned a `paper-monitor candidate` disposition, `BUY_AND_HOLD` stayed `baseline only`, `DUAL_MOMENTUM_ROTATION`, `VOLATILITY_MANAGED_DONCHIAN_BREAKOUT`, `TREND_FIRST_ADAPTIVE_ENSEMBLE`, and `ICHIMOKU_TREND` stayed `research only`, and `TREND_PULLBACK_CONTINUATION`, `REGIME_FILTERED_MEAN_REVERSION`, and `BOLLINGER_BANDS` moved to `archive candidate`. No strategy is being treated as production-ready or live-ready.
-The first six new Phase 3 implementations, `OPENING_RANGE_VWAP_BREAKOUT`, `VWAP_PULLBACK_CONTINUATION`, `EXHAUSTION_REVERSAL_FADE`, `MULTI_TIMEFRAME_EMA_ADX_PULLBACK`, `SQUEEZE_BREAKOUT_REGIME_CONFIRMATION`, and `RELATIVE_STRENGTH_ROTATION_INTRADAY_ENTRY_FILTER`, are now available as research-only strategies with shared telemetry overlays, operator-facing reason labels, stand-aside guidance, and frozen pre-code specs at `docs/strategy-specs/OPENING_RANGE_VWAP_BREAKOUT.md`, `docs/strategy-specs/VWAP_PULLBACK_CONTINUATION.md`, `docs/strategy-specs/EXHAUSTION_REVERSAL_FADE.md`, `docs/strategy-specs/MULTI_TIMEFRAME_EMA_ADX_PULLBACK.md`, `docs/strategy-specs/SQUEEZE_BREAKOUT_REGIME_CONFIRMATION.md`, and `docs/strategy-specs/RELATIVE_STRENGTH_ROTATION_INTRADAY_ENTRY_FILTER.md`; they are not yet part of the March 27 frozen audit dispositions.
+The first six new Phase 3 implementations, `OPENING_RANGE_VWAP_BREAKOUT`, `VWAP_PULLBACK_CONTINUATION`, `EXHAUSTION_REVERSAL_FADE`, `MULTI_TIMEFRAME_EMA_ADX_PULLBACK`, `SQUEEZE_BREAKOUT_REGIME_CONFIRMATION`, and `RELATIVE_STRENGTH_ROTATION_INTRADAY_ENTRY_FILTER`, now also have frozen March 27 audit evidence in `docs/PHASE3_STRATEGY_AUDIT_REPORT.md`. That rerun kept five of the six as `research-only`, rejected `VWAP_PULLBACK_CONTINUATION` for active consideration under the current BTC-anchor evidence, and promoted none of them because the frozen pack still lacks an approved intraday ETF audit anchor.
 
 ## Quick Start
 
@@ -109,6 +109,7 @@ Supporting references:
 - `docs/STRATEGY_AUDIT_DATASET_PACK.md`
 - `docs/STRATEGY_AUDIT_PROTOCOL.md`
 - `docs/STRATEGY_CATALOG_AUDIT_REPORT.md`
+- `docs/PHASE3_STRATEGY_AUDIT_REPORT.md`
 - `docs/SMALL_ACCOUNT_EXECUTION_CONSTRAINTS.md`
 - `docs/STRATEGY_SPEC_TEMPLATE.md`
 - `docs/strategy-specs/OPENING_RANGE_VWAP_BREAKOUT.md`
