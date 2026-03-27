@@ -13,7 +13,8 @@ public enum BacktestAlgorithmType {
     BOLLINGER_BANDS,
     ICHIMOKU_TREND,
     OPENING_RANGE_VWAP_BREAKOUT,
-    VWAP_PULLBACK_CONTINUATION;
+    VWAP_PULLBACK_CONTINUATION,
+    EXHAUSTION_REVERSAL_FADE;
 
     public static BacktestAlgorithmType from(String value) {
         try {

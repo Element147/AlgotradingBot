@@ -587,7 +587,7 @@ Implementation record
 - Added `AlgotradingBot/src/test/java/com/algotrader/bot/backtest/strategy/VwapPullbackContinuationBacktestStrategyTest.java` plus expanded registry and telemetry coverage to prove valid pullback entries, higher-timeframe disagreement rejection, anti-chase enforcement, session-cutoff flattening, and chart-review indicators.
 
 #### 3C.3 Implement Day Trading Strategy 3: Exhaustion Reversal Fade
-- [ ] Build a same-day reversal strategy that requires volatility expansion plus price extension plus reversal confirmation and explicit range or exhaustion filters.
+- [x] Build a same-day reversal strategy that requires volatility expansion plus price extension plus reversal confirmation and explicit range or exhaustion filters.
 Core idea
 - Fade only true exhaustion conditions, not normal trend continuation.
 - Require reversal candle structure plus extreme oscillator condition plus range filter or climax-volume confirmation.
@@ -596,6 +596,11 @@ Acceptance Criteria
 - Profit-taking, time-stop, and hard-stop behavior are all explicit and tested.
 - The implementation stays research-only until the audit proves it survives fee drag.
 - The mandatory step completion protocol passes.
+Implementation record
+- Added the pre-code strategy spec in `docs/strategy-specs/EXHAUSTION_REVERSAL_FADE.md`, freezing the downside-extension hypothesis, range-versus-climactic override logic, same-day flatten rule, research-only posture, and the explicit target, time-stop, and hard-stop exit model before code entered the catalog.
+- Implemented `AlgotradingBot/src/main/java/com/algotrader/bot/backtest/strategy/ExhaustionReversalFadeBacktestStrategy.java`, which reuses `StrategyFeatureLibrary` for trend, regime, volume, volatility, and session anchors while combining Bollinger-band or VWAP stretch, volatility expansion, oversold RSI, and bullish reversal confirmation into a long-only exhaustion fade.
+- Wired the strategy through `BacktestAlgorithmType`, `BacktestTelemetryService`, `StrategyManagementService`, `frontend/src/features/strategies/strategyProfiles.ts`, and the registry or simulation seams so the research-only reversal path is available end to end with explainability overlays and paper-safe preset defaults.
+- Added `AlgotradingBot/src/test/java/com/algotrader/bot/backtest/strategy/ExhaustionReversalFadeBacktestStrategyTest.java` plus expanded registry and telemetry coverage to prove range-bound entries, strong-trend blocking without the climactic override, override activation, profit-target exits, time-stop exits, and hard-stop exits.
 
 #### 3C.4 Implement Intraday Strategy 1: Multi-Timeframe EMA or ADX Pullback
 - [ ] Build a multi-hour trend strategy using higher-timeframe trend alignment plus lower-timeframe pullback plus ADX or volatility confirmation.

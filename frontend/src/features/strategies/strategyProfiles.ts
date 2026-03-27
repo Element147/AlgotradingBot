@@ -229,6 +229,26 @@ const PROFILES: StrategyProfile[] = [
     timeframeOptions: ['15m'],
     configPreset: { timeframe: '15m', riskPerTrade: 0.01, minPositionSize: 10, maxPositionSize: 75 },
   },
+  {
+    key: 'EXHAUSTION_REVERSAL_FADE',
+    title: 'Exhaustion Reversal Fade',
+    shortDescription:
+      'Fades same-session downside exhaustion only after volatility expansion, downside stretch, and a bullish reversal candle all line up.',
+    entryRule:
+      'Enter after price extends below VWAP or the lower Bollinger band, volatility expands, RSI is oversold, and the reversal candle closes back in control.',
+    exitRule:
+      'Exit at the earlier of the mean-reversion target, time stop, hard stop, ATR stop breach, or mandatory session-cutoff flattening.',
+    bestFor: 'Liquid intraday names where panic-style downside moves can mean revert cleanly without forcing overnight risk.',
+    riskNotes: 'This is intentionally selective because fading ordinary downtrends is expensive; strong-trend overrides require climactic volume and deeper exhaustion evidence.',
+    auditDisposition: 'RESEARCH_ONLY',
+    auditLabel: 'Research only',
+    auditTone: 'warning',
+    auditSummary:
+      'New Phase 3 small-account hypothesis. It is implemented for research and telemetry review, not yet audit-cleared.',
+    operatorAction: 'Use only in controlled backtest research until the frozen audit protocol and paper evidence are completed.',
+    timeframeOptions: ['15m'],
+    configPreset: { timeframe: '15m', riskPerTrade: 0.01, minPositionSize: 10, maxPositionSize: 60 },
+  },
 ];
 
 const normalize = (value: string): string => value.trim().replace(/-/g, '_').toUpperCase();

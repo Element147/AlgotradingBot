@@ -413,6 +413,24 @@ public class BacktestTelemetryService {
                 createSeries("atr_14", "ATR (14)", "OSCILLATOR", candles, 14,
                     index -> indicatorCalculator.averageTrueRange(candles, index, 14))
             );
+            case EXHAUSTION_REVERSAL_FADE -> List.of(
+                createSeries("ema_20", "Mean Reversion EMA (20)", "PRICE", candles, 19,
+                    index -> indicatorCalculator.exponentialMovingAverage(candles, index, 20)),
+                createSeries("ema_50", "Trend EMA (50)", "PRICE", candles, 49,
+                    index -> indicatorCalculator.exponentialMovingAverage(candles, index, 50)),
+                createSeries("session_vwap", "Session VWAP", "PRICE", candles, 3,
+                    index -> strategyFeatureLibrary.sessionAnchors(candles, index, OPENING_RANGE_SESSION_SPEC).sessionVwap()),
+                createSeries("bb_lower_20", "Bollinger Lower (20,2)", "PRICE", candles, 19,
+                    index -> indicatorCalculator.bollingerLowerBand(candles, index, 20, BOLLINGER_MULTIPLIER)),
+                createSeries("rsi_5", "RSI (5)", "OSCILLATOR", candles, 5,
+                    index -> indicatorCalculator.relativeStrengthIndex(candles, index, 5)),
+                createSeries("adx_14", "ADX (14)", "OSCILLATOR", candles, 14,
+                    index -> indicatorCalculator.averageDirectionalIndex(candles, index, 14)),
+                createSeries("atr_14", "ATR (14)", "OSCILLATOR", candles, 14,
+                    index -> indicatorCalculator.averageTrueRange(candles, index, 14)),
+                createSeries("volume_ratio_20", "Volume Ratio", "OSCILLATOR", candles, 19,
+                    index -> strategyFeatureLibrary.volumeConfirmation(candles, index, OPENING_RANGE_VOLUME_SPEC).ratio())
+            );
             case TREND_FIRST_ADAPTIVE_ENSEMBLE -> List.of(
                 createSeries("ema_200", "Trend EMA (200)", "PRICE", candles, 199,
                     index -> indicatorCalculator.exponentialMovingAverage(candles, index, 200)),
