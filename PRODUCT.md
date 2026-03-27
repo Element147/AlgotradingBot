@@ -41,6 +41,7 @@ Build a local-first platform for safe strategy research, backtesting, market-dat
 - `ICHIMOKU_TREND` is implemented as a conservative long/cash strategy with look-ahead-safe cloud handling and chart overlays, but it is still a research surface rather than a promoted operating strategy.
 - The March 27, 2026 frozen audit keeps the overall posture conservative: `BUY_AND_HOLD` is `baseline only`, `SMA_CROSSOVER` is the sole `paper-monitor candidate`, four catalog paths stay `research only`, and three weak paths are now explicit `archive candidate` strategies.
 - The next small-account strategy phase is constrained by `docs/SMALL_ACCOUNT_EXECUTION_CONSTRAINTS.md`, which freezes the default `long/cash`, low-turnover, no-leverage posture before new strategy specs or implementations start.
+- New strategy work must now begin with `docs/STRATEGY_SPEC_TEMPLATE.md` so hypothesis, bearish behavior, risk, and validation expectations are specified before code exists.
 
 ## Environment Model
 

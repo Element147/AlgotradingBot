@@ -509,7 +509,7 @@ Implementation record
 - Updated `README.md`, `PROJECT_STATUS.md`, and `PRODUCT.md` so the canonical docs now point at those constraints and keep the product narrative aligned with the new small-account research guardrails.
 
 #### 3B.2 Define a reusable strategy-spec template
-- [ ] Standardize how every new strategy is described before code exists.
+- [x] Standardize how every new strategy is described before code exists.
 Template fields
 - Hypothesis.
 - Market regime.
@@ -526,6 +526,9 @@ Acceptance Criteria
 - The template forces signal logic, invalidation logic, and cost assumptions to be explicit.
 - Overfitting risk and minimum evidence thresholds are documented for every strategy.
 - The mandatory step completion protocol passes.
+Implementation record
+- Added `docs/STRATEGY_SPEC_TEMPLATE.md` as the mandatory pre-code strategy template for the rest of Phase 3, covering identity, hypothesis, market regime, universe, timeframe, signal stack, long behavior, bearish behavior, risk model, exit model, telemetry, validation plan, overfitting review, and minimum evidence threshold.
+- Updated `README.md`, `PROJECT_STATUS.md`, and `PRODUCT.md` so the canonical docs now point to that template and make the pre-implementation spec requirement part of the repo's durable strategy workflow.
 
 #### 3B.3 Build a shared confirmation and risk feature library
 - [ ] Implement or harden the reusable indicator and confirmation components needed by the new strategy set.

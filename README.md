@@ -102,6 +102,7 @@ Supporting references:
 - `docs/STRATEGY_AUDIT_PROTOCOL.md`
 - `docs/STRATEGY_CATALOG_AUDIT_REPORT.md`
 - `docs/SMALL_ACCOUNT_EXECUTION_CONSTRAINTS.md`
+- `docs/STRATEGY_SPEC_TEMPLATE.md`
 - `.codex/agents/README.md`
 - `docs/adr/`: architecture decision records for durable backend and platform choices
 - `docs/USER_WORKFLOW_GUIDE.md`
