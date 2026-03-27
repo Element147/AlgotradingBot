@@ -636,7 +636,7 @@ Implementation notes
 - Added `AlgotradingBot/src/test/java/com/algotrader/bot/backtest/strategy/SqueezeBreakoutRegimeConfirmationBacktestStrategyTest.java` plus expanded query, telemetry, registry, and simulation coverage to verify squeeze gating, breakout confirmation, false-signal filtering, failed-expansion exits, and strategy-specific reporting.
 
 #### 3C.6 Implement Intraday Strategy 3: Relative Strength Rotation With Intraday Entry Filter
-- [ ] Build a small-universe rotation strategy that ranks leaders with absolute momentum gating, then uses an intraday timing filter for entries and exits.
+- [x] Build a small-universe rotation strategy that ranks leaders with absolute momentum gating, then uses an intraday timing filter for entries and exits.
 Core idea
 - Keep the small-account-friendly low-turnover ranking behavior, but avoid blunt daily entry timing by using a lower-timeframe confirmation layer.
 - Bearish states route to cash or approved short proxy behavior rather than default direct shorts.
@@ -645,6 +645,11 @@ Acceptance Criteria
 - The strategy works on a defined small liquid universe rather than an undefined broad asset list.
 - The implementation does not imply that a bearish signal always opens a direct short.
 - The mandatory step completion protocol passes.
+Implementation notes
+- Added the pre-code strategy spec in `docs/strategy-specs/RELATIVE_STRENGTH_ROTATION_INTRADAY_ENTRY_FILTER.md`, freezing the approved liquid basket, relative-strength ranking model, absolute-momentum gate, intraday timing trigger, bearish-to-cash posture, and research-only validation plan before implementation.
+- Implemented `AlgotradingBot/src/main/java/com/algotrader/bot/backtest/strategy/RelativeStrengthRotationIntradayEntryFilterBacktestStrategy.java`, which ranks only an explicit small liquid universe, requires positive absolute momentum, waits for fast-EMA reclaim or recent-high breakout confirmation, and exits to cash instead of implying direct shorting.
+- Wired the strategy through `BacktestAlgorithmType`, `BacktestTelemetryService`, `StrategyManagementService`, `frontend/src/features/strategies/strategyProfiles.ts`, and the registry or simulation seams so the fixed-universe rotation path is available end to end with telemetry overlays and paper-safe seed defaults.
+- Added `AlgotradingBot/src/test/java/com/algotrader/bot/backtest/strategy/RelativeStrengthRotationIntradayEntryFilterBacktestStrategyTest.java` plus expanded telemetry, registry, simulation, and catalog integration coverage to verify approved-universe filtering, ranking, absolute-momentum gating, timing confirmation, and fallback-to-cash behavior.
 
 #### 3C.7 Add strategy telemetry, explainability, and operator-facing metadata
 - [ ] Ensure every new strategy can expose the indicators, reason labels, and signal evidence required by the redesigned chart workspaces.

@@ -289,6 +289,26 @@ const PROFILES: StrategyProfile[] = [
     timeframeOptions: ['1h'],
     configPreset: { timeframe: '1h', riskPerTrade: 0.01, minPositionSize: 15, maxPositionSize: 85 },
   },
+  {
+    key: 'RELATIVE_STRENGTH_ROTATION_INTRADAY_ENTRY_FILTER',
+    title: 'Relative Strength Rotation With Intraday Entry Filter',
+    shortDescription:
+      'Ranks only a fixed small liquid basket, then waits for fast EMA or breakout confirmation before rotating into the current leader.',
+    entryRule:
+      'Enter the top approved leader only when absolute momentum stays positive and the hourly timing trigger confirms with EMA or breakout follow-through.',
+    exitRule:
+      'Exit to cash when absolute momentum breaks or intraday support fails, and rotate only when a new approved leader clears the same timing gate.',
+    bestFor: 'Small-account research that wants low-turnover leadership ranking without blindly buying every rank change.',
+    riskNotes: 'A narrow basket and timing filter reduce unsupported broad-universe churn, but strong leaders can still reverse quickly after late-stage momentum bursts.',
+    auditDisposition: 'RESEARCH_ONLY',
+    auditLabel: 'Research only',
+    auditTone: 'warning',
+    auditSummary:
+      'New Phase 3 small-account hypothesis. It is implemented for research and telemetry review, not yet audit-cleared.',
+    operatorAction: 'Use only in controlled backtest research until the frozen audit protocol and paper evidence are completed.',
+    timeframeOptions: ['1h'],
+    configPreset: { timeframe: '1h', riskPerTrade: 0.01, minPositionSize: 15, maxPositionSize: 80 },
+  },
 ];
 
 const normalize = (value: string): string => value.trim().replace(/-/g, '_').toUpperCase();

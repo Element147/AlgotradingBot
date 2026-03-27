@@ -461,6 +461,22 @@ public class BacktestTelemetryService {
                 createSeries("atr_14", "ATR (14)", "OSCILLATOR", candles, 14,
                     index -> indicatorCalculator.averageTrueRange(candles, index, 14))
             );
+            case RELATIVE_STRENGTH_ROTATION_INTRADAY_ENTRY_FILTER -> List.of(
+                createSeries("sma_200", "Absolute Filter SMA (200)", "PRICE", candles, 199,
+                    index -> indicatorCalculator.simpleMovingAverage(candles, index, 200)),
+                createSeries("ema_20", "Trend EMA (20)", "PRICE", candles, 19,
+                    index -> indicatorCalculator.exponentialMovingAverage(candles, index, 20)),
+                createSeries("ema_5", "Trigger EMA (5)", "PRICE", candles, 4,
+                    index -> indicatorCalculator.exponentialMovingAverage(candles, index, 5)),
+                createSeries("return_21", "Short Return (21)", "OSCILLATOR", candles, 21,
+                    index -> indicatorCalculator.rollingReturn(candles, index, 21).multiply(HUNDRED, MC)),
+                createSeries("return_63", "Long Return (63)", "OSCILLATOR", candles, 63,
+                    index -> indicatorCalculator.rollingReturn(candles, index, 63).multiply(HUNDRED, MC)),
+                createSeries("breakout_high_5", "Breakout High (5)", "PRICE", candles, 5,
+                    index -> indicatorCalculator.highestHigh(candles, index - 1, 5)),
+                createSeries("rsi_5", "RSI (5)", "OSCILLATOR", candles, 5,
+                    index -> indicatorCalculator.relativeStrengthIndex(candles, index, 5))
+            );
             case TREND_FIRST_ADAPTIVE_ENSEMBLE -> List.of(
                 createSeries("ema_200", "Trend EMA (200)", "PRICE", candles, 199,
                     index -> indicatorCalculator.exponentialMovingAverage(candles, index, 200)),

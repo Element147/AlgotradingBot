@@ -27,12 +27,13 @@ class BacktestStrategyRegistryTest {
             new VwapPullbackContinuationBacktestStrategy(indicatorCalculator),
             new ExhaustionReversalFadeBacktestStrategy(indicatorCalculator),
             new MultiTimeframeEmaAdxPullbackBacktestStrategy(indicatorCalculator),
-            new SqueezeBreakoutRegimeConfirmationBacktestStrategy(indicatorCalculator)
+            new SqueezeBreakoutRegimeConfirmationBacktestStrategy(indicatorCalculator),
+            new RelativeStrengthRotationIntradayEntryFilterBacktestStrategy(indicatorCalculator)
         ));
 
         List<BacktestStrategyDefinition> definitions = registry.getDefinitions();
 
-        assertEquals(14, definitions.size());
+        assertEquals(15, definitions.size());
         assertEquals(BacktestAlgorithmType.BUY_AND_HOLD, definitions.get(0).type());
         assertEquals(BacktestAlgorithmType.DUAL_MOMENTUM_ROTATION, definitions.get(1).type());
         assertEquals(BacktestStrategySelectionMode.DATASET_UNIVERSE, definitions.get(1).selectionMode());
@@ -44,6 +45,7 @@ class BacktestStrategyRegistryTest {
         assertEquals(BacktestAlgorithmType.EXHAUSTION_REVERSAL_FADE, definitions.get(11).type());
         assertEquals(BacktestAlgorithmType.MULTI_TIMEFRAME_EMA_ADX_PULLBACK, definitions.get(12).type());
         assertEquals(BacktestAlgorithmType.SQUEEZE_BREAKOUT_REGIME_CONFIRMATION, definitions.get(13).type());
+        assertEquals(BacktestAlgorithmType.RELATIVE_STRENGTH_ROTATION_INTRADAY_ENTRY_FILTER, definitions.get(14).type());
     }
 
     @Test

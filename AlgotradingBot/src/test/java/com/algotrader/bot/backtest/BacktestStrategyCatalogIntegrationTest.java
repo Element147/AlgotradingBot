@@ -138,6 +138,18 @@ class BacktestStrategyCatalogIntegrationTest {
         assertEquals(PositionSide.LONG, result.tradeSeries().get(0).side());
     }
 
+    @Test
+    void relativeStrengthRotationIntradayFilter_strategyRunsEndToEnd() {
+        BacktestSimulationResult result = simulate(
+            BacktestAlgorithmType.RELATIVE_STRENGTH_ROTATION_INTRADAY_ENTRY_FILTER,
+            createRelativeStrengthRotationCandles(),
+            "SPY"
+        );
+
+        assertNotNull(strategyRegistry.getStrategy(BacktestAlgorithmType.RELATIVE_STRENGTH_ROTATION_INTRADAY_ENTRY_FILTER));
+        assertTrue(result.totalTrades() >= 1);
+    }
+
     private BacktestSimulationResult simulate(BacktestAlgorithmType algorithmType,
                                               List<OHLCVData> candles,
                                               String primarySymbol) {
@@ -300,6 +312,19 @@ class BacktestStrategyCatalogIntegrationTest {
         return candles;
     }
 
+    private List<OHLCVData> createRelativeStrengthRotationCandles() {
+        List<OHLCVData> candles = new ArrayList<>();
+        LocalDateTime start = LocalDateTime.parse("2025-01-01T00:00:00");
+
+        for (int index = 0; index < 260; index++) {
+            candles.add(candle(start.plusHours(index), "SPY", closeForSpy(index)));
+            candles.add(candle(start.plusHours(index), "QQQ", closeForQqq(index)));
+            candles.add(candle(start.plusHours(index), "VTI", closeForVti(index)));
+        }
+
+        return candles;
+    }
+
     private OHLCVData candle(LocalDateTime timestamp, String symbol, BigDecimal close) {
         return new OHLCVData(
             timestamp,
@@ -314,5 +339,33 @@ class BacktestStrategyCatalogIntegrationTest {
 
     private BigDecimal bd(double value) {
         return BigDecimal.valueOf(value);
+    }
+
+    private BigDecimal closeForSpy(int index) {
+        if (index < 230) {
+            return bd(100 + index * 0.35);
+        }
+        return switch (index) {
+            case 230 -> bd(180);
+            case 231 -> bd(178);
+            case 232 -> bd(176);
+            case 233 -> bd(174);
+            case 234 -> bd(173);
+            case 235 -> bd(175);
+            case 236 -> bd(179);
+            case 237 -> bd(183);
+            default -> bd(183 + (index - 237) * 0.55);
+        };
+    }
+
+    private BigDecimal closeForQqq(int index) {
+        if (index < 245) {
+            return bd(100 + index * 0.22);
+        }
+        return bd(154 + (index - 245) * 1.2);
+    }
+
+    private BigDecimal closeForVti(int index) {
+        return bd(100 + index * 0.18);
     }
 }

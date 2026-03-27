@@ -355,6 +355,8 @@ public class StrategyManagementService {
                 new BigDecimal("15.00"), new BigDecimal("90.00"));
             case SQUEEZE_BREAKOUT_REGIME_CONFIRMATION -> new StrategySeedPreset("SPY", "1h", new BigDecimal("0.01"),
                 new BigDecimal("15.00"), new BigDecimal("85.00"));
+            case RELATIVE_STRENGTH_ROTATION_INTRADAY_ENTRY_FILTER -> new StrategySeedPreset("SPY", "1h",
+                new BigDecimal("0.01"), new BigDecimal("15.00"), new BigDecimal("80.00"));
         };
     }
 

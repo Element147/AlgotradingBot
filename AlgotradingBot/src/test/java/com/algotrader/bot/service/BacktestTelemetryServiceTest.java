@@ -273,6 +273,28 @@ class BacktestTelemetryServiceTest {
     }
 
     @Test
+    void buildTelemetry_relativeStrengthRotationIncludesRankingAndTimingIndicators() {
+        List<MarketDataQueriedCandle> candles = createRisingCandles("SPY", "1h", 260, new BigDecimal("100"));
+        BacktestResult result = baseResult(12L, "RELATIVE_STRENGTH_ROTATION_INTRADAY_ENTRY_FILTER", "SPY", candles);
+
+        when(marketDataQueryService.queryCandlesForDataset(
+            12L,
+            "1h",
+            result.getStartDate(),
+            result.getEndDate(),
+            Set.of("SPY"),
+            MarketDataQueryMode.BEST_AVAILABLE
+        )).thenReturn(new MarketDataQueryResult(candles, List.of(), "1h", MarketDataQueryMode.BEST_AVAILABLE));
+
+        List<BacktestSymbolTelemetryResponse> telemetry = backtestTelemetryService.buildTelemetry(result);
+
+        assertEquals(1, telemetry.size());
+        assertTrue(telemetry.get(0).indicators().stream().anyMatch(series -> "return_63".equals(series.key())));
+        assertTrue(telemetry.get(0).indicators().stream().anyMatch(series -> "breakout_high_5".equals(series.key())));
+        assertTrue(telemetry.get(0).indicators().stream().anyMatch(series -> "rsi_5".equals(series.key())));
+    }
+
+    @Test
     void buildTelemetry_ichimokuTrendIncludesCloudIndicators() {
         List<MarketDataQueriedCandle> candles = createRisingCandles("BTC/USDT", "1h", 240, new BigDecimal("100"));
         BacktestResult result = baseResult(5L, "ICHIMOKU_TREND", "BTC/USDT", candles);

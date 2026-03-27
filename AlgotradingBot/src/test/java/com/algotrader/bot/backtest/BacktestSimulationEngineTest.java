@@ -8,6 +8,7 @@ import com.algotrader.bot.backtest.strategy.DualMomentumRotationBacktestStrategy
 import com.algotrader.bot.backtest.strategy.ExhaustionReversalFadeBacktestStrategy;
 import com.algotrader.bot.backtest.strategy.MultiTimeframeEmaAdxPullbackBacktestStrategy;
 import com.algotrader.bot.backtest.strategy.OpeningRangeVwapBreakoutBacktestStrategy;
+import com.algotrader.bot.backtest.strategy.RelativeStrengthRotationIntradayEntryFilterBacktestStrategy;
 import com.algotrader.bot.backtest.strategy.RegimeFilteredMeanReversionBacktestStrategy;
 import com.algotrader.bot.backtest.strategy.BacktestStrategy;
 import com.algotrader.bot.backtest.strategy.BacktestStrategyContext;
@@ -54,7 +55,8 @@ class BacktestSimulationEngineTest {
             new VwapPullbackContinuationBacktestStrategy(indicatorCalculator),
             new ExhaustionReversalFadeBacktestStrategy(indicatorCalculator),
             new MultiTimeframeEmaAdxPullbackBacktestStrategy(indicatorCalculator),
-            new SqueezeBreakoutRegimeConfirmationBacktestStrategy(indicatorCalculator)
+            new SqueezeBreakoutRegimeConfirmationBacktestStrategy(indicatorCalculator),
+            new RelativeStrengthRotationIntradayEntryFilterBacktestStrategy(indicatorCalculator)
         ));
 
         simulationEngine = new BacktestSimulationEngine(registry, new BacktestSimulationMetricsCalculator());
@@ -123,6 +125,17 @@ class BacktestSimulationEngineTest {
         );
 
         assertTrue(result.totalTrades() >= 1);
+    }
+
+    @Test
+    void simulate_relativeStrengthRotationWithIntradayFilterProducesTrade() {
+        BacktestSimulationResult result = simulationEngine.simulate(
+            BacktestAlgorithmType.RELATIVE_STRENGTH_ROTATION_INTRADAY_ENTRY_FILTER,
+            request(createRelativeStrengthRotationCandles(), "SPY")
+        );
+
+        assertTrue(result.totalTrades() >= 1);
+        assertEquals(result.totalTrades(), result.tradeSeries().size());
     }
 
     @Test
@@ -352,6 +365,19 @@ class BacktestSimulationEngineTest {
         return candles;
     }
 
+    private List<OHLCVData> createRelativeStrengthRotationCandles() {
+        List<OHLCVData> candles = new ArrayList<>();
+        LocalDateTime start = LocalDateTime.parse("2025-01-01T00:00:00");
+
+        for (int index = 0; index < 260; index++) {
+            candles.add(candle(start.plusHours(index), "SPY", closeForSpy(index)));
+            candles.add(candle(start.plusHours(index), "QQQ", closeForQqq(index)));
+            candles.add(candle(start.plusHours(index), "VTI", closeForVti(index)));
+        }
+
+        return candles;
+    }
+
     private OHLCVData candle(LocalDateTime timestamp, String symbol, BigDecimal close) {
         return candle(timestamp, symbol, close, close);
     }
@@ -370,5 +396,33 @@ class BacktestSimulationEngineTest {
 
     private BigDecimal bd(double value) {
         return BigDecimal.valueOf(value);
+    }
+
+    private BigDecimal closeForSpy(int index) {
+        if (index < 230) {
+            return bd(100 + index * 0.35);
+        }
+        return switch (index) {
+            case 230 -> bd(180);
+            case 231 -> bd(178);
+            case 232 -> bd(176);
+            case 233 -> bd(174);
+            case 234 -> bd(173);
+            case 235 -> bd(175);
+            case 236 -> bd(179);
+            case 237 -> bd(183);
+            default -> bd(183 + (index - 237) * 0.55);
+        };
+    }
+
+    private BigDecimal closeForQqq(int index) {
+        if (index < 245) {
+            return bd(100 + index * 0.22);
+        }
+        return bd(154 + (index - 245) * 1.2);
+    }
+
+    private BigDecimal closeForVti(int index) {
+        return bd(100 + index * 0.18);
     }
 }
