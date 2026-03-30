@@ -13,12 +13,13 @@ Write-Host ""
 Set-Location $scriptPath
 $repoPaths = Get-RepoPaths -ScriptPath $scriptPath
 Initialize-RepoRuntime -RepoPaths $repoPaths
-Set-LocalDockerComposeEnvironment -RepoPaths $repoPaths
+$authRuntimeConfig = Set-LocalDockerComposeEnvironment -RepoPaths $repoPaths
 $backendPidFile = Get-PidFilePath -RepoPaths $repoPaths -Name "backend"
 $frontendPidFile = Get-PidFilePath -RepoPaths $repoPaths -Name "frontend"
 
 Refresh-UserPath
 Write-JavaVersionSummary
+Write-LocalAuthModeSummary -AuthRuntimeConfig $authRuntimeConfig
 $composeArgs = Get-ComposeArgs -RepoPaths $repoPaths -IncludeDebug:$DebugBackend
 
 function Cleanup-FullStackStartup {

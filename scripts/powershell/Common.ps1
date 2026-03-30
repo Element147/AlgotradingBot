@@ -188,6 +188,125 @@ function Get-LocalJwtSecret {
     return $generatedSecret
 }
 
+function ConvertTo-BooleanFlag {
+    param(
+        [AllowNull()]
+        [string]$Value
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Value)) {
+        return $false
+    }
+
+    switch ($Value.Trim().ToLowerInvariant()) {
+        "1" { return $true }
+        "true" { return $true }
+        "yes" { return $true }
+        "on" { return $true }
+        default { return $false }
+    }
+}
+
+function Get-FrontendEnvironmentFiles {
+    param(
+        [Parameter(Mandatory = $true)]
+        [hashtable]$RepoPaths,
+        [string]$Mode = "development"
+    )
+
+    $frontendDir = Join-Path $RepoPaths.ScriptPath "frontend"
+    return @(
+        (Join-Path $frontendDir ".env"),
+        (Join-Path $frontendDir ".env.local"),
+        (Join-Path $frontendDir ".env.$Mode"),
+        (Join-Path $frontendDir ".env.$Mode.local")
+    )
+}
+
+function Get-FrontendEnvironmentVariable {
+    param(
+        [Parameter(Mandatory = $true)]
+        [hashtable]$RepoPaths,
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+        [string]$Mode = "development"
+    )
+
+    $resolvedValue = $null
+    foreach ($envFile in Get-FrontendEnvironmentFiles -RepoPaths $RepoPaths -Mode $Mode) {
+        if (-not (Test-Path $envFile)) {
+            continue
+        }
+
+        foreach ($line in Get-Content $envFile) {
+            $trimmedLine = $line.Trim()
+            if (-not $trimmedLine -or $trimmedLine.StartsWith("#")) {
+                continue
+            }
+
+            if ($trimmedLine -notmatch "^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$") {
+                continue
+            }
+
+            $key = $matches[1]
+            $value = $matches[2].Trim()
+            if ($key -ne $Name) {
+                continue
+            }
+
+            if ($value.Length -ge 2) {
+                $startsWithDoubleQuote = $value.StartsWith('"')
+                $endsWithDoubleQuote = $value.EndsWith('"')
+                $startsWithSingleQuote = $value.StartsWith("'")
+                $endsWithSingleQuote = $value.EndsWith("'")
+                if (($startsWithDoubleQuote -and $endsWithDoubleQuote) -or ($startsWithSingleQuote -and $endsWithSingleQuote)) {
+                    $value = $value.Substring(1, $value.Length - 2)
+                }
+            }
+
+            $resolvedValue = $value
+        }
+    }
+
+    return $resolvedValue
+}
+
+function Get-LocalAuthRuntimeConfig {
+    param(
+        [Parameter(Mandatory = $true)]
+        [hashtable]$RepoPaths
+    )
+
+    $frontendDevAuthBypassValue = Get-FrontendEnvironmentVariable `
+        -RepoPaths $RepoPaths `
+        -Name "VITE_DEV_AUTH_BYPASS"
+    $frontendDevAuthBypassEnabled = ConvertTo-BooleanFlag $frontendDevAuthBypassValue
+
+    $explicitRelaxedAuthValue = $env:ALGOTRADING_RELAXED_AUTH
+    if ([string]::IsNullOrWhiteSpace($explicitRelaxedAuthValue)) {
+        $relaxedAuthEnabled = $frontendDevAuthBypassEnabled
+        $relaxedAuthSource = if ($frontendDevAuthBypassEnabled) {
+            "auto-matched VITE_DEV_AUTH_BYPASS"
+        } else {
+            "default strict auth"
+        }
+    } else {
+        $relaxedAuthEnabled = ConvertTo-BooleanFlag $explicitRelaxedAuthValue
+        $relaxedAuthSource = "ALGOTRADING_RELAXED_AUTH override"
+    }
+
+    return @{
+        FrontendDevAuthBypassEnabled = $frontendDevAuthBypassEnabled
+        FrontendDevAuthBypassSource = if ($frontendDevAuthBypassValue -ne $null) {
+            "frontend env"
+        } else {
+            "frontend env default"
+        }
+        RelaxedAuthEnabled = $relaxedAuthEnabled
+        RelaxedAuthSource = $relaxedAuthSource
+    }
+}
+
 function Set-LocalDockerComposeEnvironment {
     param(
         [Parameter(Mandatory = $true)]
@@ -195,6 +314,9 @@ function Set-LocalDockerComposeEnvironment {
     )
 
     $env:JWT_SECRET = Get-LocalJwtSecret -RepoPaths $RepoPaths
+    $authRuntimeConfig = Get-LocalAuthRuntimeConfig -RepoPaths $RepoPaths
+    $env:ALGOTRADING_RELAXED_AUTH = if ($authRuntimeConfig.RelaxedAuthEnabled) { "true" } else { "false" }
+    return $authRuntimeConfig
 }
 
 function Get-HostMemoryMb {
@@ -300,11 +422,29 @@ function Get-BackendRuntimeEnvironment {
         -MaxHeapMb $MaxHeapMb `
         -MaxMetaspaceMb $MaxMetaspaceMb
 
+    $authRuntimeConfig = Get-LocalAuthRuntimeConfig -RepoPaths $RepoPaths
     $environment = Get-BackendLogEnvironment $RepoPaths
     $environment["JWT_SECRET"] = Get-LocalJwtSecret -RepoPaths $RepoPaths
+    $environment["ALGOTRADING_RELAXED_AUTH"] = if ($authRuntimeConfig.RelaxedAuthEnabled) { "true" } else { "false" }
     $environment["JAVA_TOOL_OPTIONS"] = $jvmSettings.JavaToolOptions
 
     return $environment
+}
+
+function Write-LocalAuthModeSummary {
+    param(
+        [Parameter(Mandatory = $true)]
+        [hashtable]$AuthRuntimeConfig
+    )
+
+    $frontendBypassStatus = if ($AuthRuntimeConfig.FrontendDevAuthBypassEnabled) { "enabled" } else { "disabled" }
+    Write-Host "[OK] Frontend dev auth bypass: $frontendBypassStatus ($($AuthRuntimeConfig.FrontendDevAuthBypassSource))" -ForegroundColor Green
+
+    if ($AuthRuntimeConfig.RelaxedAuthEnabled) {
+        Write-Host "[WARN] Backend relaxed auth: enabled for local debugging ($($AuthRuntimeConfig.RelaxedAuthSource))" -ForegroundColor DarkYellow
+    } else {
+        Write-Host "[OK] Backend relaxed auth: disabled ($($AuthRuntimeConfig.RelaxedAuthSource))" -ForegroundColor Green
+    }
 }
 
 function Wait-ContainerHealthy {

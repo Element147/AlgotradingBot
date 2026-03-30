@@ -78,6 +78,7 @@ public class AuthService {
      * Logout user by invalidating token.
      * @param token the JWT token to invalidate
      */
+    @Transactional
     public void logout(String token) {
         if (token != null && jwtTokenProvider.validateToken(token)) {
             String tokenHash = hashToken(token);

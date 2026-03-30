@@ -18,9 +18,10 @@ Write-Host ""
 Set-Location $scriptPath
 $repoPaths = Get-RepoPaths -ScriptPath $scriptPath
 Initialize-RepoRuntime -RepoPaths $repoPaths
-Set-LocalDockerComposeEnvironment -RepoPaths $repoPaths
+$authRuntimeConfig = Set-LocalDockerComposeEnvironment -RepoPaths $repoPaths
 Refresh-UserPath
 Write-JavaVersionSummary
+Write-LocalAuthModeSummary -AuthRuntimeConfig $authRuntimeConfig
 $composeArgs = Get-ComposeArgs -RepoPaths $repoPaths
 
 $backendPidFile = Get-PidFilePath -RepoPaths $repoPaths -Name "backend"

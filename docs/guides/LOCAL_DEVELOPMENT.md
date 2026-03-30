@@ -24,6 +24,7 @@ Use `.\run-all.ps1` and `.\stop-all.ps1` when you want the Docker-backed full st
 - starts PostgreSQL in Docker
 - runs the backend locally
 - runs the frontend locally
+- auto-matches backend relaxed auth to frontend `VITE_DEV_AUTH_BYPASS` for local-only debugging
 - waits for both services to be ready
 - rolls back partial startup if a later stage fails
 
@@ -34,6 +35,7 @@ Use `.\run-all.ps1` and `.\stop-all.ps1` when you want the Docker-backed full st
 - stops tracked local processes first
 - starts the backend and PostgreSQL in Docker
 - runs the frontend locally
+- auto-matches backend relaxed auth to frontend `VITE_DEV_AUTH_BYPASS` for local-only debugging
 - waits for both services to be ready
 - rolls back partial startup if startup fails
 
@@ -89,6 +91,7 @@ Rules:
 - PID tracking: `.pids`
 
 The local JWT secret is stored in `.runtime/local-jwt-secret.txt` and reused across local restarts.
+When `frontend/.env` enables `VITE_DEV_AUTH_BYPASS=true`, the PowerShell run scripts also set `ALGOTRADING_RELAXED_AUTH=true` so the local backend accepts the same debug posture. If you start the backend manually with `.\gradlew.bat bootRun`, set that env var yourself or turn frontend bypass off.
 
 ## Docker And Compose
 
