@@ -20,13 +20,15 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
-  TableContainer,
+  TableSortLabel,
   TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
+import { useMemo, useState } from 'react';
 
 import type {
   BacktestAlgorithm,
@@ -63,6 +65,27 @@ import {
   formatPercentage,
 } from '@/utils/formatters';
 
+type SortDirection = 'asc' | 'desc';
+type DatasetSortField =
+  | 'name'
+  | 'symbolsCsv'
+  | 'rowCount'
+  | 'retentionStatus'
+  | 'usageCount'
+  | 'lastUsedAt'
+  | 'uploadedAt'
+  | 'schemaChecksum';
+type HistorySortField =
+  | 'id'
+  | 'strategyId'
+  | 'datasetName'
+  | 'experimentName'
+  | 'market'
+  | 'executionStatus'
+  | 'validationStatus'
+  | 'feesBps'
+  | 'slippageBps';
+
 interface HeaderCellProps {
   label: string;
   description: string;
@@ -79,8 +102,57 @@ function HeaderCellWithTooltip({ label, description }: HeaderCellProps) {
   );
 }
 
+interface SortableHeaderCellProps extends HeaderCellProps {
+  active: boolean;
+  direction: SortDirection;
+  onClick: () => void;
+  align?: 'left' | 'right';
+}
+
+function SortableHeaderCell({
+  label,
+  description,
+  active,
+  direction,
+  onClick,
+  align = 'left',
+}: SortableHeaderCellProps) {
+  return (
+    <Stack
+      direction="row"
+      spacing={0.5}
+      alignItems="center"
+      justifyContent={align === 'right' ? 'flex-end' : 'flex-start'}
+    >
+      <TableSortLabel active={active} direction={direction} onClick={onClick}>
+        {label}
+      </TableSortLabel>
+      <Tooltip title={description} arrow>
+        <InfoOutlinedIcon fontSize="inherit" color="action" sx={{ cursor: 'help' }} />
+      </Tooltip>
+    </Stack>
+  );
+}
+
 const asyncStateLabel = (item: BacktestHistoryItem) =>
   item.asyncMonitor?.state ?? (item.executionStatus === 'PENDING' ? 'QUEUED' : item.executionStatus);
+
+const compareValues = (
+  left: number | string,
+  right: number | string,
+  direction: SortDirection
+) => {
+  const multiplier = direction === 'asc' ? 1 : -1;
+
+  if (typeof left === 'number' && typeof right === 'number') {
+    return (left - right) * multiplier;
+  }
+
+  return String(left).localeCompare(String(right), undefined, { sensitivity: 'base' }) * multiplier;
+};
+
+const compareDates = (left: string | null, right: string | null, direction: SortDirection) =>
+  compareValues(left ? new Date(left).getTime() : 0, right ? new Date(right).getTime() : 0, direction);
 
 interface BacktestTransportStatusAlertProps {
   transportConnected: boolean;
@@ -145,18 +217,9 @@ export function BacktestTrackedRunCard({
                 value: transportConnected ? 'WebSocket live' : 'Polling fallback',
                 tone: transportConnected ? 'success' : 'warning',
               },
-              {
-                label: 'Stage',
-                value: executionStageLabel(trackedRun.executionStage),
-              },
-              {
-                label: 'Done',
-                value: `${executionProgressValue(trackedRun)}%`,
-              },
-              {
-                label: 'Left',
-                value: `${percentLeft(trackedRun)}%`,
-              },
+              { label: 'Stage', value: executionStageLabel(trackedRun.executionStage) },
+              { label: 'Done', value: `${executionProgressValue(trackedRun)}%` },
+              { label: 'Left', value: `${percentLeft(trackedRun)}%` },
               {
                 label: 'Current data date',
                 value: formatProgressTimestamp(trackedRun.currentDataTimestamp),
@@ -165,14 +228,8 @@ export function BacktestTrackedRunCard({
                 label: 'Candles',
                 value: `${formatNumber(trackedRun.processedCandles)} / ${formatNumber(trackedRun.totalCandles)}`,
               },
-              {
-                label: 'Last backend update',
-                value: formatLastUpdate(trackedRun.lastProgressAt),
-              },
-              {
-                label: 'Last pushed event',
-                value: formatLiveEventTimestamp(lastLiveEventAt),
-              },
+              { label: 'Last backend update', value: formatLastUpdate(trackedRun.lastProgressAt) },
+              { label: 'Last pushed event', value: formatLiveEventTimestamp(lastLiveEventAt) },
               {
                 label: 'Attempts',
                 value: trackedRun.asyncMonitor
@@ -251,11 +308,54 @@ export function BacktestDatasetPanel({
   onArchiveDataset,
   onRestoreDataset,
 }: BacktestDatasetPanelProps) {
+  const [sortField, setSortField] = useState<DatasetSortField>('uploadedAt');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+
+  const sortedDatasets = useMemo(() => {
+    const items = [...datasets];
+
+    items.sort((left, right) => {
+      switch (sortField) {
+        case 'name':
+        case 'symbolsCsv':
+        case 'retentionStatus':
+          return compareValues(left[sortField], right[sortField], sortDirection);
+        case 'rowCount':
+        case 'usageCount':
+          return compareValues(left[sortField], right[sortField], sortDirection);
+        case 'lastUsedAt':
+          return compareDates(left.lastUsedAt, right.lastUsedAt, sortDirection);
+        case 'uploadedAt':
+          return compareDates(left.uploadedAt, right.uploadedAt, sortDirection);
+        case 'schemaChecksum':
+          return compareValues(
+            `${left.schemaVersion} ${left.checksumSha256}`,
+            `${right.schemaVersion} ${right.checksumSha256}`,
+            sortDirection
+          );
+        default:
+          return 0;
+      }
+    });
+
+    return items;
+  }, [datasets, sortDirection, sortField]);
+
+  const toggleSort = (field: DatasetSortField) => {
+    if (sortField === field) {
+      setSortDirection((current) => (current === 'asc' ? 'desc' : 'asc'));
+      return;
+    }
+
+    setSortField(field);
+    setSortDirection(field === 'uploadedAt' || field === 'lastUsedAt' ? 'desc' : 'asc');
+  };
+
   return (
-    <Card sx={{ height: '100%' }}>
+    <Card>
       <CardContent>
         <Typography variant="h6" sx={{ mb: 2 }}>
-          Dataset Upload
+          Dataset lifecycle
         </Typography>
         <Stack spacing={2}>
           <Alert severity="info">
@@ -275,7 +375,7 @@ export function BacktestDatasetPanel({
               value={datasetName}
               onChange={(event) => onDatasetNameChange(event.target.value)}
               placeholder="BTC 1h 2025"
-              helperText="Optional label to identify symbol/timeframe/date range."
+              helperText="Optional label to identify symbol, timeframe, and date range."
             />
           </FieldTooltip>
           <FieldTooltip title="CSV upload defines the historical data source. Incorrect format or timeframe invalidates results.">
@@ -305,81 +405,187 @@ export function BacktestDatasetPanel({
             <>
               <Divider />
               <Stack spacing={1}>
-                <Typography variant="subtitle2">Dataset Inventory</Typography>
-                {datasets.map((dataset) => (
-                  <Box
-                    key={dataset.id}
-                    sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1.25 }}
-                  >
-                    <Stack
-                      direction={{ xs: 'column', sm: 'row' }}
-                      spacing={1}
-                      justifyContent="space-between"
-                      alignItems={{ xs: 'flex-start', sm: 'center' }}
-                    >
-                      <Box>
-                        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                            {dataset.name}
-                          </Typography>
-                          <Chip
-                            size="small"
-                            color={retentionChipColor(dataset.retentionStatus)}
-                            label={retentionLabel(dataset.retentionStatus)}
+                <Typography variant="subtitle2">Sortable dataset inventory</Typography>
+                <TableContainer>
+                  <Table size="small" sx={{ minWidth: 1260 }}>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>
+                          <SortableHeaderCell
+                            label="Name"
+                            description="Dataset label and original upload file."
+                            active={sortField === 'name'}
+                            direction={sortDirection}
+                            onClick={() => toggleSort('name')}
                           />
-                        </Stack>
-                        <Typography variant="caption" color="text.secondary" display="block">
-                          {dataset.originalFilename} | {dataset.rowCount} rows | {dataset.symbolsCsv}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" display="block">
-                          Schema: {dataset.schemaVersion} | Checksum: {dataset.checksumSha256}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" display="block">
-                          Used by backtests: {dataset.usageCount}
-                          {dataset.lastUsedAt ? ` | Last used: ${dataset.lastUsedAt}` : ' | Never used'}
-                          {dataset.duplicateCount > 1 ? ` | Duplicate uploads: ${dataset.duplicateCount}` : ''}
-                        </Typography>
-                        {dataset.archived && dataset.archiveReason ? (
-                          <Typography variant="caption" color="text.secondary" display="block">
-                            Archive reason: {dataset.archiveReason}
-                          </Typography>
-                        ) : null}
-                      </Box>
-                      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          startIcon={<DownloadIcon />}
-                          onClick={() => void onDownloadDataset(dataset.id)}
-                        >
-                          Download
-                        </Button>
-                        {dataset.archived ? (
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            startIcon={<RestoreFromTrashIcon />}
-                            disabled={datasetLifecycleBusy}
-                            onClick={() => void onRestoreDataset(dataset.id)}
-                          >
-                            Restore
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            color="warning"
-                            startIcon={<ArchiveOutlinedIcon />}
-                            disabled={datasetLifecycleBusy}
-                            onClick={() => void onArchiveDataset(dataset)}
-                          >
-                            Archive
-                          </Button>
-                        )}
-                      </Stack>
-                    </Stack>
-                  </Box>
-                ))}
+                        </TableCell>
+                        <TableCell>
+                          <SortableHeaderCell
+                            label="Symbols"
+                            description="Symbols available for single-symbol or dataset-universe runs."
+                            active={sortField === 'symbolsCsv'}
+                            direction={sortDirection}
+                            onClick={() => toggleSort('symbolsCsv')}
+                          />
+                        </TableCell>
+                        <TableCell align="right">
+                          <SortableHeaderCell
+                            label="Rows"
+                            description="Total number of historical rows in the uploaded file."
+                            active={sortField === 'rowCount'}
+                            direction={sortDirection}
+                            onClick={() => toggleSort('rowCount')}
+                            align="right"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <SortableHeaderCell
+                            label="Retention"
+                            description="Lifecycle state for active, retained duplicate, or archived datasets."
+                            active={sortField === 'retentionStatus'}
+                            direction={sortDirection}
+                            onClick={() => toggleSort('retentionStatus')}
+                          />
+                        </TableCell>
+                        <TableCell align="right">
+                          <SortableHeaderCell
+                            label="Usage"
+                            description="Number of runs referencing this dataset."
+                            active={sortField === 'usageCount'}
+                            direction={sortDirection}
+                            onClick={() => toggleSort('usageCount')}
+                            align="right"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <SortableHeaderCell
+                            label="Last used"
+                            description="Most recent run timestamp using this dataset."
+                            active={sortField === 'lastUsedAt'}
+                            direction={sortDirection}
+                            onClick={() => toggleSort('lastUsedAt')}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <SortableHeaderCell
+                            label="Uploaded"
+                            description="Upload timestamp for sorting recent versus older datasets."
+                            active={sortField === 'uploadedAt'}
+                            direction={sortDirection}
+                            onClick={() => toggleSort('uploadedAt')}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <SortableHeaderCell
+                            label="Schema / checksum"
+                            description="Schema version and dataset proof used for reproducibility."
+                            active={sortField === 'schemaChecksum'}
+                            direction={sortDirection}
+                            onClick={() => toggleSort('schemaChecksum')}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <HeaderCellWithTooltip
+                            label="Actions"
+                            description="Download, archive, or restore the dataset."
+                          />
+                        </TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {sortedDatasets.map((dataset) => (
+                        <TableRow key={dataset.id} hover>
+                          <TableCell>
+                            <Stack spacing={0.5}>
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                {dataset.name}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {dataset.originalFilename}
+                              </Typography>
+                              {dataset.archived && dataset.archiveReason ? (
+                                <Typography variant="caption" color="text.secondary">
+                                  Archive reason: {dataset.archiveReason}
+                                </Typography>
+                              ) : null}
+                            </Stack>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">{dataset.symbolsCsv}</Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {formatDateTime(dataset.dataStart)} to {formatDateTime(dataset.dataEnd)}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="right">{formatNumber(dataset.rowCount)}</TableCell>
+                          <TableCell>
+                            <Chip
+                              size="small"
+                              color={retentionChipColor(dataset.retentionStatus)}
+                              label={retentionLabel(dataset.retentionStatus)}
+                            />
+                          </TableCell>
+                          <TableCell align="right">
+                            <Typography variant="body2">{formatNumber(dataset.usageCount)}</Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {dataset.usedByBacktests ? 'Referenced by runs' : 'Not referenced yet'}
+                              {dataset.duplicateCount > 1
+                                ? ` | Duplicates: ${dataset.duplicateCount}`
+                                : ''}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">
+                              {dataset.lastUsedAt ? formatDateTime(dataset.lastUsedAt) : 'Never used'}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">{formatDateTime(dataset.uploadedAt)}</Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">{dataset.schemaVersion}</Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {dataset.checksumSha256.slice(0, 12)}...
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Stack direction={{ xs: 'column', md: 'row' }} spacing={1}>
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                startIcon={<DownloadIcon />}
+                                onClick={() => void onDownloadDataset(dataset.id)}
+                              >
+                                Download
+                              </Button>
+                              {dataset.archived ? (
+                                <Button
+                                  variant="outlined"
+                                  size="small"
+                                  startIcon={<RestoreFromTrashIcon />}
+                                  disabled={datasetLifecycleBusy}
+                                  onClick={() => void onRestoreDataset(dataset.id)}
+                                >
+                                  Restore
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="outlined"
+                                  size="small"
+                                  color="warning"
+                                  startIcon={<ArchiveOutlinedIcon />}
+                                  disabled={datasetLifecycleBusy}
+                                  onClick={() => void onArchiveDataset(dataset)}
+                                >
+                                  Archive
+                                </Button>
+                              )}
+                            </Stack>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
               </Stack>
             </>
           ) : null}
@@ -449,7 +655,7 @@ export function BacktestExperimentSummariesPanel({
   experimentSummaries,
 }: BacktestExperimentSummariesPanelProps) {
   return (
-    <Card>
+    <Card sx={{ height: '100%' }}>
       <CardContent>
         <Typography variant="h6" sx={{ mb: 2 }}>
           Experiment Summaries
@@ -574,6 +780,49 @@ export function BacktestHistoryPanel({
   onReplayBacktest,
   onDeleteResult,
 }: BacktestHistoryPanelProps) {
+  const [sortField, setSortField] = useState<HistorySortField>('id');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+
+  const sortedHistory = useMemo(() => {
+    const items = [...history];
+
+    items.sort((left, right) => {
+      switch (sortField) {
+        case 'id':
+        case 'feesBps':
+        case 'slippageBps':
+          return compareValues(left[sortField], right[sortField], sortDirection);
+        case 'strategyId':
+        case 'experimentName':
+        case 'executionStatus':
+        case 'validationStatus':
+          return compareValues(left[sortField], right[sortField], sortDirection);
+        case 'datasetName':
+          return compareValues(left.datasetName ?? '', right.datasetName ?? '', sortDirection);
+        case 'market':
+          return compareValues(
+            `${formatBacktestMarketLabel(left.symbol)} ${left.timeframe}`,
+            `${formatBacktestMarketLabel(right.symbol)} ${right.timeframe}`,
+            sortDirection
+          );
+        default:
+          return 0;
+      }
+    });
+
+    return items;
+  }, [history, sortDirection, sortField]);
+
+  const toggleSort = (field: HistorySortField) => {
+    if (sortField === field) {
+      setSortDirection((current) => (current === 'asc' ? 'desc' : 'asc'));
+      return;
+    }
+
+    setSortField(field);
+    setSortDirection(field === 'id' ? 'desc' : 'asc');
+  };
+
   return (
     <Card>
       <CardContent>
@@ -609,181 +858,219 @@ export function BacktestHistoryPanel({
         {isLoading ? <Typography>Loading history...</Typography> : null}
         {isError ? <Alert severity="error">Unable to load backtest history.</Alert> : null}
 
+        {!isLoading && !isError && history.length === 0 ? (
+          <Alert severity="info">Run history will appear here once backtests are recorded.</Alert>
+        ) : null}
+
         {!isLoading && history.length > 0 ? (
           <TableContainer>
-            <Table size="small" sx={{ minWidth: 1220 }}>
-            <TableHead>
-              <TableRow>
-                <TableCell>
-                  <HeaderCellWithTooltip
-                    label="Compare"
-                    description="Select two or more completed runs to compare them side by side."
-                  />
-                </TableCell>
-                <TableCell>
-                  <HeaderCellWithTooltip
-                    label="ID"
-                    description="Unique run identifier. Select a row to open full details and charts."
-                  />
-                </TableCell>
-                <TableCell>
-                  <HeaderCellWithTooltip
-                    label="Algorithm"
-                    description="Strategy logic used for this backtest run."
-                  />
-                </TableCell>
-                <TableCell>
-                  <HeaderCellWithTooltip
-                    label="Dataset"
-                    description="Historical file used as market-data input."
-                  />
-                </TableCell>
-                <TableCell>
-                  <HeaderCellWithTooltip
-                    label="Experiment"
-                    description="Repeatable research group label for related runs."
-                  />
-                </TableCell>
-                <TableCell>
-                  <HeaderCellWithTooltip
-                    label="Market"
-                    description="Symbol and timeframe tested in the simulation."
-                  />
-                </TableCell>
-                <TableCell>
-                  <HeaderCellWithTooltip
-                    label="Status"
-                    description="Live execution stage, progress, and backend telemetry for the run."
-                  />
-                </TableCell>
-                <TableCell>
-                  <HeaderCellWithTooltip
-                    label="Validation"
-                    description="Quality gate result from internal checks; not proof of profitability."
-                  />
-                </TableCell>
-                <TableCell>
-                  <HeaderCellWithTooltip
-                    label="Fees/Slippage"
-                    description="Trading cost assumptions applied in basis points (bps)."
-                  />
-                </TableCell>
-                <TableCell>
-                  <HeaderCellWithTooltip
-                    label="Actions"
-                    description="Open detailed results, replay a prior setup, or delete finished runs."
-                  />
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {history.map((item) => (
-                <TableRow
-                  key={item.id}
-                  hover
-                  onClick={() => onSelectRun(item.id)}
-                  sx={{ cursor: 'pointer' }}
-                  selected={item.id === selectedId}
-                >
-                  <TableCell onClick={(event) => event.stopPropagation()}>
-                    <Checkbox
-                      checked={comparisonIds.includes(item.id)}
-                      onChange={() => onToggleComparison(item.id)}
-                      inputProps={{ 'aria-label': `Select backtest ${item.id} for comparison` }}
+            <Table size="small" sx={{ minWidth: 1320 }}>
+              <TableHead>
+                <TableRow>
+                  <TableCell>
+                    <HeaderCellWithTooltip
+                      label="Compare"
+                      description="Select two or more completed runs to compare them side by side."
                     />
                   </TableCell>
-                  <TableCell>{item.id}</TableCell>
-                  <TableCell>{item.strategyId}</TableCell>
-                  <TableCell>{item.datasetName ?? '-'}</TableCell>
-                  <TableCell>{item.experimentName}</TableCell>
                   <TableCell>
-                    <Stack spacing={0.5}>
-                      <span>
-                        {formatBacktestMarketLabel(item.symbol)} ({item.timeframe})
-                      </span>
-                      {isExecutionActive(item) ? (
-                        <LinearProgress
-                          variant="determinate"
-                          value={executionProgressValue(item)}
-                          sx={{ height: 6, borderRadius: 999, minWidth: 120 }}
-                        />
-                      ) : null}
-                      <Typography variant="caption" color="text.secondary">
-                        {item.currentDataTimestamp
-                          ? `Current data date: ${formatDateTime(item.currentDataTimestamp)}`
-                          : 'Current data date: waiting for first candle'}
-                      </Typography>
-                    </Stack>
+                    <SortableHeaderCell
+                      label="ID"
+                      description="Unique run identifier. Select a row to open full details and charts."
+                      active={sortField === 'id'}
+                      direction={sortDirection}
+                      onClick={() => toggleSort('id')}
+                    />
                   </TableCell>
                   <TableCell>
-                    <Stack spacing={0.5}>
-                      <Chip
-                        size="small"
-                        label={`${asyncStateLabel(item)} | ${executionProgressValue(item)}%`}
-                        color={executionStatusColor(item.executionStatus)}
-                        variant={item.executionStatus === 'COMPLETED' ? 'filled' : 'outlined'}
-                      />
-                      <Typography variant="caption" color="text.secondary">
-                        {executionStageLabel(item.executionStage)} | {formatNumber(item.processedCandles)}
-                        {' '}/ {formatNumber(item.totalCandles)} candles
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {executionStageDescription(item)}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Last backend update: {formatLastUpdate(item.lastProgressAt)}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Last pushed event: {formatLiveEventTimestamp(lastLiveEventAt)}
-                      </Typography>
-                      {item.asyncMonitor ? (
-                        <Typography variant="caption" color="text.secondary">
-                          Attempts: {item.asyncMonitor.attemptCount}
-                          {item.asyncMonitor.maxAttempts !== null
-                            ? ` / ${item.asyncMonitor.maxAttempts}`
-                            : ''}
-                          {item.asyncMonitor.timedOut ? ' | Timeout window exceeded' : ''}
-                        </Typography>
-                      ) : null}
-                    </Stack>
-                  </TableCell>
-                  <TableCell sx={{ color: validationColor(item.validationStatus) }}>
-                    {item.validationStatus}
+                    <SortableHeaderCell
+                      label="Algorithm"
+                      description="Strategy logic used for this backtest run."
+                      active={sortField === 'strategyId'}
+                      direction={sortDirection}
+                      onClick={() => toggleSort('strategyId')}
+                    />
                   </TableCell>
                   <TableCell>
-                    {item.feesBps} bps / {item.slippageBps} bps
+                    <SortableHeaderCell
+                      label="Dataset"
+                      description="Historical file used as market-data input."
+                      active={sortField === 'datasetName'}
+                      direction={sortDirection}
+                      onClick={() => toggleSort('datasetName')}
+                    />
                   </TableCell>
-                  <TableCell onClick={(event) => event.stopPropagation()}>
-                    <Stack direction={{ xs: 'column', md: 'row' }} spacing={1}>
-                      <Button
-                        size="small"
-                        startIcon={<VisibilityOutlinedIcon />}
-                        onClick={() => onViewDetails(item.id)}
-                      >
-                        Details
-                      </Button>
-                      <Button
-                        size="small"
-                        startIcon={<ReplayIcon />}
-                        onClick={() => void onReplayBacktest(item.id)}
-                        disabled={isReplaying}
-                      >
-                        Replay
-                      </Button>
-                      <Button
-                        size="small"
-                        color="error"
-                        startIcon={<DeleteOutlineIcon />}
-                        onClick={() => void onDeleteResult(item)}
-                        disabled={isDeletingBacktest || isExecutionActive(item)}
-                      >
-                        Delete
-                      </Button>
-                    </Stack>
+                  <TableCell>
+                    <SortableHeaderCell
+                      label="Experiment"
+                      description="Repeatable research group label for related runs."
+                      active={sortField === 'experimentName'}
+                      direction={sortDirection}
+                      onClick={() => toggleSort('experimentName')}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <SortableHeaderCell
+                      label="Market"
+                      description="Symbol and timeframe tested in the simulation."
+                      active={sortField === 'market'}
+                      direction={sortDirection}
+                      onClick={() => toggleSort('market')}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <SortableHeaderCell
+                      label="Status"
+                      description="Live execution stage, progress, and backend telemetry for the run."
+                      active={sortField === 'executionStatus'}
+                      direction={sortDirection}
+                      onClick={() => toggleSort('executionStatus')}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <SortableHeaderCell
+                      label="Validation"
+                      description="Quality gate result from internal checks; not proof of profitability."
+                      active={sortField === 'validationStatus'}
+                      direction={sortDirection}
+                      onClick={() => toggleSort('validationStatus')}
+                    />
+                  </TableCell>
+                  <TableCell align="right">
+                    <SortableHeaderCell
+                      label="Fees"
+                      description="Trading fee assumption in basis points."
+                      active={sortField === 'feesBps'}
+                      direction={sortDirection}
+                      onClick={() => toggleSort('feesBps')}
+                      align="right"
+                    />
+                  </TableCell>
+                  <TableCell align="right">
+                    <SortableHeaderCell
+                      label="Slippage"
+                      description="Slippage assumption in basis points."
+                      active={sortField === 'slippageBps'}
+                      direction={sortDirection}
+                      onClick={() => toggleSort('slippageBps')}
+                      align="right"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <HeaderCellWithTooltip
+                      label="Actions"
+                      description="Open detailed results, replay a prior setup, or delete finished runs."
+                    />
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
+              </TableHead>
+              <TableBody>
+                {sortedHistory.map((item) => (
+                  <TableRow
+                    key={item.id}
+                    hover
+                    onClick={() => onSelectRun(item.id)}
+                    sx={{ cursor: 'pointer' }}
+                    selected={item.id === selectedId}
+                  >
+                    <TableCell onClick={(event) => event.stopPropagation()}>
+                      <Checkbox
+                        checked={comparisonIds.includes(item.id)}
+                        onChange={() => onToggleComparison(item.id)}
+                        inputProps={{ 'aria-label': `Select backtest ${item.id} for comparison` }}
+                      />
+                    </TableCell>
+                    <TableCell>{item.id}</TableCell>
+                    <TableCell>{item.strategyId}</TableCell>
+                    <TableCell>{item.datasetName ?? '-'}</TableCell>
+                    <TableCell>{item.experimentName}</TableCell>
+                    <TableCell>
+                      <Stack spacing={0.5}>
+                        <span>
+                          {formatBacktestMarketLabel(item.symbol)} ({item.timeframe})
+                        </span>
+                        {isExecutionActive(item) ? (
+                          <LinearProgress
+                            variant="determinate"
+                            value={executionProgressValue(item)}
+                            sx={{ height: 6, borderRadius: 999, minWidth: 120 }}
+                          />
+                        ) : null}
+                        <Typography variant="caption" color="text.secondary">
+                          {item.currentDataTimestamp
+                            ? `Current data date: ${formatDateTime(item.currentDataTimestamp)}`
+                            : 'Current data date: waiting for first candle'}
+                        </Typography>
+                      </Stack>
+                    </TableCell>
+                    <TableCell>
+                      <Stack spacing={0.5}>
+                        <Chip
+                          size="small"
+                          label={`${asyncStateLabel(item)} | ${executionProgressValue(item)}%`}
+                          color={executionStatusColor(item.executionStatus)}
+                          variant={item.executionStatus === 'COMPLETED' ? 'filled' : 'outlined'}
+                        />
+                        <Typography variant="caption" color="text.secondary">
+                          {executionStageLabel(item.executionStage)} | {formatNumber(item.processedCandles)}
+                          {' '}/ {formatNumber(item.totalCandles)} candles
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {executionStageDescription(item)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Last backend update: {formatLastUpdate(item.lastProgressAt)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Last pushed event: {formatLiveEventTimestamp(lastLiveEventAt)}
+                        </Typography>
+                        {item.asyncMonitor ? (
+                          <Typography variant="caption" color="text.secondary">
+                            Attempts: {item.asyncMonitor.attemptCount}
+                            {item.asyncMonitor.maxAttempts !== null
+                              ? ` / ${item.asyncMonitor.maxAttempts}`
+                              : ''}
+                            {item.asyncMonitor.timedOut ? ' | Timeout window exceeded' : ''}
+                          </Typography>
+                        ) : null}
+                      </Stack>
+                    </TableCell>
+                    <TableCell sx={{ color: validationColor(item.validationStatus) }}>
+                      {item.validationStatus}
+                    </TableCell>
+                    <TableCell align="right">{item.feesBps} bps</TableCell>
+                    <TableCell align="right">{item.slippageBps} bps</TableCell>
+                    <TableCell onClick={(event) => event.stopPropagation()}>
+                      <Stack direction={{ xs: 'column', md: 'row' }} spacing={1}>
+                        <Button
+                          size="small"
+                          startIcon={<VisibilityOutlinedIcon />}
+                          onClick={() => onViewDetails(item.id)}
+                        >
+                          Details
+                        </Button>
+                        <Button
+                          size="small"
+                          startIcon={<ReplayIcon />}
+                          onClick={() => void onReplayBacktest(item.id)}
+                          disabled={isReplaying}
+                        >
+                          Replay
+                        </Button>
+                        <Button
+                          size="small"
+                          color="error"
+                          startIcon={<DeleteOutlineIcon />}
+                          onClick={() => void onDeleteResult(item)}
+                          disabled={isDeletingBacktest || isExecutionActive(item)}
+                        >
+                          Delete
+                        </Button>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
             </Table>
           </TableContainer>
         ) : null}

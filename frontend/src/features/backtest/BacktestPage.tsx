@@ -1,5 +1,5 @@
 import { Alert, Button, Chip, Grid, Stack, Tab, Tabs } from '@mui/material';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import {
@@ -59,6 +59,10 @@ import {
 import axiosClient, { getErrorMessage } from '@/services/axiosClient';
 import { sanitizeText } from '@/utils/security';
 
+type BacktestRouteTab = 'review' | 'runs' | 'datasets' | 'history';
+
+const routeTabs: BacktestRouteTab[] = ['review', 'runs', 'datasets', 'history'];
+
 const parseBacktestIdParam = (value: string | null) => {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
@@ -69,6 +73,9 @@ const parseBacktestIdListParam = (value: string | null) =>
     ?.split(',')
     .map((item) => Number(item.trim()))
     .filter((item) => Number.isInteger(item) && item > 0) ?? [];
+
+const parseRouteTab = (value: string | null, fallback: BacktestRouteTab): BacktestRouteTab =>
+  routeTabs.find((tab) => tab === value) ?? fallback;
 
 export default function BacktestPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -97,8 +104,6 @@ export default function BacktestPage() {
     parseBacktestIdListParam(searchParams.get('compare'))
   );
   const [activeComparisonIds, setActiveComparisonIds] = useState<number[]>([]);
-  const [reviewSection, setReviewSection] = useState<'experiments' | 'history'>('experiments');
-  const historySectionRef = useRef<HTMLDivElement | null>(null);
 
   const { data: algorithms = [] } = useGetBacktestAlgorithmsQuery();
   const { data: datasets = [] } = useGetBacktestDatasetsQuery();
@@ -145,6 +150,8 @@ export default function BacktestPage() {
     [effectiveSelectedId, history]
   );
   const selectedRunIsActive = trackedRun ? isExecutionActive(trackedRun) : false;
+  const defaultRouteTab: BacktestRouteTab = effectiveSelectedId !== null ? 'review' : 'runs';
+  const activeRouteTab = parseRouteTab(searchParams.get('tab'), defaultRouteTab);
 
   const { data: details, refetch: refetchDetails } = useGetBacktestDetailsQuery(
     effectiveSelectedId ?? 0,
@@ -183,10 +190,31 @@ export default function BacktestPage() {
       nextParams.delete('compare');
     }
 
+    nextParams.set('tab', activeRouteTab);
+
     if (nextParams.toString() !== searchParams.toString()) {
       setSearchParams(nextParams, { replace: true });
     }
-  }, [comparisonIds, fallbackTrackedRun?.id, searchParams, selectedId, setSearchParams]);
+  }, [
+    activeRouteTab,
+    comparisonIds,
+    fallbackTrackedRun?.id,
+    searchParams,
+    selectedId,
+    setSearchParams,
+  ]);
+
+  const updateSearchParams = (update: (params: URLSearchParams) => void) => {
+    const nextParams = new URLSearchParams(searchParams);
+    update(nextParams);
+    setSearchParams(nextParams, { replace: true });
+  };
+
+  const setRouteTab = (tab: BacktestRouteTab) => {
+    updateSearchParams((params) => {
+      params.set('tab', tab);
+    });
+  };
 
   const comparisonIsStale =
     activeComparisonIds.length > 0 && activeComparisonIds.join(',') !== comparisonIds.join(',');
@@ -256,6 +284,7 @@ export default function BacktestPage() {
       });
       setDatasetFile(null);
       setDatasetName('');
+      setRouteTab('datasets');
     } catch (error) {
       setFeedback({ severity: 'error', message: getErrorMessage(error) });
     }
@@ -285,6 +314,7 @@ export default function BacktestPage() {
         severity: 'success',
         message: `Restored dataset '${restored.name}' to the active run catalog.`,
       });
+      setRouteTab('datasets');
     } catch (error) {
       setFeedback({ severity: 'error', message: getErrorMessage(error) });
     }
@@ -299,6 +329,7 @@ export default function BacktestPage() {
         message: `Backtest ${response.id} submitted (${response.status}).`,
       });
       setConfigModalOpen(false);
+      setRouteTab('review');
     } catch (error) {
       setFeedback({ severity: 'error', message: getErrorMessage(error) });
     }
@@ -318,6 +349,7 @@ export default function BacktestPage() {
         severity: 'success',
         message: `Replay started from run ${backtestId}. New run: ${replayed.id} (${replayed.status}).`,
       });
+      setRouteTab('review');
     } catch (error) {
       setFeedback({ severity: 'error', message: getErrorMessage(error) });
     }
@@ -325,6 +357,7 @@ export default function BacktestPage() {
 
   const onViewDetails = (backtestId: number) => {
     setSelectedId(backtestId);
+    setRouteTab('review');
     setFeedback({
       severity: 'success',
       message: `Showing detailed results for run ${backtestId}.`,
@@ -377,6 +410,7 @@ export default function BacktestPage() {
         severity: 'success',
         message: `Comparison loaded for runs ${comparisonIds.map((id) => `#${id}`).join(', ')}.`,
       });
+      setRouteTab('history');
     } catch (error) {
       setFeedback({ severity: 'error', message: getErrorMessage(error) });
     }
@@ -411,9 +445,152 @@ export default function BacktestPage() {
     }
   };
 
-  const focusHistory = () => {
-    setReviewSection('history');
-    historySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const renderReviewTab = () => {
+    if (details) {
+      return (
+        <BacktestResults
+          details={details}
+          transportLabel={backtestLiveTransportConnected ? 'Live WebSocket stream' : 'Fallback polling'}
+          lastLiveEventAt={lastBacktestEventAt}
+          transportError={websocketError}
+          onReplay={() => void onReplayBacktest(details.id)}
+          onFocusHistory={() => setRouteTab('history')}
+          onDelete={() => void onDeleteResult(details)}
+          deleteDisabled={isExecutionActive(details) || isDeletingBacktest}
+        />
+      );
+    }
+
+    if (activeRunSummary ?? trackedRun) {
+      return (
+        <BacktestTrackedRunCard
+          trackedRun={activeRunSummary ?? trackedRun!}
+          transportConnected={backtestLiveTransportConnected}
+          lastLiveEventAt={lastBacktestEventAt}
+        />
+      );
+    }
+
+    return (
+      <SurfacePanel
+        title="No run selected"
+        description="Open a past run from history or launch a new one to populate the review workspace."
+        tone="info"
+        actions={
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            <Button variant="outlined" onClick={() => setRouteTab('history')}>
+              Open history
+            </Button>
+            <Button variant="contained" onClick={() => setRouteTab('runs')}>
+              Go to runs
+            </Button>
+          </Stack>
+        }
+      >
+        <Alert severity="info">
+          Selected-run review stays separate from setup and dataset management so the evidence pane
+          can stay focused once you are ready to inspect a result.
+        </Alert>
+      </SurfacePanel>
+    );
+  };
+
+  const renderRunsTab = () => (
+    <Grid container spacing={2.5}>
+      {fallbackTrackedRun && isExecutionActive(fallbackTrackedRun) ? (
+        <Grid size={{ xs: 12 }}>
+          <BacktestTrackedRunCard
+            trackedRun={fallbackTrackedRun}
+            transportConnected={backtestLiveTransportConnected}
+            lastLiveEventAt={lastBacktestEventAt}
+          />
+        </Grid>
+      ) : null}
+      <Grid size={{ xs: 12, xl: 5 }}>
+        <BacktestRunLauncherPanel
+          selectedAlgorithm={selectedAlgorithm}
+          selectedAlgorithmProfile={selectedAlgorithmProfile}
+          requiresDatasetUniverse={requiresDatasetUniverse}
+          hasActiveDatasets={activeDatasets.length > 0}
+          onOpenConfigModal={() => setConfigModalOpen(true)}
+        />
+      </Grid>
+      <Grid size={{ xs: 12, xl: 7 }}>
+        <BacktestExperimentSummariesPanel experimentSummaries={experimentSummaries} />
+      </Grid>
+    </Grid>
+  );
+
+  const renderDatasetsTab = () => (
+    <Grid container spacing={2.5}>
+      <Grid size={{ xs: 12 }}>
+        <BacktestDatasetPanel
+          datasetName={datasetName}
+          datasetFile={datasetFile}
+          retentionReport={retentionReport}
+          datasets={datasets}
+          hasActiveDatasets={activeDatasets.length > 0}
+          isUploading={isUploading}
+          datasetLifecycleBusy={datasetLifecycleBusy}
+          onDatasetNameChange={(value) => setDatasetName(sanitizeText(value))}
+          onDatasetFileChange={(file) => setDatasetFile(file)}
+          onUploadDataset={() => void onUploadDataset()}
+          onDownloadDataset={onDownloadDataset}
+          onArchiveDataset={onArchiveDataset}
+          onRestoreDataset={onRestoreDataset}
+        />
+      </Grid>
+    </Grid>
+  );
+
+  const renderHistoryTab = () => (
+    <BacktestHistoryPanel
+      history={history}
+      comparison={comparison}
+      comparisonIds={comparisonIds}
+      selectedId={effectiveSelectedId}
+      comparisonIsStale={comparisonIsStale}
+      comparisonErrorMessage={comparisonErrorMessage}
+      lastLiveEventAt={lastBacktestEventAt}
+      isLoading={isLoading}
+      isError={isError}
+      isComparing={isComparing}
+      isReplaying={isReplaying}
+      isDeletingBacktest={isDeletingBacktest}
+      onCompareSelected={onCompareSelected}
+      onClearComparison={() => {
+        setComparisonIds([]);
+        setActiveComparisonIds([]);
+      }}
+      onToggleComparison={toggleComparison}
+      onSelectRun={setSelectedId}
+      onViewDetails={onViewDetails}
+      onReplayBacktest={onReplayBacktest}
+      onDeleteResult={onDeleteResult}
+    />
+  );
+
+  const tabDescriptions: Record<BacktestRouteTab, { title: string; description: string }> = {
+    review: {
+      title: 'Selected run review',
+      description:
+        'Keep the selected run and its inner evidence tabs isolated from setup, dataset lifecycle, and full history work.',
+    },
+    runs: {
+      title: 'Run setup',
+      description:
+        'Launch new backtests and review lighter experiment rollups before moving into the heavier evidence workspace.',
+    },
+    datasets: {
+      title: 'Dataset lifecycle',
+      description:
+        'Upload, audit, sort, and restore datasets in one place so data preparation stops competing with run review.',
+    },
+    history: {
+      title: 'History and comparison',
+      description:
+        'Browse sortable run history, load comparisons, and jump into a detailed review only when you need it.',
+    },
   };
 
   return (
@@ -431,7 +608,7 @@ export default function BacktestPage() {
               >
                 Run new backtest
               </Button>
-              <Button variant="outlined" onClick={focusHistory}>
+              <Button variant="outlined" onClick={() => setRouteTab('history')}>
                 Open history
               </Button>
             </>
@@ -483,133 +660,40 @@ export default function BacktestPage() {
           />
         </SurfacePanel>
 
-        <PageSectionHeader
-          title="Selected run review"
-          description="Start with the selected run summary or tracked active run, then move into launcher, datasets, experiments, and full history below."
-        />
-
-        {details ? (
-          <BacktestResults
-            details={details}
-            transportLabel={backtestLiveTransportConnected ? 'Live WebSocket stream' : 'Fallback polling'}
-            lastLiveEventAt={lastBacktestEventAt}
-            transportError={websocketError}
-            onReplay={() => void onReplayBacktest(details.id)}
-            onFocusHistory={focusHistory}
-            onDelete={() => void onDeleteResult(details)}
-            deleteDisabled={isExecutionActive(details) || isDeletingBacktest}
-          />
-        ) : activeRunSummary ?? trackedRun ? (
-          <BacktestTrackedRunCard
-            trackedRun={activeRunSummary ?? trackedRun!}
-            transportConnected={backtestLiveTransportConnected}
-            lastLiveEventAt={lastBacktestEventAt}
-          />
-        ) : (
-          <Alert severity="info">
-            Select a run from history or launch a new one to open the research workspace.
-          </Alert>
-        )}
+        <SurfacePanel
+          title="Backtest tasks"
+          description="Split the route by task so review, launch setup, datasets, and history each have a calmer workspace."
+          actions={
+            <StatusPill
+              label={`Open: ${tabDescriptions[activeRouteTab].title}`}
+              tone="info"
+              variant="filled"
+            />
+          }
+        >
+          <Tabs
+            value={activeRouteTab}
+            onChange={(_, value: BacktestRouteTab) => setRouteTab(value)}
+            variant="scrollable"
+            allowScrollButtonsMobile
+            aria-label="Backtest route sections"
+          >
+            <Tab value="review" label="Review" />
+            <Tab value="runs" label="Runs" />
+            <Tab value="datasets" label="Datasets" />
+            <Tab value="history" label="History" />
+          </Tabs>
+        </SurfacePanel>
 
         <PageSectionHeader
-          title="Launch and data setup"
-          description="Keep new-run configuration and dataset lifecycle together so research setup stays separate from comparison history."
+          title={tabDescriptions[activeRouteTab].title}
+          description={tabDescriptions[activeRouteTab].description}
         />
 
-        <Grid container spacing={2.5}>
-          <Grid size={{ xs: 12, xl: 6 }}>
-            <BacktestRunLauncherPanel
-              selectedAlgorithm={selectedAlgorithm}
-              selectedAlgorithmProfile={selectedAlgorithmProfile}
-              requiresDatasetUniverse={requiresDatasetUniverse}
-              hasActiveDatasets={activeDatasets.length > 0}
-              onOpenConfigModal={() => setConfigModalOpen(true)}
-            />
-          </Grid>
-
-          <Grid size={{ xs: 12, xl: 6 }}>
-            <BacktestDatasetPanel
-              datasetName={datasetName}
-              datasetFile={datasetFile}
-              retentionReport={retentionReport}
-              datasets={datasets}
-              hasActiveDatasets={activeDatasets.length > 0}
-              isUploading={isUploading}
-              datasetLifecycleBusy={datasetLifecycleBusy}
-              onDatasetNameChange={(value) => setDatasetName(sanitizeText(value))}
-              onDatasetFileChange={(file) => setDatasetFile(file)}
-              onUploadDataset={() => void onUploadDataset()}
-              onDownloadDataset={onDownloadDataset}
-              onArchiveDataset={onArchiveDataset}
-              onRestoreDataset={onRestoreDataset}
-            />
-          </Grid>
-
-          <Grid size={{ xs: 12 }}>
-            <PageSectionHeader
-              title="Experiment review and history"
-              description="Keep experiment rollups visible by default and open the heavier history table only when you need selection, replay, or comparison work."
-            />
-          </Grid>
-
-          <Grid size={{ xs: 12 }} ref={historySectionRef}>
-            <SurfacePanel
-              title="Research evidence"
-              description={
-                reviewSection === 'experiments'
-                  ? 'Named experiment groups stay lighter than the full run table and help you spot repeatable baselines before opening history.'
-                  : 'History stays in a dedicated review tab so the default route lands on lighter summaries first.'
-              }
-              actions={
-                <StatusPill
-                  label={reviewSection === 'experiments' ? 'Experiments first' : 'History open'}
-                  tone={reviewSection === 'experiments' ? 'info' : 'warning'}
-                  variant="filled"
-                />
-              }
-            >
-              <Tabs
-                value={reviewSection}
-                onChange={(_, value: 'experiments' | 'history') => setReviewSection(value)}
-                variant="scrollable"
-                allowScrollButtonsMobile
-                sx={{ mb: 2 }}
-              >
-                <Tab value="experiments" label="Experiment summaries" />
-                <Tab value="history" label="History and comparison" />
-              </Tabs>
-
-              {reviewSection === 'experiments' ? (
-                <BacktestExperimentSummariesPanel experimentSummaries={experimentSummaries} />
-              ) : (
-                <BacktestHistoryPanel
-                  history={history}
-                  comparison={comparison}
-                  comparisonIds={comparisonIds}
-                  selectedId={effectiveSelectedId}
-                  comparisonIsStale={comparisonIsStale}
-                  comparisonErrorMessage={comparisonErrorMessage}
-                  lastLiveEventAt={lastBacktestEventAt}
-                  isLoading={isLoading}
-                  isError={isError}
-                  isComparing={isComparing}
-                  isReplaying={isReplaying}
-                  isDeletingBacktest={isDeletingBacktest}
-                  onCompareSelected={onCompareSelected}
-                  onClearComparison={() => {
-                    setComparisonIds([]);
-                    setActiveComparisonIds([]);
-                  }}
-                  onToggleComparison={toggleComparison}
-                  onSelectRun={setSelectedId}
-                  onViewDetails={onViewDetails}
-                  onReplayBacktest={onReplayBacktest}
-                  onDeleteResult={onDeleteResult}
-                />
-              )}
-            </SurfacePanel>
-          </Grid>
-        </Grid>
+        {activeRouteTab === 'review' ? renderReviewTab() : null}
+        {activeRouteTab === 'runs' ? renderRunsTab() : null}
+        {activeRouteTab === 'datasets' ? renderDatasetsTab() : null}
+        {activeRouteTab === 'history' ? renderHistoryTab() : null}
       </PageContent>
 
       <BacktestConfigModal
