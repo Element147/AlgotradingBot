@@ -1,18 +1,17 @@
 # Strategy Spec: Squeeze Breakout Regime Confirmation v1
 
-Planning references:
+Related research references:
 
-- `FEATURE_DEVELOPMENT_PLAN.md` task `3C.5`
-- `docs/STRATEGY_SPEC_TEMPLATE.md`
-- `docs/SMALL_ACCOUNT_EXECUTION_CONSTRAINTS.md`
-- `docs/STRATEGY_AUDIT_PROTOCOL.md`
+- `docs/research/STRATEGY_SPEC_TEMPLATE.md`
+- `docs/research/STRATEGY_AUDIT_PROTOCOL.md`
+- `TRADING_GUARDRAILS.md`
 
 ## 1. Strategy Identity
 
 - Strategy name: Squeeze Breakout Regime Confirmation
 - Version: v1
 - Owner: Quant research
-- Planning phase: 3C.5
+- Source posture: research candidate
 - Status: implementation-ready
 
 ## 2. Hypothesis
@@ -33,7 +32,7 @@ Planning references:
 - Approved symbols or universe definition: `SPY`, `QQQ`, `IWM` first; crypto majors only when dataset notes make the venue and timeframe behavior explicit.
 - Liquidity rules: liquid names only, no thin small caps, no wide-spread names.
 - Session rules: multi-hour intraday or hourly use only in v1.
-- Minimum-order and fractionality assumptions: reject any order that would violate the small-account risk cap or minimum-notional rules in `docs/SMALL_ACCOUNT_EXECUTION_CONSTRAINTS.md`.
+- Minimum-order and fractionality assumptions: reject any order that would violate the small-account risk cap or minimum-notional rules in `TRADING_GUARDRAILS.md`.
 
 ## 5. Timeframe
 
@@ -88,7 +87,7 @@ Planning references:
 
 - Datasets to use: liquid ETF hourly pack first, then crypto majors with clear regime notes.
 - Fee and slippage assumptions: frozen audit baseline of `10` bps fees and `3` bps slippage unless a stricter scenario is documented.
-- In-sample / holdout rule: follow `docs/STRATEGY_AUDIT_PROTOCOL.md` with warm-up-safe splits.
+- In-sample / holdout rule: follow `docs/research/STRATEGY_AUDIT_PROTOCOL.md` with warm-up-safe splits.
 - Walk-forward expectation: anchored walk-forward bundle from the frozen audit method.
 - Benchmark comparisons: `VOLATILITY_MANAGED_DONCHIAN_BREAKOUT`, `SMA_CROSSOVER`, and the new pullback strategies.
 - Sensitivity tests: squeeze width threshold, breakout lookback, ADX threshold, and ATR stop should be reviewed conservatively.

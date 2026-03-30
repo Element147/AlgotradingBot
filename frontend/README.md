@@ -5,8 +5,9 @@ React/Vite SPA for the operator dashboard.
 ## Primary References
 
 - Root overview: `README.md`
-- Frontend implementation guide: `docs/guides/FRONTEND_IMPLEMENTATION.md`
+- Frontend guide: `docs/guides/FRONTEND.md`
 - Verification and contract flow: `docs/guides/TESTING_AND_CONTRACTS.md`
+- Docs hub: `docs/README.md`
 - Store layout: `src/app/README.md`
 
 ## Local Commands

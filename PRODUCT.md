@@ -1,62 +1,73 @@
 # Product
 
-## Mission
+## What It Is For
 
-Build a local-first platform for safe strategy research, backtesting, market-data preparation, and paper-trading operations.
+This software is built for strategy research, market-data preparation, backtesting, paper trading, and operator oversight. It is meant to help you test ideas honestly, review evidence, and manage simulated workflows from one workstation.
 
-## Primary Operator Jobs
+It is not a production trading platform and it does not assume any strategy is profitable.
 
-1. Configure and review catalog-backed strategy templates without leaving the safe `test` default.
-2. Run reproducible backtests against uploaded or provider-imported datasets.
-3. Compare experiments, inspect equity and trade series, and export evidence-backed reports.
-4. Monitor paper-trading behavior, risk posture, and incident signals.
-5. Manage exchange connection profiles, provider credentials, and system operations from one dashboard.
+## Main Features
+
+- Strategy catalog with reusable strategy IDs and paper-safe configuration templates
+- Backtest workflow with dataset selection, run history, replay, compare, trade review, and export
+- Market-data workflow with uploads, provider imports, retry-aware jobs, and dataset provenance
+- Forward-testing, paper-trading, and live-monitoring surfaces with environment-aware behavior
+- Risk and operations tools such as circuit-breaker review, override visibility, audit history, and exchange/profile settings
+- Local-first developer workflow with PowerShell scripts, Docker Compose, tracked contracts, and verification guidance
 
 ## Product Surfaces
 
-- `Dashboard`: system health, environment posture, paper-trading state, alerts, and workstation-level research context
-- `Forward Testing`: paper-safe strategy observation, signal charts, audit-backed investigation history, and local operator notes
-- `Paper`: exchange-scoped strategy assignment, active paper-algorithm review, simulated order entry, fill/cancel controls, and order history
-- `Live`: capability-gated live monitoring, exchange-health review, active-strategy evidence, and fail-closed messaging when live reads or execution are not approved
-- `Strategies`: canonical catalog-backed paper templates, configuration, presets, and version history
-- `Backtest`: dataset management, run execution, progress, telemetry-rich details, replay, compare, and export
-- `Market Data`: provider selection, import job creation, progress tracking, and dataset ingestion
-- `Trades`: trade history, trade details, and export-oriented review
-- `Risk`: risk configuration, alerts, circuit-breaker inventory, and override context
-- `Settings`: exchange profiles, provider credentials, audit review, and system tools
+- `Dashboard`: overall health, environment posture, paper state, and alerts
+- `Backtest`: run and inspect historical experiments
+- `Forward Testing`: monitor strategy behavior in a paper-safe observation workspace
+- `Paper`: simulated order workflows and paper execution review
+- `Live`: capability-gated monitoring for live-connected contexts
+- `Strategies`: strategy templates, settings, and version history
+- `Market Data`: provider imports, job monitoring, and dataset readiness
+- `Trades`: trade history and detail review
+- `Risk`: limits, circuit breakers, alerts, and override context
+- `Settings`: exchange profiles, provider credentials, audit review, and utilities
 
-## Product Principles
+## How It Works
 
-1. Safety first: default to `test` and paper-safe behavior.
-2. Research honesty: results are hypotheses, not promises.
-3. Operational clarity: environment, risk posture, and overrides must stay visible.
-4. Reproducibility: datasets, parameters, experiments, and exports should be traceable.
-5. Incremental delivery: prefer small, verified changes over broad rewrites.
-6. Operator trust: the shell should make safety-critical state readable at a glance on both desktop and mobile.
-7. Explainability by default: moving from an active algorithm list into detail should show trade-trigger evidence, risk, exposure, and incident context in one or two clicks.
+Typical operator flow:
 
-## Strategy Catalog Posture
+1. Prepare data by uploading a dataset or importing it from a provider.
+2. Configure or review a strategy from the catalog.
+3. Run a backtest and inspect the evidence, not just the headline return.
+4. If the research is strong enough, follow it in paper-safe monitoring first.
+5. Use risk, audit, and settings surfaces to manage the environment around that workflow.
 
-- The built-in backtest catalog currently includes `BUY_AND_HOLD`, `DUAL_MOMENTUM_ROTATION`, `VOLATILITY_MANAGED_DONCHIAN_BREAKOUT`, `TREND_PULLBACK_CONTINUATION`, `REGIME_FILTERED_MEAN_REVERSION`, `TREND_FIRST_ADAPTIVE_ENSEMBLE`, `SMA_CROSSOVER`, `BOLLINGER_BANDS`, and `ICHIMOKU_TREND`.
-- `ICHIMOKU_TREND` is implemented as a conservative long/cash strategy with look-ahead-safe cloud handling and chart overlays, but it is still a research surface rather than a promoted operating strategy.
-- The March 27, 2026 frozen audit keeps the overall posture conservative: `BUY_AND_HOLD` is `baseline only`, `SMA_CROSSOVER` is the sole `paper-monitor candidate`, four catalog paths stay `research only`, and three weak paths are now explicit `archive candidate` strategies.
-- The March 27, 2026 Phase 3 audit rerun in `docs/PHASE3_STRATEGY_AUDIT_REPORT.md` keeps the six newer strategies conservative as well: five stay `research-only`, `VWAP_PULLBACK_CONTINUATION` is rejected for active consideration under the current BTC-anchor evidence, and none are promoted because the frozen pack still lacks an approved intraday ETF anchor.
-- The next small-account strategy phase is constrained by `docs/SMALL_ACCOUNT_EXECUTION_CONSTRAINTS.md`, which freezes the default `long/cash`, low-turnover, no-leverage posture before new strategy specs or implementations start.
-- New strategy work must now begin with `docs/STRATEGY_SPEC_TEMPLATE.md` so hypothesis, bearish behavior, risk, and validation expectations are specified before code exists.
+The product is designed to keep those steps connected. Datasets, strategy IDs, run results, and operator actions are meant to stay traceable.
 
 ## Environment Model
 
-- `test`: local and research workflows
-- `paper`: simulated execution behavior under operator controls
+- `test`: default local and research mode
+- `paper`: simulated execution mode
 - `live`: explicit live-connected context for monitoring or future gated capabilities
 
-Live connectivity does not imply live trading is enabled.
-Live connectivity also does not imply live account reads are fully wired; unsupported live reads must fail explicitly with capability messaging.
-Route-owned execution contexts come first: Backtest and Market Data stay in `research`, Paper stays in `paper`, and operational live-readiness controls are surfaced separately instead of acting like a global switch that rewires every route.
+Important rules:
 
-## Product Boundaries
+- `test` is the default.
+- `paper` is still simulated.
+- `live` does not mean live trading is enabled.
+- Unsupported live capabilities must fail clearly instead of silently falling back.
 
-- No default real-money execution path
-- No profitability claims without reproducible evidence
-- No bypassing of risk controls, kill switches, or audit trails
-- No leverage, margin, or live direct shorting in the default product path
+## Strategy Posture
+
+The strategy catalog is research-first.
+
+- On March 27, 2026, the frozen strategy audit kept `SMA_CROSSOVER` as the only `paper-monitor candidate`.
+- `BUY_AND_HOLD` remains the passive baseline.
+- Several catalog and newer Phase 3 strategies remain `research only`.
+- `TREND_PULLBACK_CONTINUATION`, `REGIME_FILTERED_MEAN_REVERSION`, `BOLLINGER_BANDS`, and `VWAP_PULLBACK_CONTINUATION` are not active candidates under the current frozen evidence.
+
+Use [`docs/research/STRATEGY_CATALOG_AUDIT_REPORT.md`](docs/research/STRATEGY_CATALOG_AUDIT_REPORT.md) for the detailed research posture.
+
+## Operator Expectations
+
+- Treat backtests and paper results as hypotheses, not promises.
+- Keep fees, slippage, and out-of-sample evidence in view.
+- Prefer long-or-cash defaults for small-account research.
+- Use paper workflows before discussing any live-readiness path.
+- Keep risk controls, overrides, and environment state visible and auditable.

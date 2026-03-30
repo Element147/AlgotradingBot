@@ -27,5 +27,5 @@ npm run build
 ## Related Docs
 
 - `frontend/README.md`
-- `docs/guides/FRONTEND_IMPLEMENTATION.md`
+- `docs/guides/FRONTEND.md`
 - `docs/guides/TESTING_AND_CONTRACTS.md`

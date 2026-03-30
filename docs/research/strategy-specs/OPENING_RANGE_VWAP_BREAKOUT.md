@@ -1,18 +1,17 @@
 # Strategy Spec: Opening Range VWAP Breakout v1
 
-Planning references:
+Related research references:
 
-- `FEATURE_DEVELOPMENT_PLAN.md` task `3C.1`
-- `docs/STRATEGY_SPEC_TEMPLATE.md`
-- `docs/SMALL_ACCOUNT_EXECUTION_CONSTRAINTS.md`
-- `docs/STRATEGY_AUDIT_PROTOCOL.md`
+- `docs/research/STRATEGY_SPEC_TEMPLATE.md`
+- `docs/research/STRATEGY_AUDIT_PROTOCOL.md`
+- `TRADING_GUARDRAILS.md`
 
 ## 1. Strategy Identity
 
 - Strategy name: Opening Range VWAP Breakout
 - Version: v1
 - Owner: Quant research
-- Planning phase: 3C.1
+- Source posture: research candidate
 - Status: implementation-ready
 
 ## 2. Hypothesis
@@ -33,7 +32,7 @@ Planning references:
 - Approved symbols or universe definition: `SPY`, `QQQ`, `IWM` first; crypto majors like `BTC/USDT` and `ETH/USDT` only when the session assumption is explicitly documented in the dataset notes.
 - Liquidity rules: high-dollar-volume names only, avoid thin small caps, avoid wide-spread instruments, require elevated breakout volume.
 - Session rules: regular-session intraday use, same-day flattening only, no overnight hold.
-- Minimum-order and fractionality assumptions: skip any order that would violate the small-account risk cap or minimum-notional rules in `docs/SMALL_ACCOUNT_EXECUTION_CONSTRAINTS.md`.
+- Minimum-order and fractionality assumptions: skip any order that would violate the small-account risk cap or minimum-notional rules in `TRADING_GUARDRAILS.md`.
 
 ## 5. Timeframe
 
@@ -90,7 +89,7 @@ Trades that would violate minimum-order size or small-account risk caps should b
 
 - Datasets to use: liquid ETF intraday pack first, then liquid crypto majors with documented session assumptions.
 - Fee and slippage assumptions: default frozen protocol baseline of `10` bps fees and `3` bps slippage unless a stricter scenario is documented.
-- In-sample / holdout rule: follow `docs/STRATEGY_AUDIT_PROTOCOL.md` with explicit warm-up-safe splits.
+- In-sample / holdout rule: follow `docs/research/STRATEGY_AUDIT_PROTOCOL.md` with explicit warm-up-safe splits.
 - Walk-forward expectation: anchored walk-forward bundle from the frozen audit method.
 - Benchmark comparisons: `BUY_AND_HOLD`, `SMA_CROSSOVER`, and the strongest current research candidates where appropriate.
 - Sensitivity tests: opening-range bar count, volume threshold, ATR cap, breakout buffer, and entry cutoff should be tested conservatively.

@@ -1,37 +1,36 @@
-# TRADING_GUARDRAILS.md
+# Trading Guardrails
 
 ## Purpose
 
-Repository-level safety rules for research, backtesting, paper trading, and any future live-readiness work.
+These rules define the repository's safety baseline for research, backtesting, paper trading, and any later live-readiness work. They take precedence over convenience.
 
-These rules take precedence over convenience.
+## Safety Defaults
 
-## Non-Negotiables
+- No real-money trading by default
+- No profitability claims without reproducible evidence
+- No promotion of backtest or paper results as live outcomes
+- No weakening of environment separation, risk controls, auditability, or operator override paths
 
-- No real-money trading by default.
-- No profitability claims without reproducible evidence.
-- No direct promotion of backtest/paper results as live outcomes.
-- No weakening of environment separation, risk controls, or operator override safety.
+## Environment Separation
 
-## Environment Policy
+Treat these modes as distinct:
 
-Treat these as distinct modes:
+- `test`: local development and research
+- `paper`: simulated execution
+- `live`: explicit live-connected context
 
-- `test`: local development, synthetic/research workflows
-- `paper`: simulated execution with no live order placement
-- `live`: real credentials/connectivity context (must be explicit)
+Required behavior:
 
-Required controls:
-
-- Separate config and credentials by mode
-- Clear UI/API mode visibility
 - Safe default to `test`
-- New/default strategy configs must start long/cash; short exposure is opt-in and must stay visible in configuration history
-- Explicit confirmation before any `live` action
-- Unsupported `live` reads or writes must fail explicitly with capability messaging instead of silently falling back to paper data
-- Dev-only auth override (`ALGOTRADING_RELAXED_AUTH=true`) is local debugging only and must be removed before standard verification
+- Clear UI and API visibility of the active mode
+- Separate config and credentials by mode
+- Explicit confirmation before any live-sensitive action
+- Unsupported live reads or writes must fail clearly instead of silently falling back
+- Dev-only relaxed auth is for local debugging only and must not be part of the verified baseline
 
-## Risk Baseline Defaults
+## Risk Baseline
+
+Default operating posture:
 
 - Max risk per trade: `2%` of equity
 - Max aggregate open risk: `6%`
@@ -39,52 +38,54 @@ Required controls:
 - Cash buffer target: `20-30%`
 - No leverage by default
 
-If any control is not fully automated yet, it remains a mandatory manual operating rule.
+If a control is not automated yet, it still remains an operator rule.
 
-## Small-Account Action Policy
+## Small-Account Posture
 
-Conservative interpretation for small-account operation:
+The default research posture is conservative:
 
-- Default bearish action: `SELL_TO_CASH` / flat exposure
-- Paper/backtest direct short exposure: optional only when explicitly enabled and audited in strategy configuration
-- Live direct short/margin/futures: not default behavior and still disabled in this repository
+- Prefer `long` or `sell to cash`
+- Default bearish behavior is flat exposure, not direct shorting
+- Direct short exposure in backtest or paper is opt-in and must stay explicit
+- Live direct shorting, margin, and futures are outside the default product path
+- Favor liquid instruments, low turnover, and no-latency assumptions
+- Skip trades that require unrealistic lot sizes, minimum notionals, or unsupported venue behavior
 
-## Circuit Breaker and Kill-Switch Expectations
+## Guardrails And Overrides
 
-System should support:
+The system should preserve:
 
-- Strategy-level stop
-- Account-level stop
-- Environment-level kill switch
+- Strategy-level stop controls
+- Account-level stop controls
+- Environment-level kill-switch behavior
 - Manual override with durable audit trail
-- Clear UI state of triggered guardrails
+- Clear UI visibility of breaker and override state
 
-## Validation Requirements Before Any Live Consideration
+## Evidence Required Before Any Live Consideration
 
-All should be reproducible:
+Any live-readiness discussion must be backed by reproducible evidence:
 
-- Versioned strategy parameters
-- Versioned/identifiable datasets (checksum and schema metadata)
-- Frozen audit methodology from `docs/STRATEGY_AUDIT_PROTOCOL.md`
-- Fees and slippage included in analysis
-- Requested timeframe honored through explicit aggregation or resampling; never label a run as `4h` or `1d` if it executed on finer raw candles
-- Signal timing assumptions made explicit; if fills are not next-bar-open or another clearly documented model, the report must say so
-- Out-of-sample or walk-forward validation
-- Sufficient trade count for interpretation
-- Paper-trading soak period with stable behavior
-- Failure-mode testing (disconnects/restarts/stale data)
-- Verified rollback path
-- Replay path for prior backtest configuration and dataset
+- versioned strategy parameters
+- identifiable datasets with checksum or schema metadata
+- explicit fees, slippage, timeframe handling, and fill assumptions
+- out-of-sample or walk-forward validation
+- enough trade count to interpret results honestly
+- paper-trading soak time
+- failure-mode testing for disconnects, restarts, and stale data
+- rollback and replay paths
 
-## Honest Reporting Standard
+The frozen audit methodology lives in [`docs/research/STRATEGY_AUDIT_PROTOCOL.md`](docs/research/STRATEGY_AUDIT_PROTOCOL.md).
 
-Every strategy report should state:
+## Honest Reporting
 
-- data period and instruments
-- dataset ID or name plus checksum or schema identity and requested timeframe
-- fees/slippage assumptions
-- in-sample vs out-of-sample split
-- trade count, drawdown, Sharpe, profit factor, win rate
-- known failure regimes and limitations
+Every strategy report should make these items explicit:
+
+- dataset and date window
+- instrument scope
+- requested timeframe
+- fee and slippage assumptions
+- in-sample and out-of-sample split
+- trade count, drawdown, Sharpe, profit factor, and win rate
+- known failure modes and limitations
 
 Never state or imply guaranteed returns.

@@ -28,20 +28,18 @@ Always read this slim core first:
 2. `PROJECT_STATUS.md`
 3. `ARCHITECTURE.md`
 4. `TRADING_GUARDRAILS.md`
-5. `PLAN.md`
-6. `PRODUCT.md`
+5. `PRODUCT.md`
+6. `docs/README.md`
 
-Then open only the guides that match the task:
+Then open only the guide that matches the task:
 
-- task-to-guide index first when routing is unclear: `docs/guides/README.md`
-- Frontend feature or UI work: `docs/guides/FRONTEND_IMPLEMENTATION.md`
-- Backend/controller/service/repository work: `docs/guides/BACKEND_IMPLEMENTATION.md`
-- Local runtime, Docker, PowerShell, or MCP work: `docs/guides/LOCAL_DEV_DOCKER_MCP.md`
+- docs hub first when routing is unclear: `docs/README.md`
+- Frontend feature or UI work: `docs/guides/FRONTEND.md`
+- Backend/controller/service/repository work: `docs/guides/BACKEND.md`
+- Local runtime, Docker, PowerShell, or MCP work: `docs/guides/LOCAL_DEVELOPMENT.md`
 - Verification, CI, or contract drift work: `docs/guides/TESTING_AND_CONTRACTS.md`
-- Downloader, provider credentials, or research workflow work: `docs/guides/MARKET_DATA_RESEARCH.md`
-- Module/file boundary clarification: `STRUCTURE.md`
-- Planned feature scope or acceptance gates: `docs/ROADMAP.md` and `docs/ACCEPTANCE_CRITERIA.md`
-- Backend wrapper-specific execution detail only when needed: `GRADLE_AUTOMATION.md`
+- Downloader, provider credentials, or research workflow work: `docs/guides/MARKET_DATA.md`
+- Planned feature scope: `docs/ROADMAP.md`
 
 If a task touches a planned feature, cite the relevant planning document and keep implementation aligned with what is actually present in the repo.
 
@@ -78,7 +76,7 @@ If a task touches a planned feature, cite the relevant planning document and kee
   - `playwright` for UI verification
   - `semgrep` for optional security scans on auth/secrets/request-boundary changes
   - `hoverfly-mcp-server` for optional provider/exchange API mocking
-- Docker MCP path and host conventions are documented in `docs/guides/LOCAL_DEV_DOCKER_MCP.md`.
+- Docker MCP path and host conventions are documented in `docs/guides/LOCAL_DEVELOPMENT.md`.
 
 ## Project Codex Agents
 
@@ -122,7 +120,7 @@ Routing rules:
 
 A task is done when all of the following are true:
 
-- The change matches the relevant plan/architecture docs or explicitly documents why it does not.
+- The change matches the relevant product, architecture, and roadmap docs or explicitly documents why it does not.
 - Behavior is verified with the most relevant available checks.
 - New or changed API behavior is reflected in the frontend contract and docs.
 - Safety defaults remain conservative.
@@ -156,24 +154,21 @@ If sandboxing, missing services, or local environment limits prevent verificatio
 Slim core docs:
 
 - `README.md`
-- `PLAN.md`
 - `PRODUCT.md`
 - `PROJECT_STATUS.md`
 - `ARCHITECTURE.md`
 - `TRADING_GUARDRAILS.md`
+- `docs/README.md`
 
 Optional durable docs:
 
-- `TECH.md`
-- `STRUCTURE.md`
-- `GRADLE_AUTOMATION.md`
 - `docs/ROADMAP.md`
-- `docs/ACCEPTANCE_CRITERIA.md`
-- `docs/guides/FRONTEND_IMPLEMENTATION.md`
-- `docs/guides/BACKEND_IMPLEMENTATION.md`
-- `docs/guides/LOCAL_DEV_DOCKER_MCP.md`
+- `docs/guides/FRONTEND.md`
+- `docs/guides/BACKEND.md`
+- `docs/guides/LOCAL_DEVELOPMENT.md`
 - `docs/guides/TESTING_AND_CONTRACTS.md`
-- `docs/guides/MARKET_DATA_RESEARCH.md`
+- `docs/guides/MARKET_DATA.md`
+- `docs/research/*`
 
 ## Strategy And Live Trading Guardrails
 

@@ -2,193 +2,125 @@
 
 ## System Overview
 
-The monorepo has two primary applications:
+The repository has two main applications:
 
 - `AlgotradingBot/`: Spring Boot backend on Java 25
 - `frontend/`: React 19, TypeScript, and Vite SPA
 
-The architecture is optimized for local research, reproducible backtests, paper trading, and operator visibility. It is not designed as a low-latency execution stack.
+The system is designed for local-first research, reproducible backtests, paper-trading workflows, and operator visibility. It is not designed as a low-latency execution stack.
 
-## Backend Architecture
+## Backend Boundaries
 
-Primary packages in `com.algotrader.bot`:
+Primary backend areas in `com.algotrader.bot`:
 
-- `controller`: HTTP endpoints and DTO contracts
-- `service`: orchestration, domain logic, and external integrations
-- `service.marketdata`: provider adapters, import orchestration, CSV normalization, resampling, and retry behavior
-- `repository`: Spring Data access
-- `entity`: persistence models for runtime state, datasets, credentials, audit events, and long-running jobs
-- `backtest`: execution engine, metrics, validation, and reproducibility plumbing
-- `backtest.strategy`: strategy interfaces, implementations, registry, and strategy-specific helpers
-- `risk`: risk calculations, guardrail state, and execution-cost logic
-- `security`: JWT auth and security support
-- `config`: application, async, metrics, and runtime configuration
-- `repair`: local runtime validation and repair helpers aligned with repo scripts
-- `validation`: production-readiness and system validation helpers
-- `websocket`: event publishing for dashboard and long-running task updates
+- `controller`: HTTP entrypoints and DTO contracts
+- `service`: orchestration and business logic
+- `service.marketdata`: provider, import, and dataset workflow logic
+- `repository`: persistence access
+- `entity`: runtime database models
+- `backtest`: execution engine, validation, and analytics plumbing
+- `backtest.strategy`: strategy registry and implementations
+- `risk`, `security`, `config`, `websocket`, `validation`, `repair`: cross-cutting runtime support
 
-### Key Backend Flows
+Important ownership splits:
 
-- Auth flow: JWT-backed authentication protects `/api/**`; only `/api/auth/login` and `/api/auth/refresh` stay public, `/api/auth/me` and `/api/auth/logout` require authentication, and revoked access tokens are denied before controller code relies on them.
-- Backtest flow: `BacktestManagementController` now keeps command and query boundaries explicit. `BacktestManagementService` validates run, replay, delete, and algorithm-catalog commands, persists queued executions, and dispatches async execution only after the queueing transaction commits. Read-side history, summary, slim overview, equity-series, trade-series, symbol-scoped telemetry, experiment-summary, and comparison mapping live in `BacktestResultQueryService`, on-demand price or signal or regime telemetry is reconstructed by `BacktestTelemetryService` only for completed runs, transactional execution-state transitions and result persistence live in `BacktestExecutionLifecycleService`, and shared progress publication flows through `BacktestProgressService` before `BacktestExecutionService` scopes or resamples candles to the requested timeframe and the active runtime executes `BacktestSimulationEngine` plus registry-selected beans in `backtest.strategy.*`.
-- Backtest async contract: heavy backtest commands return `202 Accepted` with a `Location` header pointing at the lightweight summary read, so the UI can acknowledge queueing immediately and then stay on the WebSocket or polling path until completion before requesting heavy detail payloads.
-- Async monitoring contract: backtest and import reads now include a shared `AsyncTaskMonitorResponse` shape that normalizes lifecycle state, retry counts or limits, retry scheduling, timeout visibility, and operator retry eligibility across polling and WebSocket-driven screens.
-- Market-data flow: `MarketDataController` feeds `MarketDataImportService` for provider metadata, credential workflows, and import-job commands; scheduled and async download execution now lives in `MarketDataImportExecutionService`, progress publication lives in `MarketDataImportProgressService`, single-job reads are available through a lightweight `/api/market-data/jobs/{jobId}` query route, and create or retry commands return `202 Accepted` plus a `Location` header instead of blocking on import processing before completed imports land in the same dataset catalog used by uploads through `BacktestDatasetCatalogService`, backed by `BacktestDatasetStorageService` and `BacktestDatasetLifecycleService`.
-- Dataset ingestion cutover: `BacktestDatasetStorageService` now parses uploads and completed provider-import payloads once, saves dataset provenance metadata plus a temporary CSV compatibility copy, and immediately hydrates normalized candle segments through the shared market-data write path so new datasets are queryable from the relational store without a separate migration step.
-- Relational market-data scaffold: Liquibase now provisions `market_data_series`, `market_data_candle_segments`, and `market_data_candles` plus dedicated repositories for series filters, coverage-overlap inspection, and range reads; `MarketDataQueryService` now serves execution and telemetry windows from that relational store when normalized candles exist, supports explicit `EXACT_ONLY`, `BEST_AVAILABLE`, and `EXACT_THEN_ROLLUP` modes, preserves deterministic exact-versus-rollup precedence, and reports uncovered buckets as explicit gaps before using the legacy CSV fallback reserved for still-unmigrated datasets.
-- Market-data observability: Micrometer now tracks normalized-store series or segment or candle growth, query latency, returned candle counts, explicit gap counts, rollup usage, legacy fallback usage, stitched-segment reads, slow scans, and legacy CSV cache hit or miss ratios; structured `market_data_query` logs now flag rollups, fallback activation, stitched coverage, gap windows, and slow reads without requiring normal relational hot paths to emit whole-dataset CSV parse logs.
-- Legacy migration utility: `LegacyMarketDataMigrationService` now parses legacy dataset CSV blobs symbol by symbol, infers supported timeframe buckets, creates deterministic legacy series metadata, migrates one dataset per transaction, skips already-migrated segments by dataset or series or timeframe or checksum, exposes the workflow through the Gradle `migrateLegacyDatasets` task with safe dry-run defaults, and can reconcile migrated datasets against the normalized store through `reconcileLegacyDatasets` before runtime cutover removes legacy authority.
-- Runtime backfill recovery: `LegacyDatasetBackfillStartupParticipant` now uses that same migration plus reconciliation workflow during startup to hydrate any pre-cutover catalog dataset that still lacks normalized segments, so existing backtests and telemetry reads stay on `MarketDataQueryService`'s relational path instead of re-entering CSV parsing during normal operation.
-- Dataset download compatibility: `BacktestDatasetStorageService` now exports CSV directly from normalized exact-raw candles when a dataset has a single trustworthy normalized timeframe, and only falls back to the stored blob when export would be ambiguous or compatibility-only.
-- Paper-trading and risk flow: risk status, paper-trading state, and operator alerts are surfaced through service and DTO boundaries rather than embedded in UI-only logic.
-- Audit flow: critical operator actions persist durable audit events that can be queried by dashboard and settings surfaces.
-- Runtime recovery flow: unfinished backtests, unfinished market-data imports, and unmigrated legacy datasets are detected on startup and resumed or backfilled from persisted state.
+- `BacktestManagementService`: queue, replay, delete, and command validation
+- `BacktestResultQueryService`: history, summary, compare, and detail reads
+- `BacktestExecutionService`: async execution, dataset loading, scoping, and timeframe handling
+- `BacktestExecutionLifecycleService`: transactional state changes and result persistence
+- `BacktestProgressService`: progress publication
+- `MarketDataImportService`: provider metadata, credentials, and job commands
+- `MarketDataImportExecutionService`: async import work
+- `MarketDataImportProgressService`: import telemetry publication
+- `BacktestDatasetStorageService`: parsing, storage, and downloads
+- `BacktestDatasetLifecycleService`: inventory, retention, archive, and restore
 
-### Active Backtest Seam
+## Frontend Boundaries
 
-- Active runtime seam: `BacktestManagementController -> BacktestManagementService -> BacktestExecutionService -> BacktestSimulationEngine -> backtest.strategy.*`.
-- Active ownership split inside that seam:
-  - `BacktestManagementService`: command-side validation, queueing, replay, delete, and algorithm catalog access
-  - `BacktestResultQueryService`: history, lightweight summary reads, slim overview reads, independently loaded equity or trade or telemetry reads, experiment summaries, and comparison DTO mapping
-  - `BacktestTelemetryService`: read-side reconstruction of per-bar action, exposure, regime, and indicator telemetry from persisted datasets plus trade or equity evidence, but only once the run is completed
-  - `BacktestExecutionService`: async runtime orchestration, after-commit dispatch, dataset loading, symbol scoping, timeframe resampling, and simulation callbacks
-  - `BacktestExecutionLifecycleService`: transactional status changes, result persistence, and failure handling
-  - `BacktestProgressService`: shared WebSocket progress publication for queued, running, completed, and failed states
-- Current disposition: the retired `BacktestEngine` plus `strategy/*` seam has been removed. New backtest/runtime behavior belongs in `backtest/*` and `backtest/strategy/*`.
+The frontend is a BrowserRouter SPA with feature-based structure under `frontend/src/features/`.
 
-### Dataset And Market-Data Service Ownership
+Shared layers:
 
-- `MarketDataImportService`: provider catalog reads, credential workflows, job creation, retry, cancel, and scheduler dispatch
-- `MarketDataImportExecutionService`: async import execution, provider fetch loops, staged CSV accumulation, retry handling, and completion
-- `MarketDataImportProgressService`: shared WebSocket publication for import-job telemetry
-- `MarketDataImportExecutionService`: now owns automatic retry-window enforcement for provider throttling or wait responses, including the durable retry counter and max-retry boundary that eventually fails a job closed instead of looping forever
-- `BacktestDatasetCatalogService`: audited upload/import commands plus controller-facing dataset catalog responses
-- `BacktestDatasetStorageService`: CSV parsing, dataset persistence, downloads, and upload-size enforcement
-- `BacktestDatasetLifecycleService`: dataset inventory, retention reporting, archive/restore state, and availability checks for new backtests
-- Internal runtime consumers such as `BacktestManagementService` and `BacktestExecutionService` now read storage/lifecycle ownership directly instead of routing through a generic dataset wrapper.
+- `src/app`: Redux store and typed hooks
+- `src/services`: API helpers, OpenAPI transport helpers, WebSocket manager
+- `src/components`: layout shell, route guards, shared UI, loading, and error states
+- `src/theme`: design tokens and MUI overrides
 
-### Query And Index Posture
+Main routes:
 
-- Backtest history already uses bounded page reads instead of loading the full table.
-- Experiment summaries now aggregate in the repository layer with database-side grouping and latest-run selection instead of loading every `BacktestResult` entity into memory.
-- Liquibase owns the supporting query indexes for dataset listing, backtest experiment and status scans, and market-data ready-job scheduling.
-
-### Authentication And Request Boundary
-
-- `JwtTokenProvider` validates its configuration at startup and rejects missing, legacy-placeholder, or too-short secrets so insecure JWT defaults do not survive into runtime.
-- Revoked tokens are persisted in the `auth_token_revocations` table through `AuthTokenRevocationRepository`, which makes logout durable across process restarts and container rebuilds.
-- `JwtAuthenticationFilter` and `AuthService` both treat revoked tokens as invalid so the filter chain and controller/service layer agree on request-boundary decisions.
-- HTTP CORS allowlists are explicitly configured through `algotrading.security.allowed-origin-patterns`; the verified local defaults are the Vite dev and preview ports on `localhost` and `127.0.0.1`.
-- The `relaxed-auth` flag remains an explicit local debugging override and is not part of the default posture.
-
-### WebSocket And Telemetry Boundary
-
-- `/ws` is exposed as an upgrade endpoint, but the handshake itself is authenticated by `WebSocketAuthHandshakeInterceptor` with a JWT access token query parameter plus an explicit `env` of `test` or `live`.
-- `WebSocketHandler` only accepts environment-scoped channels such as `test.backtests` or `live.marketData`, emits `ack` control messages for accepted subscriptions, and emits `error` control messages for rejected or malformed requests.
-- Allowed browser origins are explicitly configurable through `algotrading.websocket.allowed-origin-patterns`; the default local posture allows the Vite dev and preview ports on `localhost` and `127.0.0.1`.
-
-### Backtest Model
-
-- Strategies are isolated Spring beans implementing `BacktestStrategy`.
-- `BacktestStrategyRegistry` resolves available strategies and metadata.
-- Execution supports `SINGLE_SYMBOL` and `DATASET_UNIVERSE`.
-- Runs can carry experiment names and keys so related work can be grouped without losing per-run traceability.
-- The action model records explicit `BUY`, `SELL`, `SHORT`, and `COVER` transitions plus `LONG` and `SHORT` exposure state.
-- Signal decisions are evaluated on one bar and filled on the next bar's open by default; the only same-run forced liquidation path is the final close when a position is still open at the end of the dataset.
-- Requested simulation timeframes must be backed by explicit candle resampling before a strategy evaluates the dataset.
-- Execution and telemetry reads can now request exact candles, best-available candles, or finer-to-coarser rollups explicitly from the normalized store; partial finer buckets are rejected instead of producing incomplete rolled-up bars.
-- Direct short exposure is limited to research and paper flows when enabled per strategy. Live shorting, leverage, and margin remain outside the default path.
-
-## Frontend Architecture
-
-The app is a BrowserRouter-based SPA. `frontend/src/App.tsx` mounts the global theme, error boundaries, route protection, and the shared WebSocket runtime.
-
-Current route surfaces:
-
-- `/login`
 - `/dashboard`
+- `/backtest`
 - `/forward-testing`
 - `/paper`
 - `/live`
 - `/strategies`
-- `/trades`
-- `/backtest`
 - `/market-data`
+- `/trades`
 - `/risk`
 - `/settings`
 
-Feature modules under `frontend/src/features/`:
+The shell owns the main route context. Feature routes are expected to plug into that shell instead of rebuilding their own page chrome.
 
-- `auth`
-- `environment`
-- `dashboard`
-- `account`
-- `paper`
-- `strategies`
-- `backtest`
-- `marketData`
-- `risk`
-- `settings`
-- `trades`
-- `websocket`
-- shared `paperApi.ts` for paper-trading data access
+## Major Data Flows
 
-Shared frontend infrastructure:
+### Authentication And Transport
 
-- `src/app`: Redux store, typed hooks, app-level state wiring
-- `src/services`: transport helpers, environment-aware API plumbing, OpenAPI path helpers, WebSocket manager
-- `src/components`: shared layout primitives, route guards, loading states, and error handling
-- `src/components/layout/PageContent.tsx`: shared page intro, metric-strip, and section-header primitives used to keep route spacing, section rhythm, and primary-action placement consistent across the SPA
-- `src/components/ui/Workbench.tsx`: shared workstation primitives such as `SurfacePanel`, `StatusPill`, `MetricCard`, route action bars, empty states, and chart legends
-- `src/components/workspace/StickyInspectorPanel.tsx`: sticky detail rail used by Backtest and other selection-heavy review flows
-- `src/components/workspace/ActiveAlgorithmExplainabilityPanel.tsx`: shared algorithm-evidence detail surface used by the execution workspace tabs to standardize decision evidence, risk and PnL, exposure, and incident review
+- JWT auth protects `/api/**`, with only login and refresh public
+- Token revocation is durable in PostgreSQL
+- WebSocket upgrades use authenticated `/ws?token=...&env=...` handshakes
+- Frontend uses WebSockets for progress and falls back to polling when needed
 
-### Frontend Data Flow
+### Backtests
 
-- RTK Query slices own backend contract adaptation.
-- Generated OpenAPI transport types are consumed through feature-owned contract modules where response normalization is needed, rather than leaking generated optional transport shapes into pages.
-- Backtest overview reads now carry run metadata plus `availableTelemetrySymbols`, while equity, trade, and telemetry payloads are loaded through dedicated endpoints so the UI can lazy-load heavy panes without recomputing strategy logic in the browser.
-- `BacktestResults` now acts as a section controller rather than one monolith: cheap overview content renders first, and the heavier `Workspace`, `Trades`, and `Analytics` panes are lazy-loaded in separate feature modules that own their own RTK Query boundaries.
-- Active backtest polling should prefer the lightweight summary endpoint, while completed-run review can request the slim overview plus the heavier equity, trade, and symbol-scoped telemetry payloads independently.
-- `features/backtest/BacktestWorkspaceChart.tsx` owns the trading-oriented price-review surface using `lightweight-charts`, while aggregate analytics remain on the existing Recharts-based components.
-- `features/backtest/backtestWorkspace.ts` now owns the memoized workspace derivation seam for trade assembly, marker generation, and overlay-color lookup so expensive backtest review transforms stay out of hot component render paths.
-- The chart path intentionally condenses dense marker windows for rendering, while the panel keeps the full marker dataset available for linked inspection so operator evidence is not lost when telemetry ranges get large.
-- `features/backtest/BacktestTradeReviewPanel.tsx` delegates dense row rendering to `features/backtest/BacktestVirtualizedTradeTable.tsx`, which virtualizes large browser-side trade tables while preserving a deterministic non-virtual fallback for jsdom profiling and tests.
-- `features/backtest/backtestPerformanceBudget.ts` defines repeatable jsdom performance budgets for route load, chart mount, and large-query render timing, and `BacktestPerformanceProfile.test.tsx` enforces those thresholds while emitting the profiling report used in status tracking.
-- `features/execution/executionContext.ts` defines route-owned execution contexts (`research`, `forward-test`, `paper`, `live`) and maps them onto the conservative backend environment model until dedicated live capabilities are approved.
-- Redux slices still track auth, operational environment mode, settings, and WebSocket connection state, but research pages now resolve their own execution context instead of inheriting the operational toggle.
-- `features/forwardTesting/ForwardTestingPage.tsx` is the first dedicated execution-workspace child route built on that model: it composes shared execution primitives with strategy config history, paper-state recovery signals, trade-history evidence, `/api/strategy/status` monitoring, audit history, and explicitly local operator notes to stay paper-safe while still useful for live-market observation.
-- `features/paper/PaperTradingPage.tsx` now extends the same route-owned model with exchange-scoped strategy assignment, selected-algorithm evidence review, and preserved simulated order-entry controls. Where the backend does not yet expose durable exchange-to-strategy paper assignment, the route uses explicit workstation-local persistence instead of silently inventing a server-backed capability.
-- `features/live/LiveTradingPage.tsx` now completes the execution-workspace split with an explicit live-context monitoring route. It requests live-scoped account reads through route-owned RTK Query overrides, shows backend capability failures plainly when live account reads are not wired, and keeps assignment, parameter, and order controls hidden until an explicit live-execution capability exists.
-- `ActiveAlgorithmExplainabilityPanel` now sits above the generic drawer primitive and gives Forward Testing, Paper, and Live a common evidence model: recent entry or exit markers, signal reason, current risk and PnL, position exposure, and recent incident or override review all come from route-supplied trade plus audit data instead of per-route bespoke drawer logic.
-- `WebSocketRuntime` subscribes to both test and live channel families after the authenticated handshake so route-owned contexts can observe the correct telemetry stream without reconnecting the entire app when operators review different contexts.
-- The frontend now treats connection-open and channel subscription as separate states: pages only consider live telemetry active after the backend acknowledges the requested channels.
-- Polling fallback remains available for progress views when the browser cannot establish or maintain the WebSocket connection.
-- UI async surfaces now keep the transport state and the backend async-monitor state separate: operators can see both whether updates are arriving by WebSocket or polling and whether the backend believes the job is queued, running, retrying, stale, failed, or completed.
-- Sensitive operational state stays backend-owned; local browser storage is limited to display preferences and similar user-local settings.
-- Route surfaces now treat the shell header as the primary page-context surface. Page components should keep safety-critical chips and workflow meaning intact, but avoid reintroducing duplicate hero banners or route-local chrome when shared shell context already covers that role.
+1. The frontend submits a backtest request.
+2. The backend validates and queues the run.
+3. Async execution loads the dataset, scopes symbols, and resamples to the requested timeframe when needed.
+4. Results, equity series, trade series, and status are persisted.
+5. The UI follows progress through WebSocket or polling, then loads detail panes on demand.
 
-## Runtime And Data Boundaries
+### Market Data
 
-- Runtime database is PostgreSQL in Docker.
-- Backend runtime schema creation is Liquibase-first with `ddl-auto=validate`.
-- Backend tests and builds use the H2 `test` profile.
-- Runtime query hot paths rely on explicit indexes for `backtest_datasets.uploaded_at`, `backtest_results` experiment or dataset or execution-status scans, and the `market_data_import_jobs` ready-job scheduler scan.
-- The normalized market-data tables already reserve hot-path indexes for `series_id + timeframe + bucket_start`, segment coverage scans, and venue or asset filters so the later execution cutover can move to range queries without another schema rewrite.
-- Operational metrics now expose normalized-store growth and query behavior through the shared Micrometer registry, which keeps pre-migration versus post-migration reads comparable from dashboards and alerts.
-- Backend profiling metrics also expose targeted timing for high-churn read paths and async workflow startup, and the repo now includes reproducible profiling runners for the backend workflow seam and the frontend backtest page render path.
-- Full-stack Docker runtime includes the Spring Boot app and PostgreSQL; WebSocket event delivery stays in-process within the backend.
-- Compose uses the explicit project name `algotradingbot` and named volumes for stable local reuse.
-- Script-driven local logs live in `.runtime/logs`; managed PID files live under `.pids`.
-- Local smoke scripts use `/actuator/info` as the backend startup probe because the current local profile keeps readiness-probe health `OUT_OF_SERVICE` while the workstation HTTP surface is already serving traffic.
-- OpenAPI artifacts are generated from the backend and committed in `contracts/openapi.json` plus `frontend/src/generated/openapi.d.ts`.
-- Provider and exchange secrets are stored encrypted in PostgreSQL when saved through the UI, with environment-variable fallback where supported.
+1. Operators upload CSV data or create provider import jobs.
+2. Import jobs run asynchronously with retry-aware state.
+3. New datasets hydrate the normalized market-data store during ingestion.
+4. Backtests and telemetry reads use the normalized store when coverage is available.
+5. Legacy CSV blobs remain a compatibility fallback only where needed.
+
+## Runtime And Data Model
+
+- Runtime database: PostgreSQL
+- Test/build database: H2 `test` profile
+- Schema management: Liquibase with `ddl-auto=validate`
+- Tracked contracts: `contracts/openapi.json` and `frontend/src/generated/openapi.d.ts`
+- Local runtime state: `.runtime/`
+- Script-managed PIDs: `.pids/`
+
+Normalized market-data runtime tables:
+
+- `market_data_series`
+- `market_data_candle_segments`
+- `market_data_candles`
+
+These tables support exact-timeframe reads, controlled rollups, provenance tracking, and gap reporting.
+
+## Repo Structure
+
+```text
+C:\Git\algotradingbot\
+  AlgotradingBot\   backend application
+  frontend\         React/Vite SPA
+  contracts\        tracked OpenAPI artifact
+  docs\             product docs, guides, research, ADRs
+  scripts\          automation and contract tooling
+  .runtime\         local runtime state and logs
+  .pids\            script-managed process ids
+```
 
 ## Architecture Rules
 
 1. Keep controller, service, repository, and persistence concerns separated.
-2. Use DTOs at HTTP boundaries; do not expose JPA entities directly.
-3. Keep money and risk paths on `BigDecimal`.
-4. Isolate exchange and live-connected behavior behind dedicated services and environment gates.
-5. Keep guardrail logic independent from UI implementation details.
+2. Use DTOs at HTTP boundaries; do not leak JPA entities directly.
+3. Keep money, fees, PnL, and risk calculations on `BigDecimal`.
+4. Keep exchange-connected and live-connected behavior behind explicit services and environment gates.
+5. Keep guardrails backend-owned; do not hide safety logic inside the UI.
 6. Prefer current-state documentation over implementation-history narratives.

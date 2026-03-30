@@ -1,6 +1,6 @@
-# Testing And Contract Guide
+# Testing And Contracts
 
-Use this guide when the task touches verification, CI parity, generated contracts, or backend/frontend boundaries.
+Use this guide for verification, CI parity, generated contracts, and backend/frontend boundary work.
 
 ## Verification Strategy
 
@@ -8,7 +8,7 @@ Use this guide when the task touches verification, CI parity, generated contract
 2. Expand only as far as the change requires.
 3. If unrelated failures already exist, report them instead of hiding them.
 
-## Frontend Verification
+## Frontend Checks
 
 ```powershell
 cd frontend
@@ -19,7 +19,7 @@ npm run build
 
 Use targeted Vitest execution first when that is enough.
 
-## Backend Verification
+## Backend Checks
 
 ```powershell
 cd AlgotradingBot
@@ -27,52 +27,20 @@ cd AlgotradingBot
 .\gradlew.bat build
 ```
 
-Add the Java audit when toolchain-sensitive code is touched:
+Add:
 
 ```powershell
 .\gradlew.bat javaMigrationAudit --no-daemon
 ```
 
-Use these profiling runners when work targets known performance hotspots and you need a reproducible timing record:
+when the change is toolchain-sensitive, JDK-sensitive, or migration-sensitive.
 
-```powershell
-cd AlgotradingBot
-.\gradlew.bat backendWorkflowProfile
-
-cd ..\frontend
-npm run profile:backtest
-```
-
-The generated reports land in `AlgotradingBot/build/reports/backend-workflow-profile/report.md` and `frontend/build/reports/backtest-page-profile/report.md`.
-
-The backtest-page profile report now records:
-
-- split endpoint payload sizes for the current route
-- React Profiler mount and update timings
-- chart setup timing for the workspace chart wrapper
-- enforced frontend budgets for route load time, chart mount time, and representative large-query render time
-- client-side transformation timings for equity, telemetry, and trade-review shaping
-- trade-table interaction timing for a representative row-selection flow
-
-The frontend backtest budget definitions live in `frontend/src/features/backtest/backtestPerformanceBudget.ts`.
-The `npm run profile:backtest` runner both writes the markdown report and fails if any of these repeatable jsdom budgets regress beyond their documented threshold.
-
-Notes:
-
-- Runtime uses PostgreSQL.
-- Tests and `build` use the H2 `test` profile unless runtime services are explicitly needed.
-- Java audit reports are written under `AlgotradingBot/build/reports/java-migration/`.
-
-## OpenAPI Contract Workflow
+## OpenAPI Workflow
 
 Tracked artifacts:
 
 - `contracts/openapi.json`
 - `frontend/src/generated/openapi.d.ts`
-
-Generation script:
-
-- `scripts/sync-openapi-contract.mjs`
 
 Typical check:
 
@@ -88,36 +56,22 @@ cd frontend
 npm run contract:generate
 ```
 
-`contract:check` stays non-zero until tracked artifacts match the generated output.
+Rules:
 
-Contract ownership model:
-
-- Treat generated OpenAPI artifacts as the transport source of truth.
-- Normalize generated request and response shapes in one API-slice or transport-helper boundary before they reach page components.
-- Keep component-facing models explicit and stable even when generated schemas contain optional transport fields.
-- Encode selection-mode rules in DTOs and adapters instead of inventing placeholder values in the UI.
+- treat generated OpenAPI artifacts as the transport source of truth
+- normalize transport shapes in API slices or transport helpers before they reach components
+- keep component-facing models stable even when generated schemas are optional or noisy
 
 ## CI Order
 
-Current CI baseline:
+Mirror this order locally when a change crosses the contract boundary:
 
-- Backend: `javaMigrationAudit`, `test`, `build`
-- Frontend: `contract:check`, `lint`, `test`, `build`
-
-Mirror that ordering locally when a change crosses the contract boundary.
-
-## Optional Security Scan
-
-Use Semgrep for auth, secrets, request parsing, shell execution, WebSocket handling, or automation changes:
-
-```powershell
-.\security-scan.ps1
-.\security-scan.ps1 -FailOnFindings
-```
+- backend: `javaMigrationAudit`, `test`, `build`
+- frontend: `contract:check`, `lint`, `test`, `build`
 
 ## Runtime Smoke Checks
 
-When orchestration, Docker, or runtime config changes, mirror the runbooks:
+Use runtime smoke checks when orchestration, Docker, env routing, or long-running async flows change:
 
 ```powershell
 .\run.ps1
@@ -126,8 +80,38 @@ When orchestration, Docker, or runtime config changes, mirror the runbooks:
 .\stop-all.ps1
 ```
 
-Runtime smoke guidance:
+Prefer `.\run.ps1` when you need current local backend source. Use `.\run-all.ps1` when you specifically need the Docker-backed backend image.
 
-- Prefer `.\run.ps1` when you need to validate the current local backend source tree, because it runs the backend with local `bootRun`.
-- Use `.\run-all.ps1` when you specifically need the Docker-backed full stack; rebuild the compose app image first if you expect backend code changes to be present there.
-- For large active backtests, prefer history or progress polling while the run is in flight. The detail endpoint intentionally withholds heavy telemetry until completion, and completed detail payloads can be large.
+## Performance And Profiling
+
+Use these when work touches known hot paths:
+
+```powershell
+cd AlgotradingBot
+.\gradlew.bat backendWorkflowProfile
+
+cd ..\frontend
+npm run profile:backtest
+```
+
+Reports land in:
+
+- `AlgotradingBot/build/reports/backend-workflow-profile/report.md`
+- `frontend/build/reports/backtest-page-profile/report.md`
+
+## Security Scan Triggers
+
+Run Semgrep when changing:
+
+- auth or session handling
+- secret or credential storage
+- process execution or shelling out
+- Docker, PowerShell, or orchestration code
+- WebSocket or HTTP request parsing
+
+Commands:
+
+```powershell
+.\security-scan.ps1
+.\security-scan.ps1 -FailOnFindings
+```

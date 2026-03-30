@@ -4,7 +4,7 @@
 
 - Strategy name: `Relative Strength Rotation With Intraday Entry Filter`
 - Canonical ID: `RELATIVE_STRENGTH_ROTATION_INTRADAY_ENTRY_FILTER`
-- Phase slot: `3C.6`
+- Source posture: research candidate
 - Status: `research only`
 
 ## 2. Hypothesis
