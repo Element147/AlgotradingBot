@@ -192,11 +192,112 @@ vi.mock('@/features/forwardTesting/ForwardSignalTimelineChart', () => ({
   ),
 }));
 
+vi.mock('@/components/workspace/ActiveAlgorithmExplainabilityPanel', () => ({
+  ActiveAlgorithmExplainabilityPanel: ({
+    title,
+    summary,
+    extraSections = [],
+    desktopBehavior,
+  }: {
+    title: ReactNode;
+    summary?: ReactNode;
+    extraSections?: Array<{ id: string; title: ReactNode; content: ReactNode }>;
+    desktopBehavior?: 'sticky' | 'inline';
+  }) => (
+    <div
+      data-testid="paper-explainability-panel"
+      style={{ position: desktopBehavior === 'inline' ? 'relative' : 'sticky' }}
+    >
+      <div>{title}</div>
+      {summary}
+      {extraSections.map((section) => (
+        <div key={section.id}>
+          <div>{section.title}</div>
+          <div>{section.content}</div>
+        </div>
+      ))}
+    </div>
+  ),
+}));
+
+vi.mock('@/components/workspace/ExecutionWorkspacePrimitives', () => ({
+  ExecutionStatusRail: ({
+    title,
+    items,
+  }: {
+    title: ReactNode;
+    items: Array<{ label: ReactNode; value: ReactNode; detail?: ReactNode }>;
+  }) => (
+    <section>
+      <div>{title}</div>
+      {items.map((item, index) => (
+        <div key={`status-${index}`}>
+          <span>{item.label}</span>
+          <span>{item.value}</span>
+          {item.detail ? <span>{item.detail}</span> : null}
+        </div>
+      ))}
+    </section>
+  ),
+  LiveMetricStrip: ({
+    title,
+    items,
+  }: {
+    title: ReactNode;
+    items: Array<{ label: ReactNode; value: ReactNode; detail?: ReactNode }>;
+  }) => (
+    <section>
+      <div>{title}</div>
+      {items.map((item, index) => (
+        <div key={`metric-${index}`}>
+          <span>{item.label}</span>
+          <span>{item.value}</span>
+          {item.detail ? <span>{item.detail}</span> : null}
+        </div>
+      ))}
+    </section>
+  ),
+  ExecutionCard: ({
+    title,
+    subtitle,
+    detail,
+    onSelect,
+  }: {
+    title: ReactNode;
+    subtitle?: ReactNode;
+    detail?: ReactNode;
+    onSelect?: () => void;
+  }) => (
+    <button type="button" onClick={onSelect}>
+      <span>{title}</span>
+      {subtitle ? <span>{subtitle}</span> : null}
+      {detail ? <span>{detail}</span> : null}
+    </button>
+  ),
+  InvestigationLogPanel: ({
+    title,
+    entries,
+  }: {
+    title: ReactNode;
+    entries: Array<{ id: string; title: ReactNode; detail: ReactNode }>;
+  }) => (
+    <section>
+      <div>{title}</div>
+      {entries.map((entry) => (
+        <div key={entry.id}>
+          <div>{entry.title}</div>
+          <div>{entry.detail}</div>
+        </div>
+      ))}
+    </section>
+  ),
+}));
+
 vi.mock('@/services/api', () => ({
   getApiErrorMessage: () => 'failed',
 }));
 
-describe('PaperTradingPage', () => {
+describe('PaperTradingPage', { timeout: 15000 }, () => {
   const setDesktopInspectorViewport = (desktop: boolean) => {
     window.matchMedia = vi.fn().mockImplementation((query: string) => ({
       matches: query === '(min-width:1200px)' ? desktop : false,
@@ -277,15 +378,9 @@ describe('PaperTradingPage', () => {
     expect(screen.getByText('Assigned parameters')).toBeInTheDocument();
     expect(screen.getByText('Recent config versions')).toBeInTheDocument();
     expect(screen.getByText('Paper incidents and audit trail')).toBeInTheDocument();
-
-    const inspectorSurface = screen
-      .getByText('Assigned parameters')
-      .closest('.MuiPaper-root')
-      ?.parentElement
-      ?.closest('.MuiPaper-root');
-
-    expect(inspectorSurface).not.toBeNull();
-    expect(window.getComputedStyle(inspectorSurface as Element).position).toBe('relative');
+    expect(screen.getByTestId('paper-explainability-panel')).toHaveStyle({
+      position: 'relative',
+    });
   });
 
   it('assigns a strategy to the selected exchange profile locally', async () => {

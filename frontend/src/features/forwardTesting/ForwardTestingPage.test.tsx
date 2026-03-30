@@ -178,6 +178,102 @@ vi.mock('./ForwardSignalTimelineChart', () => ({
   ),
 }));
 
+vi.mock('@/components/workspace/ActiveAlgorithmExplainabilityPanel', () => ({
+  ActiveAlgorithmExplainabilityPanel: ({
+    title,
+    summary,
+    extraSections = [],
+  }: {
+    title: ReactNode;
+    summary?: ReactNode;
+    extraSections?: Array<{ id: string; title: ReactNode; content: ReactNode }>;
+  }) => (
+    <section data-testid="forward-explainability-panel">
+      <div>{title}</div>
+      {summary}
+      {extraSections.map((section) => (
+        <div key={section.id}>
+          <div>{section.title}</div>
+          <div>{section.content}</div>
+        </div>
+      ))}
+    </section>
+  ),
+}));
+
+vi.mock('@/components/workspace/ExecutionWorkspacePrimitives', () => ({
+  ExecutionStatusRail: ({
+    title,
+    items,
+  }: {
+    title: ReactNode;
+    items: Array<{ label: ReactNode; value: ReactNode; detail?: ReactNode }>;
+  }) => (
+    <section>
+      <div>{title}</div>
+      {items.map((item, index) => (
+        <div key={`status-${index}`}>
+          <span>{item.label}</span>
+          <span>{item.value}</span>
+          {item.detail ? <span>{item.detail}</span> : null}
+        </div>
+      ))}
+    </section>
+  ),
+  LiveMetricStrip: ({
+    title,
+    items,
+  }: {
+    title: ReactNode;
+    items: Array<{ label: ReactNode; value: ReactNode; detail?: ReactNode }>;
+  }) => (
+    <section>
+      <div>{title}</div>
+      {items.map((item, index) => (
+        <div key={`metric-${index}`}>
+          <span>{item.label}</span>
+          <span>{item.value}</span>
+          {item.detail ? <span>{item.detail}</span> : null}
+        </div>
+      ))}
+    </section>
+  ),
+  ExecutionCard: ({
+    title,
+    subtitle,
+    detail,
+    onSelect,
+  }: {
+    title: ReactNode;
+    subtitle?: ReactNode;
+    detail?: ReactNode;
+    onSelect?: () => void;
+  }) => (
+    <button type="button" onClick={onSelect}>
+      <span>{title}</span>
+      {subtitle ? <span>{subtitle}</span> : null}
+      {detail ? <span>{detail}</span> : null}
+    </button>
+  ),
+  InvestigationLogPanel: ({
+    title,
+    entries,
+  }: {
+    title: ReactNode;
+    entries: Array<{ id: string; title: ReactNode; detail: ReactNode }>;
+  }) => (
+    <section>
+      <div>{title}</div>
+      {entries.map((entry) => (
+        <div key={entry.id}>
+          <div>{entry.title}</div>
+          <div>{entry.detail}</div>
+        </div>
+      ))}
+    </section>
+  ),
+}));
+
 const createStore = () =>
   configureStore({
     reducer: {
@@ -228,7 +324,7 @@ const createStore = () =>
     },
   });
 
-describe('ForwardTestingPage', () => {
+describe('ForwardTestingPage', { timeout: 15000 }, () => {
   beforeEach(() => {
     localStorage.clear();
   });

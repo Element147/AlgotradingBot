@@ -52,7 +52,7 @@ The repository is a usable local-first MVP for strategy research, market-data pr
 
 ## Latest Verified Baseline
 
-Verified on March 19, 2026 and March 20, 2026:
+Verified on March 19, 2026, March 20, 2026, and March 30, 2026:
 
 - `.\gradlew.bat javaMigrationAudit --no-daemon`: passed
 - `.\gradlew.bat test`: passed
@@ -66,7 +66,6 @@ Verified on March 19, 2026 and March 20, 2026:
 
 Known non-gating warnings from that baseline:
 
-- `X-Frame-Options` is still set through a frontend `<meta>` tag instead of an HTTP header.
 - Frontend tests emit repeated Node warnings about `--localstorage-file`.
 - Some chart tests still emit container-size warnings under jsdom.
 

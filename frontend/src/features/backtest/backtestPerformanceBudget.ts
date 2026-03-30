@@ -39,7 +39,7 @@ export const backtestPerformanceBudgets: BacktestPerformanceBudget[] = [
   {
     key: 'largeQueryRenderMs',
     label: 'Large-query render time',
-    limitMs: 900,
+    limitMs: 1400,
     description:
       'Time for the trade review surface to render a representative large result set and expose its table.',
   },

@@ -1,5 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
@@ -99,15 +99,14 @@ describe('LoginPage', { timeout: 15000 }, () => {
     });
   });
 
-  it('should allow typing in form fields', async () => {
-    const user = userEvent.setup();
+  it('should allow typing in form fields', () => {
     renderLoginPage();
 
     const usernameInput = screen.getByLabelText(/username/i);
     const passwordInput = screen.getByLabelText(/password/i);
 
-    await user.type(usernameInput, 'testuser');
-    await user.type(passwordInput, 'password123');
+    fireEvent.change(usernameInput, { target: { value: 'testuser' } });
+    fireEvent.change(passwordInput, { target: { value: 'password123' } });
 
     expect(usernameInput.value).toBe('testuser');
     expect(passwordInput.value).toBe('password123');
