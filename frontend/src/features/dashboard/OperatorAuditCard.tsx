@@ -1,9 +1,12 @@
-import { Alert, Card, CardContent, Chip, Stack, Typography } from '@mui/material';
+import { Stack, Typography } from '@mui/material';
 
+import {
+  StatusPill,
+  SurfacePanel,
+} from '@/components/ui/Workbench';
 import {
   formatAuditActionLabel,
   formatAuditTargetLabel,
-  getAuditOutcomeColor,
 } from '@/features/settings/auditPresentation';
 import { useGetAuditEventsQuery } from '@/features/settings/exchangeApi';
 import { formatDateTime } from '@/utils/formatters';
@@ -16,50 +19,123 @@ export function OperatorAuditCard() {
 
   const events = data?.events ?? [];
   const summary = data?.summary;
+  const groupedEvents = events.reduce<
+    Array<{
+      id: number | string;
+      action: string;
+      actor: string;
+      environment: string;
+      targetLabel: string;
+      outcome: string;
+      createdAt: string;
+      repeatCount: number;
+    }>
+  >((groups, event) => {
+    const targetLabel = formatAuditTargetLabel(event);
+    const lastGroup = groups.at(-1);
+
+    if (
+      lastGroup &&
+      lastGroup.action === event.action &&
+      lastGroup.targetLabel === targetLabel &&
+      lastGroup.outcome === event.outcome
+    ) {
+      lastGroup.repeatCount += 1;
+      return groups;
+    }
+
+    groups.push({
+      id: event.id,
+      action: event.action,
+      actor: event.actor,
+      environment: event.environment,
+      targetLabel,
+      outcome: event.outcome,
+      createdAt: event.createdAt,
+      repeatCount: 1,
+    });
+    return groups;
+  }, []);
 
   return (
-    <Card>
-      <CardContent>
-        <Typography variant="h6" gutterBottom>
-          Operator Audit
+    <SurfacePanel
+      title="Operator Audit"
+      description="Recent role-sensitive changes stay visible here before you open the deeper audit tools in Settings."
+      sx={{ height: '100%' }}
+    >
+      {summary ? (
+        <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+          <StatusPill
+            label={`${summary.visibleEventCount} recent events`}
+            tone="info"
+            variant="filled"
+          />
+          <StatusPill label={`${summary.successCount} success`} tone="success" />
+          <StatusPill label={`${summary.failedCount} failed`} tone="warning" />
+        </Stack>
+      ) : null}
+
+      {isLoading ? (
+        <Typography variant="body2" color="text.secondary">
+          Loading audit timeline...
         </Typography>
-
-        {isLoading ? <Typography variant="body2">Loading audit timeline...</Typography> : null}
-        {isError ? <Alert severity="error">Unable to load audit events.</Alert> : null}
-
-        {summary ? (
-          <Alert severity={summary.failedCount > 0 ? 'warning' : 'info'} sx={{ mb: 1.5 }}>
-            {summary.visibleEventCount} recent events | {summary.successCount} success | {summary.failedCount} failed
-          </Alert>
-        ) : null}
-
-        {!isLoading && !isError && events.length === 0 ? (
-          <Typography variant="body2">No operator audit events recorded yet.</Typography>
-        ) : null}
-
+      ) : isError ? (
+        <Typography variant="body2" color="error.main">
+          Unable to load audit events.
+        </Typography>
+      ) : events.length === 0 ? (
+        <Typography variant="body2" color="text.secondary">
+          No operator audit events recorded yet.
+        </Typography>
+      ) : (
         <Stack spacing={1}>
-          {events.slice(0, 4).map((event) => (
-            <Card key={event.id} variant="outlined">
-              <CardContent sx={{ py: 1.25, '&:last-child': { pb: 1.25 } }}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
-                  <Typography variant="subtitle2">{formatAuditActionLabel(event.action)}</Typography>
-                  <Chip size="small" label={event.outcome} color={getAuditOutcomeColor(event.outcome)} />
+          {groupedEvents.slice(0, 4).map((event) => (
+            <Stack
+              key={event.id}
+              spacing={0.45}
+              sx={{
+                pt: 1,
+                borderTop: '1px solid',
+                borderColor: 'divider',
+              }}
+            >
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={0.75}
+                justifyContent="space-between"
+                alignItems={{ xs: 'flex-start', sm: 'center' }}
+              >
+                <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+                  <Typography variant="subtitle2" sx={{ overflowWrap: 'anywhere' }}>
+                    {formatAuditActionLabel(event.action)}
+                  </Typography>
+                  {event.repeatCount > 1 ? (
+                    <StatusPill
+                      label={`${event.repeatCount}x`}
+                      tone="info"
+                    />
+                  ) : null}
                 </Stack>
-                <Typography variant="body2" color="text.secondary">
-                  {event.actor} | {formatAuditTargetLabel(event)}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {event.environment} | {formatDateTime(event.createdAt)}
-                </Typography>
-              </CardContent>
-            </Card>
+                <StatusPill
+                  label={event.outcome}
+                  tone={event.outcome === 'FAILED' ? 'warning' : 'success'}
+                  variant="filled"
+                />
+              </Stack>
+              <Typography variant="body2" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>
+                {`${event.actor} | ${event.targetLabel}`}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {`${event.environment} | Latest ${formatDateTime(event.createdAt)}`}
+              </Typography>
+            </Stack>
           ))}
         </Stack>
+      )}
 
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.5 }}>
-          Open Settings {'>'} Audit Trail for filters, detail chips, and copy actions.
-        </Typography>
-      </CardContent>
-    </Card>
+      <Typography variant="caption" color="text.secondary">
+        Open Settings &gt; Audit Trail for filters, expanded evidence, and copy actions.
+      </Typography>
+    </SurfacePanel>
   );
 }

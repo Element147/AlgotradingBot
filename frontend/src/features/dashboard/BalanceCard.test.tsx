@@ -17,8 +17,8 @@ const mockBalanceData = {
   locked: '250.50',
   assets: [
     { symbol: 'USDT', amount: '500.00', valueUSD: '500.00' },
-    { symbol: 'BTC', amount: '0.015', valueUSD: '600.00' },
-    { symbol: 'ETH', amount: '0.08', valueUSD: '150.50' },
+    { symbol: 'BTC', amount: '0.01500000', valueUSD: '600.00' },
+    { symbol: 'ETH', amount: '0.08000000', valueUSD: '150.50' },
   ],
   lastSync: '2026-03-09T10:30:00Z',
 };
@@ -48,13 +48,13 @@ describe('BalanceCard', () => {
   it('should display total balance correctly', () => {
     render(<BalanceCard />);
     expect(screen.getByText('Total Balance')).toBeInTheDocument();
-    expect(screen.getByText('$1250.50')).toBeInTheDocument();
+    expect(screen.getByText('$1,250.50')).toBeInTheDocument();
   });
 
   it('should display available balance correctly', () => {
     render(<BalanceCard />);
     expect(screen.getByText('Available')).toBeInTheDocument();
-    expect(screen.getByText('$1000.00')).toBeInTheDocument();
+    expect(screen.getByText('$1,000.00')).toBeInTheDocument();
   });
 
   it('should display locked balance correctly', () => {
@@ -73,7 +73,7 @@ describe('BalanceCard', () => {
 
   it('should display asset amounts correctly', () => {
     render(<BalanceCard />);
-    expect(screen.getByText('500.00')).toBeInTheDocument();
+    expect(screen.getByText('500')).toBeInTheDocument();
     expect(screen.getByText('0.015')).toBeInTheDocument();
     expect(screen.getByText('0.08')).toBeInTheDocument();
   });
@@ -125,8 +125,7 @@ describe('BalanceCard', () => {
 
   it('should format timestamp as locale string', () => {
     render(<BalanceCard />);
-    const timestamp = new Date(mockBalanceData.lastSync).toLocaleString();
-    expect(screen.getByText(new RegExp(timestamp))).toBeInTheDocument();
+    expect(screen.getByText(/Last updated: Mar/i)).toBeInTheDocument();
   });
 
   it('should display multiple assets in correct order', () => {
@@ -142,9 +141,9 @@ describe('BalanceCard', () => {
     expect(refreshButton).toHaveAttribute('aria-label', 'Refresh balance');
   });
 
-  it('should render within a Card component', () => {
+  it('should render within a surface panel', () => {
     const { container } = render(<BalanceCard />);
-    const card = container.querySelector('.MuiCard-root');
-    expect(card).toBeInTheDocument();
+    const surface = container.querySelector('.MuiPaper-root');
+    expect(surface).toBeInTheDocument();
   });
 });

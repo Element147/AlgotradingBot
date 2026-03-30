@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 
 import {
+  formatCompactNumber,
   formatCurrency,
   formatPercentage,
   formatDateTime,
@@ -113,6 +114,24 @@ describe('formatters', () => {
     it('should handle invalid input', () => {
       expect(formatNumber('invalid')).toBe('0');
       expect(formatNumber(NaN)).toBe('0');
+    });
+  });
+
+  describe('formatCompactNumber', () => {
+    it('should trim trailing zeroes while keeping separators', () => {
+      expect(formatCompactNumber(1234.5)).toBe('1,234.5');
+      expect(formatCompactNumber('1234.5678')).toBe('1,234.5678');
+      expect(formatCompactNumber('1234.5000')).toBe('1,234.5');
+    });
+
+    it('should respect maximum decimals', () => {
+      expect(formatCompactNumber(1234.56789, 2)).toBe('1,234.57');
+      expect(formatCompactNumber('0.0154321', 4)).toBe('0.0154');
+    });
+
+    it('should handle invalid input', () => {
+      expect(formatCompactNumber('invalid')).toBe('0');
+      expect(formatCompactNumber(NaN)).toBe('0');
     });
   });
 

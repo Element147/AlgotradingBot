@@ -46,10 +46,19 @@ describe('PaperTradingCard', () => {
 
     expect(screen.getByText('Paper Trading')).toBeInTheDocument();
     expect(screen.getByText('Paper mode active')).toBeInTheDocument();
-    expect(screen.getByText('Cash Balance: 10000.00')).toBeInTheDocument();
-    expect(screen.getByText('Open Positions: 2')).toBeInTheDocument();
-    expect(screen.getByText('Paper trading is active with no current incident signals.')).toBeInTheDocument();
-    expect(screen.getByText(/Recovery status: HEALTHY/)).toBeInTheDocument();
+    expect(screen.getByText('Cash Balance')).toBeInTheDocument();
+    expect(screen.getByText('$10,000.00')).toBeInTheDocument();
+    expect(screen.getByText('2 open position(s)')).toBeInTheDocument();
+    expect(screen.getByText('Paper-trading recovery telemetry is currently healthy.')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Continue monitoring for stale orders or stale positions during the next restart cycle.'
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('Paper trading is active with no current incident signals.')
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('HEALTHY')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /open paper desk/i })).toHaveAttribute('href', '/paper');
   });
 });

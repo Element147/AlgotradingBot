@@ -9,6 +9,7 @@ import {
   setStoredRefreshToken,
   setStoredSession,
 } from './authStorage';
+import { DEV_AUTH_BYPASS_ENABLED, DEV_AUTH_BYPASS_USER } from './devAuth';
 
 export interface User {
   id: string;
@@ -130,6 +131,18 @@ const authSlice = createSlice({
     },
 
     restoreSession: (state) => {
+      if (DEV_AUTH_BYPASS_ENABLED) {
+        state.token = null;
+        state.refreshToken = null;
+        state.user = DEV_AUTH_BYPASS_USER;
+        state.isAuthenticated = true;
+        state.lastActivity = Date.now();
+        state.sessionTimeout = null;
+        state.loading = false;
+        state.error = null;
+        return;
+      }
+
       const token = getStoredAuthToken();
       const userStr = getStoredUser();
       const refreshToken = getStoredRefreshToken();
@@ -152,11 +165,31 @@ const authSlice = createSlice({
         }
       }
     },
+
+    hydrateDevBypassSession: (state) => {
+      state.token = null;
+      state.refreshToken = null;
+      state.user = DEV_AUTH_BYPASS_USER;
+      state.isAuthenticated = true;
+      state.lastActivity = Date.now();
+      state.sessionTimeout = null;
+      state.loading = false;
+      state.error = null;
+    },
   },
 });
 
-export const { setCredentials, setToken, logout, setLoading, setError, updateActivity, checkSessionTimeout, restoreSession } =
-  authSlice.actions;
+export const {
+  setCredentials,
+  setToken,
+  logout,
+  setLoading,
+  setError,
+  updateActivity,
+  checkSessionTimeout,
+  restoreSession,
+  hydrateDevBypassSession,
+} = authSlice.actions;
 
 // Selectors
 export const selectUser = (state: { auth: AuthState }) => state.auth.user;

@@ -50,6 +50,9 @@ describe('Sidebar', () => {
 
     expect(screen.getByText('AlgoTrading Bot')).toBeInTheDocument();
     expect(screen.getByText('Research Workstation')).toBeInTheDocument();
+    expect(screen.queryByText('Safety defaults')).not.toBeInTheDocument();
+    expect(screen.queryByText('Workstation flow')).not.toBeInTheDocument();
+    expect(screen.queryByText('Safe next step')).not.toBeInTheDocument();
   });
 
   it('should render navigation icons', () => {

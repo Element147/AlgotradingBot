@@ -11,6 +11,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useMemo, useState } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 
 import {
   PaperOrderEntryPanel,
@@ -42,7 +43,6 @@ import {
   type InvestigationLogEntry,
   type LiveMetricItem,
 } from '@/components/workspace/ExecutionWorkspacePrimitives';
-import { executionContextMeta } from '@/features/execution/executionContext';
 import { ForwardSignalTimelineChart } from '@/features/forwardTesting/ForwardSignalTimelineChart';
 import {
   type PaperOrderSide,
@@ -85,7 +85,6 @@ const DEFAULT_FORM: PaperOrderFormState = {
 };
 
 export default function PaperTradingPage() {
-  const routeExecutionContext = executionContextMeta.paper;
   const { data: state, isLoading: isStateLoading, isError: isStateError } =
     useGetPaperTradingStateQuery({ executionContext: 'paper' }, {
       pollingInterval: 15000,
@@ -303,7 +302,7 @@ export default function PaperTradingPage() {
       {
         label: 'Desk recovery',
         value: state?.recoveryStatus ?? 'Loading',
-        detail: state?.incidentSummary ?? 'Loading paper desk posture.',
+        detail: state ? 'Review incidents and audit entries below.' : 'Loading paper desk posture.',
         tone:
           state?.recoveryStatus === 'ATTENTION'
             ? 'warning'
@@ -313,7 +312,7 @@ export default function PaperTradingPage() {
         kicker: 'Desk',
       },
     ];
-  }, [selectedAlgorithm, selectedTrades, state?.incidentSummary, state?.recoveryStatus]);
+  }, [selectedAlgorithm, selectedTrades, state]);
 
   const detailSections = useMemo<ActiveAlgorithmDetailSection[]>(() => {
     if (!selectedAlgorithm) {
@@ -328,16 +327,16 @@ export default function PaperTradingPage() {
         title: 'Assigned parameters',
         content: (
           <Stack spacing={0.75}>
-            <Typography variant="body2">
+            <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
               <strong>Strategy type:</strong> {profile?.title ?? selectedAlgorithm.type}
             </Typography>
-            <Typography variant="body2">
+            <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
               <strong>Entry rule:</strong> {profile?.entryRule ?? 'No profile metadata available.'}
             </Typography>
-            <Typography variant="body2">
+            <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
               <strong>Exit rule:</strong> {profile?.exitRule ?? 'No profile metadata available.'}
             </Typography>
-            <Typography variant="body2">
+            <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
               <strong>Risk notes:</strong> {profile?.riskNotes ?? 'No profile metadata available.'}
             </Typography>
           </Stack>
@@ -349,9 +348,15 @@ export default function PaperTradingPage() {
         content: configHistory.length > 0 ? (
           <Stack spacing={1}>
             {configHistory.slice(0, 4).map((entry) => (
-              <Stack key={entry.id} spacing={0.35}>
-                <Typography variant="subtitle2">{`v${entry.versionNumber} | ${entry.symbol} | ${entry.timeframe}`}</Typography>
-                <Typography variant="body2" color="text.secondary">
+              <Stack key={entry.id} spacing={0.35} sx={{ minWidth: 0 }}>
+                <Typography variant="subtitle2" sx={{ overflowWrap: 'anywhere' }}>
+                  {`v${entry.versionNumber} | ${entry.symbol} | ${entry.timeframe}`}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ overflowWrap: 'anywhere' }}
+                >
                   {entry.changeReason}
                 </Typography>
               </Stack>
@@ -369,9 +374,15 @@ export default function PaperTradingPage() {
         content: selectedOrders.length > 0 ? (
           <Stack spacing={1}>
             {selectedOrders.slice(0, 5).map((order) => (
-              <Stack key={order.id} spacing={0.35}>
-                <Typography variant="subtitle2">{`#${order.id} | ${order.side} | ${order.status}`}</Typography>
-                <Typography variant="body2" color="text.secondary">
+              <Stack key={order.id} spacing={0.35} sx={{ minWidth: 0 }}>
+                <Typography variant="subtitle2" sx={{ overflowWrap: 'anywhere' }}>
+                  {`#${order.id} | ${order.side} | ${order.status}`}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ overflowWrap: 'anywhere' }}
+                >
                   Qty {order.quantity} at {order.price} | Fill {order.fillPrice ?? 'Pending'}
                 </Typography>
               </Stack>
@@ -540,11 +551,6 @@ export default function PaperTradingPage() {
 
         {summaryItems.length > 0 ? <PageMetricStrip items={summaryItems} /> : null}
 
-        <Alert severity="info">
-          This desk owns the `{routeExecutionContext.label.toLowerCase()}` execution context, so
-          orders remain simulated and review flows stay isolated from any future live-only routes.
-        </Alert>
-
         <ExecutionStatusRail
           title="Paper workspace posture"
           description="Exchange selection, assigned strategy state, and desk health stay visible before you touch order entry."
@@ -603,8 +609,18 @@ export default function PaperTradingPage() {
               {exchangeConnections.length === 0 ? (
                 <EmptyState
                   title="No exchange profiles available"
-                  description="Create or activate an exchange connection profile before assigning strategies to a paper desk."
+                  description="Create or activate an exchange connection profile before assigning strategies to a paper desk so the main workspace is no longer blocked by an empty selection column."
                   tone="info"
+                  action={
+                    <Button component={RouterLink} to="/settings" variant="contained" size="small">
+                      Open Settings
+                    </Button>
+                  }
+                  secondaryAction={
+                    <Button component={RouterLink} to="/strategies" variant="outlined" size="small">
+                      Review Strategies
+                    </Button>
+                  }
                 />
               ) : (
                 <Stack spacing={1.5}>
@@ -693,6 +709,8 @@ export default function PaperTradingPage() {
             <ActiveAlgorithmExplainabilityPanel
               title={selectedAlgorithm ? `${selectedAlgorithm.name} paper detail` : 'Paper algorithm detail'}
               description="Selecting an assigned paper algorithm keeps signal evidence, parameters, and order events together."
+              desktopBehavior="inline"
+              desktopBreakpoint="lg"
               subject={
                 selectedAlgorithm
                   ? {

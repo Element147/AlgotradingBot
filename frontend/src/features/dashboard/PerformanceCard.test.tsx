@@ -85,7 +85,7 @@ describe('PerformanceCard', { timeout: 15000 }, () => {
   it('should display loss values', () => {
     setPerformanceQueryResult(mockLossData);
     render(<PerformanceCard />);
-    expect(screen.getByText('$-75.25')).toBeInTheDocument();
+    expect(screen.getByText('-$75.25')).toBeInTheDocument();
   });
 
   it('should display total profit/loss correctly', () => {
@@ -108,7 +108,7 @@ describe('PerformanceCard', { timeout: 15000 }, () => {
   it('should display win rate correctly', () => {
     render(<PerformanceCard />);
     expect(screen.getByText('Win Rate')).toBeInTheDocument();
-    expect(screen.getByText('55.5%')).toBeInTheDocument();
+    expect(screen.getByText('55.50%')).toBeInTheDocument();
   });
 
   it('should display trade count correctly', () => {
@@ -133,7 +133,7 @@ describe('PerformanceCard', { timeout: 15000 }, () => {
   it('should handle negative profit/loss correctly', () => {
     setPerformanceQueryResult(mockLossData);
     render(<PerformanceCard />);
-    expect(screen.getByText('$-75.25')).toBeInTheDocument();
+    expect(screen.getByText('-$75.25')).toBeInTheDocument();
   });
 
   it('should switch between all timeframes', async () => {
@@ -153,9 +153,9 @@ describe('PerformanceCard', { timeout: 15000 }, () => {
     expect(todayButton).toHaveClass('Mui-selected');
   });
 
-  it('should render within a Card component', () => {
+  it('should render within a surface panel', () => {
     const { container } = render(<PerformanceCard />);
-    expect(container.querySelector('.MuiCard-root')).toBeInTheDocument();
+    expect(container.querySelector('.MuiPaper-root')).toBeInTheDocument();
   });
 
   it('should display metrics in a grid layout', () => {
@@ -180,7 +180,7 @@ describe('PerformanceCard', { timeout: 15000 }, () => {
       profitLossPercentage: '999.99',
     });
     render(<PerformanceCard />);
-    expect(screen.getByText('$999999.99')).toBeInTheDocument();
+    expect(screen.getByText('$999,999.99')).toBeInTheDocument();
     expect(screen.getByText('+999.99%')).toBeInTheDocument();
   });
 
@@ -191,7 +191,7 @@ describe('PerformanceCard', { timeout: 15000 }, () => {
       profitLossPercentage: '-999.99',
     });
     render(<PerformanceCard />);
-    expect(screen.getByText('$-999999.99')).toBeInTheDocument();
+    expect(screen.getByText('-$999,999.99')).toBeInTheDocument();
     expect(screen.getByText('-999.99%')).toBeInTheDocument();
   });
 });

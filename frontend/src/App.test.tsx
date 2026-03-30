@@ -8,12 +8,33 @@ import authReducer from './features/auth/authSlice';
 import environmentReducer from './features/environment/environmentSlice';
 import settingsReducer from './features/settings/settingsSlice';
 
-const { prefetchAuthenticatedWorkstationDataMock } = vi.hoisted(() => ({
+const { prefetchAuthenticatedWorkstationDataMock, webSocketRuntimeMock, devAuthState } = vi.hoisted(() => ({
   prefetchAuthenticatedWorkstationDataMock: vi.fn(),
+  webSocketRuntimeMock: vi.fn(),
+  devAuthState: { enabled: false },
 }));
 
 vi.mock('./app/prefetchAuthenticatedWorkstationData', () => ({
   prefetchAuthenticatedWorkstationData: prefetchAuthenticatedWorkstationDataMock,
+}));
+
+vi.mock('./features/websocket/WebSocketRuntime', () => ({
+  WebSocketRuntime: () => {
+    webSocketRuntimeMock();
+    return <div data-testid="websocket-runtime" />;
+  },
+}));
+
+vi.mock('./features/auth/devAuth', () => ({
+  get DEV_AUTH_BYPASS_ENABLED() {
+    return devAuthState.enabled;
+  },
+  DEV_AUTH_BYPASS_USER: {
+    id: 'local-debug-admin',
+    username: 'admin',
+    email: 'admin@algotrading.local',
+    role: 'admin',
+  },
 }));
 
 // Mock the page components to avoid loading actual implementations
@@ -106,10 +127,13 @@ describe('App Routing', () => {
     // Clear localStorage before each test
     localStorage.clear();
     prefetchAuthenticatedWorkstationDataMock.mockClear();
+    webSocketRuntimeMock.mockClear();
+    devAuthState.enabled = false;
     vi.unstubAllEnvs();
   });
 
   afterEach(() => {
+    devAuthState.enabled = false;
     vi.unstubAllEnvs();
   });
 
@@ -126,6 +150,23 @@ describe('App Routing', () => {
 
       await waitFor(() => {
         expect(screen.getByTestId('login-page')).toBeInTheDocument();
+      });
+    });
+
+    it('should redirect login route to dashboard when dev bypass is enabled', async () => {
+      devAuthState.enabled = true;
+      const store = createMockStore(false);
+      window.history.pushState({}, '', '/login');
+
+      render(
+        <Provider store={store}>
+          <App />
+        </Provider>
+      );
+
+      await waitFor(() => {
+        expect(window.location.pathname).toBe('/dashboard');
+        expect(screen.getByTestId('dashboard-page')).toBeInTheDocument();
       });
     });
   });
@@ -278,6 +319,42 @@ describe('App Routing', () => {
 
       await waitFor(() => {
         expect(window.location.pathname).toBe('/login');
+      });
+    });
+
+    it('should render protected routes in bypass mode without stored auth', async () => {
+      devAuthState.enabled = true;
+      const store = createMockStore(false);
+      window.history.pushState({}, '', '/dashboard');
+
+      render(
+        <Provider store={store}>
+          <App />
+        </Provider>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('dashboard-page')).toBeInTheDocument();
+      });
+    });
+
+    it.each([
+      ['/paper', 'paper-page'],
+      ['/backtest', 'backtest-page'],
+      ['/strategies', 'strategies-page'],
+    ])('should render %s in bypass mode without stored auth', async (path, testId) => {
+      devAuthState.enabled = true;
+      const store = createMockStore(false);
+      window.history.pushState({}, '', path);
+
+      render(
+        <Provider store={store}>
+          <App />
+        </Provider>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId(testId)).toBeInTheDocument();
       });
     });
   });
@@ -527,6 +604,26 @@ describe('App Routing', () => {
           store.dispatch
         );
       });
+    });
+
+    it('keeps websocket runtime disabled in bypass mode without a token', async () => {
+      devAuthState.enabled = true;
+      vi.stubEnv('MODE', 'development');
+      const store = createMockStore(false);
+      window.history.pushState({}, '', '/dashboard');
+
+      render(
+        <Provider store={store}>
+          <App />
+        </Provider>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('dashboard-page')).toBeInTheDocument();
+      });
+
+      expect(webSocketRuntimeMock).not.toHaveBeenCalled();
+      expect(screen.queryByTestId('websocket-runtime')).not.toBeInTheDocument();
     });
   });
 });

@@ -1,4 +1,4 @@
-import { Alert, Button, Chip, Grid } from '@mui/material';
+import { Alert, Button, Chip, Grid, Stack, Tab, Tabs } from '@mui/material';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
@@ -45,7 +45,9 @@ import {
   PageIntro,
   type PageMetricItem,
   PageMetricStrip,
+  PageSectionHeader,
 } from '@/components/layout/PageContent';
+import { StatusPill, SurfacePanel } from '@/components/ui/Workbench';
 import { executionContextMeta } from '@/features/execution/executionContext';
 import { getStrategyProfile } from '@/features/strategies/strategyProfiles';
 import {
@@ -95,6 +97,7 @@ export default function BacktestPage() {
     parseBacktestIdListParam(searchParams.get('compare'))
   );
   const [activeComparisonIds, setActiveComparisonIds] = useState<number[]>([]);
+  const [reviewSection, setReviewSection] = useState<'experiments' | 'history'>('experiments');
   const historySectionRef = useRef<HTMLDivElement | null>(null);
 
   const { data: algorithms = [] } = useGetBacktestAlgorithmsQuery();
@@ -409,6 +412,7 @@ export default function BacktestPage() {
   };
 
   const focusHistory = () => {
+    setReviewSection('history');
     historySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
@@ -449,16 +453,39 @@ export default function BacktestPage() {
           </Alert>
         ) : null}
 
-        <Alert severity="info">
-          This workspace owns the `{routeExecutionContext.label.toLowerCase()}` execution context,
-          so backtests and dataset operations stay pinned to test-scoped telemetry even when
-          operational pages are reviewing live-readiness elsewhere.
-        </Alert>
+        <SurfacePanel
+          title="Research posture"
+          description="Keep route posture, transport behavior, and the current evidence path visible without adding another loose alert stack."
+          tone="info"
+          actions={
+            <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+              <StatusPill
+                label={`Context: ${routeExecutionContext.label}`}
+                tone="info"
+                variant="filled"
+              />
+              <StatusPill
+                label={backtestLiveTransportConnected ? 'Live stream connected' : 'Polling fallback'}
+                tone={backtestLiveTransportConnected ? 'success' : 'warning'}
+              />
+            </Stack>
+          }
+        >
+          <Alert severity="info">
+            This workspace owns the `{routeExecutionContext.label.toLowerCase()}` execution
+            context, so backtests and dataset operations stay pinned to test-scoped telemetry even
+            when operational pages are reviewing live-readiness elsewhere.
+          </Alert>
+          <BacktestTransportStatusAlert
+            transportConnected={backtestLiveTransportConnected}
+            lastLiveEventAt={lastBacktestEventAt}
+            websocketError={websocketError}
+          />
+        </SurfacePanel>
 
-        <BacktestTransportStatusAlert
-          transportConnected={backtestLiveTransportConnected}
-          lastLiveEventAt={lastBacktestEventAt}
-          websocketError={websocketError}
+        <PageSectionHeader
+          title="Selected run review"
+          description="Start with the selected run summary or tracked active run, then move into launcher, datasets, experiments, and full history below."
         />
 
         {details ? (
@@ -483,6 +510,11 @@ export default function BacktestPage() {
             Select a run from history or launch a new one to open the research workspace.
           </Alert>
         )}
+
+        <PageSectionHeader
+          title="Launch and data setup"
+          description="Keep new-run configuration and dataset lifecycle together so research setup stays separate from comparison history."
+        />
 
         <Grid container spacing={2.5}>
           <Grid size={{ xs: 12, xl: 6 }}>
@@ -514,34 +546,68 @@ export default function BacktestPage() {
           </Grid>
 
           <Grid size={{ xs: 12 }}>
-            <BacktestExperimentSummariesPanel experimentSummaries={experimentSummaries} />
+            <PageSectionHeader
+              title="Experiment review and history"
+              description="Keep experiment rollups visible by default and open the heavier history table only when you need selection, replay, or comparison work."
+            />
           </Grid>
 
           <Grid size={{ xs: 12 }} ref={historySectionRef}>
-            <BacktestHistoryPanel
-              history={history}
-              comparison={comparison}
-              comparisonIds={comparisonIds}
-               selectedId={effectiveSelectedId}
-              comparisonIsStale={comparisonIsStale}
-              comparisonErrorMessage={comparisonErrorMessage}
-              lastLiveEventAt={lastBacktestEventAt}
-              isLoading={isLoading}
-              isError={isError}
-              isComparing={isComparing}
-              isReplaying={isReplaying}
-              isDeletingBacktest={isDeletingBacktest}
-              onCompareSelected={onCompareSelected}
-              onClearComparison={() => {
-                setComparisonIds([]);
-                setActiveComparisonIds([]);
-              }}
-              onToggleComparison={toggleComparison}
-              onSelectRun={setSelectedId}
-              onViewDetails={onViewDetails}
-              onReplayBacktest={onReplayBacktest}
-              onDeleteResult={onDeleteResult}
-            />
+            <SurfacePanel
+              title="Research evidence"
+              description={
+                reviewSection === 'experiments'
+                  ? 'Named experiment groups stay lighter than the full run table and help you spot repeatable baselines before opening history.'
+                  : 'History stays in a dedicated review tab so the default route lands on lighter summaries first.'
+              }
+              actions={
+                <StatusPill
+                  label={reviewSection === 'experiments' ? 'Experiments first' : 'History open'}
+                  tone={reviewSection === 'experiments' ? 'info' : 'warning'}
+                  variant="filled"
+                />
+              }
+            >
+              <Tabs
+                value={reviewSection}
+                onChange={(_, value: 'experiments' | 'history') => setReviewSection(value)}
+                variant="scrollable"
+                allowScrollButtonsMobile
+                sx={{ mb: 2 }}
+              >
+                <Tab value="experiments" label="Experiment summaries" />
+                <Tab value="history" label="History and comparison" />
+              </Tabs>
+
+              {reviewSection === 'experiments' ? (
+                <BacktestExperimentSummariesPanel experimentSummaries={experimentSummaries} />
+              ) : (
+                <BacktestHistoryPanel
+                  history={history}
+                  comparison={comparison}
+                  comparisonIds={comparisonIds}
+                  selectedId={effectiveSelectedId}
+                  comparisonIsStale={comparisonIsStale}
+                  comparisonErrorMessage={comparisonErrorMessage}
+                  lastLiveEventAt={lastBacktestEventAt}
+                  isLoading={isLoading}
+                  isError={isError}
+                  isComparing={isComparing}
+                  isReplaying={isReplaying}
+                  isDeletingBacktest={isDeletingBacktest}
+                  onCompareSelected={onCompareSelected}
+                  onClearComparison={() => {
+                    setComparisonIds([]);
+                    setActiveComparisonIds([]);
+                  }}
+                  onToggleComparison={toggleComparison}
+                  onSelectRun={setSelectedId}
+                  onViewDetails={onViewDetails}
+                  onReplayBacktest={onReplayBacktest}
+                  onDeleteResult={onDeleteResult}
+                />
+              )}
+            </SurfacePanel>
           </Grid>
         </Grid>
       </PageContent>

@@ -1,157 +1,114 @@
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
-  CircularProgress,
-  Alert,
-} from '@mui/material';
+import { Alert, Stack, Typography } from '@mui/material';
 import React from 'react';
 
+import { NumericText, StatusPill, SurfacePanel } from '@/components/ui/Workbench';
 import { useGetRecentTradesQuery } from '@/features/account/accountApi';
 import { getApiErrorMessage } from '@/services/api';
-import { formatCurrency, formatPercentage, formatDateTime } from '@/utils/formatters';
+import {
+  formatCurrency,
+  formatDateTime,
+  formatPercentage,
+} from '@/utils/formatters';
 
-/**
- * RecentTradesList Component
- * 
- * Displays the last 10 completed trades with real-time updates.
- * 
- * Features:
- * - Shows symbol, entry/exit prices, P&L, and timestamp
- * - Color-coded P&L (green for profit, red for loss)
- * - Real-time updates via WebSocket events
- * - Environment-aware (test/live mode)
- * - Loading and error states
- * 
- * Requirements: 2.13
- */
 export const RecentTradesList: React.FC = () => {
   const { data: trades, isLoading, error } = useGetRecentTradesQuery(10);
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Recent Trades
-          </Typography>
-          <Box display="flex" justifyContent="center" py={3}>
-            <CircularProgress />
-          </Box>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Recent Trades
-          </Typography>
-          <Alert severity="error">{getApiErrorMessage(error, 'Failed to load trades. Please try again.')}</Alert>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <Card>
-      <CardContent>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-          <Typography variant="h6">
-            Recent Trades
-          </Typography>
-          <Chip 
-            label={`Last ${trades?.length || 0}`}
-            size="small"
-            color="primary"
-          />
-        </Box>
+    <SurfacePanel
+      title="Recent Trades"
+      description="Completed trade review stays compact and scan-friendly instead of leaning on a full-width results table."
+      actions={
+        <StatusPill
+          label={`Last ${trades?.length || 0}`}
+          tone="info"
+          variant="filled"
+        />
+      }
+    >
+      {isLoading ? (
+        <Typography variant="body2" color="text.secondary">
+          Loading recent trades...
+        </Typography>
+      ) : error ? (
+        <Alert severity="error">
+          {getApiErrorMessage(error, 'Failed to load trades. Please try again.')}
+        </Alert>
+      ) : !trades || trades.length === 0 ? (
+        <Typography variant="body2" color="text.secondary">
+          No recent trades.
+        </Typography>
+      ) : (
+        <Stack spacing={1.1}>
+          {trades.map((trade) => {
+            const pnlValue = parseFloat(trade.profitLoss);
+            const pnlTone = pnlValue >= 0 ? 'success' : 'error';
+            const pnlSign = pnlValue >= 0 ? '+' : '';
 
-        {!trades || trades.length === 0 ? (
-          <Box py={3} textAlign="center">
-            <Typography variant="body2" color="text.secondary">
-              No recent trades
-            </Typography>
-          </Box>
-        ) : (
-          <TableContainer>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Symbol</TableCell>
-                  <TableCell>Side</TableCell>
-                  <TableCell align="right">Entry</TableCell>
-                  <TableCell align="right">Exit</TableCell>
-                  <TableCell align="right">P&L</TableCell>
-                  <TableCell align="right">Time</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {trades.map((trade) => {
-                  const pnlValue = parseFloat(trade.profitLoss);
-                  const pnlColor = pnlValue >= 0 ? 'success.main' : 'error.main';
-                  const pnlSign = pnlValue >= 0 ? '+' : '';
+            return (
+              <Stack
+                key={trade.id}
+                direction={{ xs: 'column', lg: 'row' }}
+                spacing={1.25}
+                justifyContent="space-between"
+                sx={{
+                  pt: 1.25,
+                  borderTop: '1px solid',
+                  borderColor: 'divider',
+                }}
+              >
+                <Stack spacing={0.4} sx={{ minWidth: 0, flex: 1 }}>
+                  <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+                    <Typography variant="subtitle2">{trade.symbol}</Typography>
+                    <StatusPill
+                      label={trade.side}
+                      tone={trade.side === 'LONG' ? 'success' : 'warning'}
+                      variant="filled"
+                    />
+                  </Stack>
+                  <Typography variant="body2" color="text.secondary">
+                    {trade.strategyName}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {formatDateTime(trade.exitTime)}
+                  </Typography>
+                </Stack>
 
-                  return (
-                    <TableRow key={trade.id} hover>
-                      <TableCell>
-                        <Typography variant="body2" fontWeight="medium">
-                          {trade.symbol}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {trade.strategyName}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={trade.side}
-                          size="small"
-                          color={trade.side === 'LONG' ? 'success' : 'warning'}
-                          sx={{ minWidth: 60 }}
-                        />
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="body2">
-                          {formatCurrency(trade.entryPrice)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="body2">
-                          {formatCurrency(trade.exitPrice)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="body2" color={pnlColor} fontWeight="medium">
-                          {pnlSign}{formatCurrency(trade.profitLoss)}
-                        </Typography>
-                        <Typography variant="caption" color={pnlColor}>
-                          ({pnlSign}{formatPercentage(trade.profitLossPercentage)})
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="body2" color="text.secondary">
-                          {formatDateTime(trade.exitTime)}
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </CardContent>
-    </Card>
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={2}
+                  flexWrap="wrap"
+                  useFlexGap
+                  sx={{ minWidth: 0 }}
+                >
+                  <Stack spacing={0.35}>
+                    <Typography variant="caption" color="text.secondary">
+                      Entry
+                    </Typography>
+                    <NumericText variant="body2">{formatCurrency(trade.entryPrice)}</NumericText>
+                  </Stack>
+                  <Stack spacing={0.35}>
+                    <Typography variant="caption" color="text.secondary">
+                      Exit
+                    </Typography>
+                    <NumericText variant="body2">{formatCurrency(trade.exitPrice)}</NumericText>
+                  </Stack>
+                  <Stack spacing={0.35} sx={{ minWidth: 120 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      P&amp;L
+                    </Typography>
+                    <NumericText variant="body2" tone={pnlTone}>
+                      {`${pnlSign}${formatCurrency(trade.profitLoss)}`}
+                    </NumericText>
+                    <Typography variant="caption" color={`${pnlTone}.main`}>
+                      {`(${pnlSign}${formatPercentage(trade.profitLossPercentage)})`}
+                    </Typography>
+                  </Stack>
+                </Stack>
+              </Stack>
+            );
+          })}
+        </Stack>
+      )}
+    </SurfacePanel>
   );
 };

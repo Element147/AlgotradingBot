@@ -1,157 +1,117 @@
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
-  CircularProgress,
-  Alert,
-} from '@mui/material';
+import { Alert, Stack, Typography } from '@mui/material';
 import React from 'react';
 
+import { NumericText, StatusPill, SurfacePanel } from '@/components/ui/Workbench';
 import { useGetOpenPositionsQuery } from '@/features/account/accountApi';
 import { getApiErrorMessage } from '@/services/api';
-import { formatCurrency, formatPercentage } from '@/utils/formatters';
+import { formatCompactNumber, formatCurrency, formatPercentage } from '@/utils/formatters';
 
-/**
- * PositionsList Component
- * 
- * Displays all currently open positions with real-time updates.
- * 
- * Features:
- * - Shows entry price, current price, and unrealized P&L
- * - Color-coded P&L (green for profit, red for loss)
- * - Real-time updates via WebSocket events
- * - Environment-aware (test/live mode)
- * - Loading and error states
- * 
- * Requirements: 2.12
- */
 export const PositionsList: React.FC = () => {
   const { data: positions, isLoading, error } = useGetOpenPositionsQuery();
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Open Positions
-          </Typography>
-          <Box display="flex" justifyContent="center" py={3}>
-            <CircularProgress />
-          </Box>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Open Positions
-          </Typography>
-          <Alert severity="error">{getApiErrorMessage(error, 'Failed to load positions. Please try again.')}</Alert>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <Card>
-      <CardContent>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-          <Typography variant="h6">
-            Open Positions
-          </Typography>
-          <Chip 
-            label={`${positions?.length || 0} Position${positions?.length !== 1 ? 's' : ''}`}
-            size="small"
-            color="primary"
-          />
-        </Box>
+    <SurfacePanel
+      title="Open Positions"
+      description="Current exposure stays readable as review rows instead of another dense dashboard table."
+      actions={
+        <StatusPill
+          label={`${positions?.length || 0} Position${positions?.length === 1 ? '' : 's'}`}
+          tone="info"
+          variant="filled"
+        />
+      }
+    >
+      {isLoading ? (
+        <Typography variant="body2" color="text.secondary">
+          Loading positions...
+        </Typography>
+      ) : error ? (
+        <Alert severity="error">
+          {getApiErrorMessage(error, 'Failed to load positions. Please try again.')}
+        </Alert>
+      ) : !positions || positions.length === 0 ? (
+        <Typography variant="body2" color="text.secondary">
+          No open positions.
+        </Typography>
+      ) : (
+        <Stack spacing={1.1}>
+          {positions.map((position) => {
+            const pnlValue = parseFloat(position.unrealizedPnL);
+            const pnlTone = pnlValue >= 0 ? 'success' : 'error';
+            const pnlSign = pnlValue >= 0 ? '+' : '';
 
-        {!positions || positions.length === 0 ? (
-          <Box py={3} textAlign="center">
-            <Typography variant="body2" color="text.secondary">
-              No open positions
-            </Typography>
-          </Box>
-        ) : (
-          <TableContainer>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Symbol</TableCell>
-                  <TableCell>Side</TableCell>
-                  <TableCell align="right">Entry Price</TableCell>
-                  <TableCell align="right">Current Price</TableCell>
-                  <TableCell align="right">Quantity</TableCell>
-                  <TableCell align="right">Unrealized P&L</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {positions.map((position) => {
-                  const pnlValue = parseFloat(position.unrealizedPnL);
-                  const pnlColor = pnlValue >= 0 ? 'success.main' : 'error.main';
-                  const pnlSign = pnlValue >= 0 ? '+' : '';
+            return (
+              <Stack
+                key={position.id}
+                direction={{ xs: 'column', lg: 'row' }}
+                spacing={1.25}
+                justifyContent="space-between"
+                sx={{
+                  pt: 1.25,
+                  borderTop: '1px solid',
+                  borderColor: 'divider',
+                }}
+              >
+                <Stack spacing={0.4} sx={{ minWidth: 0, flex: 1 }}>
+                  <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+                    <Typography variant="subtitle2">{position.symbol}</Typography>
+                    <StatusPill
+                      label={position.side}
+                      tone={position.side === 'LONG' ? 'success' : 'warning'}
+                      variant="filled"
+                    />
+                  </Stack>
+                  <Typography variant="body2" color="text.secondary">
+                    {position.strategyName}
+                  </Typography>
+                </Stack>
 
-                  return (
-                    <TableRow key={position.id} hover>
-                      <TableCell>
-                        <Typography variant="body2" fontWeight="medium">
-                          {position.symbol}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {position.strategyName}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={position.side}
-                          size="small"
-                          color={position.side === 'LONG' ? 'success' : 'warning'}
-                          sx={{ minWidth: 60 }}
-                        />
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="body2">
-                          {formatCurrency(position.entryPrice)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="body2">
-                          {formatCurrency(position.currentPrice)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="body2">
-                          {position.quantity}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="body2" color={pnlColor} fontWeight="medium">
-                          {pnlSign}{formatCurrency(position.unrealizedPnL)}
-                        </Typography>
-                        <Typography variant="caption" color={pnlColor}>
-                          ({pnlSign}{formatPercentage(position.unrealizedPnLPercentage)})
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </CardContent>
-    </Card>
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={2}
+                  flexWrap="wrap"
+                  useFlexGap
+                  sx={{ minWidth: 0 }}
+                >
+                  <Stack spacing={0.35}>
+                    <Typography variant="caption" color="text.secondary">
+                      Entry
+                    </Typography>
+                    <NumericText variant="body2">{formatCurrency(position.entryPrice)}</NumericText>
+                  </Stack>
+                  <Stack spacing={0.35}>
+                    <Typography variant="caption" color="text.secondary">
+                      Current
+                    </Typography>
+                    <NumericText variant="body2">
+                      {formatCurrency(position.currentPrice)}
+                    </NumericText>
+                  </Stack>
+                  <Stack spacing={0.35}>
+                    <Typography variant="caption" color="text.secondary">
+                      Quantity
+                    </Typography>
+                    <NumericText variant="body2">
+                      {formatCompactNumber(position.quantity, 4)}
+                    </NumericText>
+                  </Stack>
+                  <Stack spacing={0.35} sx={{ minWidth: 120 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Unrealized P&amp;L
+                    </Typography>
+                    <NumericText variant="body2" tone={pnlTone}>
+                      {`${pnlSign}${formatCurrency(position.unrealizedPnL)}`}
+                    </NumericText>
+                    <Typography variant="caption" color={`${pnlTone}.main`}>
+                      {`(${pnlSign}${formatPercentage(position.unrealizedPnLPercentage)})`}
+                    </Typography>
+                  </Stack>
+                </Stack>
+              </Stack>
+            );
+          })}
+        </Stack>
+      )}
+    </SurfacePanel>
   );
 };

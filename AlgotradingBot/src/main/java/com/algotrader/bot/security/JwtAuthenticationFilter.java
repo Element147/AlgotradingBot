@@ -5,6 +5,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -24,10 +25,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthService authService;
+    private final boolean relaxedAuth;
 
-    public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider, AuthService authService) {
+    public JwtAuthenticationFilter(
+            JwtTokenProvider jwtTokenProvider,
+            AuthService authService,
+            @Value("${algotrading.security.relaxed-auth:false}") boolean relaxedAuth
+    ) {
         this.jwtTokenProvider = jwtTokenProvider;
         this.authService = authService;
+        this.relaxedAuth = relaxedAuth;
     }
 
     @Override
@@ -37,7 +44,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String jwt = getJwtFromRequest(request);
 
-            if (StringUtils.hasText(jwt)) {
+            if (!StringUtils.hasText(jwt)) {
+                if (relaxedAuth
+                        && request.getRequestURI().startsWith("/api/")
+                        && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    applyRelaxedAuthentication(request);
+                }
+            } else {
                 if (!jwtTokenProvider.validateToken(jwt)) {
                     // Invalid token - let it pass through, Spring Security will handle it
                     filterChain.doFilter(request, response);
@@ -81,5 +94,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return bearerToken.substring(7);
         }
         return null;
+    }
+
+    private void applyRelaxedAuthentication(HttpServletRequest request) {
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                "admin",
+                null,
+                Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))
+        );
+        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 }

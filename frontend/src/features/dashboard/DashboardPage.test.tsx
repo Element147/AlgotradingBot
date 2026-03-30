@@ -77,6 +77,11 @@ describe('DashboardPage', () => {
 
     expect(screen.getByText('Start here')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Open Backtest' })).toBeInTheDocument();
+    expect(screen.getByText('Research Workstation')).toBeInTheDocument();
+    expect(screen.getByText('Safety defaults')).toBeInTheDocument();
+    expect(screen.getByText('Workstation flow')).toBeInTheDocument();
+    expect(screen.getByText('1. Review Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('4. Monitor in Live')).toBeInTheDocument();
   });
 
   it('should render within AppLayout', () => {

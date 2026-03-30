@@ -35,6 +35,9 @@ type RiskStatusHookResult = {
 
 const mockUseGetSystemInfoQuery = vi.fn<() => SystemInfoHookResult>();
 const mockUseGetRiskStatusQuery = vi.fn<() => RiskStatusHookResult>();
+const { devAuthState } = vi.hoisted(() => ({
+  devAuthState: { enabled: false },
+}));
 
 vi.mock('@/features/settings/exchangeApi', () => ({
   useGetSystemInfoQuery: () => mockUseGetSystemInfoQuery(),
@@ -42,6 +45,12 @@ vi.mock('@/features/settings/exchangeApi', () => ({
 
 vi.mock('@/features/risk/riskApi', () => ({
   useGetRiskStatusQuery: () => mockUseGetRiskStatusQuery(),
+}));
+
+vi.mock('@/features/auth/devAuth', () => ({
+  get DEV_AUTH_BYPASS_ENABLED() {
+    return devAuthState.enabled;
+  },
 }));
 
 vi.mock('@/utils/formatters', () => ({
@@ -70,6 +79,7 @@ describe('SystemHealthIndicator', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    devAuthState.enabled = false;
 
     mockUseGetSystemInfoQuery.mockReturnValue({
       data: {
@@ -153,6 +163,20 @@ describe('SystemHealthIndicator', () => {
 
     expect(screen.getByText('Error')).toBeInTheDocument();
     expect(screen.getByText('Reconnection attempts: 3')).toBeInTheDocument();
+  });
+
+  it('shows polling fallback instead of disconnected websocket when local bypass is active', () => {
+    devAuthState.enabled = true;
+    const preloadedState: Partial<RootState> = {
+      websocket: mockWebSocketState,
+    };
+
+    renderWithProviders(<SystemHealthIndicator />, { preloadedState });
+
+    expect(screen.getByText('Polling fallback')).toBeInTheDocument();
+    expect(
+      screen.getByText(/Local debug auth bypass keeps telemetry on polling fallback/i)
+    ).toBeInTheDocument();
   });
 
   it('shows active circuit breaker from risk status', () => {

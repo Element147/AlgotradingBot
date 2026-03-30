@@ -10,6 +10,7 @@ import { PositionsList } from './PositionsList';
 // Mock formatters
 vi.mock('@/utils/formatters', () => ({
   formatCurrency: (value: string) => `$${value}`,
+  formatCompactNumber: (value: string) => value.replace(/\.?0+$/, ''),
   formatPercentage: (value: string) => `${value}%`,
 }));
 
@@ -93,7 +94,7 @@ describe('PositionsList', () => {
       </Provider>
     );
 
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    expect(screen.getByText('Loading positions...')).toBeInTheDocument();
     expect(screen.getByText('Open Positions')).toBeInTheDocument();
   });
 
@@ -121,7 +122,7 @@ describe('PositionsList', () => {
       </Provider>
     );
 
-    expect(screen.getByText('No open positions')).toBeInTheDocument();
+    expect(screen.getByText('No open positions.')).toBeInTheDocument();
     expect(screen.getByText('0 Positions')).toBeInTheDocument();
   });
 
@@ -136,12 +137,10 @@ describe('PositionsList', () => {
 
     expect(screen.getByText('Open Positions')).toBeInTheDocument();
     expect(screen.getByText('2 Positions')).toBeInTheDocument();
-    expect(screen.getByText('Symbol')).toBeInTheDocument();
-    expect(screen.getByText('Side')).toBeInTheDocument();
-    expect(screen.getByText('Entry Price')).toBeInTheDocument();
-    expect(screen.getByText('Current Price')).toBeInTheDocument();
-    expect(screen.getByText('Quantity')).toBeInTheDocument();
-    expect(screen.getByText('Unrealized P&L')).toBeInTheDocument();
+    expect(screen.getAllByText('Entry').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Current').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Quantity').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Unrealized P&L').length).toBeGreaterThan(0);
 
     expect(screen.getByText('BTC/USDT')).toBeInTheDocument();
     expect(screen.getAllByText('Bollinger Bands')).toHaveLength(2);

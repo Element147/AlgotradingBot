@@ -7,6 +7,7 @@ import { prefetchAuthenticatedWorkstationData } from './app/prefetchAuthenticate
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingFallback from './components/LoadingFallback';
 import ProtectedRoute from './components/ProtectedRoute';
+import { DEV_AUTH_BYPASS_ENABLED } from './features/auth/devAuth';
 import { selectTextScale, selectTheme } from './features/settings/settingsSlice';
 import { WebSocketRuntime } from './features/websocket/WebSocketRuntime';
 import { lightTheme, darkTheme } from './theme/theme';
@@ -29,6 +30,7 @@ function App() {
   // Get current theme from Redux state
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
+  const authToken = useAppSelector((state) => state.auth.token);
   const themeMode = useAppSelector(selectTheme);
   const textScale = useAppSelector(selectTextScale);
 
@@ -37,7 +39,9 @@ function App() {
     () => (themeMode === 'light' ? lightTheme : darkTheme),
     [themeMode]
   );
-  const enableWebSocketRuntime = import.meta.env.MODE !== 'test';
+  const enableWebSocketRuntime =
+    import.meta.env.MODE !== 'test' &&
+    (!DEV_AUTH_BYPASS_ENABLED || Boolean(authToken));
 
   useEffect(() => {
     if (import.meta.env.MODE === 'test' || !isAuthenticated) {
@@ -61,7 +65,11 @@ function App() {
                 path="/login"
                 element={
                   <ErrorBoundary>
-                    <LoginPage />
+                    {DEV_AUTH_BYPASS_ENABLED ? (
+                      <Navigate to="/dashboard" replace />
+                    ) : (
+                      <LoginPage />
+                    )}
                   </ErrorBoundary>
                 }
               />

@@ -106,6 +106,31 @@ export const formatNumber = (value: string | number, decimals: number = 0): stri
 };
 
 /**
+ * Format a number with thousands separators and trimmed trailing zeroes
+ *
+ * @param value - Numeric value or string representation
+ * @param maximumDecimals - Maximum decimal places to show (default: 4)
+ * @param minimumDecimals - Minimum decimal places to show (default: 0)
+ * @returns Formatted number string (e.g., "1,234.5", "0.015", "42")
+ */
+export const formatCompactNumber = (
+  value: string | number,
+  maximumDecimals: number = 4,
+  minimumDecimals: number = 0
+): string => {
+  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+
+  if (isNaN(numValue)) {
+    return '0';
+  }
+
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: minimumDecimals,
+    maximumFractionDigits: maximumDecimals,
+  }).format(numValue);
+};
+
+/**
  * Format a duration in milliseconds to human-readable string
  * 
  * @param durationMs - Duration in milliseconds

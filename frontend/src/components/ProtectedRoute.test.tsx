@@ -8,10 +8,27 @@ import ProtectedRoute from './ProtectedRoute';
 
 import authReducer, { AuthState } from '@/features/auth/authSlice';
 
+const { devAuthState } = vi.hoisted(() => ({
+  devAuthState: { enabled: false },
+}));
+
+vi.mock('@/features/auth/devAuth', () => ({
+  get DEV_AUTH_BYPASS_ENABLED() {
+    return devAuthState.enabled;
+  },
+  DEV_AUTH_BYPASS_USER: {
+    id: 'local-debug-admin',
+    username: 'admin',
+    email: 'admin@algotrading.local',
+    role: 'admin',
+  },
+}));
+
 describe('ProtectedRoute', () => {
   beforeEach(() => {
     sessionStorage.clear();
     vi.clearAllTimers();
+    devAuthState.enabled = false;
   });
 
   const createStore = (authState: Partial<AuthState>) => configureStore({
@@ -386,5 +403,40 @@ describe('ProtectedRoute', () => {
 
     // Verify redirect happened (location state preservation is tested in integration tests)
     expect(container).toBeInTheDocument();
+  });
+
+  it('should allow access in dev bypass mode without stored auth', async () => {
+    devAuthState.enabled = true;
+    const store = createStore({
+      isAuthenticated: false,
+      token: null,
+      user: null,
+      loading: false,
+    });
+
+    render(
+      <Provider store={store}>
+        <MemoryRouter initialEntries={['/protected']}>
+          <Routes>
+            <Route path="/login" element={<div>Login Page</div>} />
+            <Route
+              path="/protected"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <div>Protected Content</div>
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </MemoryRouter>
+      </Provider>
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('protected-route-loading')).not.toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Protected Content')).toBeInTheDocument();
+    expect(screen.queryByText('Login Page')).not.toBeInTheDocument();
   });
 });

@@ -1,5 +1,6 @@
 import CloseIcon from '@mui/icons-material/Close';
 import {
+  type Breakpoint,
   Button,
   Drawer,
   IconButton,
@@ -23,6 +24,8 @@ interface StickyInspectorPanelProps {
   mobilePreview?: ReactNode;
   mobileOpenLabel?: string;
   mobileBehavior?: 'inline' | 'drawer';
+  desktopBehavior?: 'sticky' | 'inline';
+  desktopBreakpoint?: Breakpoint;
   top?: number;
   sx?: SxProps<Theme>;
 }
@@ -35,11 +38,13 @@ export function StickyInspectorPanel({
   mobilePreview,
   mobileOpenLabel = 'Open inspector',
   mobileBehavior = 'inline',
+  desktopBehavior = 'sticky',
+  desktopBreakpoint = 'xl',
   top = 112,
   sx,
 }: StickyInspectorPanelProps) {
   const theme = useTheme();
-  const isDesktop = useMediaQuery(theme.breakpoints.up('xl'));
+  const isDesktop = useMediaQuery(theme.breakpoints.up(desktopBreakpoint));
   const [mobileOpen, setMobileOpen] = useState(false);
 
   if (!isDesktop && mobileBehavior === 'drawer') {
@@ -121,8 +126,8 @@ export function StickyInspectorPanel({
       description={description}
       actions={actions}
       sx={{
-        position: isDesktop ? 'sticky' : 'relative',
-        top: isDesktop ? top : undefined,
+        position: isDesktop && desktopBehavior === 'sticky' ? 'sticky' : 'relative',
+        top: isDesktop && desktopBehavior === 'sticky' ? top : undefined,
         ...sx,
       }}
       contentSx={{ gap: 1.75 }}

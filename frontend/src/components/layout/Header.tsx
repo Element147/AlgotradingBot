@@ -32,6 +32,7 @@ import {
   selectIsAuthenticated,
   selectUser,
 } from '../../features/auth/authSlice';
+import { DEV_AUTH_BYPASS_ENABLED } from '../../features/auth/devAuth';
 import { selectEnvironmentMode } from '../../features/environment/environmentSlice';
 import { resolveRouteExecutionContext } from '../../features/execution/executionContext';
 import { useGetRiskStatusQuery } from '../../features/risk/riskApi';
@@ -158,6 +159,11 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   };
 
   const handleLogout = () => {
+    if (DEV_AUTH_BYPASS_ENABLED) {
+      handleUserMenuClose();
+      return;
+    }
+
     dispatch(logout());
     handleUserMenuClose();
     void navigate('/login');
@@ -329,7 +335,9 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               color="text.secondary"
               sx={{ display: 'block', mt: 0.5 }}
             >
-              Mode, risk posture, and saved connections stay visible in the shell while you work.
+              {DEV_AUTH_BYPASS_ENABLED
+                ? 'Local debug auth bypass is active. The shell stays in polling fallback until a real session is used.'
+                : 'Mode, risk posture, and saved connections stay visible in the shell while you work.'}
             </Typography>
           </Box>
 
@@ -342,12 +350,21 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             <ListItemText>Settings</ListItemText>
           </MenuItem>
 
-          <MenuItem onClick={handleLogout}>
-            <ListItemIcon>
-              <LogoutIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Logout</ListItemText>
-          </MenuItem>
+          {DEV_AUTH_BYPASS_ENABLED ? (
+            <MenuItem disabled onClick={handleLogout}>
+              <ListItemIcon>
+                <LogoutIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Local debug bypass active</ListItemText>
+            </MenuItem>
+          ) : (
+            <MenuItem onClick={handleLogout}>
+              <ListItemIcon>
+                <LogoutIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Logout</ListItemText>
+            </MenuItem>
+          )}
         </Menu>
 
         <Menu

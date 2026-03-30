@@ -1,140 +1,126 @@
 import RefreshIcon from '@mui/icons-material/Refresh';
-import { Card, CardContent, Typography, Box, IconButton, CircularProgress, Alert } from '@mui/material';
+import {
+  Alert,
+  Box,
+  IconButton,
+  Stack,
+  Typography,
+} from '@mui/material';
 
 import { useGetBalanceQuery } from '../account/accountApi';
 
+import { MetricCard, NumericText, SurfacePanel } from '@/components/ui/Workbench';
 import { getApiErrorMessage } from '@/services/api';
+import { formatCompactNumber, formatCurrency, formatDateTime } from '@/utils/formatters';
 
-/**
- * BalanceCard Component
- * 
- * Displays account balance information including:
- * - Total, available, and locked balance
- * - Asset breakdown (USDT, BTC, ETH)
- * - Last sync timestamp
- * - Manual refresh button
- * 
- * Features:
- * - Environment-aware (displays data for current test/live mode)
- * - Auto-refreshes every 60 seconds in live mode
- * - Manual refresh capability
- * - Loading and error states
- */
 export const BalanceCard: React.FC = () => {
   const { data: balance, isLoading, error, refetch } = useGetBalanceQuery();
 
-  const handleRefresh = () => {
-    void refetch();
-  };
-
-  if (isLoading) {
-    return (
-      <Card>
-        <CardContent>
-          <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
-            <CircularProgress />
-          </Box>
-        </CardContent>
-      </Card>
-    );
-  }
-
   if (error) {
     return (
-      <Card>
-        <CardContent>
-          <Alert severity="error">{getApiErrorMessage(error, 'Failed to load balance data. Please try again.')}</Alert>
-        </CardContent>
-      </Card>
+      <SurfacePanel title="Account Balance" description="Portfolio totals and asset mix.">
+        <Alert severity="error">
+          {getApiErrorMessage(error, 'Failed to load balance data. Please try again.')}
+        </Alert>
+      </SurfacePanel>
     );
-  }
-
-  if (!balance) {
-    return null;
   }
 
   return (
-    <Card>
-      <CardContent>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-          <Typography variant="h6" component="h2">
-            Account Balance
-          </Typography>
-          <IconButton 
-            onClick={handleRefresh} 
-            size="small" 
-            aria-label="Refresh balance"
-            title="Refresh balance"
+    <SurfacePanel
+      title="Account Balance"
+      description="Keep total, available, and locked capital visible before opening a denser account view."
+      actions={
+        <IconButton
+          onClick={() => void refetch()}
+          size="small"
+          aria-label="Refresh balance"
+          title="Refresh balance"
+        >
+          <RefreshIcon />
+        </IconButton>
+      }
+      sx={{ height: '100%' }}
+    >
+      {isLoading || !balance ? (
+        <Typography variant="body2" color="text.secondary">
+          Loading balance posture...
+        </Typography>
+      ) : (
+        <Stack spacing={1.5}>
+          <Box
+            sx={{
+              display: 'grid',
+              gap: 1,
+              gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' },
+            }}
           >
-            <RefreshIcon />
-          </IconButton>
-        </Box>
-
-        {/* Total Balance */}
-        <Box mb={3} aria-live="polite">
-          <Typography variant="body2" color="text.secondary">
-            Total Balance
-          </Typography>
-          <Typography variant="h4" component="div">
-            ${balance.total}
-          </Typography>
-        </Box>
-
-        {/* Available and Locked */}
-        <Box display="flex" gap={4} mb={3}>
-          <Box flex={1}>
-            <Typography variant="body2" color="text.secondary">
-              Available
-            </Typography>
-            <Typography variant="h6">
-              ${balance.available}
-            </Typography>
+            <MetricCard
+              label="Total Balance"
+              value={formatCurrency(balance.total)}
+              detail="Combined workstation balance across tracked assets."
+              tone="info"
+            />
+            <MetricCard
+              label="Available"
+              value={formatCurrency(balance.available)}
+              detail="Free capital available for paper or test allocations."
+              tone="success"
+            />
+            <MetricCard
+              label="Locked"
+              value={formatCurrency(balance.locked)}
+              detail="Capital reserved in open orders or current position state."
+              tone="warning"
+            />
           </Box>
-          <Box flex={1}>
-            <Typography variant="body2" color="text.secondary">
-              Locked
-            </Typography>
-            <Typography variant="h6">
-              ${balance.locked}
-            </Typography>
-          </Box>
-        </Box>
 
-        {/* Asset Breakdown */}
-        <Box>
-          <Typography variant="body2" color="text.secondary" mb={1}>
-            Asset Breakdown
-          </Typography>
-          {balance.assets.map((asset) => (
-            <Box 
-              key={asset.symbol} 
-              display="flex" 
-              justifyContent="space-between" 
-              alignItems="center"
-              py={0.5}
-            >
-              <Typography variant="body2">
-                {asset.symbol}
+          <Stack spacing={1}>
+            <Typography variant="subtitle2">Asset Breakdown</Typography>
+            {balance.assets.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                No assets reported yet.
               </Typography>
-              <Box textAlign="right">
-                <Typography variant="body2">
-                  {asset.amount}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  ${asset.valueUSD}
-                </Typography>
-              </Box>
-            </Box>
-          ))}
-        </Box>
+            ) : (
+              balance.assets.map((asset) => (
+                <Stack
+                  key={asset.symbol}
+                  direction="row"
+                  justifyContent="space-between"
+                  spacing={1.5}
+                  alignItems="center"
+                  sx={{
+                    pt: 1,
+                    borderTop: '1px solid',
+                    borderColor: 'divider',
+                  }}
+                >
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                      {asset.symbol}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Position amount
+                    </Typography>
+                  </Box>
+                  <Stack alignItems="flex-end" sx={{ minWidth: 0 }}>
+                    <NumericText variant="body2">
+                      {formatCompactNumber(asset.amount, 4)}
+                    </NumericText>
+                    <Typography variant="caption" color="text.secondary">
+                      {formatCurrency(asset.valueUSD)}
+                    </Typography>
+                  </Stack>
+                </Stack>
+              ))
+            )}
+          </Stack>
 
-        {/* Last Sync */}
-        <Box mt={2} aria-live="polite">
           <Typography variant="caption" color="text.secondary">
-            Last updated: {new Date(balance.lastSync).toLocaleString()}
+            Last updated: {formatDateTime(balance.lastSync)}
           </Typography>
-        </Box>
-      </CardContent>
-    </Card>
+        </Stack>
+      )}
+    </SurfacePanel>
   );
 };

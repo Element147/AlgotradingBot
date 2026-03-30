@@ -1,6 +1,7 @@
 import {
   Box,
   ButtonBase,
+  type Breakpoint,
   Grid,
   List,
   ListItem,
@@ -322,30 +323,41 @@ export function InvestigationLogPanel({
                   px: 0,
                   py: 1.35,
                   alignItems: 'flex-start',
+                  minWidth: 0,
                   '&:hover': {
                     backgroundColor: 'transparent',
                   },
                 }}
               >
-                <Stack spacing={0.75} sx={{ width: '100%' }}>
+                <Stack spacing={0.75} sx={{ width: '100%', minWidth: 0 }}>
                   <Stack
                     direction={{ xs: 'column', sm: 'row' }}
                     spacing={1}
                     justifyContent="space-between"
                     alignItems={{ xs: 'flex-start', sm: 'center' }}
+                    sx={{ minWidth: 0 }}
                   >
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                      {entry.title}
-                    </Typography>
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography
+                        variant="subtitle2"
+                        sx={{ fontWeight: 700, overflowWrap: 'anywhere' }}
+                      >
+                        {entry.title}
+                      </Typography>
+                    </Box>
                     <Typography
                       variant="caption"
                       color="text.secondary"
-                      sx={{ fontFamily: numericFontFamily }}
+                      sx={{ fontFamily: numericFontFamily, overflowWrap: 'anywhere' }}
                     >
                       {entry.timestamp}
                     </Typography>
                   </Stack>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ overflowWrap: 'anywhere' }}
+                  >
                     {entry.detail}
                   </Typography>
                   {entry.tags && entry.tags.length > 0 ? (
@@ -432,6 +444,8 @@ interface ActiveAlgorithmDetailDrawerProps {
   emptyDescription?: ReactNode;
   actions?: ReactNode;
   mobileOpenLabel?: string;
+  desktopBehavior?: 'sticky' | 'inline';
+  desktopBreakpoint?: Breakpoint;
 }
 
 export function ActiveAlgorithmDetailDrawer({
@@ -445,6 +459,8 @@ export function ActiveAlgorithmDetailDrawer({
   emptyDescription = 'Choose one active algorithm to review current position state, recent signals, risk posture, and operator follow-up context.',
   actions,
   mobileOpenLabel = 'Open active algorithm detail',
+  desktopBehavior = 'sticky',
+  desktopBreakpoint = 'xl',
 }: ActiveAlgorithmDetailDrawerProps) {
   const detailContent = loading ? (
     <Stack spacing={1.25} role="status" aria-live="polite">
@@ -493,6 +509,8 @@ export function ActiveAlgorithmDetailDrawer({
       actions={actions}
       mobileBehavior="drawer"
       mobileOpenLabel={mobileOpenLabel}
+      desktopBehavior={desktopBehavior}
+      desktopBreakpoint={desktopBreakpoint}
       mobilePreview={
         <Stack spacing={1.25}>
           {statusChips ? (

@@ -12,7 +12,6 @@ import {
 } from '@mui/icons-material';
 import {
   Box,
-  Divider,
   Drawer,
   List,
   ListItem,
@@ -88,75 +87,41 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
 
   const drawerContent = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ px: 2.5, pt: 3, pb: 2.5 }}>
-        <Stack spacing={2.25}>
+      <Box sx={{ px: 2.5, pt: 3, pb: 2 }}>
+        <Stack spacing={1.5}>
           <Box>
-            <Typography variant="overline" color="text.secondary">
+            <Typography variant="overline" sx={{ color: 'primary.main' }}>
               AlgoTrading Bot
             </Typography>
-            <Typography variant="h6" sx={{ mt: 0.25 }}>
+            <Typography variant="h6" sx={{ mt: 0.25, letterSpacing: '-0.02em' }}>
               Research Workstation
             </Typography>
             <Typography
               variant="body2"
               color="text.secondary"
-              sx={{ mt: 1, overflowWrap: 'anywhere' }}
+              sx={{ mt: 0.75, overflowWrap: 'anywhere' }}
             >
-              Calm, test-first access to research, paper workflows, risk controls, and operator settings.
+              Navigation for the test-first research, paper, risk, and operator workflow.
             </Typography>
           </Box>
-
-          <Box
-            sx={{
-              px: 1.5,
-              py: 1.5,
-              border: '1px solid',
-              borderColor: 'divider',
-              bgcolor: alpha(theme.palette.primary.main, 0.04),
-              borderRadius: 0,
-            }}
-          >
-            <Stack spacing={1.25}>
-              <Typography variant="subtitle2">Safety defaults</Typography>
-              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                <StatusPill label="Default: test" tone="success" variant="filled" />
-                <StatusPill label="Paper stays simulated" tone="info" />
-              </Stack>
-              <Typography variant="body2" color="text.secondary">
-                Follow the workstation path: Backtest first, Paper second, and only explicit live context when the app says it is supported.
-              </Typography>
-            </Stack>
-          </Box>
-
-          <Box sx={{ px: 0.25 }}>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-              Workstation flow
-            </Typography>
-            <Typography variant="body2" sx={{ fontWeight: 700 }}>
-              1. Review Dashboard
-            </Typography>
-            <Typography variant="body2" sx={{ fontWeight: 700 }}>
-              2. Validate in Backtest
-            </Typography>
-            <Typography variant="body2" sx={{ fontWeight: 700 }}>
-              3. Simulate in Paper
-            </Typography>
-            <Typography variant="body2" sx={{ fontWeight: 700 }}>
-              4. Monitor in Live
-            </Typography>
-          </Box>
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            <StatusPill label="Default: test" tone="success" variant="filled" />
+            <StatusPill label="Paper simulated" tone="info" />
+          </Stack>
         </Stack>
       </Box>
-
-      <Divider />
 
       <Box sx={{ flexGrow: 1, overflowY: 'auto', px: 1.25, py: 1.5 }}>
         {navigationSections.map((section) => (
           <Box key={section.heading} sx={{ mb: 2.5 }}>
             <Typography
               variant="overline"
-              color="text.secondary"
-              sx={{ px: 1.25, display: 'block', mb: 0.75 }}
+              sx={{
+                px: 1.25,
+                display: 'block',
+                mb: 0.85,
+                color: alpha(theme.palette.text.secondary, 0.92),
+              }}
             >
               {section.heading}
             </Typography>
@@ -175,21 +140,28 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
                         py: 1.35,
                         alignItems: 'center',
                         borderRadius: 0,
-                        border: `1px solid ${
-                          isActive ? alpha(theme.palette.primary.main, 0.2) : 'transparent'
-                        }`,
+                        border: '1px solid',
+                        borderColor: isActive
+                          ? alpha(theme.palette.primary.main, 0.42)
+                          : alpha(theme.palette.text.primary, 0.12),
                         backgroundColor: isActive
-                          ? alpha(theme.palette.primary.main, 0.11)
-                          : 'transparent',
+                          ? alpha(theme.palette.primary.main, 0.18)
+                          : alpha(theme.palette.background.paper, 0.42),
+                        boxShadow: isActive
+                          ? `inset 3px 0 0 ${theme.palette.primary.main}`
+                          : 'none',
                         '&:hover': {
                           backgroundColor: isActive
-                            ? alpha(theme.palette.primary.main, 0.15)
-                            : alpha(theme.palette.primary.main, 0.05),
+                            ? alpha(theme.palette.primary.main, 0.22)
+                            : alpha(theme.palette.primary.main, 0.08),
+                          borderColor: isActive
+                            ? alpha(theme.palette.primary.main, 0.48)
+                            : alpha(theme.palette.primary.main, 0.2),
                         },
                         '& .MuiListItemIcon-root': {
                           color: isActive
                             ? theme.palette.primary.main
-                            : theme.palette.text.secondary,
+                            : alpha(theme.palette.text.primary, 0.84),
                         },
                       }}
                     >
@@ -199,10 +171,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
                       <ListItemText
                         primary={item.text}
                         secondary={item.detail}
-                        primaryTypographyProps={{ fontWeight: 700 }}
+                        primaryTypographyProps={{
+                          fontWeight: 700,
+                          color: isActive ? 'text.primary' : alpha(theme.palette.text.primary, 0.96),
+                        }}
                         secondaryTypographyProps={{
                           variant: 'body2',
-                          color: 'text.secondary',
+                          color: isActive
+                            ? alpha(theme.palette.primary.main, 0.92)
+                            : alpha(theme.palette.text.secondary, 0.96),
                           sx: {
                             mt: 0.25,
                             lineHeight: 1.45,
@@ -217,22 +194,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
             </List>
           </Box>
         ))}
-      </Box>
-
-      <Box sx={{ p: 2, pt: 0 }}>
-        <Box
-          sx={{
-            p: 1.75,
-            border: `1px solid ${theme.palette.divider}`,
-            backgroundColor: alpha(theme.palette.secondary.main, 0.08),
-            borderRadius: 0,
-          }}
-        >
-          <Typography variant="subtitle2">Safe next step</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
-            Start with Backtest or Dashboard, then move into paper workflows only after the evidence is clear.
-          </Typography>
-        </Box>
       </Box>
     </Box>
   );

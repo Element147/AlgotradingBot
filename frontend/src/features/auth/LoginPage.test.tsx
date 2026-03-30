@@ -45,7 +45,8 @@ describe('LoginPage', { timeout: 15000 }, () => {
   it('should render login form', () => {
     renderLoginPage();
 
-    expect(screen.getByText('AlgoTrading Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('AlgoTrading Workstation')).toBeInTheDocument();
+    expect(screen.getByText('Research Workstation')).toBeInTheDocument();
     expect(screen.getByLabelText(/username/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/remember me/i)).toBeInTheDocument();

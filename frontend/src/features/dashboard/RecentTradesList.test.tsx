@@ -102,7 +102,7 @@ describe('RecentTradesList', { timeout: 15000 }, () => {
       </Provider>
     );
 
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    expect(screen.getByText('Loading recent trades...')).toBeInTheDocument();
     expect(screen.getByText('Recent Trades')).toBeInTheDocument();
   });
 
@@ -130,7 +130,7 @@ describe('RecentTradesList', { timeout: 15000 }, () => {
       </Provider>
     );
 
-    expect(screen.getByText('No recent trades')).toBeInTheDocument();
+    expect(screen.getByText('No recent trades.')).toBeInTheDocument();
     expect(screen.getByText('Last 0')).toBeInTheDocument();
   });
 
@@ -145,12 +145,9 @@ describe('RecentTradesList', { timeout: 15000 }, () => {
 
     expect(screen.getByText('Recent Trades')).toBeInTheDocument();
     expect(screen.getByText('Last 2')).toBeInTheDocument();
-    expect(screen.getByText('Symbol')).toBeInTheDocument();
-    expect(screen.getByText('Side')).toBeInTheDocument();
-    expect(screen.getByText('Entry')).toBeInTheDocument();
-    expect(screen.getByText('Exit')).toBeInTheDocument();
-    expect(screen.getByText('P&L')).toBeInTheDocument();
-    expect(screen.getByText('Time')).toBeInTheDocument();
+    expect(screen.getAllByText('Entry').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Exit').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('P&L').length).toBeGreaterThan(0);
 
     expect(screen.getByText('BTC/USDT')).toBeInTheDocument();
     expect(screen.getAllByText('Bollinger Bands')).toHaveLength(2);

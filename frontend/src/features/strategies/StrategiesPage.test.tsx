@@ -29,6 +29,24 @@ vi.mock('./strategiesApi', () => ({
         configVersion: 1,
         lastConfigChangedAt: '2026-03-12T10:00:00',
       },
+      {
+        id: 2,
+        name: 'SMA BTC Trend',
+        type: 'SMA_CROSSOVER',
+        status: 'STOPPED',
+        symbol: 'BTC/USDT',
+        timeframe: '4h',
+        riskPerTrade: 0.02,
+        minPositionSize: 10,
+        maxPositionSize: 100,
+        profitLoss: 12.5,
+        tradeCount: 3,
+        currentDrawdown: 0,
+        paperMode: true,
+        shortSellingEnabled: false,
+        configVersion: 2,
+        lastConfigChangedAt: '2026-03-15T10:00:00',
+      },
     ],
     isLoading: false,
     isError: false,
@@ -44,16 +62,38 @@ vi.mock('@/components/layout/AppLayout', () => ({
 }));
 
 describe('StrategiesPage', () => {
-  it('renders strategy management title and rows', () => {
+  it('renders grouped strategy sections with operator-first defaults', async () => {
+    const user = userEvent.setup();
     render(<StrategiesPage />);
 
     expect(screen.getByText('Paper-safe strategy desk')).toBeInTheDocument();
-    expect(screen.getByText('Bollinger BTC Mean Reversion')).toBeInTheDocument();
-    expect(screen.getByText('Saved strategy configs')).toBeInTheDocument();
-    expect(screen.getByText('BTC/USDT (1h)')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Saved configs' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Strategy guide' })).toBeInTheDocument();
     expect(screen.getAllByText('Archive candidate').length).toBeGreaterThan(0);
-    expect(screen.getByText('Paper-monitor candidate')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Edit config' })).toBeInTheDocument();
+    expect(screen.getByText('Shadow Paper')).toBeInTheDocument();
+    expect(screen.getByText('Paper-monitor candidates')).toBeInTheDocument();
+    const archiveAccordion = screen.getByRole('button', { name: /Archive candidates/i });
+    expect(archiveAccordion).toBeInTheDocument();
+    expect(archiveAccordion).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByText('SMA BTC Trend')).toBeInTheDocument();
+
+    await user.click(archiveAccordion);
+
+    expect(archiveAccordion).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Bollinger BTC Mean Reversion')).toBeInTheDocument();
+    expect(screen.getByText('BTC/USDT (1h)')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Edit config' }).length).toBeGreaterThan(0);
+  }, 15000);
+
+  it('shows the guide only when the guide tab is opened', async () => {
+    const user = userEvent.setup();
+    render(<StrategiesPage />);
+
+    expect(screen.queryByText('Buy and Hold Baseline')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: 'Strategy guide' }));
+
+    expect(screen.getByText('Buy and Hold Baseline')).toBeInTheDocument();
   });
 
   it('shows start confirmation dialog before mutation execution', async () => {
@@ -65,6 +105,6 @@ describe('StrategiesPage', () => {
     expect(screen.getByText(/Are you sure you want to start/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Confirm' }));
-    expect(startMutation).toHaveBeenCalledWith(1);
+    expect(startMutation).toHaveBeenCalledWith(2);
   }, 15000);
 });

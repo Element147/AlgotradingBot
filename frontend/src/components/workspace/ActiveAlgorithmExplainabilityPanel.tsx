@@ -1,4 +1,4 @@
-import { Stack, Typography } from '@mui/material';
+import { Stack, Typography, type Breakpoint } from '@mui/material';
 import type { ReactNode } from 'react';
 import { useMemo } from 'react';
 
@@ -67,6 +67,8 @@ interface ActiveAlgorithmExplainabilityPanelProps {
   extraSections?: ActiveAlgorithmDetailSection[];
   summary?: ReactNode;
   statusChips?: ReactNode;
+  desktopBehavior?: 'sticky' | 'inline';
+  desktopBreakpoint?: Breakpoint;
 }
 
 const numberFormatter = new Intl.NumberFormat(undefined, {
@@ -127,6 +129,8 @@ export function ActiveAlgorithmExplainabilityPanel({
   extraSections = [],
   summary,
   statusChips,
+  desktopBehavior = 'sticky',
+  desktopBreakpoint = 'xl',
 }: ActiveAlgorithmExplainabilityPanelProps) {
   const sections = useMemo<ActiveAlgorithmDetailSection[]>(() => {
     if (!subject) {
@@ -144,8 +148,14 @@ export function ActiveAlgorithmExplainabilityPanel({
           <Stack spacing={1}>
             {trades.slice(0, 4).map((trade) => (
               <Stack key={trade.id} spacing={0.4}>
-                <Typography variant="subtitle2">{`${trade.pair ?? subject.symbol} | ${trade.positionSide} | ${trade.signal}`}</Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="subtitle2" sx={{ overflowWrap: 'anywhere' }}>
+                  {`${trade.pair ?? subject.symbol} | ${trade.positionSide} | ${trade.signal}`}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ overflowWrap: 'anywhere' }}
+                >
                   Entry {formatNumber(trade.entryPrice)} at {formatTimestamp(trade.entryTime)} | Exit{' '}
                   {trade.exitTime ? `${formatNumber(trade.exitPrice)} at ${formatTimestamp(trade.exitTime)}` : 'Open'}
                 </Typography>
@@ -163,19 +173,19 @@ export function ActiveAlgorithmExplainabilityPanel({
         title: 'Signal and decision reason',
         content: (
           <Stack spacing={0.75}>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>
               {profile?.shortDescription ?? 'Shared explainability metadata is not available for this strategy yet.'}
             </Typography>
-            <Typography variant="body2">
+            <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
               <strong>Entry rule:</strong> {profile?.entryRule ?? latestTrade?.signal ?? 'Unavailable'}
             </Typography>
-            <Typography variant="body2">
+            <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
               <strong>Exit rule:</strong> {profile?.exitRule ?? 'Unavailable'}
             </Typography>
-            <Typography variant="body2">
+            <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
               <strong>Stand aside:</strong> {profile?.standAsideRule ?? 'No stand-aside rule recorded'}
             </Typography>
-            <Typography variant="body2">
+            <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
               <strong>Latest trigger:</strong> {latestTrade ? latestTrade.signal : 'No recent trade trigger recorded'}
             </Typography>
           </Stack>
@@ -186,7 +196,7 @@ export function ActiveAlgorithmExplainabilityPanel({
         title: 'Reason labels and evidence',
         content: (
           <Stack spacing={0.75}>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>
               Use these strategy-specific labels when reviewing why the algorithm entered, exited, or stood aside across Backtest, Forward Testing, Paper, and Live.
             </Typography>
             {renderReasonList('Entry labels', profile?.entryReasons)}
@@ -194,7 +204,7 @@ export function ActiveAlgorithmExplainabilityPanel({
             {renderReasonList('Stand-aside labels', profile?.standAsideReasons)}
             {renderReasonList('Evidence checklist', profile?.indicatorChecklist)}
             {renderReasonList('Operator notes', profile?.operatorNotes)}
-            <Typography variant="body2">
+            <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
               <strong>Timeframe guidance:</strong> {profile?.timeframeGuidance ?? 'Use the configured timeframe and review the matching chart overlays.'}
             </Typography>
           </Stack>
@@ -205,19 +215,19 @@ export function ActiveAlgorithmExplainabilityPanel({
         title: 'Current risk and PnL stats',
         content: (
           <Stack spacing={0.75}>
-            <Typography variant="body2">
+            <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
               <strong>Risk / trade:</strong> {formatPercent(subject.riskPerTrade)}
             </Typography>
-            <Typography variant="body2">
+            <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
               <strong>Position sizing:</strong> {formatNumber(subject.minPositionSize)} to {formatNumber(subject.maxPositionSize)}
             </Typography>
-            <Typography variant="body2">
+            <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
               <strong>Latest PnL:</strong> {latestTrade ? formatNumber(latestTrade.pnl) : 'Unavailable'}
             </Typography>
-            <Typography variant="body2">
+            <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
               <strong>Latest trade risk:</strong> {latestTrade ? formatNumber(latestTrade.riskAmount) : 'Unavailable'}
             </Typography>
-            <Typography variant="body2">
+            <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
               <strong>Stops:</strong> {latestTrade?.stopLoss ? formatNumber(latestTrade.stopLoss) : 'None'} | <strong>Targets:</strong>{' '}
               {latestTrade?.takeProfit ? formatNumber(latestTrade.takeProfit) : 'None'}
             </Typography>
@@ -229,16 +239,16 @@ export function ActiveAlgorithmExplainabilityPanel({
         title: 'Position state and exposure',
         content: (
           <Stack spacing={0.75}>
-            <Typography variant="body2">
+            <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
               <strong>Open positions:</strong> {openTrades.length}
             </Typography>
-            <Typography variant="body2">
+            <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
               <strong>Current exposure:</strong> {latestTrade ? `${latestTrade.positionSide} ${formatNumber(latestTrade.positionSize)}` : 'No active exposure recorded'}
             </Typography>
-            <Typography variant="body2">
+            <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
               <strong>Config version:</strong> v{subject.configVersion}
             </Typography>
-            <Typography variant="body2">
+            <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
               <strong>Last config change:</strong> {formatTimestamp(subject.lastConfigChangedAt)}
             </Typography>
           </Stack>
@@ -252,10 +262,16 @@ export function ActiveAlgorithmExplainabilityPanel({
             {incidents.slice(0, 4).map((incident) => (
               <Stack key={incident.id} spacing={0.4}>
                 <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap alignItems="center">
-                  <Typography variant="subtitle2">{incident.title}</Typography>
+                  <Typography variant="subtitle2" sx={{ overflowWrap: 'anywhere' }}>
+                    {incident.title}
+                  </Typography>
                   <StatusPill label={incident.timestamp} tone={resolveIncidentTone(incident)} />
                 </Stack>
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ overflowWrap: 'anywhere' }}
+                >
                   {incident.detail}
                 </Typography>
               </Stack>
@@ -337,6 +353,8 @@ export function ActiveAlgorithmExplainabilityPanel({
       statusChips={statusChips ?? defaultStatusChips}
       summary={summary ?? defaultSummary}
       sections={sections}
+      desktopBehavior={desktopBehavior}
+      desktopBreakpoint={desktopBreakpoint}
     />
   );
 }

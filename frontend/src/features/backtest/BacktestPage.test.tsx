@@ -1,5 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
@@ -236,6 +237,16 @@ describe('BacktestPage', { timeout: 15000 }, () => {
     expect(screen.getByRole('button', { name: 'Run New Backtest' })).toBeInTheDocument();
     expect(screen.getByText('Experiment Summaries')).toBeInTheDocument();
     expect(screen.getAllByText('BTC Mean Reversion Retest').length).toBeGreaterThan(0);
+    expect(screen.getByRole('tab', { name: 'History and comparison' })).toBeInTheDocument();
+    expect(screen.queryByText('Backtest History')).not.toBeInTheDocument();
+  });
+
+  it('opens history and comparison on demand', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('tab', { name: 'History and comparison' }));
+
     expect(screen.getByText('Backtest History')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Compare Selected/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Details' })).toBeInTheDocument();

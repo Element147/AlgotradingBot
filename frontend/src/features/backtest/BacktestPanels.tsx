@@ -56,7 +56,12 @@ import { formatBacktestMarketLabel } from './backtestTypes';
 import { FieldTooltip } from '@/components/ui/FieldTooltip';
 import { KeyValueGrid } from '@/components/ui/KeyValueGrid';
 import type { StrategyProfile } from '@/features/strategies/strategyProfiles';
-import { formatDateTime, formatNumber } from '@/utils/formatters';
+import {
+  formatCurrency,
+  formatDateTime,
+  formatNumber,
+  formatPercentage,
+} from '@/utils/formatters';
 
 interface HeaderCellProps {
   label: string;
@@ -465,17 +470,44 @@ export function BacktestExperimentSummariesPanel({
                   alignItems={{ xs: 'flex-start', md: 'center' }}
                 >
                   <Box>
-                    <Typography variant="subtitle2">{summary.experimentName}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Latest run #{summary.latestBacktestId} | {summary.strategyId} |{' '}
-                      {summary.datasetName ?? '-'} | {formatBacktestMarketLabel(summary.symbol)} (
-                      {summary.timeframe})
+                    <Typography variant="subtitle2" sx={{ overflowWrap: 'anywhere' }}>
+                      {summary.experimentName}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Runs: {summary.runCount} | Avg return: {summary.averageReturnPercent.toFixed(2)}%
-                      {' '}| Best balance: {summary.bestFinalBalance.toFixed(2)} | Worst drawdown:{' '}
-                      {summary.worstMaxDrawdown.toFixed(2)}%
+                    <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ mt: 0.5 }}>
+                      <Chip size="small" label={`Run #${summary.latestBacktestId}`} variant="outlined" />
+                      <Chip size="small" label={summary.strategyId} variant="outlined" />
+                      <Chip
+                        size="small"
+                        label={`${formatBacktestMarketLabel(summary.symbol)} (${summary.timeframe})`}
+                        variant="outlined"
+                      />
+                    </Stack>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mt: 0.75, overflowWrap: 'anywhere' }}
+                    >
+                      {summary.datasetName ?? 'No dataset label'} | Latest run at{' '}
+                      {formatDateTime(summary.latestRunAt)}
                     </Typography>
+                    <Stack
+                      direction={{ xs: 'column', sm: 'row' }}
+                      spacing={{ xs: 0.35, sm: 1.5 }}
+                      sx={{ mt: 0.75 }}
+                    >
+                      <Typography variant="body2" color="text.secondary">
+                        Runs: {summary.runCount}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Avg return: {formatPercentage(summary.averageReturnPercent)}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Best balance: {formatCurrency(summary.bestFinalBalance)}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Worst drawdown: {formatPercentage(summary.worstMaxDrawdown)}
+                      </Typography>
+                    </Stack>
                   </Box>
                   <Stack direction="row" spacing={1}>
                     <Chip

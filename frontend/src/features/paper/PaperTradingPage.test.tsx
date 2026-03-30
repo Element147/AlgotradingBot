@@ -197,6 +197,19 @@ vi.mock('@/services/api', () => ({
 }));
 
 describe('PaperTradingPage', () => {
+  const setDesktopInspectorViewport = (desktop: boolean) => {
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: query === '(min-width:1200px)' ? desktop : false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+  };
+
   const renderPage = () => {
     const store = configureStore({
       reducer: {
@@ -219,6 +232,7 @@ describe('PaperTradingPage', () => {
   };
 
   beforeEach(() => {
+    setDesktopInspectorViewport(false);
     placeOrderMock.mockReset();
     fillOrderMock.mockReset();
     cancelOrderMock.mockReset();
@@ -253,6 +267,25 @@ describe('PaperTradingPage', () => {
     expect(screen.getByText('Order entry')).toBeInTheDocument();
     expect(screen.getAllByText('No paper incidents detected.').length).toBeGreaterThan(0);
     expect(screen.getByText('#11')).toBeInTheDocument();
+  });
+
+  it('renders the paper detail inspector inline on desktop without the mobile drawer opener', () => {
+    setDesktopInspectorViewport(true);
+    renderPage();
+
+    expect(screen.queryByRole('button', { name: 'Open active algorithm detail' })).not.toBeInTheDocument();
+    expect(screen.getByText('Assigned parameters')).toBeInTheDocument();
+    expect(screen.getByText('Recent config versions')).toBeInTheDocument();
+    expect(screen.getByText('Paper incidents and audit trail')).toBeInTheDocument();
+
+    const inspectorSurface = screen
+      .getByText('Assigned parameters')
+      .closest('.MuiPaper-root')
+      ?.parentElement
+      ?.closest('.MuiPaper-root');
+
+    expect(inspectorSurface).not.toBeNull();
+    expect(window.getComputedStyle(inspectorSurface as Element).position).toBe('relative');
   });
 
   it('assigns a strategy to the selected exchange profile locally', async () => {
