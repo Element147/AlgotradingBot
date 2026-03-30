@@ -11,6 +11,9 @@ public interface MarketDataProvider {
 
     boolean isConfigured();
 
+    default void validateImportRequest(MarketDataProviderFetchRequest request) {
+    }
+
     List<OHLCVData> fetch(MarketDataProviderFetchRequest request);
 
     default LocalDateTime resolveChunkEnd(MarketDataProviderFetchRequest request) {

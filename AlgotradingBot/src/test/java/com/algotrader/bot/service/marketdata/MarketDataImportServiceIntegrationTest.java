@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Set;
 
@@ -127,6 +128,28 @@ class MarketDataImportServiceIntegrationTest {
         );
 
         assertThat(error.getMessage()).contains("ALGOTRADING_MARKET_DATA_TEST_KEY");
+    }
+
+    @Test
+    void createJob_rejectsKrakenImportOutsideRollingWindow() {
+        LocalDate startDate = LocalDate.now(ZoneOffset.UTC).minusDays(30);
+
+        IllegalArgumentException error = assertThrows(
+            IllegalArgumentException.class,
+            () -> marketDataImportService.createJob(new MarketDataImportJobRequest(
+                "kraken",
+                MarketDataAssetType.CRYPTO,
+                List.of("BTC/USDT"),
+                "1m",
+                startDate,
+                startDate.plusDays(1),
+                "Kraken too old",
+                false,
+                false
+            ))
+        );
+
+        assertThat(error.getMessage()).contains("Kraken only exposes the most recent 720 candles");
     }
 
     @Test

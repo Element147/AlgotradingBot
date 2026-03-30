@@ -7,7 +7,7 @@ Use this guide for provider coverage, dataset imports, credentials, and the data
 Public providers without API keys:
 
 - `Binance`
-- `Kraken`
+- `Kraken` for recent crypto history only. Its public OHLC endpoint exposes a rolling window of the latest `720` candles per timeframe.
 
 Free-tier providers with API keys:
 
@@ -25,12 +25,24 @@ Supported import timeframes:
 - `4h`
 - `1d`
 
+Kraken lookback examples:
+
+- `1m`: about the last 12 hours
+- `5m`: about the last 60 hours
+- `15m`: about the last 7.5 days
+- `30m`: about the last 15 days
+- `1h`: about the last 30 days
+- `4h`: about the last 120 days
+- `1d`: about the last 720 days
+
 ## Workflow
 
 1. Configure provider credentials in `Settings` or via environment variables.
 2. Create an import job from `Market Data`.
 3. Monitor the job until it completes, retries, or fails.
 4. Use the resulting dataset from the backtest catalog.
+
+If an operator needs deeper Kraken history than that rolling window allows, use `Binance` where coverage fits or upload a CSV dataset instead. The backend now rejects impossible Kraken ranges up front instead of running a long retry cycle.
 
 ## Dataset Model
 

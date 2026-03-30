@@ -7,6 +7,7 @@ import com.algotrader.bot.service.marketdata.MarketDataHttpClient;
 import com.algotrader.bot.service.marketdata.MarketDataProviderCredentialService;
 import com.algotrader.bot.service.marketdata.MarketDataProviderDefinition;
 import com.algotrader.bot.service.marketdata.MarketDataProviderFetchRequest;
+import com.algotrader.bot.service.marketdata.MarketDataRetryableException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
@@ -18,16 +19,21 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Component
 public class KrakenMarketDataProvider extends AbstractMarketDataProvider {
 
+    private static final int MAX_RECENT_CANDLES = 720;
+    private static final Pattern THROTTLED_UNIX_TIMESTAMP = Pattern.compile("(\\d{10})");
     private static final MarketDataProviderDefinition DEFINITION = new MarketDataProviderDefinition(
         "kraken",
         "Kraken",
-        "Public OHLC market data for major crypto pairs with no API key required.",
+        "Public OHLC market data for major crypto pairs with no API key required. Imports are limited to Kraken's rolling 720-candle window.",
         Set.of(MarketDataAssetType.CRYPTO),
         List.of("1m", "5m", "15m", "30m", "1h", "4h", "1d"),
         false,
@@ -37,7 +43,7 @@ public class KrakenMarketDataProvider extends AbstractMarketDataProvider {
         List.of("BTC/USD", "ETH/USD", "SOL/USD"),
         "https://docs.kraken.com/api/docs/rest-api/get-ohlc-data/",
         "https://www.kraken.com/",
-        "No API key is needed for public OHLC queries."
+        "No API key is needed for public OHLC queries. Kraken only exposes the latest 720 candles for each timeframe."
     );
 
     public KrakenMarketDataProvider(
@@ -54,7 +60,31 @@ public class KrakenMarketDataProvider extends AbstractMarketDataProvider {
     }
 
     @Override
+    public void validateImportRequest(MarketDataProviderFetchRequest request) {
+        LocalDateTime earliestRetainedCandle = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC)
+            .minus(request.timeframe().step().multipliedBy(MAX_RECENT_CANDLES - 1L));
+        if (!request.start().isBefore(earliestRetainedCandle)) {
+            return;
+        }
+
+        throw new IllegalArgumentException(
+            "Kraken only exposes the most recent " + MAX_RECENT_CANDLES + " candles per timeframe. "
+                + "Earliest retrievable " + request.timeframe().id() + " candle is about "
+                + formatUtc(earliestRetainedCandle) + ", but the request starts at "
+                + formatUtc(request.start()) + ". Use Binance or a CSV upload for older history."
+        );
+    }
+
+    @Override
+    public LocalDateTime resolveChunkEnd(MarketDataProviderFetchRequest request) {
+        LocalDateTime cappedEnd = request.start()
+            .plus(request.timeframe().step().multipliedBy(MAX_RECENT_CANDLES - 1L));
+        return cappedEnd.isBefore(request.end()) ? cappedEnd : request.end();
+    }
+
+    @Override
     public List<OHLCVData> fetch(MarketDataProviderFetchRequest request) {
+        validateImportRequest(request);
         if (request.assetType() != MarketDataAssetType.CRYPTO) {
             throw new IllegalArgumentException("Kraken only supports crypto imports.");
         }
@@ -70,7 +100,7 @@ public class KrakenMarketDataProvider extends AbstractMarketDataProvider {
 
         JsonNode errors = root.path("error");
         if (errors.isArray() && !errors.isEmpty()) {
-            throw new IllegalArgumentException("Kraken request failed: " + errors.get(0).asText());
+            throw translateKrakenError(errors.get(0).asText());
         }
 
         JsonNode result = root.path("result");
@@ -129,6 +159,34 @@ public class KrakenMarketDataProvider extends AbstractMarketDataProvider {
             case "1d" -> "1440";
             default -> throw new IllegalArgumentException("Kraken does not support timeframe " + request.timeframe().id());
         };
+    }
+
+    private RuntimeException translateKrakenError(String rawError) {
+        String message = "Kraken request failed: " + rawError;
+        String normalized = rawError == null ? "" : rawError.toLowerCase(Locale.ROOT);
+        if (normalized.contains("too many requests")
+            || normalized.contains("rate limit")
+            || normalized.contains("throttled")) {
+            return new MarketDataRetryableException(message, retryAtFromKrakenError(rawError));
+        }
+        return new IllegalArgumentException(message);
+    }
+
+    private LocalDateTime retryAtFromKrakenError(String rawError) {
+        if (rawError != null) {
+            Matcher matcher = THROTTLED_UNIX_TIMESTAMP.matcher(rawError);
+            if (matcher.find()) {
+                return LocalDateTime.ofInstant(
+                    Instant.ofEpochSecond(Long.parseLong(matcher.group(1))),
+                    ZoneOffset.UTC
+                );
+            }
+        }
+        return LocalDateTime.now().plusMinutes(1);
+    }
+
+    private String formatUtc(LocalDateTime timestamp) {
+        return timestamp.atOffset(ZoneOffset.UTC).toLocalDateTime() + " UTC";
     }
 
     private String providerPair(String requestedSymbol) {

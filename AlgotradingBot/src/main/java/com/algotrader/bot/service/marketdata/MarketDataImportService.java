@@ -130,6 +130,16 @@ public class MarketDataImportService {
         validateCreateRequest(request, provider, timeframe);
 
         List<String> symbols = normalizeSymbols(request.symbols(), request.assetType());
+        provider.validateImportRequest(new MarketDataProviderFetchRequest(
+            request.assetType(),
+            symbols.get(0),
+            timeframe,
+            request.startDate().atStartOfDay(),
+            request.endDate().atTime(23, 59, 59),
+            Boolean.TRUE.equals(request.adjusted()),
+            request.assetType() == MarketDataAssetType.STOCK && Boolean.TRUE.equals(request.regularSessionOnly())
+        ));
+
         MarketDataImportJob job = new MarketDataImportJob();
         job.setProviderId(provider.definition().id());
         job.setAssetType(request.assetType());

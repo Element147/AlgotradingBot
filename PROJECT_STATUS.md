@@ -26,6 +26,7 @@ The repository is a usable local-first MVP for strategy research, market-data pr
 - Normalized market-data store for runtime query paths
 - Startup backfill for older datasets that still need normalized candle segments
 - Dataset provenance, retention, download, archive, and restore flows
+- Kraken public OHLC imports now fail fast when the requested range is older than its rolling 720-candle provider limit, instead of exhausting retries against an impossible window
 
 ### Paper Trading And Operations
 
