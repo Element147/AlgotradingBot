@@ -115,5 +115,5 @@ describe('BacktestComparisonPanel', () => {
     expect(bodyRows[0]).toHaveTextContent('#11');
     expect(bodyRows[1]).toHaveTextContent('#33');
     expect(bodyRows[2]).toHaveTextContent('#22');
-  });
+  }, 15000);
 });

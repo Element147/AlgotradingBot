@@ -102,6 +102,31 @@ describe('ExecutionWorkspacePrimitives', () => {
     expect(screen.getByText('No investigation entries yet')).toBeInTheDocument();
   });
 
+  it('keeps dense investigation content readable in narrow layouts', () => {
+    renderWithTheme(
+      <InvestigationLogPanel
+        title="Investigation log"
+        entries={[
+          {
+            id: 'dense-1',
+            timestamp: 'Current desk state refreshed at 2026-03-31 15:50:00 UTC',
+            title: 'STALE_POSITIONS: 1 paper position(s) have not updated in over 6 hours.',
+            detail:
+              'Reconcile stale positions, then verify the recovery telemetry returns to HEALTHY before resuming review.',
+            tags: ['Paper recovery warning', 'Current desk state'],
+            tone: 'warning',
+          },
+        ]}
+      />
+    );
+
+    expect(
+      screen.getByText(/STALE_POSITIONS: 1 paper position\(s\) have not updated/i)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Current desk state refreshed/i)).toBeInTheDocument();
+    expect(screen.getByText('Paper recovery warning')).toBeInTheDocument();
+  });
+
   it('renders a live metric strip and empty metric fallback', () => {
     const { rerender } = renderWithTheme(
       <LiveMetricStrip

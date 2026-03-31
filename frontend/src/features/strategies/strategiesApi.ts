@@ -58,6 +58,15 @@ interface StrategyConfigHistoryQuery extends StrategyQueryOptions {
   strategyId: number;
 }
 
+export const PAPER_STRATEGIES_QUERY = { executionContext: 'paper' } as const;
+
+const STRATEGY_QUERY_CACHE_ARGS: Array<StrategyQueryOptions | void> = [
+  undefined,
+  PAPER_STRATEGIES_QUERY,
+  { executionContext: 'forward-test' },
+  { executionContext: 'live' },
+];
+
 export const strategiesApi = createApi({
   reducerPath: 'strategiesApi',
   baseQuery: baseQueryWithEnvironment,
@@ -77,18 +86,18 @@ export const strategiesApi = createApi({
         method: 'POST',
       }),
       async onQueryStarted(strategyId, { dispatch, queryFulfilled }) {
-        const patchResult = dispatch(
-          strategiesApi.util.updateQueryData('getStrategies', undefined, (draft) => {
+        const patchResults = STRATEGY_QUERY_CACHE_ARGS.map((queryArg) =>
+          dispatch(strategiesApi.util.updateQueryData('getStrategies', queryArg, (draft) => {
             const match = draft.find((strategy) => strategy.id === strategyId);
             if (match) {
               match.status = 'RUNNING';
             }
-          })
+          }))
         );
         try {
           await queryFulfilled;
         } catch {
-          patchResult.undo();
+          patchResults.forEach((patchResult) => patchResult.undo());
         }
       },
       invalidatesTags: ['Strategies'],
@@ -99,18 +108,18 @@ export const strategiesApi = createApi({
         method: 'POST',
       }),
       async onQueryStarted(strategyId, { dispatch, queryFulfilled }) {
-        const patchResult = dispatch(
-          strategiesApi.util.updateQueryData('getStrategies', undefined, (draft) => {
+        const patchResults = STRATEGY_QUERY_CACHE_ARGS.map((queryArg) =>
+          dispatch(strategiesApi.util.updateQueryData('getStrategies', queryArg, (draft) => {
             const match = draft.find((strategy) => strategy.id === strategyId);
             if (match) {
               match.status = 'STOPPED';
             }
-          })
+          }))
         );
         try {
           await queryFulfilled;
         } catch {
-          patchResult.undo();
+          patchResults.forEach((patchResult) => patchResult.undo());
         }
       },
       invalidatesTags: ['Strategies'],

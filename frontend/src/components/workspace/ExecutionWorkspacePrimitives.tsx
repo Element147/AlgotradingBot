@@ -83,7 +83,7 @@ export function ExecutionStatusRail({
           spacing={1}
           role="list"
           aria-label="Execution status rail"
-          sx={{ flexWrap: 'wrap' }}
+          sx={{ flexWrap: 'wrap', minWidth: 0 }}
         >
           {items.map((item, index) => {
             const accent = resolveToneColor(theme, item.tone);
@@ -95,6 +95,7 @@ export function ExecutionStatusRail({
                 sx={{
                   minWidth: { xs: '100%', lg: 0 },
                   flex: { xs: '1 1 auto', lg: '1 1 220px' },
+                  minHeight: '100%',
                   px: 1.5,
                   py: 1.25,
                   border: '1px solid',
@@ -102,7 +103,7 @@ export function ExecutionStatusRail({
                   backgroundColor: alpha(accent ?? theme.palette.primary.main, 0.05),
                 }}
               >
-                <Stack spacing={0.65}>
+                <Stack spacing={0.65} sx={{ minWidth: 0 }}>
                   <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
                     {item.label}
                   </Typography>
@@ -113,7 +114,11 @@ export function ExecutionStatusRail({
                     {item.value}
                   </Typography>
                   {item.detail ? (
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ overflowWrap: 'anywhere' }}
+                    >
                       {item.detail}
                     </Typography>
                   ) : null}
@@ -162,19 +167,26 @@ export function ExecutionCard({
     : alpha(theme.palette.text.primary, 0.08);
 
   const content = (
-    <Stack spacing={1.25} sx={{ p: 2 }}>
+    <Stack spacing={1.25} sx={{ p: 2, minWidth: 0 }}>
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
         spacing={1}
         justifyContent="space-between"
         alignItems={{ xs: 'flex-start', sm: 'flex-start' }}
       >
-        <Box sx={{ minWidth: 0 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+        <Box sx={{ minWidth: 0, flex: 1 }}>
+          <Typography
+            variant="subtitle1"
+            sx={{ fontWeight: 700, overflowWrap: 'anywhere' }}
+          >
             {title}
           </Typography>
           {subtitle ? (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.4 }}>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mt: 0.4, overflowWrap: 'anywhere' }}
+            >
               {subtitle}
             </Typography>
           ) : null}
@@ -183,7 +195,13 @@ export function ExecutionCard({
       </Stack>
 
       {badges ? (
-        <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+        <Stack
+          direction="row"
+          spacing={0.75}
+          flexWrap="wrap"
+          useFlexGap
+          sx={{ minWidth: 0, '& > *': { maxWidth: '100%' } }}
+        >
           {badges}
         </Stack>
       ) : null}
@@ -210,7 +228,7 @@ export function ExecutionCard({
       ) : null}
 
       {detail ? (
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>
           {detail}
         </Typography>
       ) : null}
@@ -331,10 +349,10 @@ export function InvestigationLogPanel({
               >
                 <Stack spacing={0.75} sx={{ width: '100%', minWidth: 0 }}>
                   <Stack
-                    direction={{ xs: 'column', sm: 'row' }}
+                    direction={{ xs: 'column', lg: 'row' }}
                     spacing={1}
                     justifyContent="space-between"
-                    alignItems={{ xs: 'flex-start', sm: 'center' }}
+                    alignItems={{ xs: 'flex-start', lg: 'center' }}
                     sx={{ minWidth: 0 }}
                   >
                     <Box sx={{ minWidth: 0, flex: 1 }}>
@@ -348,7 +366,12 @@ export function InvestigationLogPanel({
                     <Typography
                       variant="caption"
                       color="text.secondary"
-                      sx={{ fontFamily: numericFontFamily, overflowWrap: 'anywhere' }}
+                      sx={{
+                        fontFamily: numericFontFamily,
+                        overflowWrap: 'anywhere',
+                        maxWidth: '100%',
+                        flexShrink: 0,
+                      }}
                     >
                       {entry.timestamp}
                     </Typography>
@@ -361,7 +384,13 @@ export function InvestigationLogPanel({
                     {entry.detail}
                   </Typography>
                   {entry.tags && entry.tags.length > 0 ? (
-                    <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+                    <Stack
+                      direction="row"
+                      spacing={0.75}
+                      flexWrap="wrap"
+                      useFlexGap
+                      sx={{ '& > *': { maxWidth: '100%' } }}
+                    >
                       {entry.tags.map((tag, index) => (
                         <StatusPill
                           key={`investigation-tag-${entry.id}-${index}`}
@@ -511,6 +540,7 @@ export function ActiveAlgorithmDetailDrawer({
       mobileOpenLabel={mobileOpenLabel}
       desktopBehavior={desktopBehavior}
       desktopBreakpoint={desktopBreakpoint}
+      sx={{ minWidth: 0 }}
       mobilePreview={
         <Stack spacing={1.25}>
           {statusChips ? (

@@ -223,13 +223,22 @@ export function StatusPill({
       label={label}
       variant={variant}
       sx={{
+        height: 'auto',
+        maxWidth: '100%',
+        alignItems: 'flex-start',
         borderColor: alpha(color, 0.24),
         backgroundColor:
           variant === 'filled' ? resolveToneSurface(theme, tone) : 'transparent',
         color,
         '& .MuiChip-label': {
+          display: 'block',
           fontWeight: 700,
           fontSize: '0.75rem',
+          whiteSpace: 'normal',
+          overflowWrap: 'anywhere',
+          lineHeight: 1.35,
+          paddingTop: 6,
+          paddingBottom: 6,
         },
         ...sx,
       }}

@@ -5,7 +5,10 @@ import { backtestApi } from '@/features/backtest/backtestApi';
 import { marketDataApi } from '@/features/marketData/marketDataApi';
 import { paperApi } from '@/features/paperApi';
 import { riskApi } from '@/features/risk/riskApi';
-import { strategiesApi } from '@/features/strategies/strategiesApi';
+import {
+  PAPER_STRATEGIES_QUERY,
+  strategiesApi,
+} from '@/features/strategies/strategiesApi';
 import { tradesApi } from '@/features/trades/tradesApi';
 
 // Force the first authenticated fetch so any unauthenticated 403 cache is replaced immediately.
@@ -45,7 +48,7 @@ export const prefetchAuthenticatedWorkstationData = (dispatch: AppDispatch) => {
   dispatch(
     strategiesApi.util.prefetch(
       'getStrategies',
-      undefined,
+      PAPER_STRATEGIES_QUERY,
       AUTHENTICATED_PREFETCH_OPTIONS
     )
   );

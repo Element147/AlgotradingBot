@@ -525,6 +525,7 @@ export default function ForwardTestingPage() {
             <ActiveAlgorithmExplainabilityPanel
               title={selectedStrategy ? `${selectedStrategy.name} detail` : 'Forward-testing detail'}
               description="Move from strategy selection to signal explanation, config lineage, and recent observed state without leaving the workspace."
+              desktopBehavior="inline"
               subject={
                 selectedStrategy
                   ? {

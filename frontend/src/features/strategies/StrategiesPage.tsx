@@ -20,6 +20,7 @@ import {
 import { useMemo, useState } from 'react';
 
 import {
+  PAPER_STRATEGIES_QUERY,
   type Strategy,
   useGetStrategiesQuery,
   useStartStrategyMutation,
@@ -44,6 +45,7 @@ import {
   StatusPill,
   SurfacePanel,
 } from '@/components/ui/Workbench';
+import { getApiErrorMessage } from '@/services/api';
 import { formatDateTime } from '@/utils/formatters';
 
 type ActionDialogState = {
@@ -129,7 +131,7 @@ export default function StrategiesPage() {
     isLoading,
     isError,
     error,
-  } = useGetStrategiesQuery(undefined, {
+  } = useGetStrategiesQuery(PAPER_STRATEGIES_QUERY, {
     pollingInterval: 30000,
     skipPollingIfUnfocused: true,
   });
@@ -148,6 +150,16 @@ export default function StrategiesPage() {
   const [expandedGroups, setExpandedGroups] = useState<StrategyGroupKey[]>(defaultExpandedGroups);
 
   const isBusy = isStarting || isStopping || isSavingConfig;
+  const strategyErrorMessage = useMemo(() => {
+    const message = getApiErrorMessage(
+      error,
+      'Unable to load saved paper strategies right now.'
+    );
+
+    return message === 'FETCH_ERROR'
+      ? 'Unable to reach the strategy service. Verify the backend is running, then refresh the page.'
+      : message;
+  }, [error]);
   const strategyProfiles = getAllStrategyProfiles();
   const groupedStrategies = useMemo(() => {
     const groups: Record<StrategyGroupKey, Array<{ strategy: Strategy; profile: ReturnType<typeof getStrategyProfile> }>> = {
@@ -295,7 +307,7 @@ export default function StrategiesPage() {
 
         {isError ? (
           <Alert severity="error">
-            Failed to load strategies. {String((error as { status?: string })?.status ?? '')}
+            Failed to load strategies. {strategyErrorMessage}
           </Alert>
         ) : null}
 

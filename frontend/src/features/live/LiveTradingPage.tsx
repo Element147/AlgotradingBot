@@ -546,6 +546,7 @@ export default function LiveTradingPage() {
             <ActiveAlgorithmExplainabilityPanel
               title={selectedStrategy ? `${selectedStrategy.name} live detail` : 'Live algorithm detail'}
               description="The live drawer keeps capability state, config lineage, and signal context together while the route remains read-only."
+              desktopBehavior="inline"
               subject={
                 selectedStrategy
                   ? {
