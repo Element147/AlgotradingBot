@@ -50,7 +50,7 @@ EXPOSE 8080
 EXPOSE 5005
 
 # Set JVM options for container runtime
-ENV JAVA_OPTS="-Xms512m -Xmx2g -XX:+UseZGC -XX:+ZGenerational -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError"
+ENV JAVA_OPTS="-Xms512m -Xmx2g -XX:+UseZGC -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError"
 ENV JAVA_DEBUG_OPTS=""
 
 # Health check configuration

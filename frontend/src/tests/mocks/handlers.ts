@@ -211,6 +211,83 @@ export const handlers = [
       cashRatio: '85.0',
     });
   }),
+  http.get(`${API_BASE_URL}/api/positions/open`, () =>
+    HttpResponse.json([
+      {
+        id: '1',
+        strategyId: 'strat-1',
+        strategyName: 'Bollinger Bands',
+        symbol: 'BTC/USDT',
+        side: 'LONG',
+        entryPrice: '50000.00',
+        currentPrice: '51000.00',
+        quantity: '0.01',
+        entryTime: '2026-03-09T10:00:00Z',
+        unrealizedPnL: '10.00',
+        unrealizedPnLPercentage: '2.00',
+        status: 'OPEN',
+      },
+      {
+        id: '2',
+        strategyId: 'strat-1',
+        strategyName: 'Bollinger Bands',
+        symbol: 'ETH/USDT',
+        side: 'SHORT',
+        entryPrice: '3000.00',
+        currentPrice: '3050.00',
+        quantity: '0.1',
+        entryTime: '2026-03-09T11:00:00Z',
+        unrealizedPnL: '-5.00',
+        unrealizedPnLPercentage: '-1.67',
+        status: 'OPEN',
+      },
+    ])
+  ),
+  http.get(`${API_BASE_URL}/api/trades/recent`, ({ request }) => {
+    const url = new URL(request.url);
+    const limit = Number(url.searchParams.get('limit') ?? '10');
+
+    return HttpResponse.json(
+      [
+        {
+          id: '1',
+          strategyId: 'strat-1',
+          strategyName: 'Bollinger Bands',
+          symbol: 'BTC/USDT',
+          side: 'LONG',
+          entryPrice: '50000.00',
+          exitPrice: '51000.00',
+          quantity: '0.01',
+          entryTime: '2026-03-09T10:00:00Z',
+          exitTime: '2026-03-09T12:00:00Z',
+          duration: '2h',
+          profitLoss: '10.00',
+          profitLossPercentage: '2.00',
+          fees: '0.50',
+          slippage: '0.15',
+          status: 'CLOSED',
+        },
+        {
+          id: '2',
+          strategyId: 'strat-1',
+          strategyName: 'Bollinger Bands',
+          symbol: 'ETH/USDT',
+          side: 'SHORT',
+          entryPrice: '3000.00',
+          exitPrice: '2950.00',
+          quantity: '0.1',
+          entryTime: '2026-03-09T11:00:00Z',
+          exitTime: '2026-03-09T13:00:00Z',
+          duration: '2h',
+          profitLoss: '-5.00',
+          profitLossPercentage: '-1.67',
+          fees: '0.30',
+          slippage: '0.09',
+          status: 'CLOSED',
+        },
+      ].slice(0, limit)
+    );
+  }),
 
   // Strategy management endpoints
   http.get(`${API_BASE_URL}/api/strategies`, () =>

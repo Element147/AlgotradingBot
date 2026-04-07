@@ -1,11 +1,34 @@
-import { configureStore } from '@reduxjs/toolkit';
 import { render, screen } from '@testing-library/react';
-import { Provider } from 'react-redux';
-import { describe, expect, it, vi } from 'vitest';
-
-import { accountApi } from '../account/accountApi';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PositionsList } from './PositionsList';
+
+type OpenPositionsQueryResult = {
+  data?: Array<{
+    id: string;
+    strategyId: string;
+    strategyName: string;
+    symbol: string;
+    side: 'LONG' | 'SHORT';
+    entryPrice: string;
+    currentPrice: string;
+    quantity: string;
+    entryTime: string;
+    unrealizedPnL: string;
+    unrealizedPnLPercentage: string;
+    status: 'OPEN';
+  }>;
+  isLoading: boolean;
+  error?: unknown;
+};
+
+const { mockUseGetOpenPositionsQuery } = vi.hoisted(() => ({
+  mockUseGetOpenPositionsQuery: vi.fn<() => OpenPositionsQueryResult>(),
+}));
+
+vi.mock('../account/accountApi', () => ({
+  useGetOpenPositionsQuery: () => mockUseGetOpenPositionsQuery(),
+}));
 
 // Mock formatters
 vi.mock('@/utils/formatters', () => ({
@@ -45,95 +68,62 @@ const mockPositions = [
   },
 ];
 
-type QueryStatus = 'pending' | 'fulfilled' | 'rejected';
-
-const createMockStore = (
-  positions = mockPositions,
-  status: QueryStatus = 'fulfilled',
-  error: unknown = undefined
-) =>
-  configureStore({
-    reducer: {
-      [accountApi.reducerPath]: accountApi.reducer,
-    },
-    middleware: (getDefaultMiddleware) =>
-      getDefaultMiddleware().concat(accountApi.middleware),
-    preloadedState: {
-      [accountApi.reducerPath]: {
-        queries: {
-          'getOpenPositions(undefined)': {
-            status,
-            data: status === 'fulfilled' ? positions : undefined,
-            error,
-          },
-        },
-        mutations: {},
-        provided: {},
-        subscriptions: {},
-        config: {
-          online: true,
-          focused: true,
-          middlewareRegistered: true,
-          refetchOnFocus: false,
-          refetchOnReconnect: false,
-          refetchOnMountOrArgChange: false,
-          keepUnusedDataFor: 60,
-          reducerPath: accountApi.reducerPath,
-        },
-      },
-    },
+const mockQueryState = ({
+  data = mockPositions,
+  isLoading = false,
+  error = undefined,
+}: {
+  data?: typeof mockPositions;
+  isLoading?: boolean;
+  error?: unknown;
+}) => {
+  mockUseGetOpenPositionsQuery.mockReturnValue({
+    data,
+    isLoading,
+    error,
   });
+};
 
 describe('PositionsList', () => {
-  it('should render loading state', () => {
-    const store = createMockStore(mockPositions, 'pending');
+  beforeEach(() => {
+    mockUseGetOpenPositionsQuery.mockReset();
+  });
 
-    render(
-      <Provider store={store}>
-        <PositionsList />
-      </Provider>
-    );
+  it('should render loading state', () => {
+    mockQueryState({ isLoading: true });
+
+    render(<PositionsList />);
 
     expect(screen.getByText('Loading positions...')).toBeInTheDocument();
     expect(screen.getByText('Open Positions')).toBeInTheDocument();
   });
 
   it('should render error state', () => {
-    const store = createMockStore(mockPositions, 'rejected', {
-      status: 500,
-      data: 'Server error',
+    mockQueryState({
+      error: {
+        status: 500,
+        data: 'Server error',
+      },
     });
 
-    render(
-      <Provider store={store}>
-        <PositionsList />
-      </Provider>
-    );
+    render(<PositionsList />);
 
     expect(screen.getByText('Server error')).toBeInTheDocument();
   });
 
   it('should render empty state when no positions', () => {
-    const store = createMockStore([], 'fulfilled');
+    mockQueryState({ data: [] });
 
-    render(
-      <Provider store={store}>
-        <PositionsList />
-      </Provider>
-    );
+    render(<PositionsList />);
 
     expect(screen.getByText('No open positions.')).toBeInTheDocument();
     expect(screen.getByText('0 Positions')).toBeInTheDocument();
   });
 
   it('should render positions list correctly', () => {
-    const store = createMockStore(mockPositions, 'fulfilled');
+    mockQueryState({});
 
-    render(
-      <Provider store={store}>
-        <PositionsList />
-      </Provider>
-    );
+    render(<PositionsList />);
 
     expect(screen.getByText('Open Positions')).toBeInTheDocument();
     expect(screen.getByText('2 Positions')).toBeInTheDocument();
@@ -161,25 +151,17 @@ describe('PositionsList', () => {
   });
 
   it('should display correct position count in singular form', () => {
-    const store = createMockStore([mockPositions[0]], 'fulfilled');
+    mockQueryState({ data: [mockPositions[0]] });
 
-    render(
-      <Provider store={store}>
-        <PositionsList />
-      </Provider>
-    );
+    render(<PositionsList />);
 
     expect(screen.getByText('1 Position')).toBeInTheDocument();
   });
 
   it('should color-code profit and loss correctly', () => {
-    const store = createMockStore(mockPositions, 'fulfilled');
+    mockQueryState({});
 
-    render(
-      <Provider store={store}>
-        <PositionsList />
-      </Provider>
-    );
+    render(<PositionsList />);
 
     expect(screen.getByText('+$10.00')).toBeInTheDocument();
     expect(screen.getByText('(+2.00%)')).toBeInTheDocument();
@@ -187,4 +169,3 @@ describe('PositionsList', () => {
     expect(screen.getByText('(-1.67%)')).toBeInTheDocument();
   });
 });
-

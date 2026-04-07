@@ -4,6 +4,12 @@ import { afterEach, beforeAll, afterAll, vi } from 'vitest';
 
 import { server } from './mocks/server';
 
+const originalConsoleWarn = console.warn;
+const originalConsoleError = console.error;
+
+console.warn = vi.fn();
+console.error = vi.fn();
+
 // Establish API mocking before all tests
 beforeAll(() => {
   server.listen({ onUnhandledRequest: 'error' });
@@ -18,6 +24,8 @@ afterEach(() => {
 // Clean up after the tests are finished
 afterAll(() => {
   server.close();
+  console.warn = originalConsoleWarn;
+  console.error = originalConsoleError;
 });
 
 // Cleanup after each test

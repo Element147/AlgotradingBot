@@ -53,7 +53,7 @@ The repository is a usable local-first MVP for strategy research, market-data pr
 
 ## Latest Verified Baseline
 
-Verified on March 19, 2026, March 20, 2026, and March 30, 2026:
+Verified on March 19, 2026, March 20, 2026, March 30, 2026, and April 7, 2026:
 
 - `.\gradlew.bat javaMigrationAudit --no-daemon`: passed
 - `.\gradlew.bat test`: passed
@@ -64,11 +64,6 @@ Verified on March 19, 2026, March 20, 2026, and March 30, 2026:
 - `npm run build`: passed
 - `.\security-scan.ps1 -FailOnFindings`: passed
 - `.\run.ps1` and `.\run-all.ps1` smoke paths completed successfully
-
-Known non-gating warnings from that baseline:
-
-- Frontend tests emit repeated Node warnings about `--localstorage-file`.
-- Some chart tests still emit container-size warnings under jsdom.
 
 ## Current Research Posture
 

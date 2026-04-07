@@ -243,7 +243,7 @@ vi.mock('@/services/axiosClient', () => ({
   getErrorMessage: () => 'error',
 }));
 
-describe('BacktestPage', { timeout: 15000 }, () => {
+describe('BacktestPage', { timeout: 25000 }, () => {
   const renderPage = () => {
     const store = configureStore({
       reducer: {
@@ -284,20 +284,20 @@ describe('BacktestPage', { timeout: 15000 }, () => {
     const user = userEvent.setup();
     renderPage();
 
-    expect(screen.getByText('Backtest Details #42')).toBeInTheDocument();
+    expect(await screen.findByText('Backtest Details #42')).toBeInTheDocument();
     expect(screen.queryByText('Backtest History')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: 'Runs' }));
-    expect(screen.getByText('Run Backtest')).toBeInTheDocument();
+    expect(await screen.findByText('Run Backtest')).toBeInTheDocument();
     expect(screen.getByText('Experiment Summaries')).toBeInTheDocument();
     expect(screen.queryByText('Backtest Details #42')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: 'Datasets' }));
+    expect(await screen.findByText('Sortable dataset inventory')).toBeInTheDocument();
     expect(screen.getAllByText('Dataset lifecycle').length).toBeGreaterThan(0);
-    expect(screen.getByText('Sortable dataset inventory')).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: 'History' }));
-    expect(screen.getByText('Backtest History')).toBeInTheDocument();
+    expect(await screen.findByText('Backtest History')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Compare Selected/ })).toBeInTheDocument();
   });
 

@@ -7,10 +7,23 @@ plugins {
 
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.compile.JavaCompile
-import org.gradle.api.tasks.Exec
+import org.gradle.api.DefaultTask
+import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.ListProperty
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Classpath
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.OutputFile
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
+import org.gradle.api.tasks.TaskAction
 import org.gradle.kotlin.dsl.withType
+import org.gradle.process.ExecOperations
 import org.springframework.boot.gradle.tasks.run.BootRun
 import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
+import javax.inject.Inject
 
 group = "com.algotrader"
 version = "0.0.1-SNAPSHOT"
@@ -37,6 +50,54 @@ fun jdkBinary(name: String) =
     java25Launcher.map { launcher ->
         launcher.metadata.installationPath.file("bin/${osExecutable(name)}").asFile.absolutePath
     }
+
+abstract class ToolReportExecTask @Inject constructor(
+    private val execOperations: ExecOperations
+) : DefaultTask() {
+    @get:Input
+    abstract val toolExecutable: Property<String>
+
+    @get:Input
+    abstract val staticArgs: ListProperty<String>
+
+    @get:Classpath
+    abstract val toolClasspath: ConfigurableFileCollection
+
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val analysisTargets: ConfigurableFileCollection
+
+    @get:OutputFile
+    abstract val outputFile: RegularFileProperty
+
+    @get:OutputFile
+    abstract val errorFile: RegularFileProperty
+
+    init {
+        staticArgs.convention(emptyList())
+    }
+
+    @TaskAction
+    fun runTool() {
+        val output = outputFile.get().asFile
+        val error = errorFile.get().asFile
+
+        output.parentFile.mkdirs()
+        error.parentFile.mkdirs()
+
+        output.outputStream().use { stdout ->
+            error.outputStream().use { stderr ->
+                execOperations.exec {
+                    executable = toolExecutable.get()
+                    args(staticArgs.get())
+                    args("--class-path", toolClasspath.asPath, analysisTargets.asPath)
+                    standardOutput = stdout
+                    errorOutput = stderr
+                }
+            }
+        }
+    }
+}
 
 configurations {
     compileOnly {
@@ -90,6 +151,7 @@ tasks.withType<Test>().configureEach {
 
     useJUnitPlatform()
     javaLauncher.set(java25Launcher)
+    jvmArgs("-Xshare:off")
     // Enforce H2-backed test profile for all unit/integration tests
     systemProperty("spring.profiles.active", "test")
 
@@ -265,48 +327,38 @@ tasks.withType<JavaCompile>().configureEach {
     options.compilerArgs.add("-Xlint:deprecation")
 }
 
-tasks.register<Exec>("jdepsMain") {
+tasks.register<ToolReportExecTask>("jdepsMain") {
     group = "verification"
     description = "Run jdeps against the compiled backend classes using the Java 25 toolchain."
     dependsOn(tasks.named("classes"))
-    notCompatibleWithConfigurationCache("Writes audit reports with toolchain-resolved executables at execution time.")
-
-    val outputFile = reportsDir.map { it.file("jdeps.txt").asFile }
-    val errorFile = reportsDir.map { it.file("jdeps.stderr.txt").asFile }
-    doFirst {
-        outputFile.get().parentFile.mkdirs()
-        standardOutput = outputFile.get().outputStream()
-        errorOutput = errorFile.get().outputStream()
-        executable = jdkBinary("jdeps").get()
-        args(
+    toolExecutable.set(jdkBinary("jdeps"))
+    staticArgs.set(
+        listOf(
             "--multi-release", targetJavaVersion.asInt().toString(),
             "--ignore-missing-deps",
             "--recursive",
-            "--class-path", mainRuntimeClasspath.get(),
-            mainClassesPath.get()
         )
-    }
+    )
+    toolClasspath.from(sourceSets["main"].runtimeClasspath)
+    analysisTargets.from(sourceSets["main"].output.classesDirs)
+    outputFile.set(layout.buildDirectory.file("reports/java-migration/jdeps.txt"))
+    errorFile.set(layout.buildDirectory.file("reports/java-migration/jdeps.stderr.txt"))
 }
 
-tasks.register<Exec>("jdeprscanMain") {
+tasks.register<ToolReportExecTask>("jdeprscanMain") {
     group = "verification"
     description = "Run jdeprscan against the compiled backend classes using the Java 25 toolchain."
     dependsOn(tasks.named("classes"))
-    notCompatibleWithConfigurationCache("Writes audit reports with toolchain-resolved executables at execution time.")
-
-    val outputFile = reportsDir.map { it.file("jdeprscan.txt").asFile }
-    val errorFile = reportsDir.map { it.file("jdeprscan.stderr.txt").asFile }
-    doFirst {
-        outputFile.get().parentFile.mkdirs()
-        standardOutput = outputFile.get().outputStream()
-        errorOutput = errorFile.get().outputStream()
-        executable = jdkBinary("jdeprscan").get()
-        args(
+    toolExecutable.set(jdkBinary("jdeprscan"))
+    staticArgs.set(
+        listOf(
             "--release", targetJavaVersion.asInt().toString(),
-            "--class-path", mainRuntimeClasspath.get(),
-            mainClassesPath.get()
         )
-    }
+    )
+    toolClasspath.from(sourceSets["main"].runtimeClasspath)
+    analysisTargets.from(sourceSets["main"].output.classesDirs)
+    outputFile.set(layout.buildDirectory.file("reports/java-migration/jdeprscan.txt"))
+    errorFile.set(layout.buildDirectory.file("reports/java-migration/jdeprscan.stderr.txt"))
 }
 
 tasks.register("javaMigrationAudit") {

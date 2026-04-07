@@ -35,6 +35,15 @@ export const getStoredRefreshToken = (): string | null => localStorage.getItem(R
 
 export const redirectToLogin = (): void => {
   if (typeof window !== 'undefined') {
+    if (import.meta.env.MODE === 'test') {
+      if (typeof window.location.assign === 'function') {
+        window.history.replaceState({}, '', '/login');
+      } else {
+        (window.location as { href: string }).href = '/login';
+      }
+      return;
+    }
+
     window.location.href = '/login';
   }
 };

@@ -1,11 +1,38 @@
-import { configureStore } from '@reduxjs/toolkit';
 import { render, screen } from '@testing-library/react';
-import { Provider } from 'react-redux';
-import { describe, expect, it, vi } from 'vitest';
-
-import { accountApi } from '../account/accountApi';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { RecentTradesList } from './RecentTradesList';
+
+type RecentTradesQueryResult = {
+  data?: Array<{
+    id: string;
+    strategyId: string;
+    strategyName: string;
+    symbol: string;
+    side: 'LONG' | 'SHORT';
+    entryPrice: string;
+    exitPrice: string;
+    quantity: string;
+    entryTime: string;
+    exitTime: string;
+    duration: string;
+    profitLoss: string;
+    profitLossPercentage: string;
+    fees: string;
+    slippage: string;
+    status: 'CLOSED';
+  }>;
+  isLoading: boolean;
+  error?: unknown;
+};
+
+const { mockUseGetRecentTradesQuery } = vi.hoisted(() => ({
+  mockUseGetRecentTradesQuery: vi.fn<() => RecentTradesQueryResult>(),
+}));
+
+vi.mock('../account/accountApi', () => ({
+  useGetRecentTradesQuery: () => mockUseGetRecentTradesQuery(),
+}));
 
 // Mock formatters
 vi.mock('@/utils/formatters', () => ({
@@ -53,95 +80,62 @@ const mockTrades = [
   },
 ];
 
-type QueryStatus = 'pending' | 'fulfilled' | 'rejected';
-
-const createMockStore = (
-  trades = mockTrades,
-  status: QueryStatus = 'fulfilled',
-  error: unknown = undefined
-) =>
-  configureStore({
-    reducer: {
-      [accountApi.reducerPath]: accountApi.reducer,
-    },
-    middleware: (getDefaultMiddleware) =>
-      getDefaultMiddleware().concat(accountApi.middleware),
-    preloadedState: {
-      [accountApi.reducerPath]: {
-        queries: {
-          'getRecentTrades(10)': {
-            status,
-            data: status === 'fulfilled' ? trades : undefined,
-            error,
-          },
-        },
-        mutations: {},
-        provided: {},
-        subscriptions: {},
-        config: {
-          online: true,
-          focused: true,
-          middlewareRegistered: true,
-          refetchOnFocus: false,
-          refetchOnReconnect: false,
-          refetchOnMountOrArgChange: false,
-          keepUnusedDataFor: 60,
-          reducerPath: accountApi.reducerPath,
-        },
-      },
-    },
+const mockQueryState = ({
+  data = mockTrades,
+  isLoading = false,
+  error = undefined,
+}: {
+  data?: typeof mockTrades;
+  isLoading?: boolean;
+  error?: unknown;
+}) => {
+  mockUseGetRecentTradesQuery.mockReturnValue({
+    data,
+    isLoading,
+    error,
   });
+};
 
 describe('RecentTradesList', { timeout: 15000 }, () => {
-  it('should render loading state', () => {
-    const store = createMockStore(mockTrades, 'pending');
+  beforeEach(() => {
+    mockUseGetRecentTradesQuery.mockReset();
+  });
 
-    render(
-      <Provider store={store}>
-        <RecentTradesList />
-      </Provider>
-    );
+  it('should render loading state', () => {
+    mockQueryState({ isLoading: true });
+
+    render(<RecentTradesList />);
 
     expect(screen.getByText('Loading recent trades...')).toBeInTheDocument();
     expect(screen.getByText('Recent Trades')).toBeInTheDocument();
   });
 
   it('should render error state', () => {
-    const store = createMockStore(mockTrades, 'rejected', {
-      status: 500,
-      data: 'Server error',
+    mockQueryState({
+      error: {
+        status: 500,
+        data: 'Server error',
+      },
     });
 
-    render(
-      <Provider store={store}>
-        <RecentTradesList />
-      </Provider>
-    );
+    render(<RecentTradesList />);
 
     expect(screen.getByText('Server error')).toBeInTheDocument();
   });
 
   it('should render empty state when no trades', () => {
-    const store = createMockStore([], 'fulfilled');
+    mockQueryState({ data: [] });
 
-    render(
-      <Provider store={store}>
-        <RecentTradesList />
-      </Provider>
-    );
+    render(<RecentTradesList />);
 
     expect(screen.getByText('No recent trades.')).toBeInTheDocument();
     expect(screen.getByText('Last 0')).toBeInTheDocument();
   });
 
   it('should render trades list correctly', () => {
-    const store = createMockStore(mockTrades, 'fulfilled');
+    mockQueryState({});
 
-    render(
-      <Provider store={store}>
-        <RecentTradesList />
-      </Provider>
-    );
+    render(<RecentTradesList />);
 
     expect(screen.getByText('Recent Trades')).toBeInTheDocument();
     expect(screen.getByText('Last 2')).toBeInTheDocument();
@@ -168,13 +162,9 @@ describe('RecentTradesList', { timeout: 15000 }, () => {
   });
 
   it('should color-code profit and loss correctly', () => {
-    const store = createMockStore(mockTrades, 'fulfilled');
+    mockQueryState({});
 
-    render(
-      <Provider store={store}>
-        <RecentTradesList />
-      </Provider>
-    );
+    render(<RecentTradesList />);
 
     expect(screen.getByText('+$10.00')).toBeInTheDocument();
     expect(screen.getByText('(+2.00%)')).toBeInTheDocument();
