@@ -16,14 +16,37 @@ The backend owns:
 
 ## Package Boundaries
 
-- `controller`: HTTP entrypoints and DTOs
-- `service`: orchestration and business logic
-- `service.marketdata`: provider and dataset workflow logic
-- `repository`: persistence access
-- `entity`: runtime database models
-- `backtest`: execution and analytics model
-- `backtest.strategy`: strategy registry and implementations
-- `risk`, `security`, `config`, `validation`, `repair`, `websocket`: cross-cutting support
+Backend development now defaults to a hybrid DDD package layout.
+
+Business contexts:
+
+- `account`
+- `backtest`
+- `exchange`
+- `marketdata`
+- `paper`
+- `risk`
+- `security`
+- `strategy`
+- `system`
+
+Technical cross-cutting areas:
+
+- `config`
+- `migration`
+- `repair`
+- `shared`
+- `validation`
+- `websocket`
+
+Inside a business context, prefer this layout:
+
+- `api`: controllers, request DTOs, query DTOs, response DTOs
+- `application`: orchestration services, commands, queries, results, mappers, ports
+- `domain`: business models, policies, value objects, strategy logic
+- `infrastructure`: persistence entities, Spring Data repositories, provider/exchange adapters, crypto helpers
+
+Do not introduce new top-level catch-all folders like `controller`, `service`, `repository`, or `entity` for business code.
 
 ## Service Ownership
 
@@ -46,13 +69,14 @@ Market-data path:
 
 ## Backend Rules
 
-1. Keep controller, service, repository, and entity concerns separated.
+1. Start from the owning bounded context, then place code in `api`, `application`, `domain`, or `infrastructure`.
 2. Use `BigDecimal` for money, fees, price-sensitive paths, and risk.
 3. Keep DTOs at the HTTP boundary; do not leak JPA entities.
-4. Keep exchange-connected and live-connected behavior behind explicit services and environment gates.
-5. Keep critical operator actions auditable.
-6. Keep PostgreSQL runtime behavior and H2 test behavior intentionally separate.
-7. When a rule depends on strategy mode or capability flags, validate it in services instead of inventing placeholder values on the client.
+4. Keep controllers mapping HTTP DTOs to application-layer requests instead of leaking API DTOs deeper into the context.
+5. Keep exchange-connected and live-connected behavior behind explicit services and environment gates.
+6. Keep critical operator actions auditable.
+7. Keep PostgreSQL runtime behavior and H2 test behavior intentionally separate.
+8. When a rule depends on strategy mode or capability flags, validate it in services instead of inventing placeholder values on the client.
 
 ## Auth And WebSocket Boundaries
 

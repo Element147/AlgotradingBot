@@ -2,6 +2,8 @@
 
 AlgoTrading Bot is a local-first research workstation for building and reviewing trading ideas safely. It combines a Spring Boot backend, a React/Vite dashboard, a normalized market-data store, reproducible backtests, paper-trading workflows, and operator controls in one repository.
 
+Implementation and refactors now follow a hybrid Domain-Driven Development style: backend code is organized by bounded context first, and frontend features are expected to keep clear domain boundaries with feature-local APIs and state.
+
 ## What It Includes
 
 - Historical backtesting with saved runs, trade history, equity curves, replay, compare, and export

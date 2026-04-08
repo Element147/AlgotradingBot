@@ -1,7 +1,7 @@
 package com.algotrader.bot.websocket;
 
-import com.algotrader.bot.security.JwtTokenProvider;
-import com.algotrader.bot.service.AuthService;
+import com.algotrader.bot.security.infrastructure.jwt.JwtTokenProvider;
+import com.algotrader.bot.security.application.AuthService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -32,7 +32,7 @@ import {
   type LiveMetricItem,
 } from '@/components/workspace/ExecutionWorkspacePrimitives';
 import { executionContextMeta } from '@/features/execution/executionContext';
-import { useGetPaperTradingStateQuery } from '@/features/paperApi';
+import { useGetPaperTradingStateQuery } from '@/features/paper';
 import { useGetAuditEventsQuery } from '@/features/settings/exchangeApi';
 import {
   useGetStrategiesQuery,

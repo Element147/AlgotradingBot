@@ -3,7 +3,7 @@ import type { AppDispatch } from './store';
 import { accountApi } from '@/features/account/accountApi';
 import { backtestApi } from '@/features/backtest/backtestApi';
 import { marketDataApi } from '@/features/marketData/marketDataApi';
-import { paperApi } from '@/features/paperApi';
+import { paperApi } from '@/features/paper';
 import { riskApi } from '@/features/risk/riskApi';
 import {
   PAPER_STRATEGIES_QUERY,

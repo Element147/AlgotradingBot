@@ -47,15 +47,17 @@ If a task touches a planned feature, cite the relevant planning document and kee
 
 ### Backend
 
-- Keep controller, service, repository, and domain logic separated.
+- Default to hybrid DDD: organize backend code by bounded context first, then by `api`, `application`, `domain`, and `infrastructure`.
 - Use `BigDecimal` for money, prices, fees, PnL, and risk calculations.
 - Prefer DTOs at HTTP boundaries. Do not leak JPA entities directly to the frontend.
 - Keep live-exchange integration isolated behind services and environment gates.
 - Do not add new trading execution paths without explicit risk checks, environment routing, and kill-switch behavior.
+- Do not introduce new top-level dump folders like `controller`, `service`, `repository`, or `entity` for business code.
 
 ### Frontend
 
 - Keep the feature-based structure under `frontend/src/features/`.
+- Large features should prefer internal `api`, `components`, `models`, `state`, and `utils` boundaries.
 - Prefer adapting backend payloads inside API slices instead of scattering contract fixes across components.
 - Keep React/Vite as the baseline. Do not migrate to Next.js without explicit approval.
 - Treat environment mode as a safety-critical UI state. Default to `test`.

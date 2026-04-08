@@ -230,7 +230,7 @@ tasks.register<Test>("exportOpenApiContract") {
         layout.buildDirectory.file("openapi/openapi.json").get().asFile.absolutePath
     )
     filter {
-        includeTestsMatching("com.algotrader.bot.controller.OpenApiContractExportTest")
+        includeTestsMatching("com.algotrader.bot.shared.api.OpenApiContractExportTest")
     }
 }
 

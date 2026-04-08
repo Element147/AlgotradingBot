@@ -13,16 +13,16 @@ import {
 import { useMemo, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 
-import { PaperOrdersTablePanel } from './PaperOrdersTablePanel';
+import { PaperOrdersTablePanel } from './components/PaperOrdersTablePanel';
 import {
   PaperOrderEntryPanel,
   PaperTradingSummaryPanel,
-} from './PaperTradingPanels';
+} from './components/PaperTradingPanels';
 import {
   loadPaperWorkspaceAssignments,
   togglePaperWorkspaceAssignment,
   type PaperWorkspaceAssignment,
-} from './paperWorkspaceAssignments';
+} from './state/paperWorkspaceAssignments';
 
 import { AppLayout } from '@/components/layout/AppLayout';
 import {
@@ -51,7 +51,7 @@ import {
   useGetPaperOrdersQuery,
   useGetPaperTradingStateQuery,
   usePlacePaperOrderMutation,
-} from '@/features/paperApi';
+} from '@/features/paper';
 import { useGetAuditEventsQuery, useGetSavedExchangeConnectionsQuery } from '@/features/settings/exchangeApi';
 import {
   useGetStrategiesQuery,

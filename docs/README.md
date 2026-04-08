@@ -35,6 +35,14 @@ These files are intentionally separate from the everyday product and implementat
 ## ADRs
 
 - [`adr/`](adr): durable architecture decisions
+- [`adr/ADR-003-hybrid-ddd-bounded-context-layout.md`](adr/ADR-003-hybrid-ddd-bounded-context-layout.md): repository-wide hybrid DDD layout and boundary rules
+
+## Development Style
+
+- Default to hybrid Domain-Driven Development.
+- Organize backend code by bounded context first, not by global technical dump folders.
+- Keep API DTOs at the boundary and business rules out of infrastructure adapters.
+- Keep frontend code feature-first, with feature-local `api`, `components`, `models`, `state`, and `utils` where the feature is large enough to justify them.
 
 ## Documentation Style
 

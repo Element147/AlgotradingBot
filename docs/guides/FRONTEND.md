@@ -24,6 +24,16 @@ The SPA provides:
 
 Keep routes orchestration-first. Large sections should live in feature-local panels or helpers, not in oversized route files.
 
+For larger features, prefer a consistent internal structure:
+
+- `api`: RTK Query slices, transport normalization, and feature boundary exports
+- `components`: feature-local UI panels and presentation building blocks
+- `models`: feature-owned types that sit above transport types
+- `state`: persisted UI state, view preferences, and selectors local to the feature
+- `utils`: pure feature helpers
+
+Avoid root-level feature outliers. If a file clearly belongs to one feature, keep it inside that feature and export it from the feature boundary when another feature needs it.
+
 ## App Shell
 
 `frontend/src/App.tsx` mounts the theme, top-level error boundary, router, protected routes, and shared `WebSocketRuntime`.
@@ -60,11 +70,12 @@ Use the shared table shell for data-heavy route surfaces before introducing one-
 
 1. Preserve the feature-first structure.
 2. Keep environment state visible and default-safe.
-3. Fix payload mismatches in API layers first.
-4. Handle loading, empty, error, and success states intentionally.
-5. Keep execution-sensitive settings explicit in the UI.
-6. Avoid browser-only persistence for shared operational state or secrets.
-7. Keep shared styling in the theme or shared shell before adding page-specific one-offs.
+3. Keep cross-feature imports pointed at feature boundary exports when practical instead of reaching into another feature's internals.
+4. Fix payload mismatches in API layers first.
+5. Handle loading, empty, error, and success states intentionally.
+6. Keep execution-sensitive settings explicit in the UI.
+7. Avoid browser-only persistence for shared operational state or secrets.
+8. Keep shared styling in the theme or shared shell before adding page-specific one-offs.
 
 ## Real-Time Behavior
 

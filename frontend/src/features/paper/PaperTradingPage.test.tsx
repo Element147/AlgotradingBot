@@ -16,7 +16,7 @@ vi.mock('@/components/layout/AppLayout', () => ({
   AppLayout: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }));
 
-vi.mock('@/features/paperApi', () => ({
+vi.mock('@/features/paper', () => ({
   useGetPaperTradingStateQuery: () => ({
     data: {
       paperMode: true,

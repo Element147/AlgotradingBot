@@ -6,7 +6,7 @@ import {
   StatusPill,
   SurfacePanel,
 } from '@/components/ui/Workbench';
-import { useGetPaperTradingStateQuery } from '@/features/paperApi';
+import { useGetPaperTradingStateQuery } from '@/features/paper';
 import { formatCurrency } from '@/utils/formatters';
 
 export const PaperTradingCard: React.FC = () => {

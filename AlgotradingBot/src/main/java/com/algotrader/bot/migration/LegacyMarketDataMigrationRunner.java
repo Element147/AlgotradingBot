@@ -1,9 +1,9 @@
 package com.algotrader.bot.migration;
 
 import com.algotrader.bot.BotApplication;
-import com.algotrader.bot.service.marketdata.LegacyMarketDataMigrationRequest;
-import com.algotrader.bot.service.marketdata.LegacyMarketDataMigrationService;
-import com.algotrader.bot.service.marketdata.LegacyMarketDataMigrationSummary;
+import com.algotrader.bot.marketdata.application.LegacyMarketDataMigrationRequest;
+import com.algotrader.bot.marketdata.application.LegacyMarketDataMigrationService;
+import com.algotrader.bot.marketdata.application.LegacyMarketDataMigrationSummary;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;

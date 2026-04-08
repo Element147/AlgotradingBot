@@ -44,6 +44,7 @@ The repository is a usable local-first MVP for strategy research, market-data pr
 - Docker-backed full-stack mode
 - Contract tracking via OpenAPI artifacts
 - Frontend and backend verification flows aligned with local runbooks
+- Backend package layout now follows hybrid DDD bounded contexts, and frontend features are expected to keep feature-local API/component/state boundaries
 
 ## Experimental Or Incomplete Areas
 

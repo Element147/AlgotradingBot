@@ -8,7 +8,7 @@ import { backtestApi } from '@/features/backtest/backtestApi';
 import environmentReducer from '@/features/environment/environmentSlice';
 import { forwardTestingApi } from '@/features/forwardTesting/forwardTestingApi';
 import { marketDataApi } from '@/features/marketData/marketDataApi';
-import { paperApi } from '@/features/paperApi';
+import { paperApi } from '@/features/paper';
 import { riskApi } from '@/features/risk/riskApi';
 import { exchangeApi } from '@/features/settings/exchangeApi';
 import settingsReducer from '@/features/settings/settingsSlice';

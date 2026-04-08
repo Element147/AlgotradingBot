@@ -1,6 +1,6 @@
 package com.algotrader.bot.config;
 
-import com.algotrader.bot.security.JwtAuthenticationFilter;
+import com.algotrader.bot.security.infrastructure.jwt.JwtAuthenticationFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;

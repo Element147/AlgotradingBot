@@ -1,7 +1,7 @@
 package com.algotrader.bot.websocket;
 
-import com.algotrader.bot.security.JwtTokenProvider;
-import com.algotrader.bot.service.AuthService;
+import com.algotrader.bot.security.infrastructure.jwt.JwtTokenProvider;
+import com.algotrader.bot.security.application.AuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;

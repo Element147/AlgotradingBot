@@ -57,7 +57,7 @@ vi.mock('@/features/marketData/marketDataApi', () => ({
   },
 }));
 
-vi.mock('@/features/paperApi', () => ({
+vi.mock('@/features/paper', () => ({
   paperApi: {
     util: {
       prefetch: (...args: unknown[]) => {

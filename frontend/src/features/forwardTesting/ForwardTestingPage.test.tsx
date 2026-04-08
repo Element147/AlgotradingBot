@@ -92,7 +92,7 @@ vi.mock('@/features/trades/tradesApi', () => ({
   }),
 }));
 
-vi.mock('@/features/paperApi', () => ({
+vi.mock('@/features/paper', () => ({
   useGetPaperTradingStateQuery: () => ({
     data: {
       paperMode: true,

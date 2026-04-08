@@ -11,16 +11,28 @@ The system is designed for local-first research, reproducible backtests, paper-t
 
 ## Backend Boundaries
 
-Primary backend areas in `com.algotrader.bot`:
+Primary backend areas in `com.algotrader.bot` are now organized as bounded contexts:
 
-- `controller`: HTTP entrypoints and DTO contracts
-- `service`: orchestration and business logic
-- `service.marketdata`: provider, import, and dataset workflow logic
-- `repository`: persistence access
-- `entity`: runtime database models
-- `backtest`: execution engine, validation, and analytics plumbing
-- `backtest.strategy`: strategy registry and implementations
-- `risk`, `security`, `config`, `websocket`, `validation`, `repair`: cross-cutting runtime support
+- `account`
+- `backtest`
+- `exchange`
+- `marketdata`
+- `paper`
+- `risk`
+- `security`
+- `strategy`
+- `system`
+- `shared` for minimal cross-context value types, shared API models, and observability helpers
+- `config`, `migration`, `repair`, `validation`, `websocket` for technical cross-cutting runtime support
+
+Each business context follows the same hybrid DDD shape:
+
+- `api`: controllers and HTTP boundary DTOs
+- `application`: use-case orchestration and service-level workflows
+- `domain`: domain models, value objects, policies, and strategy logic
+- `infrastructure`: JPA entities, repositories, adapters, and external integrations
+
+The architecture default is bounded-context first. New backend code should enter the owning domain context instead of reviving flat top-level dump folders such as `controller`, `service`, `repository`, or `entity`.
 
 Important ownership splits:
 
@@ -45,6 +57,16 @@ Shared layers:
 - `src/services`: API helpers, OpenAPI transport helpers, WebSocket manager
 - `src/components`: layout shell, route guards, shared UI, loading, and error states
 - `src/theme`: design tokens and MUI overrides
+
+Large features should prefer a consistent internal structure:
+
+- `api`: RTK Query slices and transport adapters
+- `components`: feature-local panels and reusable view pieces
+- `models`: feature-owned UI/domain types when transport types need adaptation
+- `state`: feature-local persistence and selection state
+- `utils`: pure helpers specific to the feature
+
+Cross-feature imports should go through the owning feature boundary export when practical, rather than reaching into unrelated internals.
 
 Main routes:
 
@@ -118,9 +140,10 @@ C:\Git\algotradingbot\
 
 ## Architecture Rules
 
-1. Keep controller, service, repository, and persistence concerns separated.
+1. Default to hybrid DDD: bounded context first, then `api`, `application`, `domain`, and `infrastructure` inside that context.
 2. Use DTOs at HTTP boundaries; do not leak JPA entities directly.
 3. Keep money, fees, PnL, and risk calculations on `BigDecimal`.
 4. Keep exchange-connected and live-connected behavior behind explicit services and environment gates.
 5. Keep guardrails backend-owned; do not hide safety logic inside the UI.
-6. Prefer current-state documentation over implementation-history narratives.
+6. Keep frontend feature boundaries aligned with product domains and avoid root-level feature outliers.
+7. Prefer current-state documentation over implementation-history narratives.

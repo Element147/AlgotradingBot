@@ -1,7 +1,6 @@
 package com.algotrader.bot.repair;
 
 import com.algotrader.bot.validation.ValidationResult;
-
 public record RepairResult(boolean successful, String message, ValidationResult retryResult) {
 
     public RepairResult(boolean successful, String message) {

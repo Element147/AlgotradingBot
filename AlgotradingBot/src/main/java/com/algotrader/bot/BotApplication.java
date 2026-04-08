@@ -19,7 +19,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * - Structured JSON logging
  */
 @SpringBootApplication
-@EnableJpaRepositories(basePackages = "com.algotrader.bot.repository")
+@EnableJpaRepositories(basePackages = "com.algotrader.bot")
 @EnableAsync
 @EnableScheduling
 public class BotApplication {
