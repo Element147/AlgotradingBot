@@ -237,6 +237,8 @@ interface InteractiveTableProps<TData extends RowData> {
 }
 
 const defaultPageSizeOptions = [10, 25, 50, 100];
+const stickyHeaderRowHeight = 52;
+const stickyFilterRowHeight = 58;
 
 const alignText = (align: 'left' | 'right' | 'center' | undefined) => {
   if (align === 'right') {
@@ -317,7 +319,6 @@ export function InteractiveTable<TData extends RowData>({
     globalFilterFn: 'includesString',
   });
 
-  const headerHeight = 44;
   const tableRows = table.getRowModel().rows;
   const resolvedTotalRows = totalRows ?? (manualPagination ? data.length : table.getPrePaginationRowModel().rows.length);
   const pageCount = manualPagination
@@ -473,13 +474,15 @@ export function InteractiveTable<TData extends RowData>({
                       <TableCell
                         key={header.id}
                         align={meta?.align}
-                        sx={{
+                      sx={{
                           position: 'sticky',
                           top: 0,
                           zIndex: 4,
                           backgroundColor: (theme) => alpha(theme.palette.background.default, 0.96),
                           minWidth: header.getSize(),
                           width: header.getSize(),
+                          height: stickyHeaderRowHeight,
+                          boxSizing: 'border-box',
                           px: 1.25,
                           py: 1.1,
                         }}
@@ -594,11 +597,15 @@ export function InteractiveTable<TData extends RowData>({
                       align={meta?.align}
                       sx={{
                         position: 'sticky',
-                        top: headerHeight,
+                        top: stickyHeaderRowHeight,
                         zIndex: 3,
                         backgroundColor: (theme) => alpha(theme.palette.background.paper, 0.98),
+                        height: stickyFilterRowHeight,
+                        boxSizing: 'border-box',
+                        verticalAlign: 'top',
                         px: 1,
                         py: 0.9,
+                        boxShadow: (theme) => `inset 0 -1px 0 ${theme.palette.divider}`,
                       }}
                     >
                       {filterVariant === 'text' ? (

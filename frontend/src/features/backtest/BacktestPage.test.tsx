@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import environmentReducer from '../environment/environmentSlice';
 import websocketReducer from '../websocket/websocketSlice';
@@ -143,6 +143,10 @@ const detailById = {
   },
 } as const;
 
+const backtestApiMocks = vi.hoisted(() => ({
+  useGetBacktestsQuery: vi.fn(),
+}));
+
 vi.mock('./backtestApi', () => ({
   useGetBacktestAlgorithmsQuery: () => ({
     data: [
@@ -185,16 +189,7 @@ vi.mock('./backtestApi', () => ({
       },
     ],
   }),
-  useGetBacktestsQuery: () => ({
-    data: {
-      items: historyItems,
-      total: historyItems.length,
-      page: 1,
-      pageSize: 25,
-    },
-    isLoading: false,
-    isError: false,
-  }),
+  useGetBacktestsQuery: backtestApiMocks.useGetBacktestsQuery,
   useGetBacktestDetailsQuery: (id: number) => ({
     data: detailById[id as 7 | 42],
     refetch: vi.fn(),
@@ -249,6 +244,20 @@ vi.mock('@/services/axiosClient', () => ({
 }));
 
 describe('BacktestPage', { timeout: 25000 }, () => {
+  beforeEach(() => {
+    backtestApiMocks.useGetBacktestsQuery.mockClear();
+    backtestApiMocks.useGetBacktestsQuery.mockImplementation(() => ({
+      data: {
+        items: historyItems,
+        total: historyItems.length,
+        page: 1,
+        pageSize: 25,
+      },
+      isLoading: false,
+      isError: false,
+    }));
+  });
+
   const renderPage = () => {
     const store = configureStore({
       reducer: {
@@ -348,5 +357,37 @@ describe('BacktestPage', { timeout: 25000 }, () => {
 
     expect(await screen.findByText('Backtest Details #42')).toBeInTheDocument();
     expect(screen.queryByText('Backtest History')).not.toBeInTheDocument();
+  });
+
+  it('does not send zero-valued range filters until the user enters them', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('tab', { name: 'History' }));
+
+    const latestCall = () =>
+      backtestApiMocks.useGetBacktestsQuery.mock.calls.at(-1)?.[0] as
+        | Record<string, unknown>
+        | undefined;
+
+    expect(latestCall()).toMatchObject({
+      page: 1,
+      pageSize: 25,
+    });
+    expect(latestCall()?.feesBpsMin).toBeUndefined();
+    expect(latestCall()?.feesBpsMax).toBeUndefined();
+    expect(latestCall()?.slippageBpsMin).toBeUndefined();
+    expect(latestCall()?.slippageBpsMax).toBeUndefined();
+
+    await user.type(screen.getByLabelText('Fees min'), '10');
+
+    expect(latestCall()).toMatchObject({
+      page: 1,
+      pageSize: 25,
+      feesBpsMin: 10,
+    });
+    expect(latestCall()?.feesBpsMax).toBeUndefined();
+    expect(latestCall()?.slippageBpsMin).toBeUndefined();
+    expect(latestCall()?.slippageBpsMax).toBeUndefined();
   });
 });

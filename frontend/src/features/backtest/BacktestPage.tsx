@@ -133,6 +133,9 @@ export default function BacktestPage() {
       return typeof filter?.value === 'string' && filter.value.trim() ? filter.value.trim() : undefined;
     };
     const parseOptionalNumber = (value: string) => {
+      if (!value.trim()) {
+        return undefined;
+      }
       const parsed = Number(value);
       return Number.isFinite(parsed) ? parsed : undefined;
     };
@@ -498,6 +501,17 @@ export default function BacktestPage() {
     }
   };
 
+  const onHistoryRangeFilterChange = (
+    field: keyof typeof historyRangeFilters,
+    value: string
+  ) => {
+    setHistoryRangeFilters((current) => ({ ...current, [field]: value }));
+    historyTableStateControls.onPaginationChange((current) => ({
+      ...current,
+      pageIndex: 0,
+    }));
+  };
+
   const renderReviewTab = () => {
     if (details) {
       return (
@@ -612,9 +626,7 @@ export default function BacktestPage() {
       isDeletingBacktest={isDeletingBacktest}
       tableStateControls={historyTableStateControls}
       rangeFilters={historyRangeFilters}
-      onRangeFilterChange={(field, value) =>
-        setHistoryRangeFilters((current) => ({ ...current, [field]: value }))
-      }
+      onRangeFilterChange={onHistoryRangeFilterChange}
       onCompareSelected={onCompareSelected}
       onClearComparison={() => {
         setComparisonIds([]);
