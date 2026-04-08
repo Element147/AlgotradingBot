@@ -24,7 +24,8 @@ import type {
   BacktestDetails,
   BacktestEquityPoint,
   BacktestExperimentSummary,
-  BacktestHistoryItem,
+  BacktestHistoryQuery,
+  BacktestHistoryResult,
   BacktestRunSubmission,
   BacktestSummary,
   BacktestTelemetryQueryResponse,
@@ -47,6 +48,9 @@ export type {
   BacktestExecutionStatus,
   BacktestExperimentSummary,
   BacktestHistoryItem,
+  BacktestHistoryQuery,
+  BacktestHistoryResult,
+  BacktestHistorySortField,
   BacktestRunSubmission,
   BacktestSummary,
   BacktestSelectionMode,
@@ -68,9 +72,16 @@ export const backtestApi = createApi({
   tagTypes: ['Backtests', 'BacktestDatasets'],
   keepUnusedDataFor: 600,
   endpoints: (builder) => ({
-    getBacktests: builder.query<BacktestHistoryItem[], void>({
-      query: () => '/api/backtests?limit=20',
-      transformResponse: normalizeBacktestHistory,
+    getBacktests: builder.query<BacktestHistoryResult, BacktestHistoryQuery | void>({
+      query: (params) => ({
+        url: '/api/backtests',
+        params: params ?? undefined,
+      }),
+      transformResponse: (response, _meta, arg) =>
+        normalizeBacktestHistory(response as Parameters<typeof normalizeBacktestHistory>[0], {
+          page: arg?.page ?? 1,
+          pageSize: arg?.pageSize ?? 25,
+        }),
       providesTags: ['Backtests'],
     }),
     getBacktestExperimentSummaries: builder.query<BacktestExperimentSummary[], void>({

@@ -2,7 +2,7 @@ import { ArrowDownward, ArrowUpward } from '@mui/icons-material';
 import { Box, IconButton, Stack, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { TradeHistoryItem } from './tradesApi';
 import type { TradeSortField } from './tradeUtils';
@@ -21,24 +21,53 @@ interface VirtualizedTradeTableProps {
 const columns: Array<{
   key: TradeSortField;
   label: string;
-  width: string;
+  width: number;
 }> = [
-  { key: 'id', label: 'ID', width: '80px' },
-  { key: 'pair', label: 'Pair', width: '120px' },
-  { key: 'positionSide', label: 'Side', width: '90px' },
-  { key: 'signal', label: 'Signal', width: '90px' },
-  { key: 'entryTime', label: 'Entry Time', width: '170px' },
-  { key: 'exitTime', label: 'Exit Time', width: '170px' },
-  { key: 'entryPrice', label: 'Entry', width: '110px' },
-  { key: 'exitPrice', label: 'Exit', width: '110px' },
-  { key: 'positionSize', label: 'Size', width: '110px' },
-  { key: 'pnl', label: 'PnL', width: '120px' },
-  { key: 'feesActual', label: 'Fees', width: '120px' },
-  { key: 'slippageActual', label: 'Slippage', width: '120px' },
+  { key: 'id', label: 'ID', width: 80 },
+  { key: 'pair', label: 'Pair', width: 120 },
+  { key: 'positionSide', label: 'Side', width: 90 },
+  { key: 'signal', label: 'Signal', width: 90 },
+  { key: 'entryTime', label: 'Entry Time', width: 170 },
+  { key: 'exitTime', label: 'Exit Time', width: 170 },
+  { key: 'entryPrice', label: 'Entry', width: 110 },
+  { key: 'exitPrice', label: 'Exit', width: 110 },
+  { key: 'positionSize', label: 'Size', width: 110 },
+  { key: 'pnl', label: 'PnL', width: 120 },
+  { key: 'feesActual', label: 'Fees', width: 120 },
+  { key: 'slippageActual', label: 'Slippage', width: 120 },
 ];
 
-const columnTemplate = columns.map((col) => col.width).join(' ');
-const minTableWidth = 1410;
+const minColumnWidth = 72;
+const widthsStorageKey = 'interactive-table:trade-history-virtual-widths';
+
+const defaultWidths = columns.reduce<Record<string, number>>((accumulator, column) => {
+  accumulator[column.key] = column.width;
+  return accumulator;
+}, {});
+
+const loadColumnWidths = () => {
+  if (typeof window === 'undefined') {
+    return defaultWidths;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(widthsStorageKey);
+    if (!raw) {
+      return defaultWidths;
+    }
+
+    const parsed = JSON.parse(raw) as Record<string, number>;
+    return columns.reduce<Record<string, number>>((accumulator, column) => {
+      accumulator[column.key] =
+        typeof parsed[column.key] === 'number' && parsed[column.key] >= minColumnWidth
+          ? parsed[column.key]
+          : column.width;
+      return accumulator;
+    }, {});
+  } catch {
+    return defaultWidths;
+  }
+};
 
 export function VirtualizedTradeTable({
   rows,
@@ -49,12 +78,63 @@ export function VirtualizedTradeTable({
   onRowSelect,
 }: VirtualizedTradeTableProps) {
   const scrollElementRef = useRef<HTMLDivElement | null>(null);
+  const resizeStateRef = useRef<{
+    key: TradeSortField;
+    startX: number;
+    startWidth: number;
+  } | null>(null);
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>(loadColumnWidths);
+  const columnTemplate = useMemo(
+    () => columns.map((column) => `${columnWidths[column.key] ?? column.width}px`).join(' '),
+    [columnWidths]
+  );
+  const minTableWidth = useMemo(
+    () => columns.reduce((total, column) => total + (columnWidths[column.key] ?? column.width), 0),
+    [columnWidths]
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.setItem(widthsStorageKey, JSON.stringify(columnWidths));
+  }, [columnWidths]);
+
+  useEffect(() => {
+    const onPointerMove = (event: PointerEvent) => {
+      const resizeState = resizeStateRef.current;
+      if (!resizeState) {
+        return;
+      }
+
+      setColumnWidths((current) => ({
+        ...current,
+        [resizeState.key]: Math.max(
+          minColumnWidth,
+          resizeState.startWidth + event.clientX - resizeState.startX
+        ),
+      }));
+    };
+
+    const onPointerUp = () => {
+      resizeStateRef.current = null;
+    };
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+    };
+  }, []);
+
   // TanStack Virtual requires calling the hook directly in the component that owns the scroll element.
   // eslint-disable-next-line react-hooks/incompatible-library
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => scrollElementRef.current,
-    estimateSize: () => 50,
+    estimateSize: () => 46,
     overscan: 10,
   });
 
@@ -111,6 +191,32 @@ export function VirtualizedTradeTable({
                   <ArrowDownward fontSize="inherit" />
                 )}
               </IconButton>
+              <Box
+                onPointerDown={(event) => {
+                  resizeStateRef.current = {
+                    key: column.key,
+                    startX: event.clientX,
+                    startWidth: columnWidths[column.key] ?? column.width,
+                  };
+                }}
+                sx={{
+                  width: 10,
+                  alignSelf: 'stretch',
+                  cursor: 'col-resize',
+                  position: 'relative',
+                  '&::after': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 4,
+                    bottom: 4,
+                    left: '50%',
+                    width: 2,
+                    transform: 'translateX(-50%)',
+                    borderRadius: 999,
+                    backgroundColor: 'divider',
+                  },
+                }}
+              />
             </Stack>
           ))}
         </Box>
@@ -179,7 +285,7 @@ export function VirtualizedTradeTable({
                     gridTemplateColumns: columnTemplate,
                     alignItems: 'center',
                     gap: 1,
-                    px: 1,
+                    px: 0.75,
                     cursor: 'pointer',
                     borderBottom: '1px solid',
                     borderColor: 'divider',

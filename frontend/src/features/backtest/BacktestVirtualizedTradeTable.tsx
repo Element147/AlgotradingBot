@@ -2,7 +2,7 @@ import { ArrowDownward, ArrowUpward } from '@mui/icons-material';
 import { Box, IconButton, Stack, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useMemo, useRef, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 
 import type {
   TradeReviewRow,
@@ -25,22 +25,51 @@ interface BacktestVirtualizedTradeTableProps {
 const columns: Array<{
   key: TradeSortField;
   label: string;
-  width: string;
+  width: number;
   align: 'left' | 'right';
 }> = [
-  { key: 'symbol', label: 'Symbol', width: '140px', align: 'left' },
-  { key: 'side', label: 'Side', width: '120px', align: 'left' },
-  { key: 'entryTime', label: 'Entry', width: '188px', align: 'left' },
-  { key: 'exitTime', label: 'Exit', width: '188px', align: 'left' },
-  { key: 'quantity', label: 'Quantity', width: '120px', align: 'right' },
-  { key: 'entryPrice', label: 'Entry price', width: '132px', align: 'right' },
-  { key: 'exitPrice', label: 'Exit price', width: '132px', align: 'right' },
-  { key: 'pnlValue', label: 'PnL', width: '132px', align: 'right' },
-  { key: 'returnPct', label: 'Return', width: '120px', align: 'right' },
+  { key: 'symbol', label: 'Symbol', width: 140, align: 'left' },
+  { key: 'side', label: 'Side', width: 120, align: 'left' },
+  { key: 'entryTime', label: 'Entry', width: 188, align: 'left' },
+  { key: 'exitTime', label: 'Exit', width: 188, align: 'left' },
+  { key: 'quantity', label: 'Quantity', width: 120, align: 'right' },
+  { key: 'entryPrice', label: 'Entry price', width: 132, align: 'right' },
+  { key: 'exitPrice', label: 'Exit price', width: 132, align: 'right' },
+  { key: 'pnlValue', label: 'PnL', width: 132, align: 'right' },
+  { key: 'returnPct', label: 'Return', width: 120, align: 'right' },
 ];
 
-const columnTemplate = columns.map((column) => column.width).join(' ');
-const minTableWidth = 1272;
+const minColumnWidth = 78;
+const widthsStorageKey = 'interactive-table:backtest-trade-review-widths';
+
+const defaultWidths = columns.reduce<Record<string, number>>((accumulator, column) => {
+  accumulator[column.key] = column.width;
+  return accumulator;
+}, {});
+
+const loadColumnWidths = () => {
+  if (typeof window === 'undefined') {
+    return defaultWidths;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(widthsStorageKey);
+    if (!raw) {
+      return defaultWidths;
+    }
+
+    const parsed = JSON.parse(raw) as Record<string, number>;
+    return columns.reduce<Record<string, number>>((accumulator, column) => {
+      accumulator[column.key] =
+        typeof parsed[column.key] === 'number' && parsed[column.key] >= minColumnWidth
+          ? parsed[column.key]
+          : column.width;
+      return accumulator;
+    }, {});
+  } catch {
+    return defaultWidths;
+  }
+};
 
 export function BacktestVirtualizedTradeTable({
   rows,
@@ -51,22 +80,72 @@ export function BacktestVirtualizedTradeTable({
   onRowSelect,
 }: BacktestVirtualizedTradeTableProps) {
   const scrollElementRef = useRef<HTMLDivElement | null>(null);
+  const resizeStateRef = useRef<{
+    key: TradeSortField;
+    startX: number;
+    startWidth: number;
+  } | null>(null);
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>(loadColumnWidths);
+  const columnTemplate = useMemo(
+    () => columns.map((column) => `${columnWidths[column.key] ?? column.width}px`).join(' '),
+    [columnWidths]
+  );
+  const minTableWidth = useMemo(
+    () => columns.reduce((total, column) => total + (columnWidths[column.key] ?? column.width), 0),
+    [columnWidths]
+  );
   const isJsdomEnvironment =
     typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent);
   const shouldVirtualize =
     !isJsdomEnvironment && typeof ResizeObserver !== 'undefined' && rows.length > 80;
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.setItem(widthsStorageKey, JSON.stringify(columnWidths));
+  }, [columnWidths]);
+
+  useEffect(() => {
+    const onPointerMove = (event: PointerEvent) => {
+      const resizeState = resizeStateRef.current;
+      if (!resizeState) {
+        return;
+      }
+
+      setColumnWidths((current) => ({
+        ...current,
+        [resizeState.key]: Math.max(
+          minColumnWidth,
+          resizeState.startWidth + event.clientX - resizeState.startX
+        ),
+      }));
+    };
+
+    const onPointerUp = () => {
+      resizeStateRef.current = null;
+    };
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+    };
+  }, []);
+
   // TanStack Virtual must read the scroll element from the component that owns it.
   // eslint-disable-next-line react-hooks/incompatible-library
   const rowVirtualizer = useVirtualizer({
     count: shouldVirtualize ? rows.length : 0,
     getScrollElement: () => scrollElementRef.current,
-    estimateSize: () => 54,
+    estimateSize: () => 46,
     initialRect: { width: minTableWidth, height: 608 },
     overscan: 12,
   });
 
   const virtualRows = shouldVirtualize ? rowVirtualizer.getVirtualItems() : [];
-  const totalHeight = shouldVirtualize ? rowVirtualizer.getTotalSize() : rows.length * 54;
+  const totalHeight = shouldVirtualize ? rowVirtualizer.getTotalSize() : rows.length * 46;
   const rowIdOrder = useMemo(() => rows.map((row) => row.id), [rows]);
 
   const focusTradeRow = (tradeId: string) => {
@@ -121,8 +200,8 @@ export function BacktestVirtualizedTradeTable({
           gridTemplateColumns: columnTemplate,
           alignItems: 'center',
           gap: 1,
-          px: 1.5,
-          minHeight: 54,
+          px: 1,
+          minHeight: 46,
           cursor: 'pointer',
           borderBottom: '1px solid',
           borderColor: 'divider',
@@ -235,6 +314,32 @@ export function BacktestVirtualizedTradeTable({
                     <ArrowDownward fontSize="inherit" />
                   )}
                 </IconButton>
+                <Box
+                  onPointerDown={(event) => {
+                    resizeStateRef.current = {
+                      key: column.key,
+                      startX: event.clientX,
+                      startWidth: columnWidths[column.key] ?? column.width,
+                    };
+                  }}
+                  sx={{
+                    width: 10,
+                    alignSelf: 'stretch',
+                    cursor: 'col-resize',
+                    position: 'relative',
+                    '&::after': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 4,
+                      bottom: 4,
+                      left: '50%',
+                      width: 2,
+                      transform: 'translateX(-50%)',
+                      borderRadius: 999,
+                      backgroundColor: 'divider',
+                    },
+                  }}
+                />
               </Stack>
             ))}
           </Box>

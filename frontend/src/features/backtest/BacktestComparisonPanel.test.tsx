@@ -102,14 +102,14 @@ describe('BacktestComparisonPanel', () => {
 
     expect(bodyRows[0]).toHaveTextContent('#11');
 
-    await user.click(screen.getByRole('button', { name: 'Final Balance' }));
+    await user.click(screen.getByRole('button', { name: /Final balance/i }));
 
     bodyRows = table.querySelectorAll('tbody tr');
     expect(bodyRows[0]).toHaveTextContent('#11');
     expect(bodyRows[1]).toHaveTextContent('#22');
     expect(bodyRows[2]).toHaveTextContent('#33');
 
-    await user.click(screen.getByRole('button', { name: 'Final Balance' }));
+    await user.click(screen.getByRole('button', { name: /Final balance/i }));
 
     bodyRows = table.querySelectorAll('tbody tr');
     expect(bodyRows[0]).toHaveTextContent('#11');

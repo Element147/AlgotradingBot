@@ -210,6 +210,7 @@ describe('websocketMiddleware', () => {
 
     it('should stream backtest progress into the cached history list', () => {
       const updateQueryDataSpy = vi.spyOn(backtestApi.util, 'updateQueryData');
+      const invalidateTagsSpy = vi.spyOn(backtestApi.util, 'invalidateTags');
 
       const event: WebSocketEvent = {
         type: 'backtest.progress',
@@ -244,11 +245,7 @@ describe('websocketMiddleware', () => {
 
       (wsManager as any).__triggerEvent(event);
 
-      expect(updateQueryDataSpy).toHaveBeenCalledWith(
-        'getBacktests',
-        undefined,
-        expect.any(Function)
-      );
+      expect(invalidateTagsSpy).toHaveBeenCalledWith(['Backtests']);
       expect(updateQueryDataSpy).toHaveBeenCalledWith(
         'getBacktestDetails',
         42,

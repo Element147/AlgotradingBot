@@ -5,6 +5,8 @@ import com.algotrader.bot.controller.BacktestComparisonResponse;
 import com.algotrader.bot.controller.BacktestDetailsResponse;
 import com.algotrader.bot.controller.BacktestEquityPointResponse;
 import com.algotrader.bot.controller.BacktestExperimentSummaryResponse;
+import com.algotrader.bot.controller.BacktestHistoryPageResponse;
+import com.algotrader.bot.controller.BacktestHistoryQuery;
 import com.algotrader.bot.controller.BacktestHistoryItemResponse;
 import com.algotrader.bot.controller.BacktestStrategyMetricResponse;
 import com.algotrader.bot.controller.BacktestSummaryResponse;
@@ -18,7 +20,11 @@ import com.algotrader.bot.entity.BacktestTradeSeriesItem;
 import com.algotrader.bot.repository.BacktestDatasetRepository;
 import com.algotrader.bot.repository.BacktestResultRepository;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.criteria.Expression;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +35,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
@@ -37,10 +44,12 @@ import java.util.stream.Collectors;
 @Service
 public class BacktestResultQueryService {
 
-    private static final int DEFAULT_HISTORY_LIMIT = 20;
-    private static final int MAX_HISTORY_LIMIT = 500;
+    private static final int DEFAULT_HISTORY_PAGE = 1;
+    private static final int DEFAULT_HISTORY_PAGE_SIZE = 25;
+    private static final int MAX_HISTORY_PAGE_SIZE = 100;
     private static final long QUEUE_TIMEOUT_SECONDS = 120;
     private static final long RUNNING_TIMEOUT_SECONDS = 900;
+    private static final String DATASET_UNIVERSE_SYMBOL = "DATASET_UNIVERSE";
 
     private final BacktestResultRepository backtestResultRepository;
     private final BacktestDatasetRepository backtestDatasetRepository;
@@ -58,14 +67,35 @@ public class BacktestResultQueryService {
     }
 
     @Transactional(readOnly = true)
-    public List<BacktestHistoryItemResponse> getHistory(int limit) {
+    public BacktestHistoryPageResponse getHistory(BacktestHistoryQuery query) {
         long startedAt = System.nanoTime();
-        int boundedLimit = sanitizeLimit(limit);
-        List<BacktestHistoryItemResponse> history = backtestResultRepository.findAllByOrderByTimestampDesc(PageRequest.of(0, boundedLimit)).stream()
+        SanitizedHistoryQuery resolvedQuery = sanitizeQuery(query);
+        PageRequest pageRequest = PageRequest.of(
+            resolvedQuery.page() - 1,
+            resolvedQuery.pageSize(),
+            resolvedQuery.sort()
+        );
+        Page<BacktestResult> historyPage = backtestResultRepository.findAll(
+            buildHistorySpecification(resolvedQuery),
+            pageRequest
+        );
+        List<BacktestHistoryItemResponse> history = historyPage.getContent().stream()
             .map(this::toHistoryItem)
             .toList();
-        backendOperationMetrics.record("read", "backtest_history", "list", System.nanoTime() - startedAt, history.size(), 0L);
-        return history;
+        backendOperationMetrics.record(
+            "read",
+            "backtest_history",
+            "page",
+            System.nanoTime() - startedAt,
+            history.size(),
+            0L
+        );
+        return new BacktestHistoryPageResponse(
+            history,
+            historyPage.getTotalElements(),
+            resolvedQuery.page(),
+            resolvedQuery.pageSize()
+        );
     }
 
     @Transactional(readOnly = true)
@@ -560,11 +590,184 @@ public class BacktestResultQueryService {
         );
     }
 
-    private int sanitizeLimit(int limit) {
-        if (limit <= 0) {
-            return DEFAULT_HISTORY_LIMIT;
+    private SanitizedHistoryQuery sanitizeQuery(BacktestHistoryQuery query) {
+        int page = query == null || query.page() == null || query.page() <= 0
+            ? DEFAULT_HISTORY_PAGE
+            : query.page();
+        int pageSize = query == null || query.pageSize() == null || query.pageSize() <= 0
+            ? DEFAULT_HISTORY_PAGE_SIZE
+            : Math.min(query.pageSize(), MAX_HISTORY_PAGE_SIZE);
+        Sort.Direction direction = parseSortDirection(query == null ? null : query.sortDirection());
+        Sort sort = resolveSort(query == null ? null : query.sortBy(), direction);
+
+        return new SanitizedHistoryQuery(
+            page,
+            pageSize,
+            sort,
+            normalizeFilter(query == null ? null : query.search()),
+            normalizeFilter(query == null ? null : query.strategyId()),
+            normalizeFilter(query == null ? null : query.datasetName()),
+            normalizeFilter(query == null ? null : query.experimentName()),
+            normalizeFilter(query == null ? null : query.market()),
+            normalizeEnumFilter(query == null ? null : query.executionStatus()),
+            normalizeEnumFilter(query == null ? null : query.validationStatus()),
+            query == null ? null : query.feesBpsMin(),
+            query == null ? null : query.feesBpsMax(),
+            query == null ? null : query.slippageBpsMin(),
+            query == null ? null : query.slippageBpsMax()
+        );
+    }
+
+    private Specification<BacktestResult> buildHistorySpecification(SanitizedHistoryQuery query) {
+        Specification<BacktestResult> specification = null;
+
+        if (query.search() != null) {
+            specification = appendSpecification(specification, globalSearch(query.search()));
         }
-        return Math.min(limit, MAX_HISTORY_LIMIT);
+        if (query.strategyId() != null) {
+            specification = appendSpecification(specification, containsIgnoreCase("strategyId", query.strategyId()));
+        }
+        if (query.datasetName() != null) {
+            specification = appendSpecification(specification, containsIgnoreCase("datasetName", query.datasetName()));
+        }
+        if (query.experimentName() != null) {
+            specification = appendSpecification(specification, containsIgnoreCase("experimentName", query.experimentName()));
+        }
+        if (query.market() != null) {
+            specification = appendSpecification(specification, marketContains(query.market()));
+        }
+        if (query.executionStatus() != null) {
+            specification = appendSpecification(specification, exactMatch("executionStatus", query.executionStatus()));
+        }
+        if (query.validationStatus() != null) {
+            specification = appendSpecification(specification, exactMatch("validationStatus", query.validationStatus()));
+        }
+        if (query.feesBpsMin() != null) {
+            specification = appendSpecification(specification, greaterThanOrEqualTo("feesBps", query.feesBpsMin()));
+        }
+        if (query.feesBpsMax() != null) {
+            specification = appendSpecification(specification, lessThanOrEqualTo("feesBps", query.feesBpsMax()));
+        }
+        if (query.slippageBpsMin() != null) {
+            specification = appendSpecification(specification, greaterThanOrEqualTo("slippageBps", query.slippageBpsMin()));
+        }
+        if (query.slippageBpsMax() != null) {
+            specification = appendSpecification(specification, lessThanOrEqualTo("slippageBps", query.slippageBpsMax()));
+        }
+
+        return specification;
+    }
+
+    private Specification<BacktestResult> appendSpecification(Specification<BacktestResult> specification,
+                                                              Specification<BacktestResult> addition) {
+        return specification == null ? addition : specification.and(addition);
+    }
+
+    private Specification<BacktestResult> globalSearch(String search) {
+        String likeValue = containsPattern(search);
+        boolean searchLooksNumeric = search.chars().allMatch(Character::isDigit);
+
+        return (root, ignoredQuery, criteriaBuilder) -> {
+            List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
+            predicates.add(criteriaBuilder.like(lowerText(root.get("strategyId"), criteriaBuilder), likeValue));
+            predicates.add(criteriaBuilder.like(lowerText(root.get("datasetName"), criteriaBuilder), likeValue));
+            predicates.add(criteriaBuilder.like(lowerText(root.get("experimentName"), criteriaBuilder), likeValue));
+            predicates.add(criteriaBuilder.like(lowerText(root.get("symbol"), criteriaBuilder), likeValue));
+            predicates.add(criteriaBuilder.like(lowerText(root.get("timeframe"), criteriaBuilder), likeValue));
+            if (searchLooksNumeric) {
+                predicates.add(criteriaBuilder.equal(root.get("id"), Long.parseLong(search)));
+            }
+            return criteriaBuilder.or(predicates.toArray(jakarta.persistence.criteria.Predicate[]::new));
+        };
+    }
+
+    private Specification<BacktestResult> containsIgnoreCase(String field, String value) {
+        String likeValue = containsPattern(value);
+        return (root, ignoredQuery, criteriaBuilder) ->
+            criteriaBuilder.like(lowerText(root.get(field), criteriaBuilder), likeValue);
+    }
+
+    private Specification<BacktestResult> marketContains(String value) {
+        String likeValue = containsPattern(value);
+        boolean wholeDatasetUniverseQuery = value.contains("whole dataset universe");
+
+        return (root, ignoredQuery, criteriaBuilder) -> {
+            Expression<String> marketExpression = criteriaBuilder.concat(
+                criteriaBuilder.concat(lowerText(root.get("symbol"), criteriaBuilder), " "),
+                lowerText(root.get("timeframe"), criteriaBuilder)
+            );
+
+            if (!wholeDatasetUniverseQuery) {
+                return criteriaBuilder.like(marketExpression, likeValue);
+            }
+
+            return criteriaBuilder.or(
+                criteriaBuilder.like(marketExpression, likeValue),
+                criteriaBuilder.equal(root.get("symbol"), DATASET_UNIVERSE_SYMBOL)
+            );
+        };
+    }
+
+    private Specification<BacktestResult> exactMatch(String field, String value) {
+        return (root, ignoredQuery, criteriaBuilder) ->
+            criteriaBuilder.equal(criteriaBuilder.upper(root.get(field)), value);
+    }
+
+    private Specification<BacktestResult> greaterThanOrEqualTo(String field, Integer value) {
+        return (root, ignoredQuery, criteriaBuilder) ->
+            criteriaBuilder.greaterThanOrEqualTo(root.get(field), value);
+    }
+
+    private Specification<BacktestResult> lessThanOrEqualTo(String field, Integer value) {
+        return (root, ignoredQuery, criteriaBuilder) ->
+            criteriaBuilder.lessThanOrEqualTo(root.get(field), value);
+    }
+
+    private Expression<String> lowerText(Expression<String> expression,
+                                         jakarta.persistence.criteria.CriteriaBuilder criteriaBuilder) {
+        return criteriaBuilder.lower(criteriaBuilder.coalesce(expression, ""));
+    }
+
+    private String normalizeFilter(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeEnumFilter(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private String containsPattern(String value) {
+        return "%" + value + "%";
+    }
+
+    private Sort.Direction parseSortDirection(String value) {
+        return "asc".equalsIgnoreCase(value) ? Sort.Direction.ASC : Sort.Direction.DESC;
+    }
+
+    private Sort resolveSort(String requestedSortBy, Sort.Direction direction) {
+        if (requestedSortBy == null || requestedSortBy.isBlank()) {
+            return Sort.by(direction, "timestamp").and(Sort.by(direction, "id"));
+        }
+
+        return switch (requestedSortBy.trim()) {
+            case "id" -> Sort.by(direction, "id");
+            case "strategyId" -> Sort.by(direction, "strategyId").and(Sort.by(direction, "timestamp"));
+            case "datasetName" -> Sort.by(direction, "datasetName").and(Sort.by(direction, "timestamp"));
+            case "experimentName" -> Sort.by(direction, "experimentName").and(Sort.by(direction, "timestamp"));
+            case "market" -> Sort.by(direction, "symbol").and(Sort.by(direction, "timeframe"));
+            case "executionStatus" -> Sort.by(direction, "executionStatus").and(Sort.by(direction, "timestamp"));
+            case "validationStatus" -> Sort.by(direction, "validationStatus").and(Sort.by(direction, "timestamp"));
+            case "feesBps" -> Sort.by(direction, "feesBps").and(Sort.by(direction, "timestamp"));
+            case "slippageBps" -> Sort.by(direction, "slippageBps").and(Sort.by(direction, "timestamp"));
+            case "timestamp" -> Sort.by(direction, "timestamp").and(Sort.by(direction, "id"));
+            default -> Sort.by(Sort.Direction.DESC, "timestamp").and(Sort.by(Sort.Direction.DESC, "id"));
+        };
     }
 
     private List<String> resolveTelemetrySymbols(BacktestResult result) {
@@ -592,4 +795,21 @@ public class BacktestResultQueryService {
             return new DatasetProvenance(null, null, null, null);
         }
     }
+
+    private record SanitizedHistoryQuery(
+        int page,
+        int pageSize,
+        Sort sort,
+        String search,
+        String strategyId,
+        String datasetName,
+        String experimentName,
+        String market,
+        String executionStatus,
+        String validationStatus,
+        Integer feesBpsMin,
+        Integer feesBpsMax,
+        Integer slippageBpsMin,
+        Integer slippageBpsMax
+    ) {}
 }

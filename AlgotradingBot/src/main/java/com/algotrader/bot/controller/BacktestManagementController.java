@@ -86,10 +86,40 @@ public class BacktestManagementController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<BacktestHistoryItemResponse>> history(
-        @RequestParam(defaultValue = "20") int limit
+    public ResponseEntity<BacktestHistoryPageResponse> history(
+        @RequestParam(required = false) Integer page,
+        @RequestParam(required = false) Integer pageSize,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection,
+        @RequestParam(required = false) String search,
+        @RequestParam(required = false) String strategyId,
+        @RequestParam(required = false) String datasetName,
+        @RequestParam(required = false) String experimentName,
+        @RequestParam(required = false) String market,
+        @RequestParam(required = false) String executionStatus,
+        @RequestParam(required = false) String validationStatus,
+        @RequestParam(required = false) Integer feesBpsMin,
+        @RequestParam(required = false) Integer feesBpsMax,
+        @RequestParam(required = false) Integer slippageBpsMin,
+        @RequestParam(required = false) Integer slippageBpsMax
     ) {
-        return ResponseEntity.ok(backtestResultQueryService.getHistory(limit));
+        return ResponseEntity.ok(backtestResultQueryService.getHistory(new BacktestHistoryQuery(
+            page,
+            pageSize,
+            sortBy,
+            sortDirection,
+            search,
+            strategyId,
+            datasetName,
+            experimentName,
+            market,
+            executionStatus,
+            validationStatus,
+            feesBpsMin,
+            feesBpsMax,
+            slippageBpsMin,
+            slippageBpsMax
+        )));
     }
 
     @GetMapping("/experiments")

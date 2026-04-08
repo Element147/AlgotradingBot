@@ -140,7 +140,7 @@ export function SurfacePanel({
     <Paper
       variant="outlined"
       sx={{
-        borderRadius: 0,
+        borderRadius: '20px',
         backgroundColor: elevated
           ? alpha(
               theme.palette.background.paper,
@@ -226,19 +226,25 @@ export function StatusPill({
         height: 'auto',
         maxWidth: '100%',
         alignItems: 'flex-start',
-        borderColor: alpha(color, 0.24),
+        borderRadius: 999,
+        borderColor: alpha(color, variant === 'filled' ? 0.52 : 0.28),
         backgroundColor:
-          variant === 'filled' ? resolveToneSurface(theme, tone) : 'transparent',
-        color,
+          variant === 'filled' ? color : resolveToneSurface(theme, tone),
+        color:
+          variant === 'filled'
+            ? theme.palette.getContrastText(color)
+            : tone === 'default'
+              ? theme.palette.text.primary
+              : color,
         '& .MuiChip-label': {
           display: 'block',
           fontWeight: 700,
           fontSize: '0.75rem',
           whiteSpace: 'normal',
           overflowWrap: 'anywhere',
-          lineHeight: 1.35,
-          paddingTop: 6,
-          paddingBottom: 6,
+          lineHeight: 1.25,
+          paddingTop: 5,
+          paddingBottom: 5,
         },
         ...sx,
       }}
@@ -271,7 +277,7 @@ export function MetricCard({
       variant="outlined"
       sx={{
         height: '100%',
-        borderRadius: 0,
+        borderRadius: '20px',
         borderColor: alpha(accent, tone === 'default' ? 0.14 : 0.2),
         background: `linear-gradient(180deg, ${resolveToneSurface(theme, tone)} 0%, ${alpha(
           theme.palette.background.paper,
@@ -348,7 +354,7 @@ export function EmptyState({
         borderStyle: 'dashed',
         borderColor: alpha(accent, 0.28),
         backgroundColor: resolveToneSurface(theme, tone),
-        borderRadius: 0,
+        borderRadius: '20px',
         ...sx,
       }}
     >

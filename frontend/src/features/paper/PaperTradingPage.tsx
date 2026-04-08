@@ -13,9 +13,9 @@ import {
 import { useMemo, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 
+import { PaperOrdersTablePanel } from './PaperOrdersTablePanel';
 import {
   PaperOrderEntryPanel,
-  PaperOrdersPanel,
   PaperTradingSummaryPanel,
 } from './PaperTradingPanels';
 import {
@@ -826,7 +826,7 @@ export default function PaperTradingPage() {
               <Alert severity="error">Unable to load paper orders.</Alert>
             ) : null}
             {!isOrdersLoading && !isOrdersError ? (
-              <PaperOrdersPanel
+              <PaperOrdersTablePanel
                 orders={orders}
                 busy={orderMutationBusy}
                 onFill={onFillOrder}

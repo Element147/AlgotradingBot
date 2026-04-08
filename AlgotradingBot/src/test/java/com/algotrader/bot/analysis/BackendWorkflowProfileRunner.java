@@ -10,6 +10,8 @@ import com.algotrader.bot.backtest.strategy.BacktestStrategyDefinition;
 import com.algotrader.bot.backtest.strategy.BacktestStrategyRegistry;
 import com.algotrader.bot.backtest.strategy.BacktestStrategySelectionMode;
 import com.algotrader.bot.controller.BacktestDetailsResponse;
+import com.algotrader.bot.controller.BacktestHistoryPageResponse;
+import com.algotrader.bot.controller.BacktestHistoryQuery;
 import com.algotrader.bot.entity.BacktestDataset;
 import com.algotrader.bot.entity.BacktestEquityPoint;
 import com.algotrader.bot.entity.BacktestResult;
@@ -133,7 +135,25 @@ public final class BackendWorkflowProfileRunner {
             metrics
         );
 
-        TimedResult<List<?>> history = timed(() -> queryService.getHistory(500));
+        TimedResult<BacktestHistoryPageResponse> history = timed(
+            () -> queryService.getHistory(new BacktestHistoryQuery(
+                1,
+                100,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            ))
+        );
         TimedResult<BacktestDetailsResponse> details = timed(() -> queryService.getDetails(fixture.result().getId()));
         TimedResult<List<?>> telemetry = timed(() -> telemetryService.buildTelemetry(fixture.result()));
         TimedResult<List<?>> datasets = timed(datasetLifecycleService::listDatasets);

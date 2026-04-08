@@ -202,40 +202,7 @@ export const websocketMiddleware: Middleware = (storeApi) => {
           progress.progressPercent
         );
 
-        dispatch(
-          backtestApi.util.updateQueryData('getBacktests', undefined, (draft) => {
-            const existing = draft.find((item) => item.id === progress.backtestId);
-            if (existing) {
-              applyBacktestProgressToHistoryItem(existing as unknown as BacktestProgressEventData, progress);
-              return;
-            }
-
-            draft.unshift({
-              id: progress.backtestId,
-              strategyId: progress.strategyId,
-              datasetName: progress.datasetName,
-              experimentName: progress.experimentName,
-              symbol: progress.symbol,
-              timeframe: progress.timeframe,
-              executionStatus: progress.executionStatus,
-              validationStatus: progress.validationStatus,
-              feesBps: progress.feesBps,
-              slippageBps: progress.slippageBps,
-              timestamp: progress.timestamp,
-              initialBalance: progress.initialBalance,
-              finalBalance: progress.finalBalance,
-              executionStage: progress.executionStage,
-              progressPercent: progress.progressPercent,
-              processedCandles: progress.processedCandles,
-              totalCandles: progress.totalCandles,
-              currentDataTimestamp: progress.currentDataTimestamp,
-              statusMessage: progress.statusMessage,
-              lastProgressAt: progress.lastProgressAt,
-              startedAt: progress.startedAt,
-              completedAt: progress.completedAt,
-            });
-          })
-        );
+        dispatch(backtestApi.util.invalidateTags(['Backtests']));
         dispatch(
           backtestApi.util.updateQueryData('getBacktestExperimentSummaries', undefined, (draft) => {
             const existing = draft.find((item) => item.latestBacktestId === progress.backtestId);

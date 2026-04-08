@@ -18,10 +18,16 @@ import {
   useRunBacktestMutation,
   useUploadBacktestDatasetMutation,
   type BacktestDataset,
+  type BacktestExecutionStatus,
   type BacktestHistoryItem,
+  type BacktestHistoryQuery,
+  type BacktestHistorySortField,
+  type BacktestValidationStatus,
   type RunBacktestPayload,
 } from './backtestApi';
 import { BacktestConfigModal } from './BacktestConfigModal';
+import { BacktestDatasetInventoryPanel } from './BacktestDatasetInventoryPanel';
+import { BacktestHistoryWorkspacePanel } from './BacktestHistoryWorkspacePanel';
 import {
   initialBacktestForm,
   isExecutionActive,
@@ -29,9 +35,7 @@ import {
   resolveFormState,
 } from './backtestPageState';
 import {
-  BacktestDatasetPanel,
   BacktestExperimentSummariesPanel,
-  BacktestHistoryPanel,
   BacktestRunLauncherPanel,
   BacktestTrackedRunCard,
   BacktestTransportStatusAlert,
@@ -47,6 +51,7 @@ import {
   PageMetricStrip,
   PageSectionHeader,
 } from '@/components/layout/PageContent';
+import { useInteractiveTableState } from '@/components/ui/InteractiveTable';
 import { StatusPill, SurfacePanel } from '@/components/ui/Workbench';
 import { executionContextMeta } from '@/features/execution/executionContext';
 import { getStrategyProfile } from '@/features/strategies/strategyProfiles';
@@ -104,15 +109,63 @@ export default function BacktestPage() {
     parseBacktestIdListParam(searchParams.get('compare'))
   );
   const [activeComparisonIds, setActiveComparisonIds] = useState<number[]>([]);
+  const [historyRangeFilters, setHistoryRangeFilters] = useState({
+    feesBpsMin: '',
+    feesBpsMax: '',
+    slippageBpsMin: '',
+    slippageBpsMax: '',
+  });
+  const historyTableStateControls = useInteractiveTableState({
+    tableId: 'backtest-history',
+    initialPageSize: 25,
+  });
 
   const { data: algorithms = [] } = useGetBacktestAlgorithmsQuery();
   const { data: datasets = [] } = useGetBacktestDatasetsQuery();
   const { data: retentionReport } = useGetBacktestDatasetRetentionReportQuery();
   const { data: experimentSummaries = [] } = useGetBacktestExperimentSummariesQuery();
-  const { data: history = [], isLoading, isError } = useGetBacktestsQuery(undefined, {
+  const historyQuery = useMemo<BacktestHistoryQuery>(() => {
+    const activeSorting = historyTableStateControls.state.sorting[0];
+    const columnFilterValue = (columnId: string) => {
+      const filter = historyTableStateControls.state.columnFilters.find(
+        (entry) => entry.id === columnId
+      );
+      return typeof filter?.value === 'string' && filter.value.trim() ? filter.value.trim() : undefined;
+    };
+    const parseOptionalNumber = (value: string) => {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : undefined;
+    };
+
+    return {
+      page: historyTableStateControls.state.pagination.pageIndex + 1,
+      pageSize: historyTableStateControls.state.pagination.pageSize,
+      sortBy: activeSorting?.id as BacktestHistorySortField | undefined,
+      sortDirection: activeSorting?.desc ? 'desc' : activeSorting ? 'asc' : undefined,
+      search: historyTableStateControls.state.globalFilter.trim() || undefined,
+      strategyId: columnFilterValue('strategyId'),
+      datasetName: columnFilterValue('datasetName'),
+      experimentName: columnFilterValue('experimentName'),
+      market: columnFilterValue('market'),
+      executionStatus: columnFilterValue('executionStatus') as BacktestExecutionStatus | undefined,
+      validationStatus: columnFilterValue('validationStatus') as
+        | BacktestValidationStatus
+        | undefined,
+      feesBpsMin: parseOptionalNumber(historyRangeFilters.feesBpsMin),
+      feesBpsMax: parseOptionalNumber(historyRangeFilters.feesBpsMax),
+      slippageBpsMin: parseOptionalNumber(historyRangeFilters.slippageBpsMin),
+      slippageBpsMax: parseOptionalNumber(historyRangeFilters.slippageBpsMax),
+    };
+  }, [historyRangeFilters, historyTableStateControls.state]);
+  const {
+    data: history,
+    isLoading,
+    isError,
+  } = useGetBacktestsQuery(historyQuery, {
     pollingInterval: backtestPollingInterval,
     skipPollingIfUnfocused: true,
   });
+  const historyItems = useMemo(() => history?.items ?? [], [history?.items]);
   const activeDatasets = useMemo(
     () => datasets.filter((dataset) => !dataset.archived),
     [datasets]
@@ -141,13 +194,13 @@ export default function BacktestPage() {
   );
   const requiresDatasetUniverse = selectedAlgorithm?.selectionMode === 'DATASET_UNIVERSE';
   const fallbackTrackedRun = useMemo(
-    () => history.find((item) => isExecutionActive(item)) ?? history[0] ?? null,
-    [history]
+    () => historyItems.find((item) => isExecutionActive(item)) ?? historyItems[0] ?? null,
+    [historyItems]
   );
   const effectiveSelectedId = selectedId ?? fallbackTrackedRun?.id ?? null;
   const trackedRun = useMemo(
-    () => history.find((item) => item.id === effectiveSelectedId) ?? null,
-    [effectiveSelectedId, history]
+    () => historyItems.find((item) => item.id === effectiveSelectedId) ?? null,
+    [effectiveSelectedId, historyItems]
   );
   const selectedRunIsActive = trackedRun ? isExecutionActive(trackedRun) : false;
   const defaultRouteTab: BacktestRouteTab = effectiveSelectedId !== null ? 'review' : 'runs';
@@ -524,7 +577,7 @@ export default function BacktestPage() {
   const renderDatasetsTab = () => (
     <Grid container spacing={2.5}>
       <Grid size={{ xs: 12 }}>
-        <BacktestDatasetPanel
+        <BacktestDatasetInventoryPanel
           datasetName={datasetName}
           datasetFile={datasetFile}
           retentionReport={retentionReport}
@@ -544,8 +597,8 @@ export default function BacktestPage() {
   );
 
   const renderHistoryTab = () => (
-    <BacktestHistoryPanel
-      history={history}
+    <BacktestHistoryWorkspacePanel
+      history={history ?? { items: [], total: 0, page: 1, pageSize: historyQuery.pageSize ?? 25 }}
       comparison={comparison}
       comparisonIds={comparisonIds}
       selectedId={effectiveSelectedId}
@@ -557,6 +610,11 @@ export default function BacktestPage() {
       isComparing={isComparing}
       isReplaying={isReplaying}
       isDeletingBacktest={isDeletingBacktest}
+      tableStateControls={historyTableStateControls}
+      rangeFilters={historyRangeFilters}
+      onRangeFilterChange={(field, value) =>
+        setHistoryRangeFilters((current) => ({ ...current, [field]: value }))
+      }
       onCompareSelected={onCompareSelected}
       onClearComparison={() => {
         setComparisonIds([]);

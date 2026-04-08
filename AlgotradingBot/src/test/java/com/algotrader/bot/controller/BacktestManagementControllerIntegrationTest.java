@@ -63,6 +63,7 @@ class BacktestManagementControllerIntegrationTest {
     private String authToken;
     private Long backtestId;
     private Long comparisonBacktestId;
+    private Long failedBacktestId;
     private Long datasetId;
 
     @BeforeEach
@@ -167,6 +168,7 @@ class BacktestManagementControllerIntegrationTest {
         result.setDatasetName("sample-btc");
         result.setExperimentName("BTC Mean Reversion Retest");
         result.setExperimentKey("btc-mean-reversion-retest");
+        result.setTimestamp(LocalDateTime.parse("2026-03-01T10:00:00"));
         BacktestEquityPoint equityPoint = new BacktestEquityPoint();
         equityPoint.setPointTimestamp(LocalDateTime.parse("2025-01-01T12:00:00"));
         equityPoint.setEquity(new BigDecimal("1000"));
@@ -205,7 +207,36 @@ class BacktestManagementControllerIntegrationTest {
         comparison.setDatasetName("sample-btc");
         comparison.setExperimentName("BTC Mean Reversion Retest");
         comparison.setExperimentKey("btc-mean-reversion-retest");
+        comparison.setFeesBps(12);
+        comparison.setSlippageBps(5);
+        comparison.setTimestamp(LocalDateTime.parse("2026-02-28T10:00:00"));
         comparisonBacktestId = backtestResultRepository.save(comparison).getId();
+
+        BacktestResult failed = new BacktestResult(
+            "DUAL_MOMENTUM_ROTATION",
+            "ETH/USDT",
+            LocalDateTime.parse("2025-01-01T00:00:00"),
+            LocalDateTime.parse("2025-01-01T23:00:00"),
+            new BigDecimal("1500"),
+            new BigDecimal("1400"),
+            new BigDecimal("0.5"),
+            new BigDecimal("0.9"),
+            new BigDecimal("40.0"),
+            new BigDecimal("26.0"),
+            21,
+            BacktestResult.ValidationStatus.PENDING
+        );
+        failed.setExecutionStatus(BacktestResult.ExecutionStatus.FAILED);
+        failed.setExecutionStage(BacktestResult.ExecutionStage.FAILED);
+        failed.setTimeframe("4h");
+        failed.setDatasetName("multi-asset-universe");
+        failed.setExperimentName("Universe rotation sweep");
+        failed.setExperimentKey("universe-rotation-sweep");
+        failed.setFeesBps(18);
+        failed.setSlippageBps(7);
+        failed.setStatusMessage("Run failed while simulating portfolio rotation.");
+        failed.setTimestamp(LocalDateTime.parse("2026-03-02T10:00:00"));
+        failedBacktestId = backtestResultRepository.save(failed).getId();
     }
 
     @Test
@@ -213,15 +244,64 @@ class BacktestManagementControllerIntegrationTest {
         mockMvc.perform(get("/api/backtests")
                 .header("Authorization", "Bearer " + authToken))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(1))))
-            .andExpect(jsonPath("$[0].id").exists())
-            .andExpect(jsonPath("$[0].datasetName").value("sample-btc"))
-            .andExpect(jsonPath("$[0].experimentName").value("BTC Mean Reversion Retest"))
-            .andExpect(jsonPath("$[0].feesBps").value(10))
-            .andExpect(jsonPath("$[0].slippageBps").value(3))
-            .andExpect(jsonPath("$[0].executionStage").value("COMPLETED"))
-            .andExpect(jsonPath("$[0].progressPercent").value(100))
-            .andExpect(jsonPath("$[0].statusMessage").value("Completed."));
+            .andExpect(jsonPath("$.items", hasSize(greaterThanOrEqualTo(1))))
+            .andExpect(jsonPath("$.total").value(3))
+            .andExpect(jsonPath("$.page").value(1))
+            .andExpect(jsonPath("$.pageSize").value(25))
+            .andExpect(jsonPath("$.items[0].id").value(failedBacktestId))
+            .andExpect(jsonPath("$.items[0].datasetName").value("multi-asset-universe"))
+            .andExpect(jsonPath("$.items[0].experimentName").value("Universe rotation sweep"))
+            .andExpect(jsonPath("$.items[0].feesBps").value(18))
+            .andExpect(jsonPath("$.items[0].slippageBps").value(7))
+            .andExpect(jsonPath("$.items[0].executionStage").value("FAILED"))
+            .andExpect(jsonPath("$.items[0].progressPercent").value(100))
+            .andExpect(jsonPath("$.items[0].statusMessage").value("Run failed while simulating portfolio rotation."));
+    }
+
+    @Test
+    void history_appliesPagingSortingAndFilters() throws Exception {
+        mockMvc.perform(get("/api/backtests")
+                .param("page", "1")
+                .param("pageSize", "1")
+                .param("sortBy", "feesBps")
+                .param("sortDirection", "asc")
+                .param("search", "rotation")
+                .param("strategyId", "dual")
+                .param("datasetName", "multi")
+                .param("experimentName", "sweep")
+                .param("market", "eth")
+                .param("executionStatus", "FAILED")
+                .param("validationStatus", "PENDING")
+                .param("feesBpsMin", "15")
+                .param("feesBpsMax", "20")
+                .param("slippageBpsMin", "7")
+                .param("slippageBpsMax", "7")
+                .header("Authorization", "Bearer " + authToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.total").value(1))
+            .andExpect(jsonPath("$.page").value(1))
+            .andExpect(jsonPath("$.pageSize").value(1))
+            .andExpect(jsonPath("$.items", hasSize(1)))
+            .andExpect(jsonPath("$.items[0].id").value(failedBacktestId))
+            .andExpect(jsonPath("$.items[0].strategyId").value("DUAL_MOMENTUM_ROTATION"))
+            .andExpect(jsonPath("$.items[0].executionStatus").value("FAILED"))
+            .andExpect(jsonPath("$.items[0].validationStatus").value("PENDING"));
+    }
+
+    @Test
+    void history_sanitizesInvalidPagingAndSortDefaults() throws Exception {
+        mockMvc.perform(get("/api/backtests")
+                .param("page", "0")
+                .param("pageSize", "999")
+                .param("sortBy", "bogus")
+                .param("sortDirection", "sideways")
+                .header("Authorization", "Bearer " + authToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.page").value(1))
+            .andExpect(jsonPath("$.pageSize").value(100))
+            .andExpect(jsonPath("$.items[0].id").value(failedBacktestId))
+            .andExpect(jsonPath("$.items[1].id").value(backtestId))
+            .andExpect(jsonPath("$.items[2].id").value(comparisonBacktestId));
     }
 
     @Test
@@ -493,10 +573,11 @@ class BacktestManagementControllerIntegrationTest {
         mockMvc.perform(get("/api/backtests/experiments")
                 .header("Authorization", "Bearer " + authToken))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$", hasSize(1)))
-            .andExpect(jsonPath("$[0].experimentName").value("BTC Mean Reversion Retest"))
-            .andExpect(jsonPath("$[0].runCount").value(2))
-            .andExpect(jsonPath("$[0].latestBacktestId").exists());
+            .andExpect(jsonPath("$", hasSize(2)))
+            .andExpect(jsonPath("$[?(@.experimentName == 'BTC Mean Reversion Retest')].runCount")
+                .value(org.hamcrest.Matchers.hasItem(2)))
+            .andExpect(jsonPath("$[?(@.experimentName == 'Universe rotation sweep')].latestBacktestId")
+                .value(org.hamcrest.Matchers.hasItem(failedBacktestId.intValue())));
     }
 
     @Test

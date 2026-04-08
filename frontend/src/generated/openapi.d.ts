@@ -1795,6 +1795,15 @@ export interface components {
             completedAt?: string;
             asyncMonitor?: components["schemas"]["AsyncTaskMonitorResponse"];
         };
+        BacktestHistoryPageResponse: {
+            items?: components["schemas"]["BacktestHistoryItemResponse"][];
+            /** Format: int64 */
+            total?: number;
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            pageSize?: number;
+        };
         BacktestDetailsResponse: {
             /** Format: int64 */
             id?: number;
@@ -3495,7 +3504,21 @@ export interface operations {
     history: {
         parameters: {
             query?: {
-                limit?: number;
+                page?: number;
+                pageSize?: number;
+                sortBy?: string;
+                sortDirection?: string;
+                search?: string;
+                strategyId?: string;
+                datasetName?: string;
+                experimentName?: string;
+                market?: string;
+                executionStatus?: string;
+                validationStatus?: string;
+                feesBpsMin?: number;
+                feesBpsMax?: number;
+                slippageBpsMin?: number;
+                slippageBpsMax?: number;
             };
             header?: never;
             path?: never;
@@ -3509,7 +3532,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["BacktestHistoryItemResponse"][];
+                    "*/*": components["schemas"]["BacktestHistoryPageResponse"];
                 };
             };
         };

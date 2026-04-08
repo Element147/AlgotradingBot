@@ -186,7 +186,12 @@ vi.mock('./backtestApi', () => ({
     ],
   }),
   useGetBacktestsQuery: () => ({
-    data: historyItems,
+    data: {
+      items: historyItems,
+      total: historyItems.length,
+      page: 1,
+      pageSize: 25,
+    },
     isLoading: false,
     isError: false,
   }),
@@ -293,12 +298,12 @@ describe('BacktestPage', { timeout: 25000 }, () => {
     expect(screen.queryByText('Backtest Details #42')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: 'Datasets' }));
-    expect(await screen.findByText('Sortable dataset inventory')).toBeInTheDocument();
+    expect(await screen.findByText('Dataset inventory')).toBeInTheDocument();
     expect(screen.getAllByText('Dataset lifecycle').length).toBeGreaterThan(0);
 
     await user.click(screen.getByRole('tab', { name: 'History' }));
     expect(await screen.findByText('Backtest History')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Compare Selected/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Compare selected/i })).toBeInTheDocument();
   });
 
   it('sorts the dataset inventory client-side', async () => {
@@ -311,12 +316,12 @@ describe('BacktestPage', { timeout: 25000 }, () => {
     let bodyRows = datasetTable.querySelectorAll('tbody tr');
     expect(bodyRows[0]).toHaveTextContent('BTC 1h 2025');
 
-    await user.click(screen.getByRole('button', { name: 'Name' }));
+    await user.click(screen.getByRole('button', { name: /Name/i }));
 
     bodyRows = datasetTable.querySelectorAll('tbody tr');
     expect(bodyRows[0]).toHaveTextContent('BTC 1h 2025');
 
-    await user.click(screen.getByRole('button', { name: 'Name' }));
+    await user.click(screen.getByRole('button', { name: /Name/i }));
 
     bodyRows = datasetTable.querySelectorAll('tbody tr');
     expect(bodyRows[0]).toHaveTextContent('ETH 4h 2024');
@@ -332,7 +337,7 @@ describe('BacktestPage', { timeout: 25000 }, () => {
     let bodyRows = historyTable.querySelectorAll('tbody tr');
     expect(bodyRows[0]).toHaveTextContent('42');
 
-    await user.click(screen.getByRole('button', { name: 'ID' }));
+    await user.click(screen.getByRole('button', { name: /^ID$/i }));
 
     bodyRows = historyTable.querySelectorAll('tbody tr');
     expect(bodyRows[0]).toHaveTextContent('7');

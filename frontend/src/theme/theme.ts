@@ -20,8 +20,8 @@ const buildTheme = (mode: PaletteMode): Theme => {
   const textPrimary = isLight ? '#152229' : '#edf5f1';
   const textSecondary = isLight ? '#60707a' : '#9baab3';
   const divider = alpha(isLight ? '#16384b' : '#dbeae3', isLight ? 0.12 : 0.14);
-  const surfaceRadius = 0;
-  const controlRadius = 0;
+  const surfaceRadius = 16;
+  const controlRadius = 14;
   const numericFont =
     '"IBM Plex Mono", "Cascadia Mono", "Aptos Mono", "Consolas", monospace';
   const sansFont =
@@ -122,10 +122,10 @@ const buildTheme = (mode: PaletteMode): Theme => {
       },
       h6: {
         fontFamily: sansFont,
-        fontSize: '1rem',
+        fontSize: '1.02rem',
         fontWeight: 700,
         letterSpacing: '-0.01em',
-        lineHeight: 1.2,
+        lineHeight: 1.18,
       },
       subtitle1: {
         fontSize: '0.98rem',
@@ -135,21 +135,21 @@ const buildTheme = (mode: PaletteMode): Theme => {
       subtitle2: {
         fontSize: '0.84rem',
         fontWeight: 700,
-        letterSpacing: '0.03em',
-        lineHeight: 1.35,
+        letterSpacing: '0.02em',
+        lineHeight: 1.28,
       },
       body1: {
-        lineHeight: 1.64,
+        lineHeight: 1.52,
       },
       body2: {
-        lineHeight: 1.58,
+        lineHeight: 1.44,
       },
       caption: {
-        lineHeight: 1.45,
+        lineHeight: 1.32,
       },
       overline: {
         fontWeight: 700,
-        letterSpacing: '0.14em',
+        letterSpacing: '0.11em',
         lineHeight: 1.2,
       },
       button: {
@@ -260,9 +260,9 @@ const buildTheme = (mode: PaletteMode): Theme => {
       MuiCardContent: {
         styleOverrides: {
           root: {
-            padding: 20,
+            padding: 18,
             '&:last-child': {
-              paddingBottom: 20,
+              paddingBottom: 18,
             },
           },
         },
@@ -273,9 +273,9 @@ const buildTheme = (mode: PaletteMode): Theme => {
         },
         styleOverrides: {
           root: {
-            minHeight: 40,
+            minHeight: 38,
             borderRadius: controlRadius,
-            paddingInline: 16,
+            paddingInline: 14,
           },
           contained: {
             boxShadow: 'none',
@@ -297,7 +297,7 @@ const buildTheme = (mode: PaletteMode): Theme => {
       MuiChip: {
         styleOverrides: {
           root: {
-            minHeight: 30,
+            minHeight: 28,
             borderRadius: controlRadius,
             borderColor: alpha(textPrimary, 0.08),
             backgroundColor: alpha(panelBackground, isLight ? 0.98 : 0.82),
@@ -308,9 +308,9 @@ const buildTheme = (mode: PaletteMode): Theme => {
           label: {
             display: 'block',
             whiteSpace: 'normal',
-            lineHeight: 1.28,
-            paddingTop: 6,
-            paddingBottom: 6,
+            lineHeight: 1.2,
+            paddingTop: 5,
+            paddingBottom: 5,
           },
         },
       },
@@ -346,7 +346,7 @@ const buildTheme = (mode: PaletteMode): Theme => {
       MuiToolbar: {
         styleOverrides: {
           root: {
-            minHeight: 84,
+            minHeight: 72,
           },
         },
       },
@@ -355,13 +355,13 @@ const buildTheme = (mode: PaletteMode): Theme => {
           root: {
             borderColor: divider,
             verticalAlign: 'top',
-            paddingTop: 14,
-            paddingBottom: 14,
+            paddingTop: 10,
+            paddingBottom: 10,
           },
           head: {
-            fontSize: '0.72rem',
+            fontSize: '0.68rem',
             fontWeight: 700,
-            letterSpacing: '0.08em',
+            letterSpacing: '0.06em',
             textTransform: 'uppercase',
             color: textSecondary,
           },
@@ -474,7 +474,7 @@ const buildTheme = (mode: PaletteMode): Theme => {
         styleOverrides: {
           root: {
             height: 7,
-            borderRadius: surfaceRadius,
+            borderRadius: 999,
           },
         },
       },

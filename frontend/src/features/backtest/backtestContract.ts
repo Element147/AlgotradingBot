@@ -8,7 +8,7 @@ import type {
   BacktestDetails,
   BacktestEquityPoint,
   BacktestExperimentSummary,
-  BacktestHistoryItem,
+  BacktestHistoryResult,
   BacktestSummary,
   BacktestTelemetryQueryResponse,
   BacktestTradeSeriesItem,
@@ -36,6 +36,12 @@ type RawBacktestTradeSeriesItem = components['schemas']['BacktestTradeSeriesItem
 type RawBacktestExperimentSummary = components['schemas']['BacktestExperimentSummaryResponse'];
 type RawBacktestHistoryItem = components['schemas']['BacktestHistoryItemResponse'] & {
   asyncMonitor?: RawAsyncTaskMonitor;
+};
+type RawBacktestHistoryPageResponse = {
+  items?: RawBacktestHistoryItem[];
+  total?: number;
+  page?: number;
+  pageSize?: number;
 };
 type RawBacktestSummary = components['schemas']['BacktestSummaryResponse'] & {
   strategyMetrics?: RawBacktestStrategyMetric[];
@@ -201,6 +207,13 @@ const backtestHistoryItemSchema = z.object({
   startedAt: z.string().nullable(),
   completedAt: z.string().nullable(),
   asyncMonitor: asyncTaskMonitorSchema,
+});
+
+const backtestHistoryPageSchema = z.object({
+  items: z.array(backtestHistoryItemSchema),
+  total: z.number().int(),
+  page: z.number().int(),
+  pageSize: z.number().int(),
 });
 
 const backtestEquityPointSchema = z.object({
@@ -382,14 +395,22 @@ export const normalizeBacktestDatasetRetentionReport = (
 ): BacktestDatasetRetentionReport => backtestDatasetRetentionReportSchema.parse(response);
 
 export const normalizeBacktestHistory = (
-  response: RawBacktestHistoryItem[]
-): BacktestHistoryItem[] =>
-  z.array(backtestHistoryItemSchema).parse(
-    response.map((item) => ({
+  response: RawBacktestHistoryPageResponse,
+  fallback: { page: number; pageSize: number }
+): BacktestHistoryResult =>
+  backtestHistoryPageSchema.parse({
+    items: (response.items ?? []).map((item) => ({
       ...item,
-      asyncMonitor: normalizeAsyncTaskMonitor(item.asyncMonitor, item.executionStatus, item.lastProgressAt),
-    }))
-  );
+      asyncMonitor: normalizeAsyncTaskMonitor(
+        item.asyncMonitor,
+        item.executionStatus,
+        item.lastProgressAt
+      ),
+    })),
+    total: response.total ?? response.items?.length ?? 0,
+    page: response.page ?? fallback.page,
+    pageSize: response.pageSize ?? fallback.pageSize,
+  });
 
 export const normalizeBacktestDetails = (response: RawBacktestDetails): BacktestDetails =>
   backtestDetailsSchema.parse({

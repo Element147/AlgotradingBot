@@ -2,6 +2,7 @@ package com.algotrader.bot.repository;
 
 import com.algotrader.bot.entity.BacktestResult;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -14,7 +15,7 @@ import java.util.Collection;
  * Provides CRUD operations and custom query methods for backtest result retrieval.
  */
 @Repository
-public interface BacktestResultRepository extends JpaRepository<BacktestResult, Long> {
+public interface BacktestResultRepository extends JpaRepository<BacktestResult, Long>, JpaSpecificationExecutor<BacktestResult> {
     List<BacktestResult> findAllByOrderByTimestampDesc();
     List<BacktestResult> findAllByOrderByTimestampDesc(Pageable pageable);
 

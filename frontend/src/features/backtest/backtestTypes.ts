@@ -37,6 +37,18 @@ export type BacktestRegime = 'WARMUP' | 'RANGE' | 'TREND_UP' | 'TREND_DOWN';
 export const DATASET_UNIVERSE_SYMBOL = 'DATASET_UNIVERSE';
 export const DATASET_UNIVERSE_MARKET_LABEL = 'Whole dataset universe';
 
+export type BacktestHistorySortField =
+  | 'id'
+  | 'strategyId'
+  | 'datasetName'
+  | 'experimentName'
+  | 'market'
+  | 'executionStatus'
+  | 'validationStatus'
+  | 'feesBps'
+  | 'slippageBps'
+  | 'timestamp';
+
 export const formatBacktestMarketLabel = (symbol: string): string =>
   symbol === DATASET_UNIVERSE_SYMBOL ? DATASET_UNIVERSE_MARKET_LABEL : symbol;
 
@@ -103,6 +115,31 @@ export interface BacktestHistoryItem {
   startedAt: string | null;
   completedAt: string | null;
   asyncMonitor?: AsyncTaskMonitor;
+}
+
+export interface BacktestHistoryQuery {
+  page?: number;
+  pageSize?: number;
+  sortBy?: BacktestHistorySortField;
+  sortDirection?: 'asc' | 'desc';
+  search?: string;
+  strategyId?: string;
+  datasetName?: string;
+  experimentName?: string;
+  market?: string;
+  executionStatus?: BacktestExecutionStatus;
+  validationStatus?: BacktestValidationStatus;
+  feesBpsMin?: number;
+  feesBpsMax?: number;
+  slippageBpsMin?: number;
+  slippageBpsMax?: number;
+}
+
+export interface BacktestHistoryResult {
+  items: BacktestHistoryItem[];
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 export interface BacktestStrategyMetric {

@@ -17,6 +17,8 @@ The repository is a usable local-first MVP for strategy research, market-data pr
 - Backtests for `SINGLE_SYMBOL` and `DATASET_UNIVERSE` modes
 - Async backtest queueing with progress updates, replay, compare, and export
 - Backtest review with lightweight summary reads and on-demand equity, trade, and telemetry queries
+- Shared compact table UX across backtest history, dataset inventory, comparison, and paper orders, with sticky headers, inline filters, quick search, persisted column widths, and higher-contrast status pills
+- Server-side paged backtest history queries with safe sort whitelisting and filter/range support on `/api/backtests`
 - Strategy explainability surfaces reused across Backtest, Forward Testing, Paper, and Live
 
 ### Market Data
@@ -53,12 +55,14 @@ The repository is a usable local-first MVP for strategy research, market-data pr
 
 ## Latest Verified Baseline
 
-Verified on March 19, 2026, March 20, 2026, March 30, 2026, and April 7, 2026:
+Verified on March 19, 2026, March 20, 2026, March 30, 2026, April 7, 2026, and April 8, 2026:
 
 - `.\gradlew.bat javaMigrationAudit --no-daemon`: passed
 - `.\gradlew.bat test`: passed
 - `.\gradlew.bat build`: passed
+- `.\gradlew.bat test --tests com.algotrader.bot.controller.BacktestManagementControllerIntegrationTest`: passed
 - `npm run contract:check`: passed
+- `npm run contract:generate`: passed
 - `npm run lint`: passed
 - `npm run test -- --watch=false`: passed
 - `npm run build`: passed
