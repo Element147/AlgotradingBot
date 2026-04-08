@@ -12,6 +12,7 @@ import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestDat
 import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestResult;
 import com.algotrader.bot.marketdata.application.service.MarketDataQueryMode;
 import com.algotrader.bot.marketdata.application.service.MarketDataQueryService;
+import com.algotrader.bot.shared.application.service.SymbolCsvSupport;
 import com.algotrader.bot.shared.infrastructure.observability.service.BackendOperationMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +42,7 @@ public class BacktestExecutionService {
     private final MarketDataQueryService marketDataQueryService;
     private final BacktestExecutionLifecycleService backtestExecutionLifecycleService;
     private final BackendOperationMetrics backendOperationMetrics;
+    private final SymbolCsvSupport symbolCsvSupport;
     private final ConcurrentMap<Long, Boolean> inFlightBacktests = new ConcurrentHashMap<>();
 
     public BacktestExecutionService(BacktestDatasetStorageService backtestDatasetStorageService,
@@ -48,13 +50,15 @@ public class BacktestExecutionService {
                                     BacktestStrategyRegistry backtestStrategyRegistry,
                                     MarketDataQueryService marketDataQueryService,
                                     BacktestExecutionLifecycleService backtestExecutionLifecycleService,
-                                    BackendOperationMetrics backendOperationMetrics) {
+                                    BackendOperationMetrics backendOperationMetrics,
+                                    SymbolCsvSupport symbolCsvSupport) {
         this.backtestDatasetStorageService = backtestDatasetStorageService;
         this.backtestSimulationEngine = backtestSimulationEngine;
         this.backtestStrategyRegistry = backtestStrategyRegistry;
         this.marketDataQueryService = marketDataQueryService;
         this.backtestExecutionLifecycleService = backtestExecutionLifecycleService;
         this.backendOperationMetrics = backendOperationMetrics;
+        this.symbolCsvSupport = symbolCsvSupport;
     }
 
     @Async("virtualThreadTaskExecutor")
@@ -298,19 +302,12 @@ public class BacktestExecutionService {
     }
 
     private String resolvePrimarySymbol(String requestedSymbol, String datasetSymbolsCsv) {
-        List<String> datasetSymbols = parseSymbols(datasetSymbolsCsv);
+        List<String> datasetSymbols = symbolCsvSupport.parseDistinct(datasetSymbolsCsv);
         if (datasetSymbols.contains(requestedSymbol)) {
             return requestedSymbol;
         }
         return datasetSymbols.stream()
             .findFirst()
             .orElse(requestedSymbol);
-    }
-
-    private List<String> parseSymbols(String symbolsCsv) {
-        return List.of(symbolsCsv.split(",")).stream()
-            .map(String::trim)
-            .filter(symbol -> !symbol.isBlank())
-            .toList();
     }
 }

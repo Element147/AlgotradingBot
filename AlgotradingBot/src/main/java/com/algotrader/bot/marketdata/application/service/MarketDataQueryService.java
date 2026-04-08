@@ -1,13 +1,9 @@
 package com.algotrader.bot.marketdata.application.service;
 
-import com.algotrader.bot.backtest.domain.model.OHLCVData;
-import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestDataset;
 import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataCandle;
 import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataCandleSegment;
 import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataSeries;
 import com.algotrader.bot.marketdata.infrastructure.persistence.repository.MarketDataCandleRepository;
-import com.algotrader.bot.backtest.application.service.BacktestDatasetCandleCache;
-import com.algotrader.bot.backtest.application.service.BacktestDatasetStorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -32,19 +28,13 @@ public class MarketDataQueryService {
     private static final long SLOW_QUERY_THRESHOLD_MILLIS = 500L;
 
     private final MarketDataCandleRepository marketDataCandleRepository;
-    private final BacktestDatasetStorageService backtestDatasetStorageService;
-    private final BacktestDatasetCandleCache backtestDatasetCandleCache;
     private final MarketDataResampler marketDataResampler;
     private final MarketDataQueryMetrics marketDataQueryMetrics;
 
     public MarketDataQueryService(MarketDataCandleRepository marketDataCandleRepository,
-                                  BacktestDatasetStorageService backtestDatasetStorageService,
-                                  BacktestDatasetCandleCache backtestDatasetCandleCache,
                                   MarketDataResampler marketDataResampler,
                                   MarketDataQueryMetrics marketDataQueryMetrics) {
         this.marketDataCandleRepository = marketDataCandleRepository;
-        this.backtestDatasetStorageService = backtestDatasetStorageService;
-        this.backtestDatasetCandleCache = backtestDatasetCandleCache;
         this.marketDataResampler = marketDataResampler;
         this.marketDataQueryMetrics = marketDataQueryMetrics;
     }
@@ -141,40 +131,7 @@ public class MarketDataQueryService {
         }
 
         List<MarketDataQueryGap> gaps = buildGaps(mergedCandles, timeframe, windowStart, windowEnd, normalizedSymbols);
-        if (!mergedCandles.isEmpty() || relationalSourceSeen) {
-            MarketDataQueryResult result = new MarketDataQueryResult(mergedCandles, gaps, sourceTimeframe, queryMode);
-            recordQueryObservation(
-                "dataset",
-                "dataset_id=" + datasetId,
-                timeframe,
-                queryMode,
-                windowStart,
-                windowEnd,
-                normalizedSymbols,
-                rollupSourceTimeframes,
-                false,
-                startedAt,
-                result
-            );
-            return result;
-        }
-
-        logger.info(
-            "market_data_query event=legacy_fallback dataset_id={} timeframe={} query_mode={} symbols={} window_start={} window_end={} reason=no_relational_source",
-            datasetId,
-            timeframe,
-            queryMode,
-            normalizedSymbols.isEmpty() ? "<all>" : normalizedSymbols,
-            windowStart,
-            windowEnd
-        );
-        List<MarketDataQueriedCandle> legacyCandles = loadLegacyCandles(datasetId, timeframe, windowStart, windowEnd, normalizedSymbols);
-        MarketDataQueryResult result = new MarketDataQueryResult(
-            legacyCandles,
-            buildGaps(legacyCandles, timeframe, windowStart, windowEnd, normalizedSymbols),
-            timeframe,
-            queryMode
-        );
+        MarketDataQueryResult result = new MarketDataQueryResult(mergedCandles, gaps, sourceTimeframe, queryMode);
         recordQueryObservation(
             "dataset",
             "dataset_id=" + datasetId,
@@ -184,7 +141,7 @@ public class MarketDataQueryService {
             windowEnd,
             normalizedSymbols,
             rollupSourceTimeframes,
-            true,
+            false,
             startedAt,
             result
         );
@@ -259,37 +216,6 @@ public class MarketDataQueryService {
             sourceSeen,
             sourceTimeframes
         );
-    }
-
-    private List<MarketDataQueriedCandle> loadLegacyCandles(Long datasetId,
-                                                            String timeframe,
-                                                            LocalDateTime windowStart,
-                                                            LocalDateTime windowEnd,
-                                                            Set<String> requestedSymbols) {
-        BacktestDataset dataset = backtestDatasetStorageService.getDataset(datasetId);
-        List<OHLCVData> filtered = backtestDatasetCandleCache.getOrParse(dataset).stream()
-            .filter(candle -> !candle.getTimestamp().isBefore(windowStart))
-            .filter(candle -> !candle.getTimestamp().isAfter(windowEnd))
-            .filter(candle -> requestedSymbols.isEmpty() || requestedSymbols.contains(candle.getSymbol().toUpperCase(Locale.ROOT)))
-            .sorted(Comparator.comparing(OHLCVData::getSymbol).thenComparing(OHLCVData::getTimestamp))
-            .toList();
-        if (filtered.isEmpty()) {
-            return List.of();
-        }
-
-        return marketDataResampler.resample(filtered, timeframe).stream()
-            .map(candle -> new MarketDataQueriedCandle(
-                candle.getTimestamp(),
-                candle.getSymbol(),
-                candle.getOpen(),
-                candle.getHigh(),
-                candle.getLow(),
-                candle.getClose(),
-                candle.getVolume(),
-                MarketDataCandleProvenance.legacy(datasetId, candle.getSymbol(), timeframe)
-            ))
-            .sorted(Comparator.comparing(MarketDataQueriedCandle::timestamp).thenComparing(MarketDataQueriedCandle::symbol))
-            .toList();
     }
 
     private List<MarketDataQueriedCandle> mergeCandles(List<MarketDataQueriedCandle> exactCandles,
@@ -481,9 +407,6 @@ public class MarketDataQueryService {
     }
 
     private String classifyResultSource(MarketDataQueryResult result, boolean legacyFallbackUsed) {
-        if (legacyFallbackUsed) {
-            return "legacy_csv";
-        }
         if (result.candles().isEmpty()) {
             return "empty";
         }

@@ -223,7 +223,12 @@ export default function MarketDataPage() {
           eyebrow="Provider-backed imports"
           description="Create download jobs, watch retries, and move completed datasets into the backtest catalog without guesswork about provider requirements or job state."
           actions={
-            <Button component={RouterLink} to="/backtest" variant="contained">
+            <Button
+              component={RouterLink}
+              to="/backtest"
+              variant="contained"
+              data-testid="market-data-open-backtest"
+            >
               Open backtest catalog
             </Button>
           }

@@ -17,6 +17,7 @@ import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestEqu
 import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestResult;
 import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestTradeSeriesItem;
 import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataImportJob;
+import com.algotrader.bot.shared.application.service.SymbolCsvSupport;
 import com.algotrader.bot.shared.domain.model.PositionSide;
 import com.algotrader.bot.backtest.infrastructure.persistence.repository.BacktestDatasetRepository;
 import com.algotrader.bot.backtest.infrastructure.persistence.repository.BacktestResultRepository;
@@ -33,6 +34,7 @@ import com.algotrader.bot.marketdata.infrastructure.csv.service.HistoricalDataCs
 import com.algotrader.bot.system.application.service.OperatorAuditService;
 import com.algotrader.bot.marketdata.application.service.MarketDataAssetType;
 import com.algotrader.bot.marketdata.application.service.MarketDataImportExecutionService;
+import com.algotrader.bot.marketdata.application.service.MarketDataDatasetIngestionService;
 import com.algotrader.bot.marketdata.application.service.MarketDataImportJobResponseMapper;
 import com.algotrader.bot.marketdata.application.service.MarketDataImportJobStatus;
 import com.algotrader.bot.marketdata.application.service.MarketDataProvider;
@@ -109,7 +111,12 @@ public final class BackendWorkflowProfileRunner {
             metrics
         );
         MarketDataProviderRegistry providerRegistry = mockProviderRegistry();
-        MarketDataImportJobResponseMapper mapper = new MarketDataImportJobResponseMapper(providerRegistry);
+        SymbolCsvSupport symbolCsvSupport = new SymbolCsvSupport();
+        MarketDataImportJobResponseMapper mapper = new MarketDataImportJobResponseMapper(
+            datasetRepository,
+            providerRegistry,
+            symbolCsvSupport
+        );
 
         MarketDataImportProgressService progressService = new MarketDataImportProgressService(
             Mockito.mock(WebSocketEventPublisher.class),
@@ -124,16 +131,18 @@ public final class BackendWorkflowProfileRunner {
             mapper,
             progressService,
             Mockito.mock(MarketDataImportExecutionService.class),
+            Mockito.mock(MarketDataDatasetIngestionService.class),
             metrics
         );
 
         BacktestExecutionService executionService = new BacktestExecutionService(
-            new BacktestDatasetStorageService(datasetRepository, new HistoricalDataCsvParser()),
+            new BacktestDatasetStorageService(datasetRepository),
             mockSimulationEngine(),
             mockStrategyRegistry(),
             marketDataQueryService,
             mockExecutionLifecycle(fixture.result()),
-            metrics
+            metrics,
+            symbolCsvSupport
         );
 
         TimedResult<BacktestHistoryPageResponse> history = timed(
@@ -204,7 +213,7 @@ public final class BackendWorkflowProfileRunner {
         BacktestDataset dataset = new BacktestDataset();
         setId(dataset, 77L);
         dataset.setName("Profiling Dataset");
-        dataset.setOriginalFilename("profiling.csv");
+        dataset.setOriginalFilename("profiling-provider-import");
         dataset.setUploadedAt(LocalDateTime.parse("2026-03-25T10:00:00"));
         dataset.setRowCount(candles.size());
         dataset.setSymbolsCsv("BTC/USDT,ETH/USDT");
@@ -213,6 +222,7 @@ public final class BackendWorkflowProfileRunner {
         dataset.setChecksumSha256("profile-checksum");
         dataset.setSchemaVersion("ohlcv-v1");
         dataset.setArchived(Boolean.FALSE);
+        dataset.setReady(Boolean.TRUE);
 
         BacktestResult result = new BacktestResult();
         result.setId(501L);
@@ -277,7 +287,7 @@ public final class BackendWorkflowProfileRunner {
     private static BacktestDatasetRepository mockDatasetRepository(BacktestDataset dataset) {
         BacktestDatasetRepository repository = Mockito.mock(BacktestDatasetRepository.class);
         when(repository.findById(dataset.getId())).thenReturn(Optional.of(dataset));
-        when(repository.findAllByOrderByUploadedAtDesc()).thenReturn(List.of(dataset));
+        when(repository.findAllByReadyTrueOrderByUploadedAtDesc()).thenReturn(List.of(dataset));
         when(repository.findAllById(any())).thenReturn(List.of(dataset));
         return repository;
     }

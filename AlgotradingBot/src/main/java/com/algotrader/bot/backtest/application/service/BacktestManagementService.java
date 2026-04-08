@@ -9,6 +9,7 @@ import com.algotrader.bot.shared.api.response.AsyncTaskMonitorResponse;
 import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestDataset;
 import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestResult;
 import com.algotrader.bot.backtest.infrastructure.persistence.repository.BacktestResultRepository;
+import com.algotrader.bot.shared.application.service.SymbolCsvSupport;
 import com.algotrader.bot.system.application.service.OperatorAuditService;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
@@ -36,6 +37,7 @@ public class BacktestManagementService {
     private final BacktestStrategyRegistry backtestStrategyRegistry;
     private final BacktestProgressService backtestProgressService;
     private final OperatorAuditService operatorAuditService;
+    private final SymbolCsvSupport symbolCsvSupport;
 
     public BacktestManagementService(BacktestResultRepository backtestResultRepository,
                                      BacktestExecutionService backtestExecutionService,
@@ -43,7 +45,8 @@ public class BacktestManagementService {
                                      BacktestDatasetLifecycleService backtestDatasetLifecycleService,
                                      BacktestStrategyRegistry backtestStrategyRegistry,
                                      BacktestProgressService backtestProgressService,
-                                     OperatorAuditService operatorAuditService) {
+                                     OperatorAuditService operatorAuditService,
+                                     SymbolCsvSupport symbolCsvSupport) {
         this.backtestResultRepository = backtestResultRepository;
         this.backtestExecutionService = backtestExecutionService;
         this.backtestDatasetStorageService = backtestDatasetStorageService;
@@ -51,6 +54,7 @@ public class BacktestManagementService {
         this.backtestStrategyRegistry = backtestStrategyRegistry;
         this.backtestProgressService = backtestProgressService;
         this.operatorAuditService = operatorAuditService;
+        this.symbolCsvSupport = symbolCsvSupport;
     }
 
     @Transactional(readOnly = true)
@@ -165,6 +169,7 @@ public class BacktestManagementService {
         }
 
         BacktestDataset dataset = backtestDatasetStorageService.getDataset(existing.getDatasetId());
+        backtestDatasetLifecycleService.validateDatasetAvailableForNewRuns(dataset.getId());
 
         BacktestResult pending = new BacktestResult(
             existing.getStrategyId(),
@@ -249,7 +254,7 @@ public class BacktestManagementService {
     private String resolveRequestedSymbol(String requestedSymbol,
                                          String datasetSymbolsCsv,
                                          com.algotrader.bot.backtest.domain.strategy.BacktestStrategySelectionMode selectionMode) {
-        List<String> supportedSymbols = parseSymbols(datasetSymbolsCsv);
+        List<String> supportedSymbols = symbolCsvSupport.parseDistinct(datasetSymbolsCsv);
         String normalizedRequestedSymbol = requestedSymbol == null ? null : requestedSymbol.trim();
 
         if (selectionMode == com.algotrader.bot.backtest.domain.strategy.BacktestStrategySelectionMode.DATASET_UNIVERSE) {
@@ -270,16 +275,6 @@ public class BacktestManagementService {
         }
 
         return normalizedRequestedSymbol;
-    }
-
-    private List<String> parseSymbols(String datasetSymbolsCsv) {
-        return List.of(datasetSymbolsCsv.split(",")).stream()
-            .map(String::trim)
-            .filter(symbol -> !symbol.isBlank())
-            .collect(java.util.stream.Collectors.collectingAndThen(
-                java.util.stream.Collectors.toCollection(LinkedHashSet::new),
-                List::copyOf
-            ));
     }
 
     private String resolveRequestedExperimentName(String requestedExperimentName,

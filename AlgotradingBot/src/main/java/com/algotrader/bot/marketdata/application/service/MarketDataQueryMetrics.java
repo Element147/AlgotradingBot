@@ -86,10 +86,6 @@ public class MarketDataQueryMetrics {
             taggedCounter("algotrading.market_data.query.rollup_queries", scope, normalizedMode, normalizedTimeframe, normalizedResultSource)
                 .increment();
         }
-        if ("legacy_csv".equals(normalizedResultSource)) {
-            taggedCounter("algotrading.market_data.query.legacy_fallbacks", scope, normalizedMode, normalizedTimeframe, normalizedResultSource)
-                .increment();
-        }
         if (distinctSegmentCount > 1) {
             taggedCounter("algotrading.market_data.query.segment_stitch_queries", scope, normalizedMode, normalizedTimeframe, normalizedResultSource)
                 .increment();

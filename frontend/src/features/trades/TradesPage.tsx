@@ -29,6 +29,7 @@ import {
 } from '@/components/layout/PageContent';
 import { selectCurrency, selectTimezone } from '@/features/settings/settingsSlice';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { downloadCsvFile } from '@/utils/csv';
 
 const tradeSortFields: TradeSortField[] = [
   'id',
@@ -257,18 +258,10 @@ export default function TradesPage() {
       return;
     }
 
-    const csv = buildTradesCsv(filteredTrades);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `trades_${new Date()
-      .toISOString()
-      .replaceAll(':', '')
-      .replaceAll('-', '')
-      .slice(0, 15)}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+    downloadCsvFile(
+      buildTradesCsv(filteredTrades),
+      `trades_${new Date().toISOString().replaceAll(':', '').replaceAll('-', '').slice(0, 15)}.csv`
+    );
 
     setFeedback({ severity: 'success', message: 'CSV export downloaded.' });
   };

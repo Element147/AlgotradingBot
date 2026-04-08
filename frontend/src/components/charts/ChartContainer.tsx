@@ -6,6 +6,8 @@ import { Box, Button, Card, CardContent, Stack, Tooltip, Typography } from '@mui
 import { toPng } from 'html-to-image';
 import { useRef, useState } from 'react';
 
+import { buildCsv, downloadCsvFile } from '@/utils/csv';
+
 interface ChartContainerProps {
   title: string;
   tooltipText?: string;
@@ -16,12 +18,6 @@ interface ChartContainerProps {
   rows: Array<Array<string | number>>;
   chart: React.ReactNode;
 }
-
-const toCsv = (headers: string[], rows: Array<Array<string | number>>): string => {
-  const encode = (value: string | number) => `"${String(value).replaceAll('"', '""')}"`;
-  const csvRows = [headers.map(encode).join(','), ...rows.map((row) => row.map(encode).join(','))];
-  return csvRows.join('\n');
-};
 
 export function ChartContainer({
   title,
@@ -37,14 +33,7 @@ export function ChartContainer({
   const [tableMode, setTableMode] = useState(false);
 
   const exportCsv = () => {
-    const csv = toCsv(headers, rows);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = csvFileName;
-    link.click();
-    URL.revokeObjectURL(url);
+    downloadCsvFile(buildCsv(headers, rows), csvFileName);
   };
 
   const exportPng = async () => {

@@ -6,6 +6,15 @@ import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestRes
 import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestTradeSeriesItem;
 import com.algotrader.bot.backtest.infrastructure.persistence.repository.BacktestDatasetRepository;
 import com.algotrader.bot.backtest.infrastructure.persistence.repository.BacktestResultRepository;
+import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataCandle;
+import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataCandleId;
+import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataCandleSegment;
+import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataSeries;
+import com.algotrader.bot.marketdata.application.service.MarketDataQueryMode;
+import com.algotrader.bot.marketdata.application.service.MarketDataQueryService;
+import com.algotrader.bot.marketdata.infrastructure.persistence.repository.MarketDataCandleRepository;
+import com.algotrader.bot.marketdata.infrastructure.persistence.repository.MarketDataCandleSegmentRepository;
+import com.algotrader.bot.marketdata.infrastructure.persistence.repository.MarketDataSeriesRepository;
 import com.algotrader.bot.security.infrastructure.jwt.JwtTokenProvider;
 import com.algotrader.bot.system.application.recovery.BacktestStartupRecoveryParticipant;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,6 +34,7 @@ import com.algotrader.bot.validation.ValidationStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Set;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -35,7 +45,6 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -56,6 +65,18 @@ class BacktestManagementControllerIntegrationTest {
     private BacktestDatasetRepository backtestDatasetRepository;
 
     @Autowired
+    private MarketDataSeriesRepository marketDataSeriesRepository;
+
+    @Autowired
+    private MarketDataCandleSegmentRepository marketDataCandleSegmentRepository;
+
+    @Autowired
+    private MarketDataCandleRepository marketDataCandleRepository;
+
+    @Autowired
+    private MarketDataQueryService marketDataQueryService;
+
+    @Autowired
     private JwtTokenProvider jwtTokenProvider;
 
     @Autowired
@@ -73,83 +94,73 @@ class BacktestManagementControllerIntegrationTest {
     void setUp() {
         authToken = jwtTokenProvider.generateToken("testuser", "ROLE_USER");
         backtestResultRepository.deleteAll();
+        backtestResultRepository.flush();
+        marketDataCandleRepository.deleteAllInBatch();
+        marketDataCandleSegmentRepository.deleteAllInBatch();
+        marketDataSeriesRepository.deleteAll();
+        marketDataSeriesRepository.flush();
         backtestDatasetRepository.deleteAll();
+        backtestDatasetRepository.flush();
 
         BacktestDataset dataset = new BacktestDataset();
         dataset.setName("sample-btc");
-        dataset.setOriginalFilename("sample-btc.csv");
-        dataset.setCsvData((
-            "timestamp,symbol,open,high,low,close,volume\n" +
-            "2025-01-01T00:00:00,BTC/USDT,100,101,99,100,1\n" +
-            "2025-01-01T01:00:00,BTC/USDT,100,102,99,101,1\n" +
-            "2025-01-01T02:00:00,BTC/USDT,101,103,100,102,1\n" +
-            "2025-01-01T03:00:00,BTC/USDT,102,104,101,103,1\n" +
-            "2025-01-01T04:00:00,BTC/USDT,103,105,102,104,1\n" +
-            "2025-01-01T05:00:00,BTC/USDT,104,106,103,105,1\n" +
-            "2025-01-01T06:00:00,BTC/USDT,105,107,104,106,1\n" +
-            "2025-01-01T07:00:00,BTC/USDT,106,108,105,107,1\n" +
-            "2025-01-01T08:00:00,BTC/USDT,107,109,106,108,1\n" +
-            "2025-01-01T09:00:00,BTC/USDT,108,110,107,109,1\n" +
-            "2025-01-01T10:00:00,BTC/USDT,109,111,108,110,1\n" +
-            "2025-01-01T11:00:00,BTC/USDT,110,112,109,111,1\n" +
-            "2025-01-01T12:00:00,BTC/USDT,111,113,110,112,1\n" +
-            "2025-01-01T13:00:00,BTC/USDT,112,114,111,113,1\n" +
-            "2025-01-01T14:00:00,BTC/USDT,113,115,112,114,1\n" +
-            "2025-01-01T15:00:00,BTC/USDT,114,116,113,115,1\n" +
-            "2025-01-01T16:00:00,BTC/USDT,115,117,114,116,1\n" +
-            "2025-01-01T17:00:00,BTC/USDT,116,118,115,117,1\n" +
-            "2025-01-01T18:00:00,BTC/USDT,117,119,116,118,1\n" +
-            "2025-01-01T19:00:00,BTC/USDT,118,120,117,119,1\n" +
-            "2025-01-01T20:00:00,BTC/USDT,119,121,118,120,1\n" +
-            "2025-01-01T21:00:00,BTC/USDT,120,122,119,121,1\n" +
-            "2025-01-01T22:00:00,BTC/USDT,121,123,120,122,1\n" +
-            "2025-01-01T23:00:00,BTC/USDT,122,124,121,123,1\n"
-        ).getBytes());
+        dataset.setOriginalFilename("sample-btc-provider-import");
         dataset.setRowCount(24);
         dataset.setSymbolsCsv("BTC/USDT");
         dataset.setDataStart(LocalDateTime.parse("2025-01-01T00:00:00"));
         dataset.setDataEnd(LocalDateTime.parse("2025-01-01T23:00:00"));
         dataset.setChecksumSha256("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
         dataset.setSchemaVersion("ohlcv-v1");
+        dataset.setReady(Boolean.TRUE);
         datasetId = backtestDatasetRepository.save(dataset).getId();
 
         BacktestDataset universeDataset = new BacktestDataset();
         universeDataset.setName("multi-asset-universe");
-        universeDataset.setOriginalFilename("multi-asset.csv");
-        universeDataset.setCsvData((
-            "timestamp,symbol,open,high,low,close,volume\n" +
-            "2025-01-01T00:00:00,BTC/USDT,100,101,99,100,1\n" +
-            "2025-01-01T01:00:00,BTC/USDT,101,102,100,101,1\n" +
-            "2025-01-01T02:00:00,BTC/USDT,102,103,101,102,1\n" +
-            "2025-01-01T03:00:00,BTC/USDT,103,104,102,103,1\n" +
-            "2025-01-01T04:00:00,BTC/USDT,104,105,103,104,1\n" +
-            "2025-01-01T05:00:00,BTC/USDT,105,106,104,105,1\n" +
-            "2025-01-01T06:00:00,BTC/USDT,106,107,105,106,1\n" +
-            "2025-01-01T07:00:00,BTC/USDT,107,108,106,107,1\n" +
-            "2025-01-01T08:00:00,BTC/USDT,108,109,107,108,1\n" +
-            "2025-01-01T09:00:00,BTC/USDT,109,110,108,109,1\n" +
-            "2025-01-01T10:00:00,BTC/USDT,110,111,109,110,1\n" +
-            "2025-01-01T11:00:00,BTC/USDT,111,112,110,111,1\n" +
-            "2025-01-01T12:00:00,ETH/USDT,200,201,199,200,1\n" +
-            "2025-01-01T13:00:00,ETH/USDT,201,202,200,201,1\n" +
-            "2025-01-01T14:00:00,ETH/USDT,202,203,201,202,1\n" +
-            "2025-01-01T15:00:00,ETH/USDT,203,204,202,203,1\n" +
-            "2025-01-01T16:00:00,ETH/USDT,204,205,203,204,1\n" +
-            "2025-01-01T17:00:00,ETH/USDT,205,206,204,205,1\n" +
-            "2025-01-01T18:00:00,ETH/USDT,206,207,205,206,1\n" +
-            "2025-01-01T19:00:00,ETH/USDT,207,208,206,207,1\n" +
-            "2025-01-01T20:00:00,ETH/USDT,208,209,207,208,1\n" +
-            "2025-01-01T21:00:00,ETH/USDT,209,210,208,209,1\n" +
-            "2025-01-01T22:00:00,ETH/USDT,210,211,209,210,1\n" +
-            "2025-01-01T23:00:00,ETH/USDT,211,212,210,211,1\n"
-        ).getBytes());
+        universeDataset.setOriginalFilename("multi-asset-provider-import");
         universeDataset.setRowCount(24);
         universeDataset.setSymbolsCsv("BTC/USDT,ETH/USDT");
         universeDataset.setDataStart(LocalDateTime.parse("2025-01-01T00:00:00"));
         universeDataset.setDataEnd(LocalDateTime.parse("2025-01-01T23:00:00"));
         universeDataset.setChecksumSha256("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
         universeDataset.setSchemaVersion("ohlcv-v1");
-        backtestDatasetRepository.save(universeDataset);
+        universeDataset.setReady(Boolean.TRUE);
+        Long universeDatasetId = backtestDatasetRepository.save(universeDataset).getId();
+
+        MarketDataSeries btcSeries = marketDataSeriesRepository.save(seedSeries("BTCUSDT", "BTC/USDT", "BTC", "USDT"));
+        MarketDataSeries ethSeries = marketDataSeriesRepository.save(seedSeries("ETHUSDT", "ETH/USDT", "ETH", "USDT"));
+
+        MarketDataCandleSegment btcDatasetSegment = marketDataCandleSegmentRepository.save(seedSegment(
+            datasetId,
+            btcSeries,
+            "1h",
+            LocalDateTime.parse("2025-01-01T00:00:00"),
+            LocalDateTime.parse("2025-01-01T23:00:00"),
+            24,
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab"
+        ));
+        seedHourlyCandles(btcSeries, btcDatasetSegment, LocalDateTime.parse("2025-01-01T00:00:00"), new BigDecimal("100"), 24);
+
+        MarketDataCandleSegment btcUniverseSegment = marketDataCandleSegmentRepository.save(seedSegment(
+            universeDatasetId,
+            btcSeries,
+            "1h",
+            LocalDateTime.parse("2025-01-01T00:00:00"),
+            LocalDateTime.parse("2025-01-01T11:00:00"),
+            12,
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbc"
+        ));
+        seedHourlyCandles(btcSeries, btcUniverseSegment, LocalDateTime.parse("2025-01-01T00:00:00"), new BigDecimal("100"), 12);
+
+        MarketDataCandleSegment ethUniverseSegment = marketDataCandleSegmentRepository.save(seedSegment(
+            universeDatasetId,
+            ethSeries,
+            "1h",
+            LocalDateTime.parse("2025-01-01T12:00:00"),
+            LocalDateTime.parse("2025-01-01T23:00:00"),
+            12,
+            "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccd"
+        ));
+        seedHourlyCandles(ethSeries, ethUniverseSegment, LocalDateTime.parse("2025-01-01T12:00:00"), new BigDecimal("200"), 12);
 
         BacktestResult result = new BacktestResult(
             "BOLLINGER_BANDS",
@@ -393,7 +404,7 @@ class BacktestManagementControllerIntegrationTest {
             "BUY_AND_HOLD",
             "BTC/USDT",
             LocalDateTime.parse("2025-01-01T00:00:00"),
-            LocalDateTime.parse("2025-01-01T23:00:00"),
+            LocalDateTime.parse("2025-01-02T00:00:00"),
             new BigDecimal("1000"),
             new BigDecimal("1000"),
             BigDecimal.ZERO,
@@ -420,10 +431,27 @@ class BacktestManagementControllerIntegrationTest {
         TestTransaction.flagForCommit();
         TestTransaction.end();
 
+        int recoveredWindowCandleCount = marketDataQueryService.queryCandlesForDataset(
+            datasetId,
+            "1h",
+            LocalDateTime.parse("2025-01-01T00:00:00"),
+            LocalDateTime.parse("2025-01-02T00:00:00"),
+            Set.of("BTC/USDT"),
+            MarketDataQueryMode.BEST_AVAILABLE
+        ).candles().size();
+        org.junit.jupiter.api.Assertions.assertTrue(
+            recoveredWindowCandleCount >= 21,
+            "expected at least 21 candles for recovery fixture but found " + recoveredWindowCandleCount
+        );
+
         org.junit.jupiter.api.Assertions.assertEquals(1, backtestStartupRecoveryParticipant.recoverPendingWork());
 
         BacktestResult recovered = waitForBacktest(interruptedId);
-        org.junit.jupiter.api.Assertions.assertEquals(BacktestResult.ExecutionStatus.COMPLETED, recovered.getExecutionStatus());
+        org.junit.jupiter.api.Assertions.assertEquals(
+            BacktestResult.ExecutionStatus.COMPLETED,
+            recovered.getExecutionStatus(),
+            "statusMessage=" + recovered.getStatusMessage() + ", errorMessage=" + recovered.getErrorMessage()
+        );
         org.junit.jupiter.api.Assertions.assertEquals(BacktestResult.ExecutionStage.COMPLETED, recovered.getExecutionStage());
         org.junit.jupiter.api.Assertions.assertEquals(100, recovered.getProgressPercent());
     }
@@ -655,17 +683,6 @@ class BacktestManagementControllerIntegrationTest {
     }
 
     @Test
-    void downloadDataset_returnsCsvWithMetadataHeaders() throws Exception {
-        mockMvc.perform(get("/api/backtests/datasets/{datasetId}/download", datasetId)
-                .header("Authorization", "Bearer " + authToken))
-            .andExpect(status().isOk())
-            .andExpect(header().exists("X-Dataset-Checksum-Sha256"))
-            .andExpect(header().string("X-Dataset-Schema-Version", "ohlcv-v1"))
-            .andExpect(header().string("X-Dataset-Download-Source", "LEGACY_CSV_COMPATIBILITY"))
-            .andExpect(content().string(containsString("timestamp,symbol,open,high,low,close,volume")));
-    }
-
-    @Test
     void archiveAndRestoreDataset_updatesLifecycleMetadata() throws Exception {
         mockMvc.perform(post("/api/backtests/datasets/{datasetId}/archive", datasetId)
                 .header("Authorization", "Bearer " + authToken)
@@ -712,6 +729,79 @@ class BacktestManagementControllerIntegrationTest {
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isUnprocessableContent())
             .andExpect(jsonPath("$.message").value(containsString("Archived datasets cannot be used for new backtests")));
+    }
+
+    private MarketDataSeries seedSeries(String symbolNormalized,
+                                        String symbolDisplay,
+                                        String baseAsset,
+                                        String quoteAsset) {
+        MarketDataSeries series = new MarketDataSeries();
+        series.setProviderId("seed");
+        series.setBrokerId("");
+        series.setExchangeId("BINANCE");
+        series.setVenueType("EXCHANGE");
+        series.setAssetClass("CRYPTO_SPOT");
+        series.setInstrumentType("SPOT");
+        series.setSymbolNormalized(symbolNormalized);
+        series.setSymbolDisplay(symbolDisplay);
+        series.setBaseAsset(baseAsset);
+        series.setQuoteAsset(quoteAsset);
+        series.setCurrencyCode(quoteAsset);
+        series.setCountryCode("");
+        series.setTimezoneName("UTC");
+        series.setSessionTemplate("ALWAYS_ON");
+        series.setProviderMetadataJson("{\"source\":\"controller-test\"}");
+        return series;
+    }
+
+    private MarketDataCandleSegment seedSegment(Long datasetId,
+                                                MarketDataSeries series,
+                                                String timeframe,
+                                                LocalDateTime coverageStart,
+                                                LocalDateTime coverageEnd,
+                                                int rowCount,
+                                                String checksum) {
+        MarketDataCandleSegment segment = new MarketDataCandleSegment();
+        segment.setDataset(backtestDatasetRepository.findById(datasetId).orElseThrow());
+        segment.setSeries(series);
+        segment.setTimeframe(timeframe);
+        segment.setSourceType("PROVIDER_IMPORT");
+        segment.setCoverageStart(coverageStart);
+        segment.setCoverageEnd(coverageEnd);
+        segment.setRowCount(rowCount);
+        segment.setChecksumSha256(checksum);
+        segment.setSchemaVersion("ohlcv-v1");
+        segment.setResolutionTier("EXACT_RAW");
+        segment.setSourcePriority((short) 100);
+        segment.setSegmentStatus("ACTIVE");
+        segment.setStorageEncoding("ROW_STORE");
+        segment.setArchived(Boolean.FALSE);
+        segment.setLineageJson("{\"kind\":\"seed\"}");
+        return segment;
+    }
+
+    private void seedHourlyCandles(MarketDataSeries series,
+                                   MarketDataCandleSegment segment,
+                                   LocalDateTime start,
+                                   BigDecimal baseClose,
+                                   int count) {
+        for (int index = 0; index < count; index++) {
+            LocalDateTime bucketStart = start.plusHours(index);
+            BigDecimal close = baseClose.add(BigDecimal.valueOf(index));
+            MarketDataCandle candle = new MarketDataCandle();
+            candle.setId(new MarketDataCandleId(segment.getId(), segment.getTimeframe(), bucketStart));
+            candle.setSeries(series);
+            candle.setSegment(segment);
+            candle.setOpenPrice(close);
+            candle.setHighPrice(close.add(BigDecimal.ONE));
+            candle.setLowPrice(close.subtract(BigDecimal.ONE));
+            candle.setClosePrice(close);
+            candle.setVolume(BigDecimal.ONE);
+            candle.setTradeCount(1L);
+            candle.setVwap(close);
+            candle.setCreatedAt(bucketStart);
+            marketDataCandleRepository.save(candle);
+        }
     }
 
     private BacktestResult waitForBacktest(Long id) throws InterruptedException {

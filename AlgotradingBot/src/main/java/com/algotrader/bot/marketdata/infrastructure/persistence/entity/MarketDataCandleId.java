@@ -13,8 +13,8 @@ import java.util.Objects;
 public class MarketDataCandleId implements Serializable {
 
     @NotNull
-    @Column(name = "series_id", nullable = false)
-    private Long seriesId;
+    @Column(name = "segment_id", nullable = false)
+    private Long segmentId;
 
     @NotNull
     @Size(min = 2, max = 10)
@@ -28,18 +28,18 @@ public class MarketDataCandleId implements Serializable {
     public MarketDataCandleId() {
     }
 
-    public MarketDataCandleId(Long seriesId, String timeframe, LocalDateTime bucketStart) {
-        this.seriesId = seriesId;
+    public MarketDataCandleId(Long segmentId, String timeframe, LocalDateTime bucketStart) {
+        this.segmentId = segmentId;
         this.timeframe = timeframe;
         this.bucketStart = bucketStart;
     }
 
-    public Long getSeriesId() {
-        return seriesId;
+    public Long getSegmentId() {
+        return segmentId;
     }
 
-    public void setSeriesId(Long seriesId) {
-        this.seriesId = seriesId;
+    public void setSegmentId(Long segmentId) {
+        this.segmentId = segmentId;
     }
 
     public String getTimeframe() {
@@ -66,13 +66,13 @@ public class MarketDataCandleId implements Serializable {
         if (!(o instanceof MarketDataCandleId that)) {
             return false;
         }
-        return Objects.equals(seriesId, that.seriesId)
+        return Objects.equals(segmentId, that.segmentId)
             && Objects.equals(timeframe, that.timeframe)
             && Objects.equals(bucketStart, that.bucketStart);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(seriesId, timeframe, bucketStart);
+        return Objects.hash(segmentId, timeframe, bucketStart);
     }
 }

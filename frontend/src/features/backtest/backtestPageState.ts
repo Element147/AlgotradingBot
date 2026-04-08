@@ -6,6 +6,7 @@ import type {
   BacktestValidationStatus,
 } from './backtestApi';
 import type { BacktestConfigFormState } from './backtestConfigForm';
+import { parseDatasetSymbols } from './backtestDatasetUtils';
 
 import { formatDateTime, formatDistanceToNow } from '@/utils/formatters';
 
@@ -22,12 +23,6 @@ export const initialBacktestForm: BacktestConfigFormState = {
   slippageBps: '3',
 };
 
-export const parseSymbols = (symbolsCsv: string): string[] =>
-  symbolsCsv
-    .split(',')
-    .map((symbol) => symbol.trim())
-    .filter((symbol) => symbol.length > 0);
-
 export const resolveFormState = (
   form: BacktestConfigFormState,
   datasets: BacktestDataset[],
@@ -37,7 +32,7 @@ export const resolveFormState = (
   const selectedDataset = datasets.find((dataset) => String(dataset.id) === selectedDatasetId) ?? null;
   const selectedAlgorithm = algorithms.find((algorithm) => algorithm.id === form.algorithmType) ?? null;
   const requiresDatasetUniverse = selectedAlgorithm?.selectionMode === 'DATASET_UNIVERSE';
-  const datasetSymbols = selectedDataset ? parseSymbols(selectedDataset.symbolsCsv) : [];
+  const datasetSymbols = selectedDataset ? parseDatasetSymbols(selectedDataset.symbolsCsv) : [];
   const resolvedSymbol =
     requiresDatasetUniverse
       ? ''

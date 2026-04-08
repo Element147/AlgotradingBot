@@ -18,7 +18,8 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "market_data_candles", indexes = {
     @Index(name = "idx_market_candles_timeframe_bucket", columnList = "timeframe,bucket_start"),
-    @Index(name = "idx_market_candles_segment", columnList = "segment_id")
+    @Index(name = "idx_market_candles_segment", columnList = "segment_id"),
+    @Index(name = "idx_market_candles_series_timeframe_bucket", columnList = "series_id,timeframe,bucket_start")
 })
 public class MarketDataCandle {
 
@@ -26,12 +27,12 @@ public class MarketDataCandle {
     private MarketDataCandleId id;
 
     @NotNull
-    @MapsId("seriesId")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "series_id", nullable = false)
     private MarketDataSeries series;
 
     @NotNull
+    @MapsId("segmentId")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "segment_id", nullable = false)
     private MarketDataCandleSegment segment;

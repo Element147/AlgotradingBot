@@ -21,3 +21,7 @@ databaseChangeLog:
       file: db/changelog/changes/0017-add-relational-market-data-store.yaml
   - include:
       file: db/changelog/changes/0018-add-async-monitoring-fields.yaml
+  - include:
+      file: db/changelog/changes/0019-retire-legacy-csv-storage.yaml
+  - include:
+      file: db/changelog/changes/0020-fix-market-data-candle-identity.yaml

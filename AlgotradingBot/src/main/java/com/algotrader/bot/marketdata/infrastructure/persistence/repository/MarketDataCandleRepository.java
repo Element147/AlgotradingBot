@@ -3,6 +3,7 @@ package com.algotrader.bot.marketdata.infrastructure.persistence.repository;
 import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataCandle;
 import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataCandleId;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -18,7 +19,7 @@ public interface MarketDataCandleRepository extends JpaRepository<MarketDataCand
         join fetch candle.segment segment
         join fetch segment.dataset dataset
         left join fetch segment.importJob importJob
-        where candle.id.seriesId = :seriesId
+        where candle.series.id = :seriesId
           and candle.id.timeframe = :timeframe
           and candle.id.bucketStart between :windowStart and :windowEnd
         order by candle.id.bucketStart asc
@@ -78,7 +79,7 @@ public interface MarketDataCandleRepository extends JpaRepository<MarketDataCand
         join fetch segment.dataset dataset
         left join fetch segment.importJob importJob
         where segment.dataset.id = :datasetId
-          and candle.id.seriesId = :seriesId
+          and candle.series.id = :seriesId
           and candle.id.timeframe = :timeframe
           and candle.id.bucketStart between :windowStart and :windowEnd
         order by candle.id.bucketStart asc
@@ -90,4 +91,24 @@ public interface MarketDataCandleRepository extends JpaRepository<MarketDataCand
         @Param("windowStart") LocalDateTime windowStart,
         @Param("windowEnd") LocalDateTime windowEnd
     );
+
+    @Query("""
+        select candle
+        from MarketDataCandle candle
+        join fetch candle.series series
+        join fetch candle.segment segment
+        join fetch segment.dataset dataset
+        left join fetch segment.importJob importJob
+        where dataset.id = :datasetId
+        order by candle.id.bucketStart asc, series.symbolDisplay asc
+        """)
+    List<MarketDataCandle> findByDatasetIdOrdered(@Param("datasetId") Long datasetId);
+
+    @Modifying
+    @Query("""
+        delete
+        from MarketDataCandle candle
+        where candle.segment.dataset.id = :datasetId
+        """)
+    void deleteByDatasetId(@Param("datasetId") Long datasetId);
 }

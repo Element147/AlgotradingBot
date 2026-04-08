@@ -226,6 +226,10 @@ export function MarketDataJobFormPanel({
                 value={selectedProvider?.id ?? ''}
                 label="Provider"
                 onChange={(event) => onProviderChange(event.target.value)}
+                inputProps={{
+                  'aria-label': 'Market data provider',
+                  'data-testid': 'market-data-provider-select',
+                }}
               >
                 {providers.map((provider) => (
                   <MenuItem key={provider.id} value={provider.id}>
@@ -245,6 +249,10 @@ export function MarketDataJobFormPanel({
                   value={effectiveAssetType}
                   label="Asset Type"
                   onChange={(event) => onAssetTypeChange(event.target.value)}
+                  inputProps={{
+                    'aria-label': 'Market data asset type',
+                    'data-testid': 'market-data-asset-type-select',
+                  }}
                 >
                   {(selectedProvider?.supportedAssetTypes ?? []).map((assetType) => (
                     <MenuItem key={assetType} value={assetType}>
@@ -262,6 +270,10 @@ export function MarketDataJobFormPanel({
                   value={effectiveTimeframe}
                   label="Timeframe"
                   onChange={(event) => onTimeframeChange(event.target.value)}
+                  inputProps={{
+                    'aria-label': 'Market data timeframe',
+                    'data-testid': 'market-data-timeframe-select',
+                  }}
                 >
                   {(selectedProvider?.supportedTimeframes ?? []).map((timeframe) => (
                     <MenuItem key={timeframe} value={timeframe}>
@@ -280,6 +292,10 @@ export function MarketDataJobFormPanel({
               minRows={4}
               value={form.symbolsText}
               onChange={(event) => onSymbolsChange(event.target.value.replace(/\r\n/g, '\n'))}
+              inputProps={{
+                'aria-label': 'Market data symbols',
+                'data-testid': 'market-data-symbols-input',
+              }}
               helperText={
                 selectedProvider
                   ? `Examples: ${selectedProvider.symbolExamples.join(', ')}`
@@ -297,6 +313,10 @@ export function MarketDataJobFormPanel({
                 value={form.startDate}
                 onChange={(event) => onStartDateChange(event.target.value)}
                 InputLabelProps={{ shrink: true }}
+                inputProps={{
+                  'aria-label': 'Market data start date',
+                  'data-testid': 'market-data-start-date',
+                }}
               />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
@@ -307,6 +327,10 @@ export function MarketDataJobFormPanel({
                 value={form.endDate}
                 onChange={(event) => onEndDateChange(event.target.value)}
                 InputLabelProps={{ shrink: true }}
+                inputProps={{
+                  'aria-label': 'Market data end date',
+                  'data-testid': 'market-data-end-date',
+                }}
               />
             </Grid>
           </Grid>
@@ -316,6 +340,10 @@ export function MarketDataJobFormPanel({
             value={form.datasetName}
             onChange={(event) => onDatasetNameChange(event.target.value)}
             placeholder="Binance BTC majors 1h 2024-2026"
+            inputProps={{
+              'aria-label': 'Market data dataset name',
+              'data-testid': 'market-data-dataset-name',
+            }}
             helperText="Leave blank to let the app generate a readable dataset name."
           />
 
@@ -347,6 +375,7 @@ export function MarketDataJobFormPanel({
             startIcon={<CloudDownloadOutlinedIcon />}
             onClick={() => void onSubmit()}
             disabled={isCreating || !selectedProvider}
+            data-testid="market-data-create-job"
           >
             Create Download Job
           </Button>
@@ -457,6 +486,7 @@ export function MarketDataHowToPanel() {
             to="/backtest"
             size="small"
             startIcon={<PlayArrowOutlinedIcon />}
+            data-testid="market-data-howto-open-backtest"
           >
             Open Backtest
           </Button>
@@ -563,6 +593,7 @@ export function MarketDataJobsPanel({
                             component={RouterLink}
                             to="/backtest"
                             startIcon={<PlayArrowOutlinedIcon />}
+                            data-testid={`market-data-job-${job.id}-dataset-ready`}
                           >
                             Dataset #{job.datasetId} ready
                           </Button>

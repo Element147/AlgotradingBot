@@ -41,7 +41,7 @@ public class BacktestDatasetLifecycleService {
 
     public List<BacktestDatasetResponse> listDatasets() {
         long startedAt = System.nanoTime();
-        List<BacktestDataset> datasets = backtestDatasetRepository.findAllByOrderByUploadedAtDesc();
+        List<BacktestDataset> datasets = backtestDatasetRepository.findAllByReadyTrueOrderByUploadedAtDesc();
         Map<Long, DatasetUsageStats> usageStatsByDatasetId = getUsageStatsByDatasetId();
         Map<String, Integer> duplicateCountByChecksum = getDuplicateCountByChecksum(datasets);
 
@@ -53,7 +53,7 @@ public class BacktestDatasetLifecycleService {
     }
 
     public BacktestDatasetRetentionReportResponse getRetentionReport() {
-        List<BacktestDataset> datasets = backtestDatasetRepository.findAllByOrderByUploadedAtDesc();
+        List<BacktestDataset> datasets = backtestDatasetRepository.findAllByReadyTrueOrderByUploadedAtDesc();
         Map<Long, DatasetUsageStats> usageStatsByDatasetId = getUsageStatsByDatasetId();
         Map<String, Integer> duplicateCountByChecksum = getDuplicateCountByChecksum(datasets);
 
@@ -94,7 +94,7 @@ public class BacktestDatasetLifecycleService {
     }
 
     public BacktestDatasetResponse describeDataset(BacktestDataset dataset) {
-        List<BacktestDataset> datasets = backtestDatasetRepository.findAllByOrderByUploadedAtDesc();
+        List<BacktestDataset> datasets = backtestDatasetRepository.findAllByReadyTrueOrderByUploadedAtDesc();
         return toResponse(dataset, getUsageStatsByDatasetId(), getDuplicateCountByChecksum(datasets));
     }
 
@@ -144,6 +144,11 @@ public class BacktestDatasetLifecycleService {
         if (Boolean.TRUE.equals(dataset.getArchived())) {
             throw new IllegalArgumentException(
                 "Archived datasets cannot be used for new backtests. Restore the dataset or upload a new active version."
+            );
+        }
+        if (!Boolean.TRUE.equals(dataset.getReady())) {
+            throw new IllegalArgumentException(
+                "Dataset import is still in progress. Wait for the provider job to complete before starting a new backtest."
             );
         }
     }

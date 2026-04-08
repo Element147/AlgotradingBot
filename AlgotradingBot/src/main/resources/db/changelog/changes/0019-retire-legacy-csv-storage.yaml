@@ -1,0 +1,98 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0019-add-backtest-dataset-ready-flag
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          columnExists:
+            tableName: backtest_datasets
+            columnName: ready
+      changes:
+        - addColumn:
+            tableName: backtest_datasets
+            columns:
+              - column:
+                  name: ready
+                  type: boolean
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 0019-archive-uncovered-datasets-before-csv-drop
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        tableExists:
+          tableName: backtest_datasets
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              UPDATE backtest_datasets dataset
+              SET ready = FALSE,
+                  archived = TRUE,
+                  archived_at = COALESCE(archived_at, CURRENT_TIMESTAMP),
+                  archive_reason = COALESCE(
+                      NULLIF(dataset.archive_reason, ''),
+                      'Archived during provider-only cutover because normalized market-data coverage is missing. Re-import from Market Data before reuse.'
+                  )
+              WHERE dataset.ready = TRUE
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM market_data_candle_segments segment
+                    WHERE segment.dataset_id = dataset.id
+                );
+
+  - changeSet:
+      id: 0019-assert-relational-coverage-before-csv-drop
+      author: codex
+      preConditions:
+        onFail: HALT
+        or:
+          - not:
+              columnExists:
+                tableName: backtest_datasets
+                columnName: csv_data
+          - sqlCheck:
+              expectedResult: "0"
+              sql: |
+                SELECT COUNT(*)
+                FROM backtest_datasets dataset
+                WHERE dataset.ready = TRUE
+                  AND NOT EXISTS (
+                    SELECT 1
+                    FROM market_data_candle_segments segment
+                    WHERE segment.dataset_id = dataset.id
+                );
+      changes:
+        - sql:
+            splitStatements: false
+            sql: SELECT 1;
+
+  - changeSet:
+      id: 0019-drop-backtest-dataset-csv-data
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        columnExists:
+          tableName: backtest_datasets
+          columnName: csv_data
+      changes:
+        - dropColumn:
+            tableName: backtest_datasets
+            columnName: csv_data
+
+  - changeSet:
+      id: 0019-drop-market-data-import-staged-csv
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        columnExists:
+          tableName: market_data_import_jobs
+          columnName: staged_csv_data
+      changes:
+        - dropColumn:
+            tableName: market_data_import_jobs
+            columnName: staged_csv_data

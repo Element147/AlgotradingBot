@@ -134,23 +134,6 @@ export const backtestApi = createApi({
       transformResponse: normalizeBacktestDatasetRetentionReport,
       providesTags: ['BacktestDatasets'],
     }),
-    uploadBacktestDataset: builder.mutation<BacktestDataset, { file: File; name?: string }>({
-      query: ({ file, name }) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        if (name?.trim()) {
-          formData.append('name', name.trim());
-        }
-
-        return {
-          url: '/api/backtests/datasets/upload',
-          method: 'POST',
-          body: formData,
-        };
-      },
-      transformResponse: normalizeBacktestDataset,
-      invalidatesTags: ['BacktestDatasets'],
-    }),
     archiveBacktestDataset: builder.mutation<
       BacktestDataset,
       { datasetId: number; reason?: string }
@@ -216,7 +199,6 @@ export const {
   useGetBacktestAlgorithmsQuery,
   useGetBacktestDatasetsQuery,
   useGetBacktestDatasetRetentionReportQuery,
-  useUploadBacktestDatasetMutation,
   useArchiveBacktestDatasetMutation,
   useRestoreBacktestDatasetMutation,
   useRunBacktestMutation,

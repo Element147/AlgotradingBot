@@ -153,8 +153,7 @@ class MarketDataRepositoryIntegrationTest {
     private BacktestDataset dataset(String name) {
         BacktestDataset dataset = new BacktestDataset();
         dataset.setName(name);
-        dataset.setOriginalFilename(name.replace(' ', '-').toLowerCase() + ".csv");
-        dataset.setCsvData("timestamp,symbol,open,high,low,close,volume".getBytes());
+        dataset.setOriginalFilename(name.replace(' ', '-').toLowerCase() + "-provider-import");
         dataset.setRowCount(3);
         dataset.setSymbolsCsv("BTC/USDT");
         dataset.setDataStart(LocalDateTime.parse("2025-01-01T00:00:00"));
@@ -162,6 +161,7 @@ class MarketDataRepositoryIntegrationTest {
         dataset.setChecksumSha256("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef");
         dataset.setSchemaVersion("ohlcv-v1");
         dataset.setArchived(Boolean.FALSE);
+        dataset.setReady(Boolean.TRUE);
         return dataset;
     }
 
@@ -206,7 +206,7 @@ class MarketDataRepositoryIntegrationTest {
         segment.setDataset(dataset);
         segment.setSeries(series);
         segment.setTimeframe(timeframe);
-        segment.setSourceType("UPLOAD");
+        segment.setSourceType("PROVIDER_IMPORT");
         segment.setCoverageStart(coverageStart);
         segment.setCoverageEnd(coverageEnd);
         segment.setRowCount(rowCount);
@@ -228,7 +228,7 @@ class MarketDataRepositoryIntegrationTest {
         String closePrice
     ) {
         MarketDataCandle candle = new MarketDataCandle();
-        candle.setId(new MarketDataCandleId(series.getId(), segment.getTimeframe(), bucketStart));
+        candle.setId(new MarketDataCandleId(segment.getId(), segment.getTimeframe(), bucketStart));
         candle.setSeries(series);
         candle.setSegment(segment);
         candle.setOpenPrice(new BigDecimal(closePrice));

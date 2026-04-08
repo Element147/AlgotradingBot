@@ -1,11 +1,10 @@
 package com.algotrader.bot.marketdata.application.service;
 
 import com.algotrader.bot.backtest.domain.model.OHLCVData;
-import com.algotrader.bot.backtest.api.response.BacktestDatasetResponse;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestDataset;
 import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataImportJob;
 import com.algotrader.bot.marketdata.infrastructure.persistence.repository.MarketDataImportJobRepository;
-import com.algotrader.bot.backtest.application.service.BacktestDatasetCatalogService;
-import com.algotrader.bot.backtest.application.service.BacktestDatasetStorageService;
+import com.algotrader.bot.shared.application.service.SymbolCsvSupport;
 import com.algotrader.bot.system.application.service.OperatorAuditService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.scheduling.annotation.Async;
@@ -14,7 +13,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,34 +25,30 @@ public class MarketDataImportExecutionService {
         MarketDataImportJobStatus.WAITING_RETRY
     );
     private static final long WORK_SLICE_SECONDS = 20;
-    private static final long ACTIVE_TIMEOUT_SECONDS = 900;
 
     private final MarketDataImportJobRepository marketDataImportJobRepository;
     private final MarketDataProviderRegistry marketDataProviderRegistry;
-    private final MarketDataCsvSupport marketDataCsvSupport;
     private final MarketDataSessionFilter marketDataSessionFilter;
-    private final BacktestDatasetCatalogService backtestDatasetCatalogService;
-    private final BacktestDatasetStorageService backtestDatasetStorageService;
+    private final MarketDataDatasetIngestionService marketDataDatasetIngestionService;
     private final OperatorAuditService operatorAuditService;
     private final MarketDataImportProgressService marketDataImportProgressService;
+    private final SymbolCsvSupport symbolCsvSupport;
     private final Set<Long> locallyDispatchedJobIds = ConcurrentHashMap.newKeySet();
 
     public MarketDataImportExecutionService(MarketDataImportJobRepository marketDataImportJobRepository,
                                             MarketDataProviderRegistry marketDataProviderRegistry,
-                                            MarketDataCsvSupport marketDataCsvSupport,
                                             MarketDataSessionFilter marketDataSessionFilter,
-                                            BacktestDatasetCatalogService backtestDatasetCatalogService,
-                                            BacktestDatasetStorageService backtestDatasetStorageService,
+                                            MarketDataDatasetIngestionService marketDataDatasetIngestionService,
                                             OperatorAuditService operatorAuditService,
-                                            MarketDataImportProgressService marketDataImportProgressService) {
+                                            MarketDataImportProgressService marketDataImportProgressService,
+                                            SymbolCsvSupport symbolCsvSupport) {
         this.marketDataImportJobRepository = marketDataImportJobRepository;
         this.marketDataProviderRegistry = marketDataProviderRegistry;
-        this.marketDataCsvSupport = marketDataCsvSupport;
         this.marketDataSessionFilter = marketDataSessionFilter;
-        this.backtestDatasetCatalogService = backtestDatasetCatalogService;
-        this.backtestDatasetStorageService = backtestDatasetStorageService;
+        this.marketDataDatasetIngestionService = marketDataDatasetIngestionService;
         this.operatorAuditService = operatorAuditService;
         this.marketDataImportProgressService = marketDataImportProgressService;
+        this.symbolCsvSupport = symbolCsvSupport;
     }
 
     @Async("virtualThreadTaskExecutor")
@@ -94,7 +88,7 @@ public class MarketDataImportExecutionService {
         LocalDateTime deadline = LocalDateTime.now().plusSeconds(WORK_SLICE_SECONDS);
         MarketDataImportJob job = initialJob;
         MarketDataProvider provider = marketDataProviderRegistry.get(job.getProviderId());
-        List<String> symbols = parseSymbols(job.getSymbolsCsv());
+        List<String> symbols = symbolCsvSupport.parseDistinct(job.getSymbolsCsv());
         MarketDataTimeframe timeframe = MarketDataTimeframe.from(job.getTimeframe());
         LocalDateTime absoluteEnd = job.getEndDate().atTime(23, 59, 59);
 
@@ -104,7 +98,7 @@ public class MarketDataImportExecutionService {
             }
 
             if (job.getCurrentSymbolIndex() >= symbols.size()) {
-                completeJob(job, provider);
+                completeJob(job);
                 return;
             }
 
@@ -151,10 +145,8 @@ public class MarketDataImportExecutionService {
                 ? marketDataSessionFilter.regularSessionOnly(fetchedBars)
                 : fetchedBars;
 
-            byte[] updatedCsv = marketDataCsvSupport.appendRows(job.getStagedCsvData(), filteredBars);
-            backtestDatasetStorageService.validateDatasetSize(updatedCsv.length);
-            job.setStagedCsvData(updatedCsv);
-            job.setImportedRowCount(job.getImportedRowCount() + filteredBars.size());
+            int insertedRows = marketDataDatasetIngestionService.appendBars(job, provider, filteredBars);
+            job.setImportedRowCount(job.getImportedRowCount() + insertedRows);
             job.setStatusMessage(
                 "Fetched " + filteredBars.size() + " bars for " + currentSymbol
                     + " (" + chunkStart + " to " + actualChunkEnd + ")."
@@ -230,11 +222,14 @@ public class MarketDataImportExecutionService {
 
     private void markFailed(Long jobId, String message) {
         MarketDataImportJob job = getJob(jobId);
+        Long datasetId = job.getDatasetId();
         job.setStatus(MarketDataImportJobStatus.FAILED);
         job.setStatusMessage(message == null || message.isBlank() ? "Import failed." : message);
         job.setNextRetryAt(null);
+        job.setDatasetId(null);
         job.setCompletedAt(LocalDateTime.now());
         MarketDataImportJob saved = marketDataImportJobRepository.save(job);
+        marketDataDatasetIngestionService.discardPendingDataset(datasetId);
         marketDataImportProgressService.publish(saved);
         operatorAuditService.recordFailure(
             "MARKET_DATA_IMPORT_FAILED",
@@ -257,27 +252,15 @@ public class MarketDataImportExecutionService {
         marketDataImportProgressService.publish(saved);
     }
 
-    private void completeJob(MarketDataImportJob job, MarketDataProvider provider) {
-        String filename = provider.definition().id()
-            + "-" + job.getAssetType().name().toLowerCase(Locale.ROOT)
-            + "-" + job.getTimeframe()
-            + "-" + job.getStartDate()
-            + "-" + job.getEndDate()
-            + ".csv";
-        BacktestDatasetResponse dataset = backtestDatasetCatalogService.importDataset(
-            job.getDatasetName(),
-            filename,
-            job.getStagedCsvData(),
-            provider.definition().label()
-        );
+    private void completeJob(MarketDataImportJob job) {
+        BacktestDataset dataset = marketDataDatasetIngestionService.finalizeDataset(job);
 
         MarketDataImportJob managed = getJob(job.getId());
-        managed.setDatasetId(dataset.id());
+        managed.setDatasetId(dataset.getId());
         managed.setStatus(MarketDataImportJobStatus.COMPLETED);
         managed.setStatusMessage(
-            "Completed. Imported " + managed.getImportedRowCount() + " rows into dataset #" + dataset.id() + "."
+            "Completed. Imported " + dataset.getRowCount() + " rows into dataset #" + dataset.getId() + "."
         );
-        managed.setStagedCsvData(null);
         managed.setNextRetryAt(null);
         managed.setCompletedAt(LocalDateTime.now());
         MarketDataImportJob saved = marketDataImportJobRepository.save(managed);
@@ -287,15 +270,8 @@ public class MarketDataImportExecutionService {
             "test",
             "MARKET_DATA_IMPORT_JOB",
             String.valueOf(managed.getId()),
-            "provider=" + managed.getProviderId() + ", datasetId=" + dataset.id()
+            "provider=" + managed.getProviderId() + ", datasetId=" + dataset.getId()
         );
-    }
-
-    private List<String> parseSymbols(String symbolsCsv) {
-        return List.of(symbolsCsv.split(",")).stream()
-            .map(String::trim)
-            .filter(symbol -> !symbol.isBlank())
-            .toList();
     }
 
     private MarketDataImportJob getJob(Long jobId) {

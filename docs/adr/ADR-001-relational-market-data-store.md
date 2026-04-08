@@ -28,6 +28,6 @@ Keep the existing backtest dataset catalog as provenance-oriented metadata while
 
 ## Consequences
 
-- New uploads and completed imports should hydrate the normalized store during ingestion
-- Runtime backtest and telemetry paths should prefer the normalized store
-- Legacy CSV blobs can remain as compatibility data until the remaining fallback paths are retired
+- Completed provider imports should hydrate the normalized store during ingestion
+- Runtime backtest and telemetry paths should use the normalized store
+- Legacy CSV blobs and fallback paths are retired from the runtime product path

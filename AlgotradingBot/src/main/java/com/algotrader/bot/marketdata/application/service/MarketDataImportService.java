@@ -38,6 +38,7 @@ public class MarketDataImportService {
     private final MarketDataImportJobResponseMapper marketDataImportJobResponseMapper;
     private final MarketDataImportProgressService marketDataImportProgressService;
     private final MarketDataImportExecutionService marketDataImportExecutionService;
+    private final MarketDataDatasetIngestionService marketDataDatasetIngestionService;
     private final BackendOperationMetrics backendOperationMetrics;
 
     public MarketDataImportService(MarketDataImportJobRepository marketDataImportJobRepository,
@@ -47,6 +48,7 @@ public class MarketDataImportService {
                                    MarketDataImportJobResponseMapper marketDataImportJobResponseMapper,
                                    MarketDataImportProgressService marketDataImportProgressService,
                                    MarketDataImportExecutionService marketDataImportExecutionService,
+                                   MarketDataDatasetIngestionService marketDataDatasetIngestionService,
                                    BackendOperationMetrics backendOperationMetrics) {
         this.marketDataImportJobRepository = marketDataImportJobRepository;
         this.marketDataProviderRegistry = marketDataProviderRegistry;
@@ -55,6 +57,7 @@ public class MarketDataImportService {
         this.marketDataImportJobResponseMapper = marketDataImportJobResponseMapper;
         this.marketDataImportProgressService = marketDataImportProgressService;
         this.marketDataImportExecutionService = marketDataImportExecutionService;
+        this.marketDataDatasetIngestionService = marketDataDatasetIngestionService;
         this.backendOperationMetrics = backendOperationMetrics;
     }
 
@@ -177,6 +180,7 @@ public class MarketDataImportService {
         if (job.getStatus() == MarketDataImportJobStatus.COMPLETED) {
             throw new IllegalArgumentException("Completed import jobs cannot be retried.");
         }
+        Long datasetId = job.getDatasetId();
 
         job.setStatus(MarketDataImportJobStatus.QUEUED);
         job.setStatusMessage("Retry requested. Job restarted from the beginning.");
@@ -187,12 +191,12 @@ public class MarketDataImportService {
         job.setAttemptCount(0);
         job.setRetryCount(0);
         job.setMaxRetryCount(DEFAULT_MAX_RETRY_COUNT);
-        job.setStagedCsvData(null);
         job.setDatasetId(null);
         job.setStartedAt(null);
         job.setCompletedAt(null);
 
         MarketDataImportJob saved = marketDataImportJobRepository.save(job);
+        marketDataDatasetIngestionService.discardPendingDataset(datasetId);
         marketDataImportProgressService.publish(saved);
         operatorAuditService.recordSuccess(
             "MARKET_DATA_IMPORT_RETRIED",
@@ -211,12 +215,15 @@ public class MarketDataImportService {
             || job.getStatus() == MarketDataImportJobStatus.CANCELLED) {
             return marketDataImportJobResponseMapper.toResponse(job);
         }
+        Long datasetId = job.getDatasetId();
 
         job.setStatus(MarketDataImportJobStatus.CANCELLED);
         job.setStatusMessage("Cancelled by operator.");
         job.setNextRetryAt(null);
+        job.setDatasetId(null);
         job.setCompletedAt(LocalDateTime.now());
         MarketDataImportJob saved = marketDataImportJobRepository.save(job);
+        marketDataDatasetIngestionService.discardPendingDataset(datasetId);
         marketDataImportProgressService.publish(saved);
         operatorAuditService.recordSuccess(
             "MARKET_DATA_IMPORT_CANCELLED",

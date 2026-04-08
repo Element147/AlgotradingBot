@@ -21,6 +21,7 @@ import {
   buildRunBacktestPayload,
   type BacktestConfigFormState,
 } from './backtestConfigForm';
+import { parseDatasetSymbols } from './backtestDatasetUtils';
 
 import { FieldTooltip } from '@/components/ui/FieldTooltip';
 import { getStrategyProfile } from '@/features/strategies/strategyProfiles';
@@ -36,12 +37,6 @@ interface BacktestConfigModalProps {
   onClose: () => void;
   onRun: (payload: RunBacktestPayload) => Promise<void> | void;
 }
-
-const parseSymbols = (symbolsCsv: string): string[] =>
-  symbolsCsv
-    .split(',')
-    .map((symbol) => symbol.trim())
-    .filter((symbol) => symbol.length > 0);
 
 const COMMON_TIMEFRAMES = ['15m', '1h', '4h', '1d'];
 
@@ -64,7 +59,7 @@ export function BacktestConfigModal({
     [datasets, form.datasetId]
   );
   const availableSymbols = useMemo(
-    () => (selectedDataset ? parseSymbols(selectedDataset.symbolsCsv) : []),
+    () => (selectedDataset ? parseDatasetSymbols(selectedDataset.symbolsCsv) : []),
     [selectedDataset]
   );
   const requiresDatasetUniverse = selectedAlgorithm?.selectionMode === 'DATASET_UNIVERSE';
@@ -307,7 +302,7 @@ export function BacktestConfigModal({
                   datasetId: value ? String(value.id) : '',
                   symbol:
                     value && !requiresDatasetUniverse
-                      ? parseSymbols(value.symbolsCsv)[0] ?? ''
+                      ? parseDatasetSymbols(value.symbolsCsv)[0] ?? ''
                       : '',
                 })
               }
@@ -330,7 +325,7 @@ export function BacktestConfigModal({
                       {option.name}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {parseSymbols(option.symbolsCsv).length} symbols | {option.rowCount} rows |{' '}
+                      {parseDatasetSymbols(option.symbolsCsv).length} symbols | {option.rowCount} rows |{' '}
                       {option.dataStart.slice(0, 10)} to {option.dataEnd.slice(0, 10)}
                     </Typography>
                   </Stack>

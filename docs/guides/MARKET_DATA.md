@@ -1,6 +1,6 @@
 # Market Data Guide
 
-Use this guide for provider coverage, dataset imports, credentials, and the dataset workflow.
+Use this guide for provider coverage, provider imports, credentials, and the provider-only dataset workflow.
 
 ## Provider Coverage
 
@@ -42,11 +42,11 @@ Kraken lookback examples:
 3. Monitor the job until it completes, retries, or fails.
 4. Use the resulting dataset from the backtest catalog.
 
-If an operator needs deeper Kraken history than that rolling window allows, use `Binance` where coverage fits or upload a CSV dataset instead. The backend now rejects impossible Kraken ranges up front instead of running a long retry cycle.
+If an operator needs deeper Kraken history than that rolling window allows, use `Binance` or another supported provider whose coverage fits. The backend rejects impossible Kraken ranges up front instead of running a long retry cycle.
 
 ## Dataset Model
 
-New uploads and completed provider imports hydrate the normalized market-data store during ingestion.
+Completed provider imports hydrate the normalized market-data store during ingestion.
 
 Runtime ownership includes:
 
@@ -54,14 +54,15 @@ Runtime ownership includes:
 - `market_data_candle_segments`
 - `market_data_candles`
 
-Legacy CSV blobs remain compatibility data where required for fallback or download behavior.
+If an older dataset still exists without normalized coverage, the provider-only cutover archives it and marks it not ready for new runs. Historical backtest results remain readable, but operators should re-import the dataset from `Market Data` before using it again.
 
 ## Service Ownership
 
 - `MarketDataImportService`: provider metadata, credentials, job commands
 - `MarketDataImportExecutionService`: async provider fetch and job execution
+- `MarketDataDatasetIngestionService`: normalized candle persistence and dataset finalization
 - `MarketDataImportProgressService`: import telemetry publication
-- `BacktestDatasetStorageService`: parsing, persistence, downloads
+- `BacktestDatasetStorageService`: provider-backed dataset staging and finalization support
 - `BacktestDatasetLifecycleService`: inventory, retention, archive, restore
 
 ## Import Job States
@@ -90,7 +91,7 @@ Relevant environment variables:
 
 ## Rules
 
-1. Normalize provider data into the same dataset catalog used by uploads.
+1. Normalize provider data into the same dataset catalog used by backtests.
 2. Keep provider-specific retry and wait behavior visible in job state.
 3. Add providers only when they solve a real coverage gap.
 4. Keep research guardrails intact: the presence of more data does not weaken the safety posture.

@@ -23,11 +23,11 @@ The repository is a usable local-first MVP for strategy research, market-data pr
 
 ### Market Data
 
-- CSV dataset uploads and provider imports
+- Provider import jobs that create reusable backtest datasets
 - Persistent import jobs with retry-aware state and polling/WebSocket monitoring
-- Normalized market-data store for runtime query paths
-- Startup backfill for older datasets that still need normalized candle segments
-- Dataset provenance, retention, download, archive, and restore flows
+- Direct normalized ingestion into the runtime market-data store
+- Datasets that still lack normalized coverage are archived and marked not ready during the provider-only cutover, so historical results remain visible but new runs must use a fresh provider import
+- Dataset provenance, readiness, archive, and restore flows
 - Kraken public OHLC imports now fail fast when the requested range is older than its rolling 720-candle provider limit, instead of exhausting retries against an impossible window
 
 ### Paper Trading And Operations
@@ -52,11 +52,10 @@ The repository is a usable local-first MVP for strategy research, market-data pr
 - Some live reads are capability-gated and must fail closed when unsupported.
 - Strategy evidence is still narrow; most strategies remain research-only.
 - Provider coverage is intentionally limited to the currently supported free/public sources.
-- Legacy CSV compatibility still exists for some dataset download and fallback paths.
 
 ## Latest Verified Baseline
 
-Verified on March 19, 2026, March 20, 2026, March 30, 2026, April 7, 2026, and April 8, 2026:
+Verified on April 8, 2026:
 
 - `.\gradlew.bat javaMigrationAudit --no-daemon`: passed
 - `.\gradlew.bat test`: passed

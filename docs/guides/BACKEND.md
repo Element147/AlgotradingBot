@@ -9,7 +9,7 @@ The backend owns:
 - JWT auth and request boundaries
 - strategy configuration and lifecycle APIs
 - backtest execution, history, compare, replay, export, and telemetry reads
-- dataset inventory, provenance, downloads, and retention
+- dataset inventory, provenance, archive, restore, and retention
 - market-data imports and provider credential handling
 - paper-trading state, risk controls, exchange profiles, and audit events
 - WebSocket event publishing and runtime health surfaces
@@ -63,8 +63,9 @@ Market-data path:
 
 - `MarketDataImportService`: provider metadata, credentials, job commands
 - `MarketDataImportExecutionService`: async import execution
+- `MarketDataDatasetIngestionService`: normalized candle persistence and dataset finalization
 - `MarketDataImportProgressService`: import progress publication
-- `BacktestDatasetStorageService`: parsing, storage, downloads
+- `BacktestDatasetStorageService`: provider-backed dataset staging and finalization support
 - `BacktestDatasetLifecycleService`: inventory, retention, archive, restore
 
 ## Backend Rules
@@ -92,8 +93,8 @@ Market-data path:
 - Runtime DB: PostgreSQL
 - Test/build DB: H2 `test` profile
 - Schema ownership: Liquibase with `ddl-auto=validate`
-- New uploads and completed imports hydrate the normalized market-data store during ingestion
-- Legacy CSV blobs are compatibility data, not the preferred runtime path
+- Completed provider imports hydrate the normalized market-data store during ingestion
+- Runtime backtest and telemetry paths read from the normalized store only
 
 ## Verification
 

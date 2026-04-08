@@ -43,8 +43,9 @@ Important ownership splits:
 - `BacktestProgressService`: progress publication
 - `MarketDataImportService`: provider metadata, credentials, and job commands
 - `MarketDataImportExecutionService`: async import work
+- `MarketDataDatasetIngestionService`: normalized candle persistence and dataset finalization
 - `MarketDataImportProgressService`: import telemetry publication
-- `BacktestDatasetStorageService`: parsing, storage, and downloads
+- `BacktestDatasetStorageService`: provider-backed dataset staging and lifecycle handoff
 - `BacktestDatasetLifecycleService`: inventory, retention, archive, and restore
 
 ## Frontend Boundaries
@@ -102,11 +103,10 @@ The shell owns the main route context. Feature routes are expected to plug into 
 
 ### Market Data
 
-1. Operators upload CSV data or create provider import jobs.
+1. Operators create provider import jobs.
 2. Import jobs run asynchronously with retry-aware state.
-3. New datasets hydrate the normalized market-data store during ingestion.
-4. Backtests and telemetry reads use the normalized store when coverage is available.
-5. Legacy CSV blobs remain a compatibility fallback only where needed.
+3. Completed jobs persist normalized candles and finalize a reusable dataset record.
+4. Backtests and telemetry reads use the normalized store directly.
 
 ## Runtime And Data Model
 

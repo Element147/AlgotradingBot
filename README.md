@@ -8,7 +8,7 @@ Implementation and refactors now follow a hybrid Domain-Driven Development style
 
 - Historical backtesting with saved runs, trade history, equity curves, replay, compare, and export
 - Strategy catalog and strategy configuration flows for research and paper-safe monitoring
-- Market-data uploads and provider imports with persistent job tracking
+- Provider-backed market-data imports with persistent job tracking and reusable dataset inventory
 - Paper-trading desk, forward-testing workspace, and live-monitoring surfaces
 - Risk controls, circuit-breaker visibility, audit history, and exchange/profile settings
 - Local scripts for fast development mode and Docker-backed full-stack mode

@@ -55,10 +55,7 @@ class MarketDataQueryServiceIntegrationTest {
 
     @Test
     void loadCandlesForDataset_prefersRelationalStoreAndKeepsProvenanceVisible() {
-        BacktestDataset dataset = backtestDatasetRepository.saveAndFlush(dataset(
-            "Relational dataset",
-            "not-a-legacy-csv".getBytes()
-        ));
+        BacktestDataset dataset = backtestDatasetRepository.saveAndFlush(dataset("Relational dataset"));
         MarketDataSeries series = marketDataSeriesRepository.saveAndFlush(series("BTCUSDT", "BTC/USDT", "BTC", "USDT"));
         MarketDataCandleSegment segment = marketDataCandleSegmentRepository.saveAndFlush(segment(
             dataset,
@@ -87,52 +84,13 @@ class MarketDataQueryServiceIntegrationTest {
         assertThat(candles).extracting(candle -> candle.provenance().datasetId()).containsOnly(dataset.getId());
         assertThat(candles).extracting(candle -> candle.provenance().segmentId()).containsOnly(segment.getId());
         assertThat(candles).extracting(candle -> candle.provenance().seriesId()).containsOnly(series.getId());
-        assertThat(candles).extracting(candle -> candle.provenance().sourceType()).containsOnly("UPLOAD");
+        assertThat(candles).extracting(candle -> candle.provenance().sourceType()).containsOnly("PROVIDER_IMPORT");
         assertThat(candles).extracting(candle -> candle.provenance().resolutionTier()).containsOnly("EXACT_RAW");
     }
 
     @Test
-    void loadCandlesForDataset_fallsBackToLegacyCsvForUnmigratedDataset() {
-        byte[] csvData = """
-            timestamp,symbol,open,high,low,close,volume
-            2025-01-01T00:00:00,BTC/USDT,100,101,99,100,10
-            2025-01-01T01:00:00,BTC/USDT,100,102,99,101,11
-            2025-01-01T02:00:00,BTC/USDT,101,103,100,102,12
-            """.getBytes();
-        BacktestDataset dataset = backtestDatasetRepository.saveAndFlush(dataset("Legacy dataset", csvData));
-        double legacyFallbacksBefore = counterValue(
-            "algotrading.market_data.query.legacy_fallbacks",
-            "scope", "dataset",
-            "query_mode", "best_available",
-            "requested_timeframe", "1h",
-            "result_source", "legacy_csv"
-        );
-        double cacheMissesBefore = gaugeValue("algotrading.backtests.dataset_cache.misses");
-
-        List<MarketDataQueriedCandle> candles = marketDataQueryService.loadCandlesForDataset(
-            dataset.getId(),
-            "1h",
-            LocalDateTime.parse("2025-01-01T00:00:00"),
-            LocalDateTime.parse("2025-01-01T02:00:00"),
-            Set.of("BTC/USDT")
-        );
-
-        assertThat(candles).hasSize(3);
-        assertThat(candles).extracting(candle -> candle.provenance().sourceType()).containsOnly("LEGACY_CSV");
-        assertThat(candles).extracting(candle -> candle.provenance().resolutionTier()).containsOnly("LEGACY_FALLBACK");
-        assertThat(counterValue(
-            "algotrading.market_data.query.legacy_fallbacks",
-            "scope", "dataset",
-            "query_mode", "best_available",
-            "requested_timeframe", "1h",
-            "result_source", "legacy_csv"
-        )).isEqualTo(legacyFallbacksBefore + 1.0d);
-        assertThat(gaugeValue("algotrading.backtests.dataset_cache.misses")).isGreaterThanOrEqualTo(cacheMissesBefore + 1.0d);
-    }
-
-    @Test
     void queryCandlesForDataset_bestAvailablePrefersExactThenFillsWithRollup() {
-        BacktestDataset dataset = backtestDatasetRepository.saveAndFlush(dataset("Best available dataset", "legacy".getBytes()));
+        BacktestDataset dataset = backtestDatasetRepository.saveAndFlush(dataset("Best available dataset"));
         MarketDataSeries series = marketDataSeriesRepository.saveAndFlush(series("BTCUSDT", "BTC/USDT", "BTC", "USDT"));
         double rollupQueriesBefore = counterValue(
             "algotrading.market_data.query.rollup_queries",
@@ -210,7 +168,7 @@ class MarketDataQueryServiceIntegrationTest {
 
     @Test
     void queryCandlesForDataset_exactOnlyLeavesMissingBucketsAsExplicitGaps() {
-        BacktestDataset dataset = backtestDatasetRepository.saveAndFlush(dataset("Exact only dataset", "legacy".getBytes()));
+        BacktestDataset dataset = backtestDatasetRepository.saveAndFlush(dataset("Exact only dataset"));
         MarketDataSeries series = marketDataSeriesRepository.saveAndFlush(series("ETHUSDT", "ETH/USDT", "ETH", "USDT"));
         MarketDataCandleSegment exactSegment = marketDataCandleSegmentRepository.saveAndFlush(segment(
             dataset,
@@ -241,7 +199,7 @@ class MarketDataQueryServiceIntegrationTest {
 
     @Test
     void queryCandlesForDataset_rollupRejectsIncompleteSourceBucketsAndReportsGap() {
-        BacktestDataset dataset = backtestDatasetRepository.saveAndFlush(dataset("Gap dataset", "legacy".getBytes()));
+        BacktestDataset dataset = backtestDatasetRepository.saveAndFlush(dataset("Gap dataset"));
         MarketDataSeries series = marketDataSeriesRepository.saveAndFlush(series("SOLUSDT", "SOL/USDT", "SOL", "USDT"));
         MarketDataCandleSegment finerSegment = marketDataCandleSegmentRepository.saveAndFlush(segment(
             dataset,
@@ -273,7 +231,7 @@ class MarketDataQueryServiceIntegrationTest {
 
     @Test
     void queryCandlesForDataset_rollsUpMixedSymbolsIndependently() {
-        BacktestDataset dataset = backtestDatasetRepository.saveAndFlush(dataset("Mixed symbols dataset", "legacy".getBytes()));
+        BacktestDataset dataset = backtestDatasetRepository.saveAndFlush(dataset("Mixed symbols dataset"));
         MarketDataSeries cryptoSeries = marketDataSeriesRepository.saveAndFlush(series("BTCUSDT", "BTC/USDT", "BTC", "USDT"));
         MarketDataSeries equitySeries = marketDataSeriesRepository.saveAndFlush(series("SPY", "SPY", "", "USD", "ETF"));
         MarketDataCandleSegment cryptoSegment = marketDataCandleSegmentRepository.saveAndFlush(segment(
@@ -313,11 +271,10 @@ class MarketDataQueryServiceIntegrationTest {
         assertThat(result.gaps()).isEmpty();
     }
 
-    private BacktestDataset dataset(String name, byte[] csvData) {
+    private BacktestDataset dataset(String name) {
         BacktestDataset dataset = new BacktestDataset();
         dataset.setName(name);
-        dataset.setOriginalFilename(name.replace(' ', '-').toLowerCase() + ".csv");
-        dataset.setCsvData(csvData);
+        dataset.setOriginalFilename(name.replace(' ', '-').toLowerCase() + "-provider-import");
         dataset.setRowCount(3);
         dataset.setSymbolsCsv("BTC/USDT");
         dataset.setDataStart(LocalDateTime.parse("2025-01-01T00:00:00"));
@@ -325,6 +282,7 @@ class MarketDataQueryServiceIntegrationTest {
         dataset.setChecksumSha256("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef");
         dataset.setSchemaVersion("ohlcv-v1");
         dataset.setArchived(Boolean.FALSE);
+        dataset.setReady(Boolean.TRUE);
         return dataset;
     }
 
@@ -367,7 +325,7 @@ class MarketDataQueryServiceIntegrationTest {
         segment.setDataset(dataset);
         segment.setSeries(series);
         segment.setTimeframe(timeframe);
-        segment.setSourceType("UPLOAD");
+        segment.setSourceType("PROVIDER_IMPORT");
         segment.setCoverageStart(coverageStart);
         segment.setCoverageEnd(coverageEnd);
         segment.setRowCount(rowCount);
@@ -387,7 +345,7 @@ class MarketDataQueryServiceIntegrationTest {
                                     LocalDateTime bucketStart,
                                     String closePrice) {
         MarketDataCandle candle = new MarketDataCandle();
-        candle.setId(new MarketDataCandleId(series.getId(), segment.getTimeframe(), bucketStart));
+        candle.setId(new MarketDataCandleId(segment.getId(), segment.getTimeframe(), bucketStart));
         candle.setSeries(series);
         candle.setSegment(segment);
         candle.setOpenPrice(new BigDecimal(closePrice));
@@ -421,8 +379,4 @@ class MarketDataQueryServiceIntegrationTest {
         return timer == null ? 0L : timer.count();
     }
 
-    private double gaugeValue(String name) {
-        Double value = meterRegistry.get(name).gauge().value();
-        return value == null ? 0.0d : value;
-    }
 }

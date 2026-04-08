@@ -3,9 +3,6 @@ package com.algotrader.bot.backtest.infrastructure.persistence.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
 import java.time.LocalDateTime;
 
 @Entity
@@ -27,11 +24,6 @@ public class BacktestDataset {
     @Size(min = 3, max = 255)
     @Column(name = "original_filename", nullable = false, length = 255)
     private String originalFilename;
-
-    @NotNull
-    @JdbcTypeCode(SqlTypes.LONGVARBINARY)
-    @Column(name = "csv_data", nullable = false)
-    private byte[] csvData;
 
     @NotNull
     @Column(name = "row_count", nullable = false)
@@ -68,6 +60,10 @@ public class BacktestDataset {
     @Column(nullable = false)
     private Boolean archived;
 
+    @NotNull
+    @Column(nullable = false)
+    private Boolean ready;
+
     @Column(name = "archived_at")
     private LocalDateTime archivedAt;
 
@@ -85,6 +81,9 @@ public class BacktestDataset {
         }
         if (archived == null) {
             archived = Boolean.FALSE;
+        }
+        if (ready == null) {
+            ready = Boolean.TRUE;
         }
     }
 
@@ -106,14 +105,6 @@ public class BacktestDataset {
 
     public void setOriginalFilename(String originalFilename) {
         this.originalFilename = originalFilename;
-    }
-
-    public byte[] getCsvData() {
-        return csvData;
-    }
-
-    public void setCsvData(byte[] csvData) {
-        this.csvData = csvData;
     }
 
     public Integer getRowCount() {
@@ -178,6 +169,14 @@ public class BacktestDataset {
 
     public void setArchived(Boolean archived) {
         this.archived = archived;
+    }
+
+    public Boolean getReady() {
+        return ready;
+    }
+
+    public void setReady(Boolean ready) {
+        this.ready = ready;
     }
 
     public LocalDateTime getArchivedAt() {

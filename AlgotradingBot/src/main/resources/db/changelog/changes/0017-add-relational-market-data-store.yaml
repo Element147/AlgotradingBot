@@ -337,6 +337,9 @@ databaseChangeLog:
   - changeSet:
       id: 0017-create-market-data-candles
       author: codex
+      validCheckSum:
+        - 9:4ea48e3cd24ab7c7cb1ce83226ab3f48
+        - 9:a81e39a683802288706f2577f2ca5ca3
       preConditions:
         onFail: MARK_RAN
         not:
@@ -351,8 +354,6 @@ databaseChangeLog:
                   type: bigint
                   constraints:
                     nullable: false
-                    primaryKey: true
-                    primaryKeyName: pk_market_data_candles
               - column:
                   name: timeframe
                   type: varchar(10)
@@ -372,6 +373,8 @@ databaseChangeLog:
                   type: bigint
                   constraints:
                     nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_market_data_candles
               - column:
                   name: open_price
                   type: numeric(20,8)

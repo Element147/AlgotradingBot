@@ -1,0 +1,26 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0020-fix-market-data-candle-primary-key
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        tableExists:
+          tableName: market_data_candles
+      changes:
+        - dropPrimaryKey:
+            tableName: market_data_candles
+            constraintName: pk_market_data_candles
+        - addPrimaryKey:
+            tableName: market_data_candles
+            columnNames: segment_id,timeframe,bucket_start
+            constraintName: pk_market_data_candles
+        - createIndex:
+            indexName: idx_market_candles_series_timeframe_bucket
+            tableName: market_data_candles
+            columns:
+              - column:
+                  name: series_id
+              - column:
+                  name: timeframe
+              - column:
+                  name: bucket_start

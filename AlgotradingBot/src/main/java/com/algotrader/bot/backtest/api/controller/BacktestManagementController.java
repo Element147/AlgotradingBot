@@ -5,17 +5,14 @@ import com.algotrader.bot.backtest.application.service.BacktestManagementService
 import com.algotrader.bot.backtest.application.service.BacktestResultQueryService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import com.algotrader.bot.backtest.api.query.BacktestHistoryQuery;
 import com.algotrader.bot.backtest.api.request.BacktestDatasetArchiveRequest;
 import com.algotrader.bot.backtest.api.request.RunBacktestRequest;
 import com.algotrader.bot.backtest.api.response.BacktestAlgorithmResponse;
 import com.algotrader.bot.backtest.api.response.BacktestComparisonResponse;
-import com.algotrader.bot.backtest.api.response.BacktestDatasetDownloadResponse;
 import com.algotrader.bot.backtest.api.response.BacktestDatasetResponse;
 import com.algotrader.bot.backtest.api.response.BacktestDatasetRetentionReportResponse;
 import com.algotrader.bot.backtest.api.response.BacktestDetailsResponse;
@@ -64,13 +61,6 @@ public class BacktestManagementController {
         return ResponseEntity.ok(backtestDatasetCatalogService.getRetentionReport());
     }
 
-    @PostMapping(value = "/datasets/upload", consumes = "multipart/form-data")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<BacktestDatasetResponse> uploadDataset(@RequestParam(required = false) String name,
-                                                                 @RequestPart("file") MultipartFile file) {
-        return ResponseEntity.ok(backtestDatasetCatalogService.uploadDataset(name, file));
-    }
-
     @PostMapping("/datasets/{datasetId}/archive")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<BacktestDatasetResponse> archiveDataset(
@@ -84,21 +74,6 @@ public class BacktestManagementController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<BacktestDatasetResponse> restoreDataset(@PathVariable Long datasetId) {
         return ResponseEntity.ok(backtestDatasetCatalogService.restoreDataset(datasetId));
-    }
-
-    @GetMapping("/datasets/{datasetId}/download")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<byte[]> downloadDataset(@PathVariable Long datasetId) {
-        BacktestDatasetDownloadResponse dataset = backtestDatasetCatalogService.downloadDataset(datasetId);
-        String safeFilename = dataset.originalFilename().replace("\"", "");
-
-        return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + safeFilename + "\"")
-            .header("X-Dataset-Checksum-Sha256", dataset.checksumSha256())
-            .header("X-Dataset-Schema-Version", dataset.schemaVersion())
-            .header("X-Dataset-Download-Source", dataset.exportSource())
-            .contentType(MediaType.parseMediaType("text/csv"))
-            .body(dataset.csvData());
     }
 
     @GetMapping

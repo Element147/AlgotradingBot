@@ -2,6 +2,7 @@ package com.algotrader.bot.marketdata.infrastructure.persistence.repository;
 
 import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataCandleSegment;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -54,4 +55,12 @@ public interface MarketDataCandleSegmentRepository extends JpaRepository<MarketD
         order by series.symbolNormalized asc, segment.timeframe asc, segment.coverageStart asc, segment.createdAt asc
         """)
     List<MarketDataCandleSegment> findByDatasetIdWithSeries(@Param("datasetId") Long datasetId);
+
+    @Modifying
+    @Query("""
+        delete
+        from MarketDataCandleSegment segment
+        where segment.dataset.id = :datasetId
+        """)
+    void deleteByDatasetId(@Param("datasetId") Long datasetId);
 }

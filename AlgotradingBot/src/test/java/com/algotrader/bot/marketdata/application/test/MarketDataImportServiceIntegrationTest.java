@@ -1,6 +1,7 @@
 package com.algotrader.bot.marketdata.application.test;
 
 import com.algotrader.bot.backtest.domain.model.OHLCVData;
+import com.algotrader.bot.backtest.infrastructure.persistence.repository.BacktestDatasetRepository;
 import com.algotrader.bot.marketdata.api.request.MarketDataImportJobRequest;
 import com.algotrader.bot.marketdata.api.response.MarketDataImportJobResponse;
 import com.algotrader.bot.marketdata.api.response.MarketDataProviderResponse;
@@ -61,6 +62,9 @@ class MarketDataImportServiceIntegrationTest {
 
     @org.springframework.beans.factory.annotation.Autowired
     private MarketDataImportJobRepository marketDataImportJobRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private BacktestDatasetRepository backtestDatasetRepository;
 
     @org.springframework.beans.factory.annotation.Autowired
     private MarketDataImportStartupRecoveryParticipant marketDataImportStartupRecoveryParticipant;
@@ -199,6 +203,35 @@ class MarketDataImportServiceIntegrationTest {
         assertThat(completed.status()).isEqualTo("COMPLETED");
         assertThat(completed.datasetReady()).isTrue();
         assertThat(completed.datasetId()).isNotNull();
+    }
+
+    @Test
+    void listJobs_reportsDatasetNotReadyWhenLinkedDatasetWasArchivedDuringCutover() {
+        MarketDataImportJobResponse created = marketDataImportService.createJob(new MarketDataImportJobRequest(
+            "stub",
+            MarketDataAssetType.CRYPTO,
+            List.of("BTC/USDT"),
+            "1h",
+            LocalDate.parse("2025-01-01"),
+            LocalDate.parse("2025-01-02"),
+            "Archived dataset handoff",
+            false,
+            false
+        ));
+
+        marketDataImportService.processJob(created.id());
+
+        MarketDataImportJobResponse completed = findJob(created.id());
+        var dataset = backtestDatasetRepository.findById(completed.datasetId()).orElseThrow();
+        dataset.setReady(Boolean.FALSE);
+        dataset.setArchived(Boolean.TRUE);
+        dataset.setArchiveReason("Archived during provider-only cutover.");
+        backtestDatasetRepository.save(dataset);
+
+        MarketDataImportJobResponse refreshed = findJob(created.id());
+        assertThat(refreshed.status()).isEqualTo("COMPLETED");
+        assertThat(refreshed.datasetReady()).isFalse();
+        assertThat(refreshed.datasetId()).isEqualTo(completed.datasetId());
     }
 
     private MarketDataImportJobResponse findJob(Long id) {

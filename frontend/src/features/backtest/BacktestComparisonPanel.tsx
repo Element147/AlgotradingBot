@@ -12,6 +12,7 @@ import {
   useInteractiveTableState,
 } from '@/components/ui/InteractiveTable';
 import { NumericText, StatusPill } from '@/components/ui/Workbench';
+import { buildCsv, downloadCsvFile } from '@/utils/csv';
 import {
   formatCurrency,
   formatDateTime,
@@ -396,27 +397,27 @@ export function BacktestComparisonPanel({ comparison }: BacktestComparisonPanelP
       return;
     }
 
-    const rows = [
-      [
-        'runId',
-        'strategyId',
-        'datasetName',
-        'datasetSchemaVersion',
-        'datasetChecksumSha256',
-        'datasetUploadedAt',
-        'datasetArchived',
-        'finalBalance',
-        'finalBalanceDelta',
-        'totalReturnPercent',
-        'totalReturnDeltaPercent',
-        'sharpeRatio',
-        'profitFactor',
-        'winRate',
-        'maxDrawdown',
-        'totalTrades',
-      ].join(','),
-      ...comparison.items.map((item) =>
+    downloadCsvFile(
+      buildCsv(
         [
+          'runId',
+          'strategyId',
+          'datasetName',
+          'datasetSchemaVersion',
+          'datasetChecksumSha256',
+          'datasetUploadedAt',
+          'datasetArchived',
+          'finalBalance',
+          'finalBalanceDelta',
+          'totalReturnPercent',
+          'totalReturnDeltaPercent',
+          'sharpeRatio',
+          'profitFactor',
+          'winRate',
+          'maxDrawdown',
+          'totalTrades',
+        ],
+        comparison.items.map((item) => [
           item.id,
           item.strategyId,
           item.datasetName ?? '',
@@ -433,21 +434,10 @@ export function BacktestComparisonPanel({ comparison }: BacktestComparisonPanelP
           item.winRate,
           item.maxDrawdown,
           item.totalTrades,
-        ]
-          .map((value) => `"${String(value).replaceAll('"', '""')}"`)
-          .join(',')
+        ])
       ),
-    ].join('\n');
-
-    const blob = new Blob([rows], { type: 'text/csv;charset=utf-8' });
-    const objectUrl = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = objectUrl;
-    anchor.download = `backtest-comparison-${comparison.baselineBacktestId}.csv`;
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    URL.revokeObjectURL(objectUrl);
+      `backtest-comparison-${comparison.baselineBacktestId}.csv`
+    );
   };
 
   return (

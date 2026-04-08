@@ -1,7 +1,9 @@
 package com.algotrader.bot.marketdata.application.service;
 
 import com.algotrader.bot.marketdata.api.response.MarketDataImportJobResponse;
+import com.algotrader.bot.backtest.infrastructure.persistence.repository.BacktestDatasetRepository;
 import com.algotrader.bot.shared.api.response.AsyncTaskMonitorResponse;
+import com.algotrader.bot.shared.application.service.SymbolCsvSupport;
 import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataImportJob;
 import org.springframework.stereotype.Service;
 
@@ -14,15 +16,21 @@ public class MarketDataImportJobResponseMapper {
 
     private static final long ACTIVE_TIMEOUT_SECONDS = 900;
 
+    private final BacktestDatasetRepository backtestDatasetRepository;
     private final MarketDataProviderRegistry marketDataProviderRegistry;
+    private final SymbolCsvSupport symbolCsvSupport;
 
-    public MarketDataImportJobResponseMapper(MarketDataProviderRegistry marketDataProviderRegistry) {
+    public MarketDataImportJobResponseMapper(BacktestDatasetRepository backtestDatasetRepository,
+                                             MarketDataProviderRegistry marketDataProviderRegistry,
+                                             SymbolCsvSupport symbolCsvSupport) {
+        this.backtestDatasetRepository = backtestDatasetRepository;
         this.marketDataProviderRegistry = marketDataProviderRegistry;
+        this.symbolCsvSupport = symbolCsvSupport;
     }
 
     public MarketDataImportJobResponse toResponse(MarketDataImportJob job) {
         MarketDataProvider provider = marketDataProviderRegistry.get(job.getProviderId());
-        List<String> symbols = parseSymbols(job.getSymbolsCsv());
+        List<String> symbols = symbolCsvSupport.parseDistinct(job.getSymbolsCsv());
         String currentSymbol = job.getCurrentSymbolIndex() >= 0 && job.getCurrentSymbolIndex() < symbols.size()
             ? symbols.get(job.getCurrentSymbolIndex())
             : null;
@@ -47,7 +55,7 @@ public class MarketDataImportJobResponseMapper {
             currentSymbol,
             job.getImportedRowCount(),
             job.getDatasetId(),
-            job.getDatasetId() != null && job.getStatus() == MarketDataImportJobStatus.COMPLETED,
+            isDatasetReady(job),
             job.getCurrentChunkStart(),
             job.getAttemptCount(),
             job.getRetryCount(),
@@ -58,6 +66,16 @@ public class MarketDataImportJobResponseMapper {
             job.getCompletedAt(),
             buildAsyncMonitor(job)
         );
+    }
+
+    private boolean isDatasetReady(MarketDataImportJob job) {
+        if (job.getDatasetId() == null || job.getStatus() != MarketDataImportJobStatus.COMPLETED) {
+            return false;
+        }
+
+        return backtestDatasetRepository.findById(job.getDatasetId())
+            .filter(dataset -> Boolean.TRUE.equals(dataset.getReady()) && !Boolean.TRUE.equals(dataset.getArchived()))
+            .isPresent();
     }
 
     private AsyncTaskMonitorResponse buildAsyncMonitor(MarketDataImportJob job) {
@@ -86,10 +104,4 @@ public class MarketDataImportJobResponseMapper {
         );
     }
 
-    private List<String> parseSymbols(String symbolsCsv) {
-        return List.of(symbolsCsv.split(",")).stream()
-            .map(String::trim)
-            .filter(symbol -> !symbol.isBlank())
-            .toList();
-    }
 }

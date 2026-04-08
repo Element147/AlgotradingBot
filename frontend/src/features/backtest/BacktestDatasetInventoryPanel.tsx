@@ -1,5 +1,4 @@
 import ArchiveOutlinedIcon from '@mui/icons-material/ArchiveOutlined';
-import DownloadIcon from '@mui/icons-material/Download';
 import RestoreFromTrashIcon from '@mui/icons-material/RestoreFromTrash';
 import {
   Alert,
@@ -32,17 +31,11 @@ import {
 } from '@/utils/formatters';
 
 interface BacktestDatasetInventoryPanelProps {
-  datasetName: string;
-  datasetFile: File | null;
   retentionReport?: BacktestDatasetRetentionReport;
   datasets: BacktestDataset[];
   hasActiveDatasets: boolean;
-  isUploading: boolean;
   datasetLifecycleBusy: boolean;
-  onDatasetNameChange: (value: string) => void;
-  onDatasetFileChange: (file: File | null) => void;
-  onUploadDataset: () => void;
-  onDownloadDataset: (datasetId: number) => void | Promise<void>;
+  onOpenMarketData: () => void;
   onArchiveDataset: (dataset: BacktestDataset) => void | Promise<void>;
   onRestoreDataset: (datasetId: number) => void | Promise<void>;
 }
@@ -60,17 +53,11 @@ const retentionTone = (
 };
 
 export function BacktestDatasetInventoryPanel({
-  datasetName,
-  datasetFile,
   retentionReport,
   datasets,
   hasActiveDatasets,
-  isUploading,
   datasetLifecycleBusy,
-  onDatasetNameChange,
-  onDatasetFileChange,
-  onUploadDataset,
-  onDownloadDataset,
+  onOpenMarketData,
   onArchiveDataset,
   onRestoreDataset,
 }: BacktestDatasetInventoryPanelProps) {
@@ -224,7 +211,7 @@ export function BacktestDatasetInventoryPanel({
         minSize: 204,
         meta: {
           filterVariant: 'none',
-          headerDescription: 'Download, archive, or restore the dataset.',
+          headerDescription: 'Archive or restore the dataset.',
         },
         cell: ({ row }) => (
           <Stack
@@ -232,13 +219,6 @@ export function BacktestDatasetInventoryPanel({
             spacing={0.75}
             onClick={(event) => event.stopPropagation()}
           >
-            <Button
-              size="small"
-              startIcon={<DownloadIcon />}
-              onClick={() => void onDownloadDataset(row.original.id)}
-            >
-              Download
-            </Button>
             {row.original.archived ? (
               <Button
                 size="small"
@@ -263,14 +243,14 @@ export function BacktestDatasetInventoryPanel({
         ),
       },
     ],
-    [datasetLifecycleBusy, onArchiveDataset, onDownloadDataset, onRestoreDataset]
+    [datasetLifecycleBusy, onArchiveDataset, onRestoreDataset]
   );
 
   return (
     <Stack spacing={2}>
       <SurfacePanel
         title="Dataset lifecycle"
-        description="Dataset intake stays separate from the inventory grid so uploads remain approachable while the catalog itself behaves like an operational table."
+        description="Backtest now consumes provider-created datasets only. Create new datasets from the Market Data workflow, then return here to archive, restore, and launch runs."
         actions={
           <StatusPill
             label={hasActiveDatasets ? 'Active datasets ready' : 'No active dataset'}
@@ -281,8 +261,8 @@ export function BacktestDatasetInventoryPanel({
       >
         <Stack spacing={2}>
           <Alert severity="info">
-            Start with one clean symbol dataset first, then move to multi-symbol universe research
-            once the baseline behavior is understood.
+            Provider imports own dataset creation now. Keep this page focused on inventory review,
+            retention, and run readiness.
           </Alert>
           {retentionReport ? (
             <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
@@ -298,36 +278,25 @@ export function BacktestDatasetInventoryPanel({
               />
             </Stack>
           ) : null}
-          <FieldTooltip title="Human-readable dataset label. Clear naming prevents running backtests on the wrong file.">
+          <FieldTooltip title="Dataset creation moved to the Market Data page so provider imports and dataset provenance stay in one workflow.">
             <TextField
-              label="Dataset name (optional)"
-              value={datasetName}
-              onChange={(event) => onDatasetNameChange(event.target.value)}
-              placeholder="BTC 1h 2025"
-              helperText="Optional label to identify symbol, timeframe, and date range."
+              label="Create new datasets from Market Data"
+              value="Provider import workflow"
+              InputProps={{ readOnly: true }}
+              helperText="Use Market Data to request provider imports; completed jobs appear here automatically."
             />
           </FieldTooltip>
-          <FieldTooltip title="CSV upload defines the historical data source. Incorrect format or timeframe invalidates results.">
-            <Button variant="outlined" component="label">
-              {datasetFile ? `Selected: ${datasetFile.name}` : 'Choose CSV file'}
-              <input
-                hidden
-                type="file"
-                accept=".csv,text/csv"
-                onChange={(event) => onDatasetFileChange(event.target.files?.[0] ?? null)}
-              />
-            </Button>
-          </FieldTooltip>
-          <Button variant="contained" onClick={onUploadDataset} disabled={!datasetFile || isUploading}>
-            Upload dataset
+          <Button
+            variant="contained"
+            onClick={onOpenMarketData}
+            data-testid="backtest-datasets-open-market-data"
+          >
+            Open Market Data
           </Button>
-          <Typography variant="caption" color="text.secondary">
-            CSV format: timestamp,symbol,open,high,low,close,volume
-          </Typography>
           {!hasActiveDatasets ? (
             <Alert severity="warning">
-              No active datasets are available for new runs. Restore an archived dataset or upload a
-              new CSV.
+              No active datasets are available for new runs. Restore an archived dataset or create a
+              provider import from Market Data.
             </Alert>
           ) : null}
         </Stack>
@@ -342,7 +311,7 @@ export function BacktestDatasetInventoryPanel({
         columns={columns}
         stateControls={tableStateControls}
         emptyTitle="No datasets recorded yet"
-        emptyDescription="Upload a CSV file above to seed the dataset catalog."
+        emptyDescription="Create a provider import in Market Data to seed the dataset catalog."
         loading={false}
         globalFilterPlaceholder="Name, symbol, schema, or checksum"
         stats={

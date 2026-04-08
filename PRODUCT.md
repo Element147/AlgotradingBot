@@ -10,7 +10,7 @@ It is not a production trading platform and it does not assume any strategy is p
 
 - Strategy catalog with reusable strategy IDs and paper-safe configuration templates
 - Backtest workflow with dataset selection, run history, replay, compare, trade review, and export
-- Market-data workflow with uploads, provider imports, retry-aware jobs, and dataset provenance
+- Market-data workflow with provider imports, retry-aware jobs, and dataset provenance
 - Forward-testing, paper-trading, and live-monitoring surfaces with environment-aware behavior
 - Risk and operations tools such as circuit-breaker review, override visibility, audit history, and exchange/profile settings
 - Local-first developer workflow with PowerShell scripts, Docker Compose, tracked contracts, and verification guidance
@@ -32,7 +32,7 @@ It is not a production trading platform and it does not assume any strategy is p
 
 Typical operator flow:
 
-1. Prepare data by uploading a dataset or importing it from a provider.
+1. Prepare data by importing a dataset from a supported provider in `Market Data`.
 2. Configure or review a strategy from the catalog.
 3. Run a backtest and inspect the evidence, not just the headline return.
 4. If the research is strong enough, follow it in paper-safe monitoring first.

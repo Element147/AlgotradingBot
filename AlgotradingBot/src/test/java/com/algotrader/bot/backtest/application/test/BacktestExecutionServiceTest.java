@@ -3,6 +3,7 @@ package com.algotrader.bot.backtest.application.test;
 import com.algotrader.bot.backtest.domain.model.BacktestSimulationEngine;
 import com.algotrader.bot.backtest.domain.strategy.BacktestStrategyRegistry;
 import com.algotrader.bot.marketdata.application.service.MarketDataQueryService;
+import com.algotrader.bot.shared.application.service.SymbolCsvSupport;
 import com.algotrader.bot.shared.infrastructure.observability.service.BackendOperationMetrics;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
@@ -32,7 +33,8 @@ class BacktestExecutionServiceTest {
             backtestStrategyRegistry,
             marketDataQueryService,
             backtestExecutionLifecycleService,
-            new BackendOperationMetrics(new SimpleMeterRegistry())
+            new BackendOperationMetrics(new SimpleMeterRegistry()),
+            new SymbolCsvSupport()
         );
         RuntimeException failure = new RuntimeException("backtest row is not visible yet");
 

@@ -1,56 +1,20 @@
 package com.algotrader.bot.backtest.application.service;
 
 import com.algotrader.bot.backtest.api.request.BacktestDatasetArchiveRequest;
-import com.algotrader.bot.backtest.api.response.BacktestDatasetDownloadResponse;
 import com.algotrader.bot.backtest.api.response.BacktestDatasetResponse;
 import com.algotrader.bot.backtest.api.response.BacktestDatasetRetentionReportResponse;
-import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestDataset;
-import com.algotrader.bot.system.application.service.OperatorAuditService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 @Service
 public class BacktestDatasetCatalogService {
 
-    private final BacktestDatasetStorageService backtestDatasetStorageService;
     private final BacktestDatasetLifecycleService backtestDatasetLifecycleService;
-    private final OperatorAuditService operatorAuditService;
 
-    public BacktestDatasetCatalogService(BacktestDatasetStorageService backtestDatasetStorageService,
-                                         BacktestDatasetLifecycleService backtestDatasetLifecycleService,
-                                         OperatorAuditService operatorAuditService) {
-        this.backtestDatasetStorageService = backtestDatasetStorageService;
+    public BacktestDatasetCatalogService(BacktestDatasetLifecycleService backtestDatasetLifecycleService) {
         this.backtestDatasetLifecycleService = backtestDatasetLifecycleService;
-        this.operatorAuditService = operatorAuditService;
-    }
-
-    @Transactional
-    public BacktestDatasetResponse uploadDataset(String requestedName, MultipartFile file) {
-        BacktestDataset saved = backtestDatasetStorageService.storeUploadedDataset(requestedName, file);
-        operatorAuditService.recordSuccess(
-            "BACKTEST_DATASET_UPLOADED",
-            "test",
-            "BACKTEST_DATASET",
-            String.valueOf(saved.getId()),
-            "name=" + saved.getName() + ", rows=" + saved.getRowCount()
-        );
-        return backtestDatasetLifecycleService.describeDataset(saved);
-    }
-
-    @Transactional
-    public BacktestDatasetResponse importDataset(String requestedName, String filename, byte[] csvData, String sourceDetails) {
-        BacktestDataset saved = backtestDatasetStorageService.storeImportedDataset(requestedName, filename, csvData, sourceDetails);
-        operatorAuditService.recordSuccess(
-            "BACKTEST_DATASET_IMPORTED",
-            "test",
-            "BACKTEST_DATASET",
-            String.valueOf(saved.getId()),
-            "name=" + saved.getName() + ", rows=" + saved.getRowCount() + ", source=" + sourceDetails
-        );
-        return backtestDatasetLifecycleService.describeDataset(saved);
     }
 
     @Transactional(readOnly = true)
@@ -61,11 +25,6 @@ public class BacktestDatasetCatalogService {
     @Transactional(readOnly = true)
     public BacktestDatasetRetentionReportResponse getRetentionReport() {
         return backtestDatasetLifecycleService.getRetentionReport();
-    }
-
-    @Transactional(readOnly = true)
-    public BacktestDatasetDownloadResponse downloadDataset(Long datasetId) {
-        return backtestDatasetStorageService.downloadDataset(datasetId);
     }
 
     @Transactional

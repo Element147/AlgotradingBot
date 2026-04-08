@@ -71,8 +71,6 @@ cd AlgotradingBot
 .\gradlew.bat test
 .\gradlew.bat build
 .\gradlew.bat bootRun
-.\gradlew.bat migrateLegacyDatasets -PlegacyMigrationDryRun=true
-.\gradlew.bat reconcileLegacyDatasets
 ```
 
 Rules:
@@ -130,3 +128,44 @@ Conventions:
 - Docker-visible workspace paths use `/C/Git/algotradingbot/...`
 - Host callbacks use `host.docker.internal`
 - Hoverfly state belongs under `/C/Git/algotradingbot/.runtime/hoverfly`
+
+## Codex Runbook
+
+Use the MCP that removes the most guesswork for the specific task:
+
+- `context7`: current framework and library documentation
+- `openapi-schema`: inspect or verify the backend contract before changing frontend types
+- `database-server`: inspect PostgreSQL runtime state, job rows, and dataset coverage
+- `hoverfly-mcp-server`: mock provider or exchange HTTP flows without patching production code paths
+- `semgrep`: optional request-boundary, auth, or secrets-focused verification
+- `playwright`: browser verification for the actual SPA, especially `Market Data` and `Backtest`
+
+Preferred Codex verification order:
+
+1. narrow local tests first
+2. contract generation/check when API surfaces move
+3. runtime DB inspection only when behavior depends on persisted state
+4. browser automation after the page exposes stable selectors or labels
+
+Frontend automation-friendly selectors now exist on the main provider-import and backtest workflow surfaces. Prefer `browser_snapshot` before `browser_click` so Codex targets the current accessible node refs instead of stale coordinates.
+
+## Playwright Fix
+
+On Windows, `playwright` can fail if `HOME` or `CODEX_HOME` is unset and the runtime falls back to `C:\Windows\System32`. Configure a user-writable home once:
+
+```powershell
+[Environment]::SetEnvironmentVariable('HOME', $env:USERPROFILE, 'User')
+[Environment]::SetEnvironmentVariable('CODEX_HOME', (Join-Path $env:USERPROFILE '.codex'), 'User')
+New-Item -ItemType Directory -Force -Path (Join-Path $env:USERPROFILE '.codex') | Out-Null
+```
+
+Then restart the Codex desktop app before retrying browser automation.
+
+Minimal Playwright smoke expectation after restart:
+
+1. navigate to the local frontend
+2. capture `browser_snapshot`
+3. click one labeled control on `Market Data` or `Backtest`
+4. confirm follow-up interaction with another snapshot
+
+If Playwright still opens the page but cannot click, re-check the user environment variables and confirm the desktop app was restarted after the change.

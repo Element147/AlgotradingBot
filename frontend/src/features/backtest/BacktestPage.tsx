@@ -1,6 +1,6 @@
 import { Alert, Button, Chip, Grid, Stack, Tab, Tabs } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import {
   useArchiveBacktestDatasetMutation,
@@ -16,7 +16,6 @@ import {
   useReplayBacktestMutation,
   useRestoreBacktestDatasetMutation,
   useRunBacktestMutation,
-  useUploadBacktestDatasetMutation,
   type BacktestDataset,
   type BacktestExecutionStatus,
   type BacktestHistoryItem,
@@ -31,7 +30,6 @@ import { BacktestHistoryWorkspacePanel } from './BacktestHistoryWorkspacePanel';
 import {
   initialBacktestForm,
   isExecutionActive,
-  parseSymbols,
   resolveFormState,
 } from './backtestPageState';
 import {
@@ -61,8 +59,7 @@ import {
   selectLastEventTimeForType,
   selectSubscribedChannels,
 } from '@/features/websocket/websocketSlice';
-import axiosClient, { getErrorMessage } from '@/services/axiosClient';
-import { sanitizeText } from '@/utils/security';
+import { getErrorMessage } from '@/services/axiosClient';
 
 type BacktestRouteTab = 'review' | 'runs' | 'datasets' | 'history';
 
@@ -84,6 +81,7 @@ const parseRouteTab = (value: string | null, fallback: BacktestRouteTab): Backte
 
 export default function BacktestPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const websocketConnected = useAppSelector(selectIsConnected);
   const websocketError = useAppSelector(selectConnectionError);
   const subscribedChannels = useAppSelector(selectSubscribedChannels);
@@ -99,8 +97,6 @@ export default function BacktestPage() {
   const [selectedId, setSelectedId] = useState<number | null>(() =>
     parseBacktestIdParam(searchParams.get('run'))
   );
-  const [datasetName, setDatasetName] = useState('');
-  const [datasetFile, setDatasetFile] = useState<File | null>(null);
   const [feedback, setFeedback] = useState<{ severity: 'success' | 'error'; message: string } | null>(
     null
   );
@@ -178,7 +174,6 @@ export default function BacktestPage() {
     [activeDatasets, algorithms, form]
   );
 
-  const [uploadDataset, { isLoading: isUploading }] = useUploadBacktestDatasetMutation();
   const [archiveDataset, { isLoading: isArchivingDataset }] = useArchiveBacktestDatasetMutation();
   const [restoreDataset, { isLoading: isRestoringDataset }] = useRestoreBacktestDatasetMutation();
   const [runBacktest, { isLoading: isRunning }] = useRunBacktestMutation();
@@ -316,36 +311,6 @@ export default function BacktestPage() {
     ]
   );
 
-  const onUploadDataset = async () => {
-    if (!datasetFile) {
-      setFeedback({ severity: 'error', message: 'Choose a CSV file first.' });
-      return;
-    }
-
-    try {
-      const uploaded = await uploadDataset({
-        file: datasetFile,
-        name: datasetName.trim() || undefined,
-      }).unwrap();
-
-      const uploadedSymbols = parseSymbols(uploaded.symbolsCsv);
-      setForm((prev) => ({
-        ...prev,
-        datasetId: String(uploaded.id),
-        symbol: uploadedSymbols[0] ?? prev.symbol,
-      }));
-      setFeedback({
-        severity: 'success',
-        message: `Dataset '${uploaded.name}' uploaded (${uploaded.rowCount} rows) and added to the active run catalog.`,
-      });
-      setDatasetFile(null);
-      setDatasetName('');
-      setRouteTab('datasets');
-    } catch (error) {
-      setFeedback({ severity: 'error', message: getErrorMessage(error) });
-    }
-  };
-
   const onArchiveDataset = async (dataset: BacktestDataset) => {
     try {
       await archiveDataset({
@@ -356,7 +321,7 @@ export default function BacktestPage() {
       }).unwrap();
       setFeedback({
         severity: 'success',
-        message: `Archived dataset '${dataset.name}'. It remains available for download and replay-backed research.`,
+        message: `Archived dataset '${dataset.name}'. It remains available for replay-backed research and can be restored later.`,
       });
     } catch (error) {
       setFeedback({ severity: 'error', message: getErrorMessage(error) });
@@ -453,6 +418,10 @@ export default function BacktestPage() {
     }
   };
 
+  const onOpenMarketData = () => {
+    void navigate('/market-data');
+  };
+
   const onCompareSelected = async () => {
     if (comparisonIds.length < 2) {
       setFeedback({ severity: 'error', message: 'Select at least two backtests to compare.' });
@@ -467,35 +436,6 @@ export default function BacktestPage() {
         message: `Comparison loaded for runs ${comparisonIds.map((id) => `#${id}`).join(', ')}.`,
       });
       setRouteTab('history');
-    } catch (error) {
-      setFeedback({ severity: 'error', message: getErrorMessage(error) });
-    }
-  };
-
-  const onDownloadDataset = async (datasetId: number) => {
-    try {
-      const response = await axiosClient.get<Blob>(`/api/backtests/datasets/${datasetId}/download`, {
-        responseType: 'blob',
-      });
-      const dispositionHeader = response.headers['content-disposition'];
-      const disposition = typeof dispositionHeader === 'string' ? dispositionHeader : '';
-      const match = /filename="?([^"]+)"?/i.exec(disposition);
-      const filename = match?.[1] ?? `dataset-${datasetId}.csv`;
-      const objectUrl = URL.createObjectURL(response.data);
-      const anchor = document.createElement('a');
-      anchor.href = objectUrl;
-      anchor.download = filename;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      URL.revokeObjectURL(objectUrl);
-
-      const checksum = response.headers['x-dataset-checksum-sha256'];
-      const schemaVersion = response.headers['x-dataset-schema-version'];
-      setFeedback({
-        severity: 'success',
-        message: `Downloaded ${filename}${checksum ? ` (${schemaVersion}, checksum ${checksum.slice(0, 12)}...)` : ''}.`,
-      });
     } catch (error) {
       setFeedback({ severity: 'error', message: getErrorMessage(error) });
     }
@@ -592,17 +532,11 @@ export default function BacktestPage() {
     <Grid container spacing={2.5}>
       <Grid size={{ xs: 12 }}>
         <BacktestDatasetInventoryPanel
-          datasetName={datasetName}
-          datasetFile={datasetFile}
           retentionReport={retentionReport}
           datasets={datasets}
           hasActiveDatasets={activeDatasets.length > 0}
-          isUploading={isUploading}
           datasetLifecycleBusy={datasetLifecycleBusy}
-          onDatasetNameChange={(value) => setDatasetName(sanitizeText(value))}
-          onDatasetFileChange={(file) => setDatasetFile(file)}
-          onUploadDataset={() => void onUploadDataset()}
-          onDownloadDataset={onDownloadDataset}
+          onOpenMarketData={onOpenMarketData}
           onArchiveDataset={onArchiveDataset}
           onRestoreDataset={onRestoreDataset}
         />
@@ -654,7 +588,7 @@ export default function BacktestPage() {
     datasets: {
       title: 'Dataset lifecycle',
       description:
-        'Upload, audit, sort, and restore datasets in one place so data preparation stops competing with run review.',
+        'Review imported datasets, manage archive state, and jump to Market Data when you need a new provider-backed dataset.',
     },
     history: {
       title: 'History and comparison',
@@ -668,18 +602,22 @@ export default function BacktestPage() {
       <PageContent maxWidth="research">
         <PageIntro
           eyebrow="Research-only workflow"
-          description="Upload or restore datasets, launch runs with realistic costs, then compare and inspect results without blurring the line between research and live execution."
+          description="Use provider-backed datasets, launch runs with realistic costs, then compare and inspect results without blurring the line between research and live execution."
           actions={
             <>
               <Button
                 variant="contained"
                 onClick={() => setConfigModalOpen(true)}
                 disabled={!activeDatasets.length}
+                data-testid="backtest-run-new"
               >
                 Run new backtest
               </Button>
-              <Button variant="outlined" onClick={() => setRouteTab('history')}>
+              <Button variant="outlined" onClick={() => setRouteTab('history')} data-testid="backtest-open-history">
                 Open history
+              </Button>
+              <Button variant="outlined" onClick={onOpenMarketData} data-testid="backtest-open-market-data">
+                Open Market Data
               </Button>
             </>
           }
@@ -687,6 +625,7 @@ export default function BacktestPage() {
             <>
               <Chip label="Backtests stay research-only" variant="outlined" />
               <Chip label="Dataset provenance stays visible" variant="outlined" />
+              <Chip label="Datasets come from provider imports" variant="outlined" />
               <Chip label="Costs and slippage remain explicit" variant="outlined" />
             </>
           }
@@ -747,6 +686,7 @@ export default function BacktestPage() {
             variant="scrollable"
             allowScrollButtonsMobile
             aria-label="Backtest route sections"
+            data-testid="backtest-route-tabs"
           >
             <Tab value="review" label="Review" />
             <Tab value="runs" label="Runs" />
