@@ -1,8 +1,14 @@
-package com.algotrader.bot.backtest.domain.strategy;
+package com.algotrader.bot.backtest.domain.strategy.test;
 
-import com.algotrader.bot.backtest.domain.OHLCVData;
-import com.algotrader.bot.shared.domain.PositionSide;
+import com.algotrader.bot.backtest.domain.model.OHLCVData;
+import com.algotrader.bot.shared.domain.model.PositionSide;
 import org.junit.jupiter.api.Test;
+import com.algotrader.bot.backtest.domain.strategy.BacktestIndicatorCalculator;
+import com.algotrader.bot.backtest.domain.strategy.BacktestOpenPosition;
+import com.algotrader.bot.backtest.domain.strategy.BacktestStrategyAction;
+import com.algotrader.bot.backtest.domain.strategy.BacktestStrategyContext;
+import com.algotrader.bot.backtest.domain.strategy.BacktestStrategyDecision;
+import com.algotrader.bot.backtest.domain.strategy.OpeningRangeVwapBreakoutBacktestStrategy;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

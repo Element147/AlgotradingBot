@@ -1,6 +1,6 @@
 package com.algotrader.bot.security.infrastructure.jwt;
 
-import com.algotrader.bot.security.application.AuthService;
+import com.algotrader.bot.security.application.service.AuthService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,6 +13,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+import com.algotrader.bot.security.infrastructure.persistence.entity.User;
 
 import java.io.IOException;
 import java.util.Collections;

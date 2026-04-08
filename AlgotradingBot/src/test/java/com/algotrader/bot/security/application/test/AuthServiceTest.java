@@ -1,8 +1,8 @@
-package com.algotrader.bot.security.application;
+package com.algotrader.bot.security.application.test;
 
-import com.algotrader.bot.security.infrastructure.persistence.User;
-import com.algotrader.bot.security.infrastructure.persistence.AuthTokenRevocationRepository;
-import com.algotrader.bot.security.infrastructure.persistence.UserRepository;
+import com.algotrader.bot.security.infrastructure.persistence.entity.User;
+import com.algotrader.bot.security.infrastructure.persistence.repository.AuthTokenRevocationRepository;
+import com.algotrader.bot.security.infrastructure.persistence.repository.UserRepository;
 import com.algotrader.bot.security.infrastructure.jwt.JwtTokenProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,6 +12,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import com.algotrader.bot.security.application.service.AuthService;
 
 import java.time.Instant;
 import java.util.Map;

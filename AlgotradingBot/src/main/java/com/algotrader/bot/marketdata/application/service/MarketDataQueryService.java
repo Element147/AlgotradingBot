@@ -1,13 +1,13 @@
-package com.algotrader.bot.marketdata.application;
+package com.algotrader.bot.marketdata.application.service;
 
-import com.algotrader.bot.backtest.domain.OHLCVData;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestDataset;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataCandle;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataCandleSegment;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataSeries;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataCandleRepository;
-import com.algotrader.bot.backtest.application.BacktestDatasetCandleCache;
-import com.algotrader.bot.backtest.application.BacktestDatasetStorageService;
+import com.algotrader.bot.backtest.domain.model.OHLCVData;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestDataset;
+import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataCandle;
+import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataCandleSegment;
+import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataSeries;
+import com.algotrader.bot.marketdata.infrastructure.persistence.repository.MarketDataCandleRepository;
+import com.algotrader.bot.backtest.application.service.BacktestDatasetCandleCache;
+import com.algotrader.bot.backtest.application.service.BacktestDatasetStorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

@@ -1,8 +1,8 @@
-package com.algotrader.bot.shared.api;
+package com.algotrader.bot.shared.api.error;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
-import com.algotrader.bot.account.application.LiveAccountReadUnavailableException;
+import com.algotrader.bot.account.application.service.LiveAccountReadUnavailableException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -16,6 +16,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import com.algotrader.bot.account.infrastructure.persistence.entity.Account;
 
 import java.util.stream.Collectors;
 

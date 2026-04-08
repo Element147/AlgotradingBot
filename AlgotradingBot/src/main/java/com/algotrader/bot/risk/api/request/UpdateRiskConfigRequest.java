@@ -1,4 +1,4 @@
-package com.algotrader.bot.risk.api;
+package com.algotrader.bot.risk.api.request;
 
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;

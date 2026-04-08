@@ -1,10 +1,12 @@
-package com.algotrader.bot.risk.domain;
+package com.algotrader.bot.risk.domain.test;
 
-import com.algotrader.bot.account.infrastructure.persistence.Account;
-import com.algotrader.bot.strategy.infrastructure.persistence.Trade;
+import com.algotrader.bot.account.infrastructure.persistence.entity.Account;
+import com.algotrader.bot.strategy.infrastructure.persistence.entity.Trade;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
+import com.algotrader.bot.risk.domain.model.RiskCheckResult;
+import com.algotrader.bot.risk.domain.model.RiskManager;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

@@ -1,6 +1,6 @@
 package com.algotrader.bot.backtest.domain.strategy;
 
-import com.algotrader.bot.backtest.domain.BacktestAlgorithmType;
+import com.algotrader.bot.backtest.domain.service.BacktestAlgorithmType;
 public record BacktestStrategyDefinition(
     BacktestAlgorithmType type,
     String label,

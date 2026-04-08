@@ -1,6 +1,6 @@
-package com.algotrader.bot.security.api;
+package com.algotrader.bot.security.api.controller;
 
-import com.algotrader.bot.security.application.AuthService;
+import com.algotrader.bot.security.application.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -9,6 +9,9 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import com.algotrader.bot.security.api.request.LoginRequest;
+import com.algotrader.bot.security.api.request.RefreshTokenRequest;
+import com.algotrader.bot.security.infrastructure.persistence.entity.User;
 
 import java.util.Map;
 

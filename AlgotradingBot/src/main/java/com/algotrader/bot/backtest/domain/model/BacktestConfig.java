@@ -1,10 +1,11 @@
-package com.algotrader.bot.backtest.domain;
+package com.algotrader.bot.backtest.domain.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import com.algotrader.bot.strategy.infrastructure.persistence.entity.Trade;
 
 /**
  * Configuration DTO for backtest execution.

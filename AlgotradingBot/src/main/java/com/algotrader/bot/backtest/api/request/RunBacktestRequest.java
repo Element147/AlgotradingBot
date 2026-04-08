@@ -1,4 +1,4 @@
-package com.algotrader.bot.backtest.api;
+package com.algotrader.bot.backtest.api.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;

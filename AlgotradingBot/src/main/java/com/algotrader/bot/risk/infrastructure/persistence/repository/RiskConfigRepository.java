@@ -1,6 +1,6 @@
-package com.algotrader.bot.risk.infrastructure.persistence;
+package com.algotrader.bot.risk.infrastructure.persistence.repository;
 
-import com.algotrader.bot.risk.infrastructure.persistence.RiskConfig;
+import com.algotrader.bot.risk.infrastructure.persistence.entity.RiskConfig;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

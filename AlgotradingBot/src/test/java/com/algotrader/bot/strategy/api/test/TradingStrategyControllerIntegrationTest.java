@@ -1,13 +1,13 @@
-package com.algotrader.bot.strategy.api;
+package com.algotrader.bot.strategy.api.test;
 
-import com.algotrader.bot.account.infrastructure.persistence.Account;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestResult;
-import com.algotrader.bot.account.infrastructure.persistence.Portfolio;
-import com.algotrader.bot.strategy.infrastructure.persistence.Trade;
-import com.algotrader.bot.account.infrastructure.persistence.AccountRepository;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestResultRepository;
-import com.algotrader.bot.account.infrastructure.persistence.PortfolioRepository;
-import com.algotrader.bot.strategy.infrastructure.persistence.TradeRepository;
+import com.algotrader.bot.account.infrastructure.persistence.entity.Account;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestResult;
+import com.algotrader.bot.account.infrastructure.persistence.entity.Portfolio;
+import com.algotrader.bot.strategy.infrastructure.persistence.entity.Trade;
+import com.algotrader.bot.account.infrastructure.persistence.repository.AccountRepository;
+import com.algotrader.bot.backtest.infrastructure.persistence.repository.BacktestResultRepository;
+import com.algotrader.bot.account.infrastructure.persistence.repository.PortfolioRepository;
+import com.algotrader.bot.strategy.infrastructure.persistence.repository.TradeRepository;
 import com.algotrader.bot.security.infrastructure.jwt.JwtTokenProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,6 +19,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import com.algotrader.bot.shared.api.error.GlobalExceptionHandler;
+import com.algotrader.bot.strategy.api.controller.TradingStrategyController;
+import com.algotrader.bot.strategy.api.request.StartStrategyRequest;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -524,7 +527,7 @@ class TradingStrategyControllerIntegrationTest {
 
     private void createTestBacktestResults() {
         // Create BTC backtest result
-        com.algotrader.bot.backtest.infrastructure.persistence.BacktestResult btcResult = new com.algotrader.bot.backtest.infrastructure.persistence.BacktestResult(
+        com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestResult btcResult = new com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestResult(
             "bollinger-bands-v1",
             "BTC/USDT",
             LocalDateTime.now().minusYears(2),
@@ -536,12 +539,12 @@ class TradingStrategyControllerIntegrationTest {
             new BigDecimal("52.5"),
             new BigDecimal("18.5"),
             150,
-            com.algotrader.bot.backtest.infrastructure.persistence.BacktestResult.ValidationStatus.PASSED
+            com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestResult.ValidationStatus.PASSED
         );
         backtestResultRepository.save(btcResult);
 
         // Create ETH backtest result
-        com.algotrader.bot.backtest.infrastructure.persistence.BacktestResult ethResult = new com.algotrader.bot.backtest.infrastructure.persistence.BacktestResult(
+        com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestResult ethResult = new com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestResult(
             "bollinger-bands-v1",
             "ETH/USDT",
             LocalDateTime.now().minusYears(2),
@@ -553,12 +556,12 @@ class TradingStrategyControllerIntegrationTest {
             new BigDecimal("48.0"),
             new BigDecimal("22.0"),
             120,
-            com.algotrader.bot.backtest.infrastructure.persistence.BacktestResult.ValidationStatus.PASSED
+            com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestResult.ValidationStatus.PASSED
         );
         backtestResultRepository.save(ethResult);
 
         // Create another strategy result
-        com.algotrader.bot.backtest.infrastructure.persistence.BacktestResult anotherResult = new com.algotrader.bot.backtest.infrastructure.persistence.BacktestResult(
+        com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestResult anotherResult = new com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestResult(
             "ema-crossover-v1",
             "BTC/USDT",
             LocalDateTime.now().minusYears(1),
@@ -570,7 +573,7 @@ class TradingStrategyControllerIntegrationTest {
             new BigDecimal("45.0"),
             new BigDecimal("28.0"),
             80,
-            com.algotrader.bot.backtest.infrastructure.persistence.BacktestResult.ValidationStatus.FAILED
+            com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestResult.ValidationStatus.FAILED
         );
         backtestResultRepository.save(anotherResult);
     }

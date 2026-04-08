@@ -1,4 +1,4 @@
-package com.algotrader.bot.strategy.infrastructure.persistence;
+package com.algotrader.bot.strategy.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;

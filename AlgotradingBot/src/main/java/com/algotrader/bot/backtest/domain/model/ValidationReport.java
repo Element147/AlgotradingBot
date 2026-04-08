@@ -1,6 +1,6 @@
-package com.algotrader.bot.backtest.domain;
+package com.algotrader.bot.backtest.domain.model;
 
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestResult;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestResult;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

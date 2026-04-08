@@ -1,4 +1,4 @@
-package com.algotrader.bot.marketdata.application;
+package com.algotrader.bot.marketdata.application.service;
 
 public enum MarketDataQueryMode {
     EXACT_ONLY,

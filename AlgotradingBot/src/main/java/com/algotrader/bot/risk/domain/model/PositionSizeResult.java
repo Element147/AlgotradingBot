@@ -1,4 +1,4 @@
-package com.algotrader.bot.risk.domain;
+package com.algotrader.bot.risk.domain.model;
 
 import java.math.BigDecimal;
 

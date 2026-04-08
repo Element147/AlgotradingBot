@@ -3,6 +3,8 @@ package com.algotrader.bot.websocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import com.algotrader.bot.strategy.infrastructure.persistence.entity.Trade;
+import com.algotrader.bot.validation.ValidationStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

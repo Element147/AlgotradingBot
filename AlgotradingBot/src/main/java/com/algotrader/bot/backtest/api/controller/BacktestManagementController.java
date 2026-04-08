@@ -1,8 +1,8 @@
-package com.algotrader.bot.backtest.api;
+package com.algotrader.bot.backtest.api.controller;
 
-import com.algotrader.bot.backtest.application.BacktestDatasetCatalogService;
-import com.algotrader.bot.backtest.application.BacktestManagementService;
-import com.algotrader.bot.backtest.application.BacktestResultQueryService;
+import com.algotrader.bot.backtest.application.service.BacktestDatasetCatalogService;
+import com.algotrader.bot.backtest.application.service.BacktestManagementService;
+import com.algotrader.bot.backtest.application.service.BacktestResultQueryService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -10,6 +10,23 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import com.algotrader.bot.backtest.api.query.BacktestHistoryQuery;
+import com.algotrader.bot.backtest.api.request.BacktestDatasetArchiveRequest;
+import com.algotrader.bot.backtest.api.request.RunBacktestRequest;
+import com.algotrader.bot.backtest.api.response.BacktestAlgorithmResponse;
+import com.algotrader.bot.backtest.api.response.BacktestComparisonResponse;
+import com.algotrader.bot.backtest.api.response.BacktestDatasetDownloadResponse;
+import com.algotrader.bot.backtest.api.response.BacktestDatasetResponse;
+import com.algotrader.bot.backtest.api.response.BacktestDatasetRetentionReportResponse;
+import com.algotrader.bot.backtest.api.response.BacktestDetailsResponse;
+import com.algotrader.bot.backtest.api.response.BacktestEquityPointResponse;
+import com.algotrader.bot.backtest.api.response.BacktestExperimentSummaryResponse;
+import com.algotrader.bot.backtest.api.response.BacktestHistoryPageResponse;
+import com.algotrader.bot.backtest.api.response.BacktestRunResponse;
+import com.algotrader.bot.backtest.api.response.BacktestSummaryResponse;
+import com.algotrader.bot.backtest.api.response.BacktestTelemetryQueryResponse;
+import com.algotrader.bot.backtest.api.response.BacktestTradeSeriesItemResponse;
+import com.algotrader.bot.validation.ValidationStatus;
 
 import java.util.List;
 

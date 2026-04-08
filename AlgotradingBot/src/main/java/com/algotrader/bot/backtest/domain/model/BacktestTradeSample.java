@@ -1,6 +1,6 @@
-package com.algotrader.bot.backtest.domain;
+package com.algotrader.bot.backtest.domain.model;
 
-import com.algotrader.bot.shared.domain.PositionSide;
+import com.algotrader.bot.shared.domain.model.PositionSide;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 

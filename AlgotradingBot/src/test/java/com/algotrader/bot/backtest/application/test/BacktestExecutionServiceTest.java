@@ -1,11 +1,14 @@
-package com.algotrader.bot.backtest.application;
+package com.algotrader.bot.backtest.application.test;
 
-import com.algotrader.bot.backtest.domain.BacktestSimulationEngine;
+import com.algotrader.bot.backtest.domain.model.BacktestSimulationEngine;
 import com.algotrader.bot.backtest.domain.strategy.BacktestStrategyRegistry;
-import com.algotrader.bot.marketdata.application.MarketDataQueryService;
-import com.algotrader.bot.shared.infrastructure.observability.BackendOperationMetrics;
+import com.algotrader.bot.marketdata.application.service.MarketDataQueryService;
+import com.algotrader.bot.shared.infrastructure.observability.service.BackendOperationMetrics;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
+import com.algotrader.bot.backtest.application.service.BacktestDatasetStorageService;
+import com.algotrader.bot.backtest.application.service.BacktestExecutionLifecycleService;
+import com.algotrader.bot.backtest.application.service.BacktestExecutionService;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.eq;

@@ -1,4 +1,4 @@
-package com.algotrader.bot.strategy.api;
+package com.algotrader.bot.strategy.api.response;
 
 public record StrategyActionResponse(
     Long strategyId,

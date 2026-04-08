@@ -1,6 +1,8 @@
-package com.algotrader.bot.strategy.api;
+package com.algotrader.bot.strategy.api.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import com.algotrader.bot.shared.domain.model.PositionSide;
+import com.algotrader.bot.strategy.infrastructure.persistence.entity.Trade;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

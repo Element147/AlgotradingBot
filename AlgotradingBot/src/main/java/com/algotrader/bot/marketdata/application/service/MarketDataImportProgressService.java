@@ -1,8 +1,8 @@
-package com.algotrader.bot.marketdata.application;
+package com.algotrader.bot.marketdata.application.service;
 
-import com.algotrader.bot.marketdata.api.MarketDataImportJobResponse;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataImportJob;
-import com.algotrader.bot.shared.infrastructure.observability.BackendOperationMetrics;
+import com.algotrader.bot.marketdata.api.response.MarketDataImportJobResponse;
+import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataImportJob;
+import com.algotrader.bot.shared.infrastructure.observability.service.BackendOperationMetrics;
 import com.algotrader.bot.websocket.WebSocketEventPublisher;
 import org.springframework.stereotype.Service;
 

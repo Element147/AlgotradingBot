@@ -1,12 +1,16 @@
-package com.algotrader.bot.strategy.api;
+package com.algotrader.bot.strategy.api.controller;
 
-import com.algotrader.bot.strategy.application.StrategyManagementService;
+import com.algotrader.bot.strategy.application.service.StrategyManagementService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import com.algotrader.bot.strategy.api.request.UpdateStrategyConfigRequest;
+import com.algotrader.bot.strategy.api.response.StrategyActionResponse;
+import com.algotrader.bot.strategy.api.response.StrategyConfigHistoryResponse;
+import com.algotrader.bot.strategy.api.response.StrategyDetailsResponse;
 
 import java.util.List;
 

@@ -1,6 +1,7 @@
-package com.algotrader.bot.marketdata.application;
+package com.algotrader.bot.marketdata.application.test;
 
 import org.junit.jupiter.api.Test;
+import com.algotrader.bot.marketdata.application.service.MarketDataCredentialCipher;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;

@@ -1,4 +1,4 @@
-package com.algotrader.bot.backtest.domain;
+package com.algotrader.bot.backtest.domain.model;
 
 @FunctionalInterface
 public interface BacktestSimulationProgressListener {

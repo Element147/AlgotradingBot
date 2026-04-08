@@ -1,4 +1,4 @@
-package com.algotrader.bot.system.api;
+package com.algotrader.bot.system.api.response;
 
 import java.util.List;
 

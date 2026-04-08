@@ -1,52 +1,53 @@
 package com.algotrader.bot.analysis;
 
-import com.algotrader.bot.backtest.domain.BacktestSimulationEngine;
-import com.algotrader.bot.backtest.domain.BacktestSimulationRequest;
-import com.algotrader.bot.backtest.domain.BacktestSimulationResult;
-import com.algotrader.bot.backtest.domain.OHLCVData;
+import com.algotrader.bot.backtest.domain.model.BacktestSimulationEngine;
+import com.algotrader.bot.backtest.domain.model.BacktestSimulationRequest;
+import com.algotrader.bot.backtest.domain.model.BacktestSimulationResult;
+import com.algotrader.bot.backtest.domain.model.OHLCVData;
 import com.algotrader.bot.backtest.domain.strategy.BacktestIndicatorCalculator;
 import com.algotrader.bot.backtest.domain.strategy.BacktestStrategy;
 import com.algotrader.bot.backtest.domain.strategy.BacktestStrategyDefinition;
 import com.algotrader.bot.backtest.domain.strategy.BacktestStrategyRegistry;
 import com.algotrader.bot.backtest.domain.strategy.BacktestStrategySelectionMode;
-import com.algotrader.bot.backtest.api.BacktestDetailsResponse;
-import com.algotrader.bot.backtest.api.BacktestHistoryPageResponse;
-import com.algotrader.bot.backtest.api.BacktestHistoryQuery;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestDataset;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestEquityPoint;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestResult;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestTradeSeriesItem;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataImportJob;
-import com.algotrader.bot.shared.domain.PositionSide;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestDatasetRepository;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestResultRepository;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataImportJobRepository;
-import com.algotrader.bot.shared.infrastructure.observability.BackendOperationMetrics;
-import com.algotrader.bot.backtest.domain.BacktestAlgorithmType;
-import com.algotrader.bot.backtest.application.BacktestDatasetLifecycleService;
-import com.algotrader.bot.backtest.application.BacktestDatasetStorageService;
-import com.algotrader.bot.backtest.application.BacktestExecutionLifecycleService;
-import com.algotrader.bot.backtest.application.BacktestExecutionService;
-import com.algotrader.bot.backtest.application.BacktestResultQueryService;
-import com.algotrader.bot.backtest.application.BacktestTelemetryService;
-import com.algotrader.bot.marketdata.infrastructure.csv.HistoricalDataCsvParser;
-import com.algotrader.bot.system.application.OperatorAuditService;
-import com.algotrader.bot.marketdata.application.MarketDataAssetType;
-import com.algotrader.bot.marketdata.application.MarketDataImportExecutionService;
-import com.algotrader.bot.marketdata.application.MarketDataImportJobResponseMapper;
-import com.algotrader.bot.marketdata.application.MarketDataImportJobStatus;
-import com.algotrader.bot.marketdata.application.MarketDataProvider;
-import com.algotrader.bot.marketdata.application.MarketDataImportProgressService;
-import com.algotrader.bot.marketdata.application.MarketDataImportService;
-import com.algotrader.bot.marketdata.application.MarketDataProviderDefinition;
-import com.algotrader.bot.marketdata.application.MarketDataProviderRegistry;
-import com.algotrader.bot.marketdata.application.MarketDataQueryMode;
-import com.algotrader.bot.marketdata.application.MarketDataQueryResult;
-import com.algotrader.bot.marketdata.application.MarketDataQueryService;
+import com.algotrader.bot.backtest.api.response.BacktestDetailsResponse;
+import com.algotrader.bot.backtest.api.response.BacktestHistoryPageResponse;
+import com.algotrader.bot.backtest.api.query.BacktestHistoryQuery;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestDataset;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestEquityPoint;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestResult;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestTradeSeriesItem;
+import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataImportJob;
+import com.algotrader.bot.shared.domain.model.PositionSide;
+import com.algotrader.bot.backtest.infrastructure.persistence.repository.BacktestDatasetRepository;
+import com.algotrader.bot.backtest.infrastructure.persistence.repository.BacktestResultRepository;
+import com.algotrader.bot.marketdata.infrastructure.persistence.repository.MarketDataImportJobRepository;
+import com.algotrader.bot.shared.infrastructure.observability.service.BackendOperationMetrics;
+import com.algotrader.bot.backtest.domain.service.BacktestAlgorithmType;
+import com.algotrader.bot.backtest.application.service.BacktestDatasetLifecycleService;
+import com.algotrader.bot.backtest.application.service.BacktestDatasetStorageService;
+import com.algotrader.bot.backtest.application.service.BacktestExecutionLifecycleService;
+import com.algotrader.bot.backtest.application.service.BacktestExecutionService;
+import com.algotrader.bot.backtest.application.service.BacktestResultQueryService;
+import com.algotrader.bot.backtest.application.service.BacktestTelemetryService;
+import com.algotrader.bot.marketdata.infrastructure.csv.service.HistoricalDataCsvParser;
+import com.algotrader.bot.system.application.service.OperatorAuditService;
+import com.algotrader.bot.marketdata.application.service.MarketDataAssetType;
+import com.algotrader.bot.marketdata.application.service.MarketDataImportExecutionService;
+import com.algotrader.bot.marketdata.application.service.MarketDataImportJobResponseMapper;
+import com.algotrader.bot.marketdata.application.service.MarketDataImportJobStatus;
+import com.algotrader.bot.marketdata.application.service.MarketDataProvider;
+import com.algotrader.bot.marketdata.application.service.MarketDataImportProgressService;
+import com.algotrader.bot.marketdata.application.service.MarketDataImportService;
+import com.algotrader.bot.marketdata.application.service.MarketDataProviderDefinition;
+import com.algotrader.bot.marketdata.application.service.MarketDataProviderRegistry;
+import com.algotrader.bot.marketdata.application.service.MarketDataQueryMode;
+import com.algotrader.bot.marketdata.application.service.MarketDataQueryResult;
+import com.algotrader.bot.marketdata.application.service.MarketDataQueryService;
 import com.algotrader.bot.websocket.WebSocketEventPublisher;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.mockito.Mockito;
+import com.algotrader.bot.strategy.infrastructure.persistence.entity.Trade;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -118,7 +119,7 @@ public final class BackendWorkflowProfileRunner {
         MarketDataImportService importService = new MarketDataImportService(
             mockImportJobRepository(buildImportJob()),
             providerRegistry,
-            Mockito.mock(com.algotrader.bot.marketdata.application.MarketDataProviderCredentialService.class),
+            Mockito.mock(com.algotrader.bot.marketdata.application.service.MarketDataProviderCredentialService.class),
             Mockito.mock(OperatorAuditService.class),
             mapper,
             progressService,
@@ -300,7 +301,7 @@ public final class BackendWorkflowProfileRunner {
         MarketDataQueryService service = Mockito.mock(MarketDataQueryService.class);
         when(service.queryCandlesForDataset(any(), any(), any(), any(), any(Set.class), any(MarketDataQueryMode.class)))
             .thenAnswer(invocation -> new MarketDataQueryResult(
-                candles.stream().map(candle -> new com.algotrader.bot.marketdata.application.MarketDataQueriedCandle(
+                candles.stream().map(candle -> new com.algotrader.bot.marketdata.application.service.MarketDataQueriedCandle(
                     candle.getTimestamp(),
                     candle.getSymbol(),
                     candle.getOpen(),
@@ -308,7 +309,7 @@ public final class BackendWorkflowProfileRunner {
                     candle.getLow(),
                     candle.getClose(),
                     candle.getVolume(),
-                    new com.algotrader.bot.marketdata.application.MarketDataCandleProvenance(
+                    new com.algotrader.bot.marketdata.application.service.MarketDataCandleProvenance(
                         77L, 18L, 1L, 2L, "profile", "BINANCE", candle.getSymbol(),
                         invocation.getArgument(1, String.class),
                         "EXACT_RAW", "UPLOAD",

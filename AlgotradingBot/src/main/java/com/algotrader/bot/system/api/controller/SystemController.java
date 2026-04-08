@@ -1,10 +1,10 @@
-package com.algotrader.bot.system.api;
+package com.algotrader.bot.system.api.controller;
 
-import com.algotrader.bot.exchange.api.ExchangeConnectionStatusResponse;
-import com.algotrader.bot.exchange.api.ExchangeConnectionTestRequest;
-import com.algotrader.bot.exchange.application.ExchangeIntegrationService;
-import com.algotrader.bot.system.application.OperatorAuditService;
-import com.algotrader.bot.system.application.SystemOperationsService;
+import com.algotrader.bot.exchange.api.response.ExchangeConnectionStatusResponse;
+import com.algotrader.bot.exchange.api.request.ExchangeConnectionTestRequest;
+import com.algotrader.bot.exchange.application.service.ExchangeIntegrationService;
+import com.algotrader.bot.system.application.service.OperatorAuditService;
+import com.algotrader.bot.system.application.service.SystemOperationsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.algotrader.bot.system.api.response.BackupResponse;
+import com.algotrader.bot.system.api.response.OperatorAuditEventListResponse;
+import com.algotrader.bot.system.api.response.SystemInfoResponse;
 
 @RestController
 @RequestMapping("/api/system")

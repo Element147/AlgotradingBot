@@ -1,14 +1,15 @@
-package com.algotrader.bot.backtest.application;
+package com.algotrader.bot.backtest.application.service;
 
-import com.algotrader.bot.backtest.domain.BacktestSimulationResult;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestEquityPoint;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestResult;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestTradeSeriesItem;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestResultRepository;
+import com.algotrader.bot.backtest.domain.model.BacktestSimulationResult;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestEquityPoint;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestResult;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestTradeSeriesItem;
+import com.algotrader.bot.backtest.infrastructure.persistence.repository.BacktestResultRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import com.algotrader.bot.strategy.infrastructure.persistence.entity.Trade;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

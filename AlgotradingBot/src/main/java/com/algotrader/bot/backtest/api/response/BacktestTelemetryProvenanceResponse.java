@@ -1,4 +1,4 @@
-package com.algotrader.bot.backtest.api;
+package com.algotrader.bot.backtest.api.response;
 
 import java.time.LocalDateTime;
 

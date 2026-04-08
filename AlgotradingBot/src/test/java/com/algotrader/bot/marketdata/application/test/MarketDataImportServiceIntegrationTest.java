@@ -1,11 +1,11 @@
-package com.algotrader.bot.marketdata.application;
+package com.algotrader.bot.marketdata.application.test;
 
-import com.algotrader.bot.backtest.domain.OHLCVData;
-import com.algotrader.bot.marketdata.api.MarketDataImportJobRequest;
-import com.algotrader.bot.marketdata.api.MarketDataImportJobResponse;
-import com.algotrader.bot.marketdata.api.MarketDataProviderResponse;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataImportJob;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataImportJobRepository;
+import com.algotrader.bot.backtest.domain.model.OHLCVData;
+import com.algotrader.bot.marketdata.api.request.MarketDataImportJobRequest;
+import com.algotrader.bot.marketdata.api.response.MarketDataImportJobResponse;
+import com.algotrader.bot.marketdata.api.response.MarketDataProviderResponse;
+import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataImportJob;
+import com.algotrader.bot.marketdata.infrastructure.persistence.repository.MarketDataImportJobRepository;
 import com.algotrader.bot.system.application.recovery.MarketDataImportStartupRecoveryParticipant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,6 +16,13 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.transaction.TestTransaction;
 import org.springframework.transaction.annotation.Transactional;
+import com.algotrader.bot.marketdata.application.service.MarketDataAssetType;
+import com.algotrader.bot.marketdata.application.service.MarketDataImportJobStatus;
+import com.algotrader.bot.marketdata.application.service.MarketDataImportService;
+import com.algotrader.bot.marketdata.application.service.MarketDataProvider;
+import com.algotrader.bot.marketdata.application.service.MarketDataProviderDefinition;
+import com.algotrader.bot.marketdata.application.service.MarketDataProviderFetchRequest;
+import com.algotrader.bot.marketdata.application.service.MarketDataRetryableException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

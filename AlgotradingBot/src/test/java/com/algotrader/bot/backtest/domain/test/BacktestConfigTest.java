@@ -1,6 +1,8 @@
-package com.algotrader.bot.backtest.domain;
+package com.algotrader.bot.backtest.domain.test;
 
 import org.junit.jupiter.api.Test;
+import com.algotrader.bot.backtest.domain.model.BacktestConfig;
+import com.algotrader.bot.strategy.infrastructure.persistence.entity.Trade;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

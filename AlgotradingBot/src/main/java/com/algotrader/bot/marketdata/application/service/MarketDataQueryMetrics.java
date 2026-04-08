@@ -1,4 +1,4 @@
-package com.algotrader.bot.marketdata.application;
+package com.algotrader.bot.marketdata.application.service;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;

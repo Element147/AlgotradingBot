@@ -1,7 +1,7 @@
-package com.algotrader.bot.risk.domain;
+package com.algotrader.bot.risk.domain.model;
 
-import com.algotrader.bot.account.infrastructure.persistence.Account;
-import com.algotrader.bot.strategy.infrastructure.persistence.Trade;
+import com.algotrader.bot.account.infrastructure.persistence.entity.Account;
+import com.algotrader.bot.strategy.infrastructure.persistence.entity.Trade;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

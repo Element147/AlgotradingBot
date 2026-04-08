@@ -1,4 +1,4 @@
-package com.algotrader.bot.system.infrastructure.persistence;
+package com.algotrader.bot.system.infrastructure.persistence.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

@@ -1,9 +1,9 @@
 package com.algotrader.bot.system.application.recovery;
 
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestResult;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestResultRepository;
-import com.algotrader.bot.backtest.application.BacktestExecutionService;
-import com.algotrader.bot.system.application.OperatorAuditService;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestResult;
+import com.algotrader.bot.backtest.infrastructure.persistence.repository.BacktestResultRepository;
+import com.algotrader.bot.backtest.application.service.BacktestExecutionService;
+import com.algotrader.bot.system.application.service.OperatorAuditService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

@@ -1,4 +1,4 @@
-package com.algotrader.bot.paper.api;
+package com.algotrader.bot.paper.api.response;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

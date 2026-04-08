@@ -1,7 +1,7 @@
 package com.algotrader.bot.websocket;
 
 import com.algotrader.bot.security.infrastructure.jwt.JwtTokenProvider;
-import com.algotrader.bot.security.application.AuthService;
+import com.algotrader.bot.security.application.service.AuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.socket.server.HandshakeInterceptor;
 import org.springframework.web.util.UriComponentsBuilder;
+import com.algotrader.bot.security.infrastructure.persistence.entity.User;
 
 import java.util.Map;
 

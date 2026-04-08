@@ -1,6 +1,6 @@
-package com.algotrader.bot.marketdata.api;
+package com.algotrader.bot.marketdata.api.request;
 
-import com.algotrader.bot.marketdata.application.MarketDataAssetType;
+import com.algotrader.bot.marketdata.application.service.MarketDataAssetType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;

@@ -1,14 +1,14 @@
-package com.algotrader.bot.backtest.application;
+package com.algotrader.bot.backtest.application.service;
 
-import com.algotrader.bot.backtest.api.BacktestDatasetArchiveRequest;
-import com.algotrader.bot.backtest.api.BacktestDatasetResponse;
-import com.algotrader.bot.backtest.api.BacktestDatasetRetentionReportResponse;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestDataset;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestDatasetRepository;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestDatasetUsageSummary;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestResultRepository;
-import com.algotrader.bot.shared.infrastructure.observability.BackendOperationMetrics;
-import com.algotrader.bot.system.application.OperatorAuditService;
+import com.algotrader.bot.backtest.api.request.BacktestDatasetArchiveRequest;
+import com.algotrader.bot.backtest.api.response.BacktestDatasetResponse;
+import com.algotrader.bot.backtest.api.response.BacktestDatasetRetentionReportResponse;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestDataset;
+import com.algotrader.bot.backtest.infrastructure.persistence.repository.BacktestDatasetRepository;
+import com.algotrader.bot.backtest.infrastructure.persistence.projection.BacktestDatasetUsageSummary;
+import com.algotrader.bot.backtest.infrastructure.persistence.repository.BacktestResultRepository;
+import com.algotrader.bot.shared.infrastructure.observability.service.BackendOperationMetrics;
+import com.algotrader.bot.system.application.service.OperatorAuditService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 

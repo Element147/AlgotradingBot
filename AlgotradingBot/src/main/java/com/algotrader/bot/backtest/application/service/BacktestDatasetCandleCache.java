@@ -1,8 +1,8 @@
-package com.algotrader.bot.backtest.application;
+package com.algotrader.bot.backtest.application.service;
 
-import com.algotrader.bot.backtest.domain.OHLCVData;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestDataset;
-import com.algotrader.bot.marketdata.infrastructure.csv.HistoricalDataCsvParser;
+import com.algotrader.bot.backtest.domain.model.OHLCVData;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestDataset;
+import com.algotrader.bot.marketdata.infrastructure.csv.service.HistoricalDataCsvParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

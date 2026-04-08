@@ -1,4 +1,4 @@
-package com.algotrader.bot.risk.infrastructure.persistence;
+package com.algotrader.bot.risk.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 

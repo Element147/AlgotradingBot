@@ -1,6 +1,7 @@
-package com.algotrader.bot.shared.api;
+package com.algotrader.bot.shared.api.test;
 
 import org.junit.jupiter.api.Test;
+import com.algotrader.bot.shared.api.service.EnvironmentRequestResolver;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

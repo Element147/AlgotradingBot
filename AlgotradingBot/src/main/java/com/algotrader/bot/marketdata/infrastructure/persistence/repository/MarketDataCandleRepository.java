@@ -1,7 +1,7 @@
-package com.algotrader.bot.marketdata.infrastructure.persistence;
+package com.algotrader.bot.marketdata.infrastructure.persistence.repository;
 
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataCandle;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataCandleId;
+import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataCandle;
+import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataCandleId;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

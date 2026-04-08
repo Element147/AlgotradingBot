@@ -1,4 +1,4 @@
-package com.algotrader.bot.marketdata.infrastructure.persistence;
+package com.algotrader.bot.marketdata.infrastructure.persistence.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;

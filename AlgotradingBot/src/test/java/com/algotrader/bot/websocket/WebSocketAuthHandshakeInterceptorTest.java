@@ -1,7 +1,7 @@
 package com.algotrader.bot.websocket;
 
 import com.algotrader.bot.security.infrastructure.jwt.JwtTokenProvider;
-import com.algotrader.bot.security.application.AuthService;
+import com.algotrader.bot.security.application.service.AuthService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,6 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
+import com.algotrader.bot.security.infrastructure.persistence.entity.User;
 
 import java.net.URI;
 import java.util.HashMap;

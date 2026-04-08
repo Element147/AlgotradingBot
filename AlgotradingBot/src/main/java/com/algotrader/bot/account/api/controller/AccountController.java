@@ -1,7 +1,7 @@
-package com.algotrader.bot.account.api;
+package com.algotrader.bot.account.api.controller;
 
-import com.algotrader.bot.account.application.AccountService;
-import com.algotrader.bot.shared.api.EnvironmentRequestResolver;
+import com.algotrader.bot.account.application.service.AccountService;
+import com.algotrader.bot.shared.api.service.EnvironmentRequestResolver;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -11,6 +11,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import com.algotrader.bot.account.api.response.BalanceResponse;
+import com.algotrader.bot.account.api.response.OpenPositionResponse;
+import com.algotrader.bot.account.api.response.PerformanceResponse;
+import com.algotrader.bot.account.api.response.RecentTradeResponse;
+import com.algotrader.bot.account.infrastructure.persistence.entity.Account;
+import com.algotrader.bot.strategy.infrastructure.persistence.entity.Trade;
 
 import java.util.List;
 

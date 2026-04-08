@@ -1,8 +1,9 @@
-package com.algotrader.bot.backtest.domain;
+package com.algotrader.bot.backtest.domain.model;
 
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestResult;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.algotrader.bot.strategy.infrastructure.persistence.entity.Trade;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;

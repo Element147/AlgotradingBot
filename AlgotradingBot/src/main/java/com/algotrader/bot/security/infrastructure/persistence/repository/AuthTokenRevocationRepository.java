@@ -1,6 +1,6 @@
-package com.algotrader.bot.security.infrastructure.persistence;
+package com.algotrader.bot.security.infrastructure.persistence.repository;
 
-import com.algotrader.bot.security.infrastructure.persistence.AuthTokenRevocation;
+import com.algotrader.bot.security.infrastructure.persistence.entity.AuthTokenRevocation;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;

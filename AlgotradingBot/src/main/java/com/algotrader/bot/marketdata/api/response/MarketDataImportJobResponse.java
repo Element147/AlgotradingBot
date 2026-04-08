@@ -1,6 +1,6 @@
-package com.algotrader.bot.marketdata.api;
+package com.algotrader.bot.marketdata.api.response;
 
-import com.algotrader.bot.shared.api.AsyncTaskMonitorResponse;
+import com.algotrader.bot.shared.api.response.AsyncTaskMonitorResponse;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 

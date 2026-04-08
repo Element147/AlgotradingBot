@@ -1,8 +1,12 @@
-package com.algotrader.bot.risk.domain;
+package com.algotrader.bot.risk.domain.test;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
+import com.algotrader.bot.account.infrastructure.persistence.entity.Account;
+import com.algotrader.bot.risk.domain.model.PositionSizer;
+import com.algotrader.bot.risk.domain.model.PositionSizeResult;
+import com.algotrader.bot.strategy.infrastructure.persistence.entity.Trade;
 
 import java.math.BigDecimal;
 

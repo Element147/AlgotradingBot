@@ -1,11 +1,11 @@
 package com.algotrader.bot.marketdata.infrastructure.provider;
 
-import com.algotrader.bot.backtest.domain.OHLCVData;
-import com.algotrader.bot.marketdata.application.AbstractMarketDataProvider;
-import com.algotrader.bot.marketdata.application.MarketDataHttpClient;
-import com.algotrader.bot.marketdata.application.MarketDataProviderCredentialService;
-import com.algotrader.bot.marketdata.application.MarketDataProviderDefinition;
-import com.algotrader.bot.marketdata.application.MarketDataProviderFetchRequest;
+import com.algotrader.bot.backtest.domain.model.OHLCVData;
+import com.algotrader.bot.marketdata.application.service.AbstractMarketDataProvider;
+import com.algotrader.bot.marketdata.application.service.MarketDataHttpClient;
+import com.algotrader.bot.marketdata.application.service.MarketDataProviderCredentialService;
+import com.algotrader.bot.marketdata.application.service.MarketDataProviderDefinition;
+import com.algotrader.bot.marketdata.application.service.MarketDataProviderFetchRequest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
@@ -18,8 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.algotrader.bot.marketdata.application.MarketDataAssetType.CRYPTO;
-import static com.algotrader.bot.marketdata.application.MarketDataAssetType.STOCK;
+import static com.algotrader.bot.marketdata.application.service.MarketDataAssetType.CRYPTO;
+import static com.algotrader.bot.marketdata.application.service.MarketDataAssetType.STOCK;
 
 @Component
 public class TwelveDataMarketDataProvider extends AbstractMarketDataProvider {
@@ -74,7 +74,7 @@ public class TwelveDataMarketDataProvider extends AbstractMarketDataProvider {
         if ("error".equalsIgnoreCase(root.path("status").asText())) {
             String message = root.path("message").asText("Twelve Data request failed.");
             if (message.toLowerCase().contains("rate limit")) {
-                throw new com.algotrader.bot.marketdata.application.MarketDataRetryableException(
+                throw new com.algotrader.bot.marketdata.application.service.MarketDataRetryableException(
                     message,
                     LocalDateTime.now().plusMinutes(5)
                 );

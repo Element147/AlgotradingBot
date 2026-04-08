@@ -1,10 +1,10 @@
-package com.algotrader.bot.strategy.api;
+package com.algotrader.bot.strategy.api.test;
 
-import com.algotrader.bot.strategy.infrastructure.persistence.StrategyConfig;
-import com.algotrader.bot.strategy.infrastructure.persistence.StrategyConfigRepository;
-import com.algotrader.bot.strategy.infrastructure.persistence.StrategyConfigVersionRepository;
+import com.algotrader.bot.strategy.infrastructure.persistence.entity.StrategyConfig;
+import com.algotrader.bot.strategy.infrastructure.persistence.repository.StrategyConfigRepository;
+import com.algotrader.bot.strategy.infrastructure.persistence.repository.StrategyConfigVersionRepository;
 import com.algotrader.bot.security.infrastructure.jwt.JwtTokenProvider;
-import com.algotrader.bot.backtest.domain.BacktestAlgorithmType;
+import com.algotrader.bot.backtest.domain.service.BacktestAlgorithmType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,6 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import com.algotrader.bot.strategy.api.request.UpdateStrategyConfigRequest;
 
 import java.math.BigDecimal;
 

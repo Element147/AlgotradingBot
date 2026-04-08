@@ -1,4 +1,4 @@
-package com.algotrader.bot.exchange.api;
+package com.algotrader.bot.exchange.api.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

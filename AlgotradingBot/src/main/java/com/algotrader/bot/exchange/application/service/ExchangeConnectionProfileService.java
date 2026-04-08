@@ -1,14 +1,14 @@
-package com.algotrader.bot.exchange.application;
+package com.algotrader.bot.exchange.application.service;
 
-import com.algotrader.bot.exchange.api.ExchangeConnectionProfileRequest;
-import com.algotrader.bot.exchange.api.ExchangeConnectionProfileResponse;
-import com.algotrader.bot.exchange.api.ExchangeConnectionProfilesResponse;
-import com.algotrader.bot.exchange.infrastructure.security.ExchangeCredentialCipher;
-import com.algotrader.bot.exchange.infrastructure.persistence.ExchangeConnectionProfile;
-import com.algotrader.bot.security.infrastructure.persistence.User;
-import com.algotrader.bot.exchange.infrastructure.persistence.ExchangeConnectionProfileRepository;
-import com.algotrader.bot.security.infrastructure.persistence.UserRepository;
-import com.algotrader.bot.system.application.OperatorAuditService;
+import com.algotrader.bot.exchange.api.request.ExchangeConnectionProfileRequest;
+import com.algotrader.bot.exchange.api.response.ExchangeConnectionProfileResponse;
+import com.algotrader.bot.exchange.api.response.ExchangeConnectionProfilesResponse;
+import com.algotrader.bot.exchange.infrastructure.security.service.ExchangeCredentialCipher;
+import com.algotrader.bot.exchange.infrastructure.persistence.entity.ExchangeConnectionProfile;
+import com.algotrader.bot.security.infrastructure.persistence.entity.User;
+import com.algotrader.bot.exchange.infrastructure.persistence.repository.ExchangeConnectionProfileRepository;
+import com.algotrader.bot.security.infrastructure.persistence.repository.UserRepository;
+import com.algotrader.bot.system.application.service.OperatorAuditService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;

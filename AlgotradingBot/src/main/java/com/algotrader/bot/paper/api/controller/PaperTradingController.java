@@ -1,10 +1,13 @@
-package com.algotrader.bot.paper.api;
+package com.algotrader.bot.paper.api.controller;
 
-import com.algotrader.bot.paper.application.PaperTradingService;
+import com.algotrader.bot.paper.application.service.PaperTradingService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import com.algotrader.bot.paper.api.request.PaperOrderRequest;
+import com.algotrader.bot.paper.api.response.PaperOrderResponse;
+import com.algotrader.bot.paper.api.response.PaperTradingStateResponse;
 
 import java.util.List;
 

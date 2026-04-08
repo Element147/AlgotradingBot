@@ -1,7 +1,7 @@
-package com.algotrader.bot.security.api;
+package com.algotrader.bot.security.api.test;
 
-import com.algotrader.bot.security.infrastructure.persistence.User;
-import com.algotrader.bot.security.infrastructure.persistence.UserRepository;
+import com.algotrader.bot.security.infrastructure.persistence.entity.User;
+import com.algotrader.bot.security.infrastructure.persistence.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,6 +14,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
+import com.algotrader.bot.security.api.controller.AuthController;
+import com.algotrader.bot.security.api.request.LoginRequest;
+import com.algotrader.bot.security.api.request.RefreshTokenRequest;
 
 import java.util.Map;
 

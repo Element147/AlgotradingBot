@@ -1,14 +1,16 @@
-package com.algotrader.bot.exchange.application;
+package com.algotrader.bot.exchange.application.service;
 
-import com.algotrader.bot.exchange.api.ExchangeConnectionStatusResponse;
-import com.algotrader.bot.exchange.api.ExchangeConnectionTestRequest;
-import com.algotrader.bot.system.application.OperatorAuditService;
+import com.algotrader.bot.exchange.api.response.ExchangeConnectionStatusResponse;
+import com.algotrader.bot.exchange.api.request.ExchangeConnectionTestRequest;
+import com.algotrader.bot.system.application.service.OperatorAuditService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import com.algotrader.bot.account.infrastructure.persistence.entity.Account;
+import com.algotrader.bot.strategy.infrastructure.persistence.entity.Trade;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;

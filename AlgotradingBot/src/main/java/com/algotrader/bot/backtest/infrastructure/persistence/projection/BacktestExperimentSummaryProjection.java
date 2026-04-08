@@ -1,4 +1,4 @@
-package com.algotrader.bot.backtest.infrastructure.persistence;
+package com.algotrader.bot.backtest.infrastructure.persistence.projection;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

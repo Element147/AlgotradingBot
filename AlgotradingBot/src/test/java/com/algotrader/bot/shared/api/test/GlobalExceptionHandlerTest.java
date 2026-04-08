@@ -1,7 +1,7 @@
-package com.algotrader.bot.shared.api;
+package com.algotrader.bot.shared.api.test;
 
 import com.algotrader.bot.security.infrastructure.jwt.JwtTokenProvider;
-import com.algotrader.bot.strategy.api.StartStrategyRequest;
+import com.algotrader.bot.strategy.api.request.StartStrategyRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,6 +11,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import com.algotrader.bot.account.infrastructure.persistence.entity.Account;
+import com.algotrader.bot.shared.api.error.GlobalExceptionHandler;
 
 import java.math.BigDecimal;
 import java.util.List;

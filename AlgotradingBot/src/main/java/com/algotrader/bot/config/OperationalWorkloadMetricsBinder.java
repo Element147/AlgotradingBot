@@ -1,11 +1,11 @@
 package com.algotrader.bot.config;
 
-import com.algotrader.bot.backtest.application.BacktestDatasetCandleCache;
-import com.algotrader.bot.backtest.application.BacktestExecutionService;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataCandleRepository;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataCandleSegmentRepository;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataSeriesRepository;
-import com.algotrader.bot.marketdata.application.MarketDataImportService;
+import com.algotrader.bot.backtest.application.service.BacktestDatasetCandleCache;
+import com.algotrader.bot.backtest.application.service.BacktestExecutionService;
+import com.algotrader.bot.marketdata.infrastructure.persistence.repository.MarketDataCandleRepository;
+import com.algotrader.bot.marketdata.infrastructure.persistence.repository.MarketDataCandleSegmentRepository;
+import com.algotrader.bot.marketdata.infrastructure.persistence.repository.MarketDataSeriesRepository;
+import com.algotrader.bot.marketdata.application.service.MarketDataImportService;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.MeterBinder;

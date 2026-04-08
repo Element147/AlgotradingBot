@@ -1,9 +1,10 @@
-package com.algotrader.bot.backtest.infrastructure.persistence;
+package com.algotrader.bot.backtest.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
+import com.algotrader.bot.validation.ValidationStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

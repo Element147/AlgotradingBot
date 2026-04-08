@@ -1,7 +1,7 @@
-package com.algotrader.bot.marketdata.infrastructure.persistence;
+package com.algotrader.bot.marketdata.infrastructure.persistence.entity;
 
-import com.algotrader.bot.marketdata.application.MarketDataAssetType;
-import com.algotrader.bot.marketdata.application.MarketDataImportJobStatus;
+import com.algotrader.bot.marketdata.application.service.MarketDataAssetType;
+import com.algotrader.bot.marketdata.application.service.MarketDataImportJobStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

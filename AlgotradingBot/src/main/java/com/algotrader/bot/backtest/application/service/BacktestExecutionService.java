@@ -1,22 +1,23 @@
-package com.algotrader.bot.backtest.application;
+package com.algotrader.bot.backtest.application.service;
 
-import com.algotrader.bot.backtest.domain.BacktestSimulationEngine;
-import com.algotrader.bot.backtest.domain.BacktestAlgorithmType;
-import com.algotrader.bot.backtest.domain.BacktestSimulationProgress;
-import com.algotrader.bot.backtest.domain.BacktestSimulationRequest;
-import com.algotrader.bot.backtest.domain.BacktestSimulationResult;
-import com.algotrader.bot.backtest.domain.OHLCVData;
+import com.algotrader.bot.backtest.domain.model.BacktestSimulationEngine;
+import com.algotrader.bot.backtest.domain.service.BacktestAlgorithmType;
+import com.algotrader.bot.backtest.domain.model.BacktestSimulationProgress;
+import com.algotrader.bot.backtest.domain.model.BacktestSimulationRequest;
+import com.algotrader.bot.backtest.domain.model.BacktestSimulationResult;
+import com.algotrader.bot.backtest.domain.model.OHLCVData;
 import com.algotrader.bot.backtest.domain.strategy.BacktestStrategyRegistry;
 import com.algotrader.bot.backtest.domain.strategy.BacktestStrategySelectionMode;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestDataset;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestResult;
-import com.algotrader.bot.marketdata.application.MarketDataQueryMode;
-import com.algotrader.bot.marketdata.application.MarketDataQueryService;
-import com.algotrader.bot.shared.infrastructure.observability.BackendOperationMetrics;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestDataset;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestResult;
+import com.algotrader.bot.marketdata.application.service.MarketDataQueryMode;
+import com.algotrader.bot.marketdata.application.service.MarketDataQueryService;
+import com.algotrader.bot.shared.infrastructure.observability.service.BackendOperationMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import com.algotrader.bot.strategy.infrastructure.persistence.entity.Trade;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;

@@ -1,11 +1,11 @@
-package com.algotrader.bot.marketdata.infrastructure.persistence;
+package com.algotrader.bot.marketdata.infrastructure.persistence.test;
 
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestDataset;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestDatasetRepository;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataCandle;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataCandleId;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataCandleSegment;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataSeries;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestDataset;
+import com.algotrader.bot.backtest.infrastructure.persistence.repository.BacktestDatasetRepository;
+import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataCandle;
+import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataCandleId;
+import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataCandleSegment;
+import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataSeries;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceException;
 import org.junit.jupiter.api.Test;
@@ -13,6 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
+import com.algotrader.bot.marketdata.infrastructure.persistence.repository.MarketDataCandleRepository;
+import com.algotrader.bot.marketdata.infrastructure.persistence.repository.MarketDataCandleSegmentRepository;
+import com.algotrader.bot.marketdata.infrastructure.persistence.repository.MarketDataSeriesRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

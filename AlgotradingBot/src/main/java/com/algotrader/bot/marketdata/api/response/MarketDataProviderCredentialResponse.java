@@ -1,4 +1,4 @@
-package com.algotrader.bot.marketdata.api;
+package com.algotrader.bot.marketdata.api.response;
 
 import java.time.LocalDateTime;
 

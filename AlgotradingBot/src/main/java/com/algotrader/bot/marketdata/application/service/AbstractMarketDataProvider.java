@@ -1,4 +1,4 @@
-package com.algotrader.bot.marketdata.application;
+package com.algotrader.bot.marketdata.application.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

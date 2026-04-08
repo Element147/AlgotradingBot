@@ -1,4 +1,4 @@
-package com.algotrader.bot.marketdata.application;
+package com.algotrader.bot.marketdata.application.service;
 
 public enum MarketDataCredentialSource {
     NOT_REQUIRED,

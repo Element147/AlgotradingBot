@@ -1,9 +1,16 @@
-package com.algotrader.bot.risk.domain;
+package com.algotrader.bot.risk.domain.test;
 
-import com.algotrader.bot.account.infrastructure.persistence.Account;
+import com.algotrader.bot.account.infrastructure.persistence.entity.Account;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import com.algotrader.bot.risk.domain.model.PositionSizer;
+import com.algotrader.bot.risk.domain.model.PositionSizeResult;
+import com.algotrader.bot.risk.domain.model.RiskCheckResult;
+import com.algotrader.bot.risk.domain.model.RiskManager;
+import com.algotrader.bot.risk.domain.model.SlippageCalculator;
+import com.algotrader.bot.risk.domain.model.TransactionCost;
+import com.algotrader.bot.strategy.infrastructure.persistence.entity.Trade;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;

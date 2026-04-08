@@ -1,11 +1,11 @@
-package com.algotrader.bot.account.api;
+package com.algotrader.bot.account.api.test;
 
-import com.algotrader.bot.account.infrastructure.persistence.Account;
-import com.algotrader.bot.account.infrastructure.persistence.Portfolio;
-import com.algotrader.bot.strategy.infrastructure.persistence.Trade;
-import com.algotrader.bot.account.infrastructure.persistence.AccountRepository;
-import com.algotrader.bot.account.infrastructure.persistence.PortfolioRepository;
-import com.algotrader.bot.strategy.infrastructure.persistence.TradeRepository;
+import com.algotrader.bot.account.infrastructure.persistence.entity.Account;
+import com.algotrader.bot.account.infrastructure.persistence.entity.Portfolio;
+import com.algotrader.bot.strategy.infrastructure.persistence.entity.Trade;
+import com.algotrader.bot.account.infrastructure.persistence.repository.AccountRepository;
+import com.algotrader.bot.account.infrastructure.persistence.repository.PortfolioRepository;
+import com.algotrader.bot.strategy.infrastructure.persistence.repository.TradeRepository;
 import com.algotrader.bot.security.infrastructure.jwt.JwtTokenProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,6 +16,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import com.algotrader.bot.account.api.controller.AccountController;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

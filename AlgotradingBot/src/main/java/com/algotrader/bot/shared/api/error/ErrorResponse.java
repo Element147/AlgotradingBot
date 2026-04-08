@@ -1,4 +1,4 @@
-package com.algotrader.bot.shared.api;
+package com.algotrader.bot.shared.api.error;
 
 import java.time.LocalDateTime;
 

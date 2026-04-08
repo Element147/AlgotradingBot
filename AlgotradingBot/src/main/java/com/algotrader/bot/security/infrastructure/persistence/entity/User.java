@@ -1,4 +1,4 @@
-package com.algotrader.bot.security.infrastructure.persistence;
+package com.algotrader.bot.security.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;

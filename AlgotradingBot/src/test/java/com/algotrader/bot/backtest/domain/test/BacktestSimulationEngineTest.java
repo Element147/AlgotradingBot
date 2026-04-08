@@ -1,4 +1,4 @@
-package com.algotrader.bot.backtest.domain;
+package com.algotrader.bot.backtest.domain.test;
 
 import com.algotrader.bot.backtest.domain.strategy.BacktestIndicatorCalculator;
 import com.algotrader.bot.backtest.domain.strategy.BacktestStrategyRegistry;
@@ -21,10 +21,15 @@ import com.algotrader.bot.backtest.domain.strategy.TrendFirstAdaptiveEnsembleBac
 import com.algotrader.bot.backtest.domain.strategy.TrendPullbackContinuationBacktestStrategy;
 import com.algotrader.bot.backtest.domain.strategy.VolatilityManagedDonchianBreakoutBacktestStrategy;
 import com.algotrader.bot.backtest.domain.strategy.VwapPullbackContinuationBacktestStrategy;
-import com.algotrader.bot.shared.domain.PositionSide;
-import com.algotrader.bot.backtest.domain.BacktestAlgorithmType;
+import com.algotrader.bot.shared.domain.model.PositionSide;
+import com.algotrader.bot.backtest.domain.service.BacktestAlgorithmType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import com.algotrader.bot.backtest.domain.model.BacktestSimulationEngine;
+import com.algotrader.bot.backtest.domain.model.BacktestSimulationMetricsCalculator;
+import com.algotrader.bot.backtest.domain.model.BacktestSimulationRequest;
+import com.algotrader.bot.backtest.domain.model.BacktestSimulationResult;
+import com.algotrader.bot.backtest.domain.model.OHLCVData;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

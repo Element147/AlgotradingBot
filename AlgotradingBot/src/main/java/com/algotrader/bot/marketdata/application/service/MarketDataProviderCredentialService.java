@@ -1,10 +1,10 @@
-package com.algotrader.bot.marketdata.application;
+package com.algotrader.bot.marketdata.application.service;
 
-import com.algotrader.bot.marketdata.api.MarketDataProviderCredentialRequest;
-import com.algotrader.bot.marketdata.api.MarketDataProviderCredentialResponse;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataProviderCredential;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataProviderCredentialRepository;
-import com.algotrader.bot.system.application.OperatorAuditService;
+import com.algotrader.bot.marketdata.api.request.MarketDataProviderCredentialRequest;
+import com.algotrader.bot.marketdata.api.response.MarketDataProviderCredentialResponse;
+import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataProviderCredential;
+import com.algotrader.bot.marketdata.infrastructure.persistence.repository.MarketDataProviderCredentialRepository;
+import com.algotrader.bot.system.application.service.OperatorAuditService;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

@@ -1,6 +1,6 @@
 package com.algotrader.bot.backtest.domain.strategy;
 
-import com.algotrader.bot.backtest.domain.OHLCVData;
+import com.algotrader.bot.backtest.domain.model.OHLCVData;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;

@@ -1,7 +1,7 @@
-package com.algotrader.bot.exchange.api;
+package com.algotrader.bot.exchange.api.controller;
 
-import com.algotrader.bot.exchange.application.ExchangeConnectionProfileService;
-import com.algotrader.bot.exchange.application.ExchangeIntegrationService;
+import com.algotrader.bot.exchange.application.service.ExchangeConnectionProfileService;
+import com.algotrader.bot.exchange.application.service.ExchangeIntegrationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -15,6 +15,11 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.algotrader.bot.exchange.api.request.ExchangeConnectionProfileRequest;
+import com.algotrader.bot.exchange.api.response.ExchangeConnectionProfileResponse;
+import com.algotrader.bot.exchange.api.response.ExchangeConnectionProfilesResponse;
+import com.algotrader.bot.exchange.api.response.ExchangeConnectionStatusResponse;
+import com.algotrader.bot.security.infrastructure.persistence.entity.User;
 
 import jakarta.validation.Valid;
 

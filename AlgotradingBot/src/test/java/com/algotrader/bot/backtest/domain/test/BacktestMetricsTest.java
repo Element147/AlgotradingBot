@@ -1,8 +1,10 @@
-package com.algotrader.bot.backtest.domain;
+package com.algotrader.bot.backtest.domain.test;
 
-import com.algotrader.bot.strategy.infrastructure.persistence.Trade;
+import com.algotrader.bot.strategy.infrastructure.persistence.entity.Trade;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import com.algotrader.bot.backtest.domain.model.BacktestMetrics;
+import com.algotrader.bot.backtest.domain.model.MetricsResult;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;

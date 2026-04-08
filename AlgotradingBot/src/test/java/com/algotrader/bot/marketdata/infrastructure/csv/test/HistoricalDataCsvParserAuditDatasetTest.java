@@ -1,7 +1,9 @@
-package com.algotrader.bot.marketdata.infrastructure.csv;
+package com.algotrader.bot.marketdata.infrastructure.csv.test;
 
-import com.algotrader.bot.backtest.domain.OHLCVData;
+import com.algotrader.bot.backtest.domain.model.OHLCVData;
 import org.junit.jupiter.api.Test;
+import com.algotrader.bot.account.infrastructure.persistence.entity.Account;
+import com.algotrader.bot.marketdata.infrastructure.csv.service.HistoricalDataCsvParser;
 
 import java.nio.file.Files;
 import java.nio.file.Path;

@@ -1,6 +1,6 @@
-package com.algotrader.bot.marketdata.infrastructure.persistence;
+package com.algotrader.bot.marketdata.infrastructure.persistence.repository;
 
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataSeries;
+import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataSeries;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

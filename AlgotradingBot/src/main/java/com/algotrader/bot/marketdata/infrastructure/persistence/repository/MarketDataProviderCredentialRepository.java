@@ -1,6 +1,6 @@
-package com.algotrader.bot.marketdata.infrastructure.persistence;
+package com.algotrader.bot.marketdata.infrastructure.persistence.repository;
 
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataProviderCredential;
+import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataProviderCredential;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

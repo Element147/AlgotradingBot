@@ -1,7 +1,8 @@
-package com.algotrader.bot.marketdata.application;
+package com.algotrader.bot.marketdata.application.test;
 
-import com.algotrader.bot.backtest.domain.OHLCVData;
+import com.algotrader.bot.backtest.domain.model.OHLCVData;
 import org.junit.jupiter.api.Test;
+import com.algotrader.bot.marketdata.application.service.MarketDataResampler;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

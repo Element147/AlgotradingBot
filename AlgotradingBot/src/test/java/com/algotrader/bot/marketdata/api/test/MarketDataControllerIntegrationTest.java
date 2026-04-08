@@ -1,14 +1,14 @@
-package com.algotrader.bot.marketdata.api;
+package com.algotrader.bot.marketdata.api.test;
 
-import com.algotrader.bot.backtest.domain.OHLCVData;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataImportJob;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataImportJobRepository;
+import com.algotrader.bot.backtest.domain.model.OHLCVData;
+import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataImportJob;
+import com.algotrader.bot.marketdata.infrastructure.persistence.repository.MarketDataImportJobRepository;
 import com.algotrader.bot.security.infrastructure.jwt.JwtTokenProvider;
-import com.algotrader.bot.marketdata.application.MarketDataAssetType;
-import com.algotrader.bot.marketdata.application.MarketDataImportJobStatus;
-import com.algotrader.bot.marketdata.application.MarketDataProvider;
-import com.algotrader.bot.marketdata.application.MarketDataProviderDefinition;
-import com.algotrader.bot.marketdata.application.MarketDataProviderFetchRequest;
+import com.algotrader.bot.marketdata.application.service.MarketDataAssetType;
+import com.algotrader.bot.marketdata.application.service.MarketDataImportJobStatus;
+import com.algotrader.bot.marketdata.application.service.MarketDataProvider;
+import com.algotrader.bot.marketdata.application.service.MarketDataProviderDefinition;
+import com.algotrader.bot.marketdata.application.service.MarketDataProviderFetchRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,6 +22,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import com.algotrader.bot.marketdata.api.request.MarketDataImportJobRequest;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

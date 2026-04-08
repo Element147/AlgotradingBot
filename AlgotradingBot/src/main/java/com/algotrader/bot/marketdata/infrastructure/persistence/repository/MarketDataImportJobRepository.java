@@ -1,7 +1,7 @@
-package com.algotrader.bot.marketdata.infrastructure.persistence;
+package com.algotrader.bot.marketdata.infrastructure.persistence.repository;
 
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataImportJob;
-import com.algotrader.bot.marketdata.application.MarketDataImportJobStatus;
+import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataImportJob;
+import com.algotrader.bot.marketdata.application.service.MarketDataImportJobStatus;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

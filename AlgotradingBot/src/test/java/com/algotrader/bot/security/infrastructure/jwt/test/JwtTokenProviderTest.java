@@ -1,7 +1,8 @@
-package com.algotrader.bot.security.infrastructure.jwt;
+package com.algotrader.bot.security.infrastructure.jwt.test;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
+import com.algotrader.bot.security.infrastructure.jwt.JwtTokenProvider;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -13,7 +14,10 @@ class JwtTokenProviderTest {
         JwtTokenProvider provider = new JwtTokenProvider();
         ReflectionTestUtils.setField(provider, "jwtSecret", "");
 
-        assertThrows(IllegalStateException.class, provider::validateConfiguration);
+        assertThrows(
+                IllegalStateException.class,
+                () -> ReflectionTestUtils.invokeMethod(provider, "validateConfiguration")
+        );
     }
 
     @Test
@@ -25,7 +29,10 @@ class JwtTokenProviderTest {
                 "mySecretKeyForJWTTokenGenerationThatIsAtLeast256BitsLongForHS256Algorithm"
         );
 
-        assertThrows(IllegalStateException.class, provider::validateConfiguration);
+        assertThrows(
+                IllegalStateException.class,
+                () -> ReflectionTestUtils.invokeMethod(provider, "validateConfiguration")
+        );
     }
 
     @Test
@@ -33,7 +40,10 @@ class JwtTokenProviderTest {
         JwtTokenProvider provider = new JwtTokenProvider();
         ReflectionTestUtils.setField(provider, "jwtSecret", "short-secret");
 
-        assertThrows(IllegalStateException.class, provider::validateConfiguration);
+        assertThrows(
+                IllegalStateException.class,
+                () -> ReflectionTestUtils.invokeMethod(provider, "validateConfiguration")
+        );
     }
 
     @Test
@@ -45,6 +55,6 @@ class JwtTokenProviderTest {
                 "algotradingbot-test-secret-that-is-long-enough-for-hs256-signing"
         );
 
-        assertDoesNotThrow(provider::validateConfiguration);
+        assertDoesNotThrow(() -> ReflectionTestUtils.invokeMethod(provider, "validateConfiguration"));
     }
 }

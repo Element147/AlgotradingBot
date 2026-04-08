@@ -1,11 +1,11 @@
-package com.algotrader.bot.backtest.application;
+package com.algotrader.bot.backtest.application.service;
 
-import com.algotrader.bot.backtest.api.BacktestDatasetArchiveRequest;
-import com.algotrader.bot.backtest.api.BacktestDatasetDownloadResponse;
-import com.algotrader.bot.backtest.api.BacktestDatasetResponse;
-import com.algotrader.bot.backtest.api.BacktestDatasetRetentionReportResponse;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestDataset;
-import com.algotrader.bot.system.application.OperatorAuditService;
+import com.algotrader.bot.backtest.api.request.BacktestDatasetArchiveRequest;
+import com.algotrader.bot.backtest.api.response.BacktestDatasetDownloadResponse;
+import com.algotrader.bot.backtest.api.response.BacktestDatasetResponse;
+import com.algotrader.bot.backtest.api.response.BacktestDatasetRetentionReportResponse;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestDataset;
+import com.algotrader.bot.system.application.service.OperatorAuditService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;

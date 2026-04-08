@@ -1,6 +1,7 @@
-package com.algotrader.bot.exchange.infrastructure.security;
+package com.algotrader.bot.exchange.infrastructure.security.test;
 
 import org.junit.jupiter.api.Test;
+import com.algotrader.bot.exchange.infrastructure.security.service.ExchangeCredentialCipher;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;

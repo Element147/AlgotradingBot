@@ -1,6 +1,6 @@
-package com.algotrader.bot.strategy.infrastructure.persistence;
+package com.algotrader.bot.strategy.infrastructure.persistence.repository;
 
-import com.algotrader.bot.strategy.infrastructure.persistence.StrategyConfigVersion;
+import com.algotrader.bot.strategy.infrastructure.persistence.entity.StrategyConfigVersion;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

@@ -1,7 +1,9 @@
-package com.algotrader.bot.backtest.domain.strategy;
+package com.algotrader.bot.backtest.domain.strategy.test;
 
-import com.algotrader.bot.backtest.domain.OHLCVData;
+import com.algotrader.bot.backtest.domain.model.OHLCVData;
 import org.junit.jupiter.api.Test;
+import com.algotrader.bot.backtest.domain.strategy.BacktestIndicatorCalculator;
+import com.algotrader.bot.backtest.domain.strategy.StrategyFeatureLibrary;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

@@ -1,6 +1,7 @@
-package com.algotrader.bot.strategy.api;
+package com.algotrader.bot.strategy.api.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import com.algotrader.bot.account.infrastructure.persistence.entity.Account;
 
 import java.math.BigDecimal;
 

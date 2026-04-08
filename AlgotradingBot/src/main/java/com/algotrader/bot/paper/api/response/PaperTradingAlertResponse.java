@@ -1,4 +1,4 @@
-package com.algotrader.bot.paper.api;
+package com.algotrader.bot.paper.api.response;
 
 public record PaperTradingAlertResponse(
     String severity,

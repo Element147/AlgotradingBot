@@ -1,7 +1,8 @@
-package com.algotrader.bot.strategy.api;
+package com.algotrader.bot.strategy.api.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
+import com.algotrader.bot.account.infrastructure.persistence.entity.Account;
 
 @Schema(description = "Current status and performance metrics of a trading strategy")
 public record StrategyStatusResponse(

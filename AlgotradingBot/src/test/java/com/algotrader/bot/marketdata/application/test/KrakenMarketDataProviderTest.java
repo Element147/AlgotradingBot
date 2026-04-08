@@ -1,12 +1,12 @@
-package com.algotrader.bot.marketdata.application;
+package com.algotrader.bot.marketdata.application.test;
 
-import com.algotrader.bot.marketdata.application.MarketDataAssetType;
-import com.algotrader.bot.marketdata.application.MarketDataHttpClient;
-import com.algotrader.bot.marketdata.application.MarketDataHttpResponse;
-import com.algotrader.bot.marketdata.application.MarketDataProviderCredentialService;
-import com.algotrader.bot.marketdata.application.MarketDataProviderFetchRequest;
-import com.algotrader.bot.marketdata.application.MarketDataRetryableException;
-import com.algotrader.bot.marketdata.application.MarketDataTimeframe;
+import com.algotrader.bot.marketdata.application.service.MarketDataAssetType;
+import com.algotrader.bot.marketdata.application.service.MarketDataHttpClient;
+import com.algotrader.bot.marketdata.application.service.MarketDataHttpResponse;
+import com.algotrader.bot.marketdata.application.service.MarketDataProviderCredentialService;
+import com.algotrader.bot.marketdata.application.service.MarketDataProviderFetchRequest;
+import com.algotrader.bot.marketdata.application.service.MarketDataRetryableException;
+import com.algotrader.bot.marketdata.application.service.MarketDataTimeframe;
 import com.algotrader.bot.marketdata.infrastructure.provider.KrakenMarketDataProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;

@@ -1,25 +1,26 @@
 package com.algotrader.bot.analysis;
 
-import com.algotrader.bot.backtest.domain.OHLCVData;
+import com.algotrader.bot.backtest.domain.model.OHLCVData;
 import com.algotrader.bot.backtest.domain.strategy.BacktestIndicatorCalculator;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestDataset;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestEquityPoint;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestResult;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestTradeSeriesItem;
-import com.algotrader.bot.shared.domain.PositionSide;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestDatasetRepository;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataCandleRepository;
-import com.algotrader.bot.backtest.application.BacktestDatasetCandleCache;
-import com.algotrader.bot.backtest.application.BacktestDatasetStorageService;
-import com.algotrader.bot.backtest.application.BacktestTelemetryService;
-import com.algotrader.bot.shared.infrastructure.observability.BackendOperationMetrics;
-import com.algotrader.bot.marketdata.infrastructure.csv.HistoricalDataCsvParser;
-import com.algotrader.bot.marketdata.application.MarketDataCsvSupport;
-import com.algotrader.bot.marketdata.application.MarketDataQueryMetrics;
-import com.algotrader.bot.marketdata.application.MarketDataQueryService;
-import com.algotrader.bot.marketdata.application.MarketDataResampler;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestDataset;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestEquityPoint;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestResult;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestTradeSeriesItem;
+import com.algotrader.bot.shared.domain.model.PositionSide;
+import com.algotrader.bot.backtest.infrastructure.persistence.repository.BacktestDatasetRepository;
+import com.algotrader.bot.marketdata.infrastructure.persistence.repository.MarketDataCandleRepository;
+import com.algotrader.bot.backtest.application.service.BacktestDatasetCandleCache;
+import com.algotrader.bot.backtest.application.service.BacktestDatasetStorageService;
+import com.algotrader.bot.backtest.application.service.BacktestTelemetryService;
+import com.algotrader.bot.shared.infrastructure.observability.service.BackendOperationMetrics;
+import com.algotrader.bot.marketdata.infrastructure.csv.service.HistoricalDataCsvParser;
+import com.algotrader.bot.marketdata.application.service.MarketDataCsvSupport;
+import com.algotrader.bot.marketdata.application.service.MarketDataQueryMetrics;
+import com.algotrader.bot.marketdata.application.service.MarketDataQueryService;
+import com.algotrader.bot.marketdata.application.service.MarketDataResampler;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.mockito.Mockito;
+import com.algotrader.bot.strategy.infrastructure.persistence.entity.Trade;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -175,7 +176,7 @@ public final class LegacyMarketDataFlowAuditRunner {
         );
         BacktestResult result = buildCompletedResult(dataset, syntheticDataset);
 
-        TimedResult<List<com.algotrader.bot.backtest.api.BacktestSymbolTelemetryResponse>> timed =
+        TimedResult<List<com.algotrader.bot.backtest.api.response.BacktestSymbolTelemetryResponse>> timed =
             timed(() -> telemetryService.buildTelemetry(result));
 
         int telemetryPoints = timed.value().stream().mapToInt(item -> item.points().size()).sum();

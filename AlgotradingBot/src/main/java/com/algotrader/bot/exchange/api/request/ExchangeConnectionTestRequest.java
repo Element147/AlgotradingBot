@@ -1,4 +1,4 @@
-package com.algotrader.bot.exchange.api;
+package com.algotrader.bot.exchange.api.request;
 
 public record ExchangeConnectionTestRequest(
     String exchange,

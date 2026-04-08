@@ -1,4 +1,4 @@
-package com.algotrader.bot.shared.api;
+package com.algotrader.bot.shared.api.test;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

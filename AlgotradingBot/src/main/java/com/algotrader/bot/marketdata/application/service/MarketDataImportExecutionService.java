@@ -1,12 +1,12 @@
-package com.algotrader.bot.marketdata.application;
+package com.algotrader.bot.marketdata.application.service;
 
-import com.algotrader.bot.backtest.domain.OHLCVData;
-import com.algotrader.bot.backtest.api.BacktestDatasetResponse;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataImportJob;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataImportJobRepository;
-import com.algotrader.bot.backtest.application.BacktestDatasetCatalogService;
-import com.algotrader.bot.backtest.application.BacktestDatasetStorageService;
-import com.algotrader.bot.system.application.OperatorAuditService;
+import com.algotrader.bot.backtest.domain.model.OHLCVData;
+import com.algotrader.bot.backtest.api.response.BacktestDatasetResponse;
+import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataImportJob;
+import com.algotrader.bot.marketdata.infrastructure.persistence.repository.MarketDataImportJobRepository;
+import com.algotrader.bot.backtest.application.service.BacktestDatasetCatalogService;
+import com.algotrader.bot.backtest.application.service.BacktestDatasetStorageService;
+import com.algotrader.bot.system.application.service.OperatorAuditService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;

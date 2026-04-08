@@ -1,4 +1,4 @@
-package com.algotrader.bot.exchange.api;
+package com.algotrader.bot.exchange.api.response;
 
 import java.time.LocalDateTime;
 

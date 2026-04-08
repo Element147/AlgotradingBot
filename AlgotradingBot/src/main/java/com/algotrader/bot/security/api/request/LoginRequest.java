@@ -1,4 +1,4 @@
-package com.algotrader.bot.security.api;
+package com.algotrader.bot.security.api.request;
 
 import jakarta.validation.constraints.NotBlank;
 

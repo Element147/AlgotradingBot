@@ -1,13 +1,16 @@
-package com.algotrader.bot.backtest.application;
+package com.algotrader.bot.backtest.application.test;
 
-import com.algotrader.bot.backtest.api.BacktestDetailsResponse;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestResult;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestTradeSeriesItem;
-import com.algotrader.bot.shared.domain.PositionSide;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestDatasetRepository;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestResultRepository;
-import com.algotrader.bot.shared.infrastructure.observability.BackendOperationMetrics;
+import com.algotrader.bot.backtest.api.response.BacktestDetailsResponse;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestResult;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestTradeSeriesItem;
+import com.algotrader.bot.shared.domain.model.PositionSide;
+import com.algotrader.bot.backtest.infrastructure.persistence.repository.BacktestDatasetRepository;
+import com.algotrader.bot.backtest.infrastructure.persistence.repository.BacktestResultRepository;
+import com.algotrader.bot.shared.infrastructure.observability.service.BackendOperationMetrics;
 import org.junit.jupiter.api.Test;
+import com.algotrader.bot.backtest.application.service.BacktestResultQueryService;
+import com.algotrader.bot.backtest.application.service.BacktestTelemetryService;
+import com.algotrader.bot.strategy.infrastructure.persistence.entity.Trade;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

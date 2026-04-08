@@ -1,6 +1,6 @@
-package com.algotrader.bot.exchange.infrastructure.persistence;
+package com.algotrader.bot.exchange.infrastructure.persistence.entity;
 
-import com.algotrader.bot.security.infrastructure.persistence.User;
+import com.algotrader.bot.security.infrastructure.persistence.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;

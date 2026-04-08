@@ -1,4 +1,4 @@
-package com.algotrader.bot.backtest.domain;
+package com.algotrader.bot.backtest.domain.service;
 
 import java.util.Locale;
 

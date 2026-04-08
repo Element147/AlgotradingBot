@@ -1,6 +1,8 @@
-package com.algotrader.bot.risk.domain;
+package com.algotrader.bot.risk.domain.model;
 
 import org.springframework.stereotype.Component;
+import com.algotrader.bot.account.infrastructure.persistence.entity.Account;
+import com.algotrader.bot.strategy.infrastructure.persistence.entity.Trade;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;

@@ -1,15 +1,15 @@
-package com.algotrader.bot.backtest.application;
+package com.algotrader.bot.backtest.application.service;
 
-import com.algotrader.bot.backtest.domain.OHLCVData;
-import com.algotrader.bot.backtest.api.BacktestDatasetDownloadResponse;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestDataset;
-import com.algotrader.bot.marketdata.infrastructure.csv.HistoricalDataCsvParser;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataCandle;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataCandleSegment;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestDatasetRepository;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataCandleRepository;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataCandleSegmentRepository;
-import com.algotrader.bot.marketdata.application.LegacyMarketDataMigrationService;
+import com.algotrader.bot.backtest.domain.model.OHLCVData;
+import com.algotrader.bot.backtest.api.response.BacktestDatasetDownloadResponse;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestDataset;
+import com.algotrader.bot.marketdata.infrastructure.csv.service.HistoricalDataCsvParser;
+import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataCandle;
+import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataCandleSegment;
+import com.algotrader.bot.backtest.infrastructure.persistence.repository.BacktestDatasetRepository;
+import com.algotrader.bot.marketdata.infrastructure.persistence.repository.MarketDataCandleRepository;
+import com.algotrader.bot.marketdata.infrastructure.persistence.repository.MarketDataCandleSegmentRepository;
+import com.algotrader.bot.marketdata.application.service.LegacyMarketDataMigrationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;

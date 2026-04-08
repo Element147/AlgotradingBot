@@ -1,6 +1,6 @@
-package com.algotrader.bot.backtest.infrastructure.persistence;
+package com.algotrader.bot.backtest.infrastructure.persistence.entity;
 
-import com.algotrader.bot.shared.domain.PositionSide;
+import com.algotrader.bot.shared.domain.model.PositionSide;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

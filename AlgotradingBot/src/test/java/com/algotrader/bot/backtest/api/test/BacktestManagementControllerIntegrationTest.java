@@ -1,11 +1,11 @@
-package com.algotrader.bot.backtest.api;
+package com.algotrader.bot.backtest.api.test;
 
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestDataset;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestEquityPoint;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestResult;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestTradeSeriesItem;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestDatasetRepository;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestResultRepository;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestDataset;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestEquityPoint;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestResult;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestTradeSeriesItem;
+import com.algotrader.bot.backtest.infrastructure.persistence.repository.BacktestDatasetRepository;
+import com.algotrader.bot.backtest.infrastructure.persistence.repository.BacktestResultRepository;
 import com.algotrader.bot.security.infrastructure.jwt.JwtTokenProvider;
 import com.algotrader.bot.system.application.recovery.BacktestStartupRecoveryParticipant;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,6 +19,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.transaction.TestTransaction;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import com.algotrader.bot.account.infrastructure.persistence.entity.Portfolio;
+import com.algotrader.bot.backtest.api.request.RunBacktestRequest;
+import com.algotrader.bot.validation.ValidationStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

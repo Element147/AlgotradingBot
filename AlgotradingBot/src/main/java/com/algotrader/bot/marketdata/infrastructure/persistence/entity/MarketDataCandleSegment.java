@@ -1,6 +1,6 @@
-package com.algotrader.bot.marketdata.infrastructure.persistence;
+package com.algotrader.bot.marketdata.infrastructure.persistence.entity;
 
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestDataset;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestDataset;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;

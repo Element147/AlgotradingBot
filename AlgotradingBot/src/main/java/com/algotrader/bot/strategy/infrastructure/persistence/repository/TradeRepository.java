@@ -1,9 +1,10 @@
-package com.algotrader.bot.strategy.infrastructure.persistence;
+package com.algotrader.bot.strategy.infrastructure.persistence.repository;
 
-import com.algotrader.bot.strategy.infrastructure.persistence.Trade;
+import com.algotrader.bot.strategy.infrastructure.persistence.entity.Trade;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+import com.algotrader.bot.account.infrastructure.persistence.entity.Account;
 
 import java.time.LocalDateTime;
 import java.util.List;

@@ -1,9 +1,9 @@
-package com.algotrader.bot.security.application;
+package com.algotrader.bot.security.application.service;
 
-import com.algotrader.bot.security.infrastructure.persistence.AuthTokenRevocation;
-import com.algotrader.bot.security.infrastructure.persistence.User;
-import com.algotrader.bot.security.infrastructure.persistence.AuthTokenRevocationRepository;
-import com.algotrader.bot.security.infrastructure.persistence.UserRepository;
+import com.algotrader.bot.security.infrastructure.persistence.entity.AuthTokenRevocation;
+import com.algotrader.bot.security.infrastructure.persistence.entity.User;
+import com.algotrader.bot.security.infrastructure.persistence.repository.AuthTokenRevocationRepository;
+import com.algotrader.bot.security.infrastructure.persistence.repository.UserRepository;
 import com.algotrader.bot.security.infrastructure.jwt.JwtTokenProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -11,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.transaction.annotation.Transactional;
+import com.algotrader.bot.account.infrastructure.persistence.entity.Account;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;

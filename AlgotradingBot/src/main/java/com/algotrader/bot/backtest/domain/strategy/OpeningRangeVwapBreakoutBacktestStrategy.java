@@ -1,8 +1,9 @@
 package com.algotrader.bot.backtest.domain.strategy;
 
-import com.algotrader.bot.backtest.domain.BacktestAlgorithmType;
+import com.algotrader.bot.backtest.domain.service.BacktestAlgorithmType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import com.algotrader.bot.strategy.infrastructure.persistence.entity.Trade;
 
 import java.math.BigDecimal;
 import java.time.LocalTime;

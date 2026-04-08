@@ -1,11 +1,16 @@
-package com.algotrader.bot.risk.api;
+package com.algotrader.bot.risk.api.controller;
 
-import com.algotrader.bot.shared.api.EnvironmentRequestResolver;
-import com.algotrader.bot.risk.application.RiskManagementService;
+import com.algotrader.bot.shared.api.service.EnvironmentRequestResolver;
+import com.algotrader.bot.risk.application.service.RiskManagementService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import com.algotrader.bot.risk.api.request.CircuitBreakerOverrideRequest;
+import com.algotrader.bot.risk.api.request.UpdateRiskConfigRequest;
+import com.algotrader.bot.risk.api.response.RiskAlertResponse;
+import com.algotrader.bot.risk.api.response.RiskConfigResponse;
+import com.algotrader.bot.risk.api.response.RiskStatusResponse;
 
 import java.util.List;
 

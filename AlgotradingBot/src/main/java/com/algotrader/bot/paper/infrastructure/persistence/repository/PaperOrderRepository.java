@@ -1,6 +1,6 @@
-package com.algotrader.bot.paper.infrastructure.persistence;
+package com.algotrader.bot.paper.infrastructure.persistence.repository;
 
-import com.algotrader.bot.paper.infrastructure.persistence.PaperOrder;
+import com.algotrader.bot.paper.infrastructure.persistence.entity.PaperOrder;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

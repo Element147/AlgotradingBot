@@ -1,7 +1,9 @@
-package com.algotrader.bot.risk.domain;
+package com.algotrader.bot.risk.domain.test;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import com.algotrader.bot.risk.domain.model.SlippageCalculator;
+import com.algotrader.bot.risk.domain.model.TransactionCost;
 
 import java.math.BigDecimal;
 

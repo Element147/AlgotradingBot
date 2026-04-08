@@ -1,8 +1,8 @@
-package com.algotrader.bot.exchange.api;
+package com.algotrader.bot.exchange.api.test;
 
-import com.algotrader.bot.security.infrastructure.persistence.User;
-import com.algotrader.bot.exchange.infrastructure.persistence.ExchangeConnectionProfileRepository;
-import com.algotrader.bot.security.infrastructure.persistence.UserRepository;
+import com.algotrader.bot.security.infrastructure.persistence.entity.User;
+import com.algotrader.bot.exchange.infrastructure.persistence.repository.ExchangeConnectionProfileRepository;
+import com.algotrader.bot.security.infrastructure.persistence.repository.UserRepository;
 import com.algotrader.bot.security.infrastructure.jwt.JwtTokenProvider;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

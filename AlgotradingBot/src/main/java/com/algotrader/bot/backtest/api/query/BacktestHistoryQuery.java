@@ -1,4 +1,6 @@
-package com.algotrader.bot.backtest.api;
+package com.algotrader.bot.backtest.api.query;
+
+import com.algotrader.bot.validation.ValidationStatus;
 
 public record BacktestHistoryQuery(
     Integer page,

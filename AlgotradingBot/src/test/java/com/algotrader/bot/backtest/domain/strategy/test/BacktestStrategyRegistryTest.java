@@ -1,7 +1,29 @@
-package com.algotrader.bot.backtest.domain.strategy;
+package com.algotrader.bot.backtest.domain.strategy.test;
 
-import com.algotrader.bot.backtest.domain.BacktestAlgorithmType;
+import com.algotrader.bot.backtest.domain.service.BacktestAlgorithmType;
 import org.junit.jupiter.api.Test;
+import com.algotrader.bot.backtest.domain.strategy.BacktestIndicatorCalculator;
+import com.algotrader.bot.backtest.domain.strategy.BacktestStrategy;
+import com.algotrader.bot.backtest.domain.strategy.BacktestStrategyContext;
+import com.algotrader.bot.backtest.domain.strategy.BacktestStrategyDecision;
+import com.algotrader.bot.backtest.domain.strategy.BacktestStrategyDefinition;
+import com.algotrader.bot.backtest.domain.strategy.BacktestStrategyRegistry;
+import com.algotrader.bot.backtest.domain.strategy.BacktestStrategySelectionMode;
+import com.algotrader.bot.backtest.domain.strategy.BollingerBandsBacktestStrategy;
+import com.algotrader.bot.backtest.domain.strategy.BuyAndHoldBacktestStrategy;
+import com.algotrader.bot.backtest.domain.strategy.DualMomentumRotationBacktestStrategy;
+import com.algotrader.bot.backtest.domain.strategy.ExhaustionReversalFadeBacktestStrategy;
+import com.algotrader.bot.backtest.domain.strategy.IchimokuTrendBacktestStrategy;
+import com.algotrader.bot.backtest.domain.strategy.MultiTimeframeEmaAdxPullbackBacktestStrategy;
+import com.algotrader.bot.backtest.domain.strategy.OpeningRangeVwapBreakoutBacktestStrategy;
+import com.algotrader.bot.backtest.domain.strategy.RegimeFilteredMeanReversionBacktestStrategy;
+import com.algotrader.bot.backtest.domain.strategy.RelativeStrengthRotationIntradayEntryFilterBacktestStrategy;
+import com.algotrader.bot.backtest.domain.strategy.SmaCrossoverBacktestStrategy;
+import com.algotrader.bot.backtest.domain.strategy.SqueezeBreakoutRegimeConfirmationBacktestStrategy;
+import com.algotrader.bot.backtest.domain.strategy.TrendFirstAdaptiveEnsembleBacktestStrategy;
+import com.algotrader.bot.backtest.domain.strategy.TrendPullbackContinuationBacktestStrategy;
+import com.algotrader.bot.backtest.domain.strategy.VolatilityManagedDonchianBreakoutBacktestStrategy;
+import com.algotrader.bot.backtest.domain.strategy.VwapPullbackContinuationBacktestStrategy;
 
 import java.util.List;
 

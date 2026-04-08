@@ -1,8 +1,12 @@
-package com.algotrader.bot.backtest.domain;
+package com.algotrader.bot.backtest.domain.test;
 
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestResult;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import com.algotrader.bot.backtest.domain.model.BacktestValidator;
+import com.algotrader.bot.backtest.domain.model.MetricsResult;
+import com.algotrader.bot.backtest.domain.model.MonteCarloResult;
+import com.algotrader.bot.backtest.domain.model.ValidationReport;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

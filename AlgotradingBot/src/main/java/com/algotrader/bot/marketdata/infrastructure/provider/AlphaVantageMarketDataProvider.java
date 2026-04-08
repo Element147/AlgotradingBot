@@ -1,13 +1,13 @@
 package com.algotrader.bot.marketdata.infrastructure.provider;
 
-import com.algotrader.bot.backtest.domain.OHLCVData;
-import com.algotrader.bot.marketdata.application.AbstractMarketDataProvider;
-import com.algotrader.bot.marketdata.application.MarketDataAssetType;
-import com.algotrader.bot.marketdata.application.MarketDataHttpClient;
-import com.algotrader.bot.marketdata.application.MarketDataProviderCredentialService;
-import com.algotrader.bot.marketdata.application.MarketDataProviderDefinition;
-import com.algotrader.bot.marketdata.application.MarketDataProviderFetchRequest;
-import com.algotrader.bot.marketdata.application.MarketDataResampler;
+import com.algotrader.bot.backtest.domain.model.OHLCVData;
+import com.algotrader.bot.marketdata.application.service.AbstractMarketDataProvider;
+import com.algotrader.bot.marketdata.application.service.MarketDataAssetType;
+import com.algotrader.bot.marketdata.application.service.MarketDataHttpClient;
+import com.algotrader.bot.marketdata.application.service.MarketDataProviderCredentialService;
+import com.algotrader.bot.marketdata.application.service.MarketDataProviderDefinition;
+import com.algotrader.bot.marketdata.application.service.MarketDataProviderFetchRequest;
+import com.algotrader.bot.marketdata.application.service.MarketDataResampler;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
@@ -82,13 +82,13 @@ public class AlphaVantageMarketDataProvider extends AbstractMarketDataProvider {
             throw new IllegalArgumentException("Alpha Vantage request failed: " + root.get("Error Message").asText());
         }
         if (root.has("Information")) {
-            throw new com.algotrader.bot.marketdata.application.MarketDataRetryableException(
+            throw new com.algotrader.bot.marketdata.application.service.MarketDataRetryableException(
                 root.get("Information").asText(),
                 LocalDateTime.now().plusHours(1)
             );
         }
         if (root.has("Note")) {
-            throw new com.algotrader.bot.marketdata.application.MarketDataRetryableException(
+            throw new com.algotrader.bot.marketdata.application.service.MarketDataRetryableException(
                 root.get("Note").asText(),
                 LocalDateTime.now().plusMinutes(15)
             );

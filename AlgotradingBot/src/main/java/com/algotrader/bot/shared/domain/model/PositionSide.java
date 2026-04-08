@@ -1,4 +1,4 @@
-package com.algotrader.bot.shared.domain;
+package com.algotrader.bot.shared.domain.model;
 
 public enum PositionSide {
     LONG,

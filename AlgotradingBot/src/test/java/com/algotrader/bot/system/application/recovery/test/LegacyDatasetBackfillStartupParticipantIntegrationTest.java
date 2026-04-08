@@ -1,23 +1,24 @@
-package com.algotrader.bot.system.application.recovery;
+package com.algotrader.bot.system.application.recovery.test;
 
-import com.algotrader.bot.backtest.api.BacktestSymbolTelemetryResponse;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestDataset;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestResult;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestDatasetRepository;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestResultRepository;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataCandleRepository;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataCandleSegmentRepository;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataSeriesRepository;
-import com.algotrader.bot.backtest.application.BacktestExecutionService;
-import com.algotrader.bot.backtest.application.BacktestTelemetryService;
-import com.algotrader.bot.marketdata.application.MarketDataQueriedCandle;
-import com.algotrader.bot.marketdata.application.MarketDataQueryService;
+import com.algotrader.bot.backtest.api.response.BacktestSymbolTelemetryResponse;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestDataset;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestResult;
+import com.algotrader.bot.backtest.infrastructure.persistence.repository.BacktestDatasetRepository;
+import com.algotrader.bot.backtest.infrastructure.persistence.repository.BacktestResultRepository;
+import com.algotrader.bot.marketdata.infrastructure.persistence.repository.MarketDataCandleRepository;
+import com.algotrader.bot.marketdata.infrastructure.persistence.repository.MarketDataCandleSegmentRepository;
+import com.algotrader.bot.marketdata.infrastructure.persistence.repository.MarketDataSeriesRepository;
+import com.algotrader.bot.backtest.application.service.BacktestExecutionService;
+import com.algotrader.bot.backtest.application.service.BacktestTelemetryService;
+import com.algotrader.bot.marketdata.application.service.MarketDataQueriedCandle;
+import com.algotrader.bot.marketdata.application.service.MarketDataQueryService;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import com.algotrader.bot.system.application.recovery.LegacyDatasetBackfillStartupParticipant;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

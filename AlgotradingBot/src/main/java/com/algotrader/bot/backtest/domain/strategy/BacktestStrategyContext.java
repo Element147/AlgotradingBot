@@ -1,7 +1,7 @@
 package com.algotrader.bot.backtest.domain.strategy;
 
-import com.algotrader.bot.backtest.domain.OHLCVData;
-import com.algotrader.bot.shared.domain.PositionSide;
+import com.algotrader.bot.backtest.domain.model.OHLCVData;
+import com.algotrader.bot.shared.domain.model.PositionSide;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;

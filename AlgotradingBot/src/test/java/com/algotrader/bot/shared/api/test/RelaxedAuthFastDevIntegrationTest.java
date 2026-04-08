@@ -1,10 +1,10 @@
-package com.algotrader.bot.shared.api;
+package com.algotrader.bot.shared.api.test;
 
-import com.algotrader.bot.account.infrastructure.persistence.Account;
-import com.algotrader.bot.strategy.infrastructure.persistence.StrategyConfig;
-import com.algotrader.bot.account.infrastructure.persistence.AccountRepository;
-import com.algotrader.bot.strategy.infrastructure.persistence.StrategyConfigRepository;
-import com.algotrader.bot.strategy.infrastructure.persistence.StrategyConfigVersionRepository;
+import com.algotrader.bot.account.infrastructure.persistence.entity.Account;
+import com.algotrader.bot.strategy.infrastructure.persistence.entity.StrategyConfig;
+import com.algotrader.bot.account.infrastructure.persistence.repository.AccountRepository;
+import com.algotrader.bot.strategy.infrastructure.persistence.repository.StrategyConfigRepository;
+import com.algotrader.bot.strategy.infrastructure.persistence.repository.StrategyConfigVersionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

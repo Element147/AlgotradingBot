@@ -1,10 +1,10 @@
-package com.algotrader.bot.system.application;
+package com.algotrader.bot.system.application.service;
 
-import com.algotrader.bot.system.api.OperatorAuditEventListResponse;
-import com.algotrader.bot.system.api.OperatorAuditEventResponse;
-import com.algotrader.bot.system.api.OperatorAuditSummaryResponse;
-import com.algotrader.bot.system.infrastructure.persistence.OperatorAuditEvent;
-import com.algotrader.bot.system.infrastructure.persistence.OperatorAuditEventRepository;
+import com.algotrader.bot.system.api.response.OperatorAuditEventListResponse;
+import com.algotrader.bot.system.api.response.OperatorAuditEventResponse;
+import com.algotrader.bot.system.api.response.OperatorAuditSummaryResponse;
+import com.algotrader.bot.system.infrastructure.persistence.entity.OperatorAuditEvent;
+import com.algotrader.bot.system.infrastructure.persistence.repository.OperatorAuditEventRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;

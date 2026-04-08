@@ -1,7 +1,8 @@
-package com.algotrader.bot.backtest.domain;
+package com.algotrader.bot.backtest.domain.model;
 
-import com.algotrader.bot.strategy.infrastructure.persistence.Trade;
+import com.algotrader.bot.strategy.infrastructure.persistence.entity.Trade;
 import org.springframework.stereotype.Component;
+import com.algotrader.bot.account.infrastructure.persistence.entity.Account;
 
 import java.math.BigDecimal;
 import java.math.MathContext;

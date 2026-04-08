@@ -1,9 +1,9 @@
-package com.algotrader.bot.paper.api;
+package com.algotrader.bot.paper.api.test;
 
-import com.algotrader.bot.account.infrastructure.persistence.Account;
-import com.algotrader.bot.account.infrastructure.persistence.AccountRepository;
-import com.algotrader.bot.paper.infrastructure.persistence.PaperOrderRepository;
-import com.algotrader.bot.account.infrastructure.persistence.PortfolioRepository;
+import com.algotrader.bot.account.infrastructure.persistence.entity.Account;
+import com.algotrader.bot.account.infrastructure.persistence.repository.AccountRepository;
+import com.algotrader.bot.paper.infrastructure.persistence.repository.PaperOrderRepository;
+import com.algotrader.bot.account.infrastructure.persistence.repository.PortfolioRepository;
 import com.algotrader.bot.security.infrastructure.jwt.JwtTokenProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,6 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import com.algotrader.bot.paper.api.request.PaperOrderRequest;
 
 import java.math.BigDecimal;
 

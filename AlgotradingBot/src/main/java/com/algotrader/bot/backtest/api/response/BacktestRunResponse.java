@@ -1,6 +1,6 @@
-package com.algotrader.bot.backtest.api;
+package com.algotrader.bot.backtest.api.response;
 
-import com.algotrader.bot.shared.api.AsyncTaskMonitorResponse;
+import com.algotrader.bot.shared.api.response.AsyncTaskMonitorResponse;
 import java.time.LocalDateTime;
 
 public record BacktestRunResponse(

@@ -1,4 +1,4 @@
-package com.algotrader.bot.marketdata.api;
+package com.algotrader.bot.marketdata.api.request;
 
 import jakarta.validation.constraints.Size;
 

@@ -1,7 +1,8 @@
-package com.algotrader.bot.backtest.api;
+package com.algotrader.bot.backtest.api.response;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import com.algotrader.bot.validation.ValidationStatus;
 
 public record BacktestComparisonItemResponse(
     Long id,

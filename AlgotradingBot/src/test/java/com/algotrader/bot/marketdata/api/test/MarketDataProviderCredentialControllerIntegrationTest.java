@@ -1,7 +1,7 @@
-package com.algotrader.bot.marketdata.api;
+package com.algotrader.bot.marketdata.api.test;
 
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataProviderCredential;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataProviderCredentialRepository;
+import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataProviderCredential;
+import com.algotrader.bot.marketdata.infrastructure.persistence.repository.MarketDataProviderCredentialRepository;
 import com.algotrader.bot.security.infrastructure.jwt.JwtTokenProvider;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,6 +15,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import com.algotrader.bot.marketdata.api.response.MarketDataProviderCredentialResponse;
+import com.algotrader.bot.marketdata.api.response.MarketDataProviderResponse;
 
 import java.util.List;
 

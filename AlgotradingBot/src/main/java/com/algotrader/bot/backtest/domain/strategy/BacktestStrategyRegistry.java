@@ -1,6 +1,6 @@
 package com.algotrader.bot.backtest.domain.strategy;
 
-import com.algotrader.bot.backtest.domain.BacktestAlgorithmType;
+import com.algotrader.bot.backtest.domain.service.BacktestAlgorithmType;
 import org.springframework.stereotype.Component;
 
 import java.util.Comparator;

@@ -1,8 +1,8 @@
-package com.algotrader.bot.marketdata.application;
+package com.algotrader.bot.marketdata.application.service;
 
-import com.algotrader.bot.marketdata.api.MarketDataImportJobResponse;
-import com.algotrader.bot.shared.api.AsyncTaskMonitorResponse;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataImportJob;
+import com.algotrader.bot.marketdata.api.response.MarketDataImportJobResponse;
+import com.algotrader.bot.shared.api.response.AsyncTaskMonitorResponse;
+import com.algotrader.bot.marketdata.infrastructure.persistence.entity.MarketDataImportJob;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;

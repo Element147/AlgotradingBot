@@ -1,11 +1,14 @@
-package com.algotrader.bot.backtest.infrastructure.persistence;
+package com.algotrader.bot.backtest.infrastructure.persistence.repository;
 
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestResult;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestResult;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import com.algotrader.bot.backtest.infrastructure.persistence.projection.BacktestDatasetUsageSummary;
+import com.algotrader.bot.backtest.infrastructure.persistence.projection.BacktestExperimentSummaryProjection;
+import com.algotrader.bot.validation.ValidationStatus;
 
 import java.util.List;
 import java.util.Collection;

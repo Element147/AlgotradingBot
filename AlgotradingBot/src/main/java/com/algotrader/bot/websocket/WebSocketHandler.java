@@ -9,6 +9,7 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+import com.algotrader.bot.security.infrastructure.persistence.entity.User;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;

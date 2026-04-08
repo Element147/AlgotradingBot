@@ -1,4 +1,4 @@
-package com.algotrader.bot.backtest.domain;
+package com.algotrader.bot.backtest.domain.model;
 
 import com.algotrader.bot.backtest.domain.strategy.BacktestOpenPosition;
 import com.algotrader.bot.backtest.domain.strategy.BacktestStrategy;
@@ -7,8 +7,8 @@ import com.algotrader.bot.backtest.domain.strategy.BacktestStrategyContext;
 import com.algotrader.bot.backtest.domain.strategy.BacktestStrategyDecision;
 import com.algotrader.bot.backtest.domain.strategy.BacktestStrategyRegistry;
 import com.algotrader.bot.backtest.domain.strategy.BacktestStrategySelectionMode;
-import com.algotrader.bot.shared.domain.PositionSide;
-import com.algotrader.bot.backtest.domain.BacktestAlgorithmType;
+import com.algotrader.bot.shared.domain.model.PositionSide;
+import com.algotrader.bot.backtest.domain.service.BacktestAlgorithmType;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;

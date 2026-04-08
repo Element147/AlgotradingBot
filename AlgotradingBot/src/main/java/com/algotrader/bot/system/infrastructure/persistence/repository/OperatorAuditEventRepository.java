@@ -1,6 +1,6 @@
-package com.algotrader.bot.system.infrastructure.persistence;
+package com.algotrader.bot.system.infrastructure.persistence.repository;
 
-import com.algotrader.bot.system.infrastructure.persistence.OperatorAuditEvent;
+import com.algotrader.bot.system.infrastructure.persistence.entity.OperatorAuditEvent;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;

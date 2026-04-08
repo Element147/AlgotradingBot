@@ -12,6 +12,7 @@ import org.mockito.quality.Strictness;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
+import com.algotrader.bot.security.infrastructure.persistence.entity.User;
 
 import java.util.HashMap;
 import java.util.List;

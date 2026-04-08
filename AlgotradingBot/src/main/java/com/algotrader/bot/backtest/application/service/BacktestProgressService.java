@@ -1,6 +1,6 @@
-package com.algotrader.bot.backtest.application;
+package com.algotrader.bot.backtest.application.service;
 
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestResult;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestResult;
 import com.algotrader.bot.websocket.WebSocketEventPublisher;
 import org.springframework.stereotype.Service;
 

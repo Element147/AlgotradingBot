@@ -1,4 +1,4 @@
-package com.algotrader.bot.risk.api;
+package com.algotrader.bot.risk.api.response;
 
 import java.math.BigDecimal;
 

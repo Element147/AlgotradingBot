@@ -1,4 +1,4 @@
-package com.algotrader.bot.shared.infrastructure.observability;
+package com.algotrader.bot.shared.infrastructure.observability.service;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;

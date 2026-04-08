@@ -1,6 +1,7 @@
-package com.algotrader.bot.backtest.api;
+package com.algotrader.bot.backtest.api.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import com.algotrader.bot.validation.ValidationStatus;
 
 import java.math.BigDecimal;
 

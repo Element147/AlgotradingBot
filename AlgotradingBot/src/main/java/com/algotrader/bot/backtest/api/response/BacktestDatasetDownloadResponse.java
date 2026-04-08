@@ -1,4 +1,4 @@
-package com.algotrader.bot.backtest.api;
+package com.algotrader.bot.backtest.api.response;
 
 public record BacktestDatasetDownloadResponse(
     String originalFilename,

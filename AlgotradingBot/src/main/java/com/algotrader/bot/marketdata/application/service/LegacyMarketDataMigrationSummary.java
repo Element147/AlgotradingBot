@@ -1,4 +1,4 @@
-package com.algotrader.bot.marketdata.application;
+package com.algotrader.bot.marketdata.application.service;
 
 import java.util.List;
 

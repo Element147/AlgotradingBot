@@ -1,7 +1,7 @@
-package com.algotrader.bot.system.application;
+package com.algotrader.bot.system.application.service;
 
-import com.algotrader.bot.system.api.BackupResponse;
-import com.algotrader.bot.system.api.SystemInfoResponse;
+import com.algotrader.bot.system.api.response.BackupResponse;
+import com.algotrader.bot.system.api.response.SystemInfoResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;

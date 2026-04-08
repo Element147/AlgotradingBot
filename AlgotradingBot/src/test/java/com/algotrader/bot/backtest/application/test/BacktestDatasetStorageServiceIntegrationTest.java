@@ -1,18 +1,19 @@
-package com.algotrader.bot.backtest.application;
+package com.algotrader.bot.backtest.application.test;
 
-import com.algotrader.bot.backtest.api.BacktestDatasetDownloadResponse;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestDataset;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataCandleRepository;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataCandleSegmentRepository;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataSeriesRepository;
-import com.algotrader.bot.marketdata.application.MarketDataQueryService;
-import com.algotrader.bot.marketdata.application.MarketDataQueriedCandle;
+import com.algotrader.bot.backtest.api.response.BacktestDatasetDownloadResponse;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestDataset;
+import com.algotrader.bot.marketdata.infrastructure.persistence.repository.MarketDataCandleRepository;
+import com.algotrader.bot.marketdata.infrastructure.persistence.repository.MarketDataCandleSegmentRepository;
+import com.algotrader.bot.marketdata.infrastructure.persistence.repository.MarketDataSeriesRepository;
+import com.algotrader.bot.marketdata.application.service.MarketDataQueryService;
+import com.algotrader.bot.marketdata.application.service.MarketDataQueriedCandle;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
+import com.algotrader.bot.backtest.application.service.BacktestDatasetStorageService;
 
 import java.time.LocalDateTime;
 import java.util.List;

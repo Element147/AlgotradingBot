@@ -1,6 +1,6 @@
-package com.algotrader.bot.account.infrastructure.persistence;
+package com.algotrader.bot.account.infrastructure.persistence.entity;
 
-import com.algotrader.bot.shared.domain.PositionSide;
+import com.algotrader.bot.shared.domain.model.PositionSide;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;

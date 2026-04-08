@@ -1,6 +1,6 @@
-package com.algotrader.bot.marketdata.api;
+package com.algotrader.bot.marketdata.api.controller;
 
-import com.algotrader.bot.marketdata.application.MarketDataImportService;
+import com.algotrader.bot.marketdata.application.service.MarketDataImportService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +12,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.algotrader.bot.marketdata.api.request.MarketDataImportJobRequest;
+import com.algotrader.bot.marketdata.api.request.MarketDataProviderCredentialRequest;
+import com.algotrader.bot.marketdata.api.response.MarketDataImportJobResponse;
+import com.algotrader.bot.marketdata.api.response.MarketDataProviderCredentialResponse;
+import com.algotrader.bot.marketdata.api.response.MarketDataProviderResponse;
 
 import java.util.List;
 

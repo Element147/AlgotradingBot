@@ -1,8 +1,8 @@
-package com.algotrader.bot.security.api;
+package com.algotrader.bot.security.api.test;
 
-import com.algotrader.bot.security.infrastructure.persistence.User;
-import com.algotrader.bot.security.infrastructure.persistence.AuthTokenRevocationRepository;
-import com.algotrader.bot.security.infrastructure.persistence.UserRepository;
+import com.algotrader.bot.security.infrastructure.persistence.entity.User;
+import com.algotrader.bot.security.infrastructure.persistence.repository.AuthTokenRevocationRepository;
+import com.algotrader.bot.security.infrastructure.persistence.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,6 +13,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import com.algotrader.bot.security.api.request.LoginRequest;
 
 import java.util.Map;
 

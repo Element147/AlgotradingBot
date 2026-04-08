@@ -1,15 +1,15 @@
 package com.algotrader.bot.system.application.recovery;
 
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestDataset;
-import com.algotrader.bot.backtest.infrastructure.persistence.BacktestDatasetRepository;
-import com.algotrader.bot.marketdata.infrastructure.persistence.MarketDataCandleSegmentRepository;
-import com.algotrader.bot.system.application.OperatorAuditService;
-import com.algotrader.bot.marketdata.application.LegacyMarketDataMigrationDatasetResult;
-import com.algotrader.bot.marketdata.application.LegacyMarketDataMigrationRequest;
-import com.algotrader.bot.marketdata.application.LegacyMarketDataMigrationService;
-import com.algotrader.bot.marketdata.application.LegacyMarketDataMigrationSummary;
-import com.algotrader.bot.marketdata.application.LegacyMarketDataReconciliationDatasetResult;
-import com.algotrader.bot.marketdata.application.LegacyMarketDataReconciliationSummary;
+import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestDataset;
+import com.algotrader.bot.backtest.infrastructure.persistence.repository.BacktestDatasetRepository;
+import com.algotrader.bot.marketdata.infrastructure.persistence.repository.MarketDataCandleSegmentRepository;
+import com.algotrader.bot.system.application.service.OperatorAuditService;
+import com.algotrader.bot.marketdata.application.service.LegacyMarketDataMigrationDatasetResult;
+import com.algotrader.bot.marketdata.application.service.LegacyMarketDataMigrationRequest;
+import com.algotrader.bot.marketdata.application.service.LegacyMarketDataMigrationService;
+import com.algotrader.bot.marketdata.application.service.LegacyMarketDataMigrationSummary;
+import com.algotrader.bot.marketdata.application.service.LegacyMarketDataReconciliationDatasetResult;
+import com.algotrader.bot.marketdata.application.service.LegacyMarketDataReconciliationSummary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Sort;

@@ -1,8 +1,9 @@
-package com.algotrader.bot.account.infrastructure.persistence;
+package com.algotrader.bot.account.infrastructure.persistence.repository;
 
-import com.algotrader.bot.account.infrastructure.persistence.Portfolio;
+import com.algotrader.bot.account.infrastructure.persistence.entity.Portfolio;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+import com.algotrader.bot.account.infrastructure.persistence.entity.Account;
 
 import java.util.List;
 import java.util.Optional;

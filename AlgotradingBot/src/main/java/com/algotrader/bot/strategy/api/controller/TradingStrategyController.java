@@ -1,8 +1,8 @@
-package com.algotrader.bot.strategy.api;
+package com.algotrader.bot.strategy.api.controller;
 
-import com.algotrader.bot.backtest.api.BacktestResultResponse;
-import com.algotrader.bot.shared.api.ErrorResponse;
-import com.algotrader.bot.strategy.application.TradingStrategyService;
+import com.algotrader.bot.backtest.api.response.BacktestResultResponse;
+import com.algotrader.bot.shared.api.error.ErrorResponse;
+import com.algotrader.bot.strategy.application.service.TradingStrategyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -17,6 +17,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.algotrader.bot.account.infrastructure.persistence.entity.Account;
+import com.algotrader.bot.strategy.api.request.StartStrategyRequest;
+import com.algotrader.bot.strategy.api.response.StartStrategyResponse;
+import com.algotrader.bot.strategy.api.response.StopStrategyResponse;
+import com.algotrader.bot.strategy.api.response.StrategyStatusResponse;
+import com.algotrader.bot.strategy.api.response.TradeHistoryResponse;
+import com.algotrader.bot.strategy.infrastructure.persistence.entity.Trade;
 
 import java.time.LocalDateTime;
 import java.util.List;
