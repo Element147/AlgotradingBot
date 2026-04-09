@@ -17,7 +17,8 @@ The repository is a usable local-first MVP for strategy research, market-data pr
 - Backtests for `SINGLE_SYMBOL` and `DATASET_UNIVERSE` modes
 - Async backtest queueing with progress updates, replay, compare, and export
 - Backtest review with lightweight summary reads and on-demand equity, trade, and telemetry queries
-- Shared compact table UX across backtest history, dataset inventory, comparison, and paper orders, with sticky headers, inline filters, quick search, persisted column widths, and higher-contrast status pills
+- Shared compact table UX across backtest history, dataset inventory, comparison, and paper orders, with sticky headers, inline filters, quick search, persisted column layout preferences, and higher-contrast status pills
+- Backtest history now surfaces net profit plus winning and losing trade counts for each run
 - Server-side paged backtest history queries with safe sort whitelisting and filter/range support on `/api/backtests`
 - Strategy explainability surfaces reused across Backtest, Forward Testing, Paper, and Live
 

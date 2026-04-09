@@ -38,6 +38,7 @@ import {
 } from '@/components/ui/InteractiveTable';
 import { NumericText, StatusPill } from '@/components/ui/Workbench';
 import {
+  formatCurrency,
   formatDateTime,
   formatNumber,
 } from '@/utils/formatters';
@@ -120,6 +121,7 @@ export function BacktestHistoryWorkspacePanel({
         header: 'Compare',
         enableSorting: false,
         enableColumnFilter: false,
+        enableHiding: false,
         size: 92,
         minSize: 92,
         meta: {
@@ -143,6 +145,7 @@ export function BacktestHistoryWorkspacePanel({
         accessorKey: 'id',
         header: 'ID',
         enableColumnFilter: false,
+        enableHiding: false,
         size: 84,
         minSize: 84,
         meta: {
@@ -329,10 +332,69 @@ export function BacktestHistoryWorkspacePanel({
         ),
       },
       {
+        accessorKey: 'netProfit',
+        header: 'Net P/L',
+        size: 136,
+        minSize: 120,
+        meta: {
+          align: 'right',
+          filterVariant: 'none',
+          headerDescription:
+            'Net profit after costs, calculated as final balance minus initial balance.',
+        },
+        cell: ({ row }) => (
+          <NumericText
+            variant="body2"
+            tone={
+              row.original.netProfit > 0
+                ? 'success'
+                : row.original.netProfit < 0
+                  ? 'error'
+                  : 'default'
+            }
+          >
+            {formatCurrency(row.original.netProfit)}
+          </NumericText>
+        ),
+      },
+      {
+        accessorKey: 'winningTrades',
+        header: 'Wins',
+        size: 96,
+        minSize: 84,
+        meta: {
+          align: 'right',
+          filterVariant: 'none',
+          headerDescription: 'Positive-result trades only. Flat trades count as neither win nor loss.',
+        },
+        cell: ({ row }) => (
+          <NumericText variant="body2" tone="success">
+            {formatNumber(row.original.winningTrades)}
+          </NumericText>
+        ),
+      },
+      {
+        accessorKey: 'losingTrades',
+        header: 'Losses',
+        size: 102,
+        minSize: 90,
+        meta: {
+          align: 'right',
+          filterVariant: 'none',
+          headerDescription: 'Negative-result trades only. Flat trades count as neither win nor loss.',
+        },
+        cell: ({ row }) => (
+          <NumericText variant="body2" tone="error">
+            {formatNumber(row.original.losingTrades)}
+          </NumericText>
+        ),
+      },
+      {
         id: 'actions',
         header: 'Actions',
         enableSorting: false,
         enableColumnFilter: false,
+        enableHiding: false,
         size: 218,
         minSize: 206,
         meta: {
@@ -407,7 +469,7 @@ export function BacktestHistoryWorkspacePanel({
     <Stack spacing={2}>
       <InteractiveTable
         title="Backtest History"
-        description="History now behaves like a working grid: compact rows, sticky headers, persisted widths, sortable columns, and inline filters without hiding the detailed review path."
+        description="History now behaves like a working grid: compact rows, sticky headers, persisted layout preferences, sortable columns, inline filters, and quick column toggles without hiding the detailed review path."
         data={history.items}
         columns={columns}
         stateControls={tableStateControls}

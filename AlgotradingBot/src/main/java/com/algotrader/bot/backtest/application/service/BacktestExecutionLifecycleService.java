@@ -131,11 +131,14 @@ public class BacktestExecutionLifecycleService {
 
     private void applySimulationResult(BacktestResult result, BacktestSimulationResult simulationResult) {
         result.setFinalBalance(simulationResult.finalBalance());
+        result.setNetProfit(simulationResult.finalBalance().subtract(result.getInitialBalance()));
         result.setSharpeRatio(simulationResult.sharpeRatio());
         result.setProfitFactor(simulationResult.profitFactor());
         result.setWinRate(simulationResult.winRatePercent());
         result.setMaxDrawdown(simulationResult.maxDrawdownPercent());
         result.setTotalTrades(simulationResult.totalTrades());
+        result.setWinningTrades(simulationResult.winningTrades());
+        result.setLosingTrades(simulationResult.losingTrades());
         result.setValidationStatus(isPassed(simulationResult)
             ? BacktestResult.ValidationStatus.PASSED
             : BacktestResult.ValidationStatus.FAILED);

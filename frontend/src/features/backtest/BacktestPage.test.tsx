@@ -25,6 +25,9 @@ const historyItems = [
     timestamp: '2026-03-10T10:00:00',
     initialBalance: 1000,
     finalBalance: 1080,
+    netProfit: 80,
+    winningTrades: 42,
+    losingTrades: 38,
     executionStage: 'COMPLETED',
     progressPercent: 100,
     processedCandles: 8760,
@@ -49,6 +52,9 @@ const historyItems = [
     timestamp: '2026-03-05T10:00:00',
     initialBalance: 1000,
     finalBalance: 980,
+    netProfit: -20,
+    winningTrades: 16,
+    losingTrades: 18,
     executionStage: 'COMPLETED',
     progressPercent: 100,
     processedCandles: 4000,
@@ -336,21 +342,38 @@ describe('BacktestPage', { timeout: 25000 }, () => {
     expect(bodyRows[0]).toHaveTextContent('ETH 4h 2024');
   });
 
-  it('sorts history rows and keeps review separate from history', async () => {
+  it('renders history metrics, forwards server-side sort changes, and keeps review separate from history', async () => {
     const user = userEvent.setup();
     renderPage();
 
     await user.click(screen.getByRole('tab', { name: 'History' }));
 
-    const historyTable = screen.getByRole('table');
-    let bodyRows = historyTable.querySelectorAll('tbody tr');
-    expect(bodyRows[0]).toHaveTextContent('42');
+    expect(screen.getByText('Net P/L')).toBeInTheDocument();
+    expect(screen.getByText('Wins')).toBeInTheDocument();
+    expect(screen.getByText('Losses')).toBeInTheDocument();
+    expect(screen.getByText('$80.00')).toBeInTheDocument();
+
+    const latestCall = () =>
+      backtestApiMocks.useGetBacktestsQuery.mock.calls.at(-1)?.[0] as
+        | Record<string, unknown>
+        | undefined;
 
     await user.click(screen.getByRole('button', { name: /^ID$/i }));
 
-    bodyRows = historyTable.querySelectorAll('tbody tr');
-    expect(bodyRows[0]).toHaveTextContent('7');
+    expect(latestCall()).toMatchObject({
+      sortBy: 'id',
+      sortDirection: 'asc',
+    });
 
+    await user.click(screen.getByRole('button', { name: /Net P\/L/i }));
+
+    expect(latestCall()).toMatchObject({
+      sortBy: 'netProfit',
+      sortDirection: 'asc',
+    });
+
+    const historyTable = screen.getByRole('table');
+    const bodyRows = historyTable.querySelectorAll('tbody tr');
     expect(within(bodyRows[0] as HTMLTableRowElement).getByRole('button', { name: 'Details' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: 'Review' }));

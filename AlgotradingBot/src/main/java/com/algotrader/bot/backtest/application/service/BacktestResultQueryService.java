@@ -332,6 +332,9 @@ public class BacktestResultQueryService {
             result.getTimestamp(),
             result.getInitialBalance(),
             result.getFinalBalance(),
+            result.getNetProfit(),
+            result.getWinningTrades(),
+            result.getLosingTrades(),
             result.getExecutionStage().name(),
             result.getProgressPercent(),
             result.getProcessedCandles(),
@@ -364,11 +367,14 @@ public class BacktestResultQueryService {
             summary.validationStatus(),
             summary.initialBalance(),
             summary.finalBalance(),
+            summary.netProfit(),
             summary.sharpeRatio(),
             summary.profitFactor(),
             summary.winRate(),
             summary.maxDrawdown(),
             summary.totalTrades(),
+            summary.winningTrades(),
+            summary.losingTrades(),
             summary.feesBps(),
             summary.slippageBps(),
             summary.startDate(),
@@ -409,11 +415,14 @@ public class BacktestResultQueryService {
             result.getValidationStatus().name(),
             result.getInitialBalance(),
             result.getFinalBalance(),
+            result.getNetProfit(),
             result.getSharpeRatio(),
             result.getProfitFactor(),
             result.getWinRate(),
             result.getMaxDrawdown(),
             result.getTotalTrades(),
+            result.getWinningTrades(),
+            result.getLosingTrades(),
             result.getFeesBps(),
             result.getSlippageBps(),
             result.getStartDate(),
@@ -769,6 +778,9 @@ public class BacktestResultQueryService {
             case "validationStatus" -> Sort.by(direction, "validationStatus").and(Sort.by(direction, "timestamp"));
             case "feesBps" -> Sort.by(direction, "feesBps").and(Sort.by(direction, "timestamp"));
             case "slippageBps" -> Sort.by(direction, "slippageBps").and(Sort.by(direction, "timestamp"));
+            case "netProfit" -> Sort.by(direction, "netProfit").and(Sort.by(direction, "timestamp"));
+            case "winningTrades" -> Sort.by(direction, "winningTrades").and(Sort.by(direction, "timestamp"));
+            case "losingTrades" -> Sort.by(direction, "losingTrades").and(Sort.by(direction, "timestamp"));
             case "timestamp" -> Sort.by(direction, "timestamp").and(Sort.by(direction, "id"));
             default -> Sort.by(Sort.Direction.DESC, "timestamp").and(Sort.by(Sort.Direction.DESC, "id"));
         };

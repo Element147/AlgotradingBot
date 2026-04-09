@@ -35,9 +35,19 @@ import {
   type Row,
   type RowData,
   type SortingState,
+  type VisibilityState,
 } from '@tanstack/react-table';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 
+import {
+  ColumnVisibilityMenu,
+  type ColumnVisibilityMenuItem,
+} from './ColumnVisibilityMenu';
+import {
+  buildDefaultInteractiveTableState,
+  loadInteractiveTableState,
+  type InteractiveTablePersistedState,
+} from './tablePreferences';
 import { EmptyState, StatusPill, SurfacePanel } from './Workbench';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -55,21 +65,15 @@ declare module '@tanstack/react-table' {
 }
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
-export interface InteractiveTablePersistedState {
-  sorting: SortingState;
-  columnFilters: ColumnFiltersState;
-  globalFilter: string;
-  columnSizing: ColumnSizingState;
-  pagination: PaginationState;
-}
-
 export interface InteractiveTableStateControls {
   state: InteractiveTablePersistedState;
   onSortingChange: OnChangeFn<SortingState>;
   onColumnFiltersChange: OnChangeFn<ColumnFiltersState>;
   onGlobalFilterChange: (value: string) => void;
   onColumnSizingChange: OnChangeFn<ColumnSizingState>;
+  onColumnVisibilityChange: OnChangeFn<VisibilityState>;
   onPaginationChange: OnChangeFn<PaginationState>;
+  resetColumnVisibility: () => void;
   resetState: () => void;
 }
 
@@ -78,64 +82,12 @@ interface UseInteractiveTableStateOptions {
   initialPageSize?: number;
 }
 
-const buildDefaultState = (initialPageSize: number): InteractiveTablePersistedState => ({
-  sorting: [],
-  columnFilters: [],
-  globalFilter: '',
-  columnSizing: {},
-  pagination: {
-    pageIndex: 0,
-    pageSize: initialPageSize,
-  },
-});
-
-const storageKeyFor = (tableId: string) => `interactive-table:${tableId}`;
-
-const loadPersistedState = (
-  tableId: string,
-  initialPageSize: number
-): InteractiveTablePersistedState => {
-  if (typeof window === 'undefined') {
-    return buildDefaultState(initialPageSize);
-  }
-
-  try {
-    const raw = window.localStorage.getItem(storageKeyFor(tableId));
-    if (!raw) {
-      return buildDefaultState(initialPageSize);
-    }
-
-    const parsed = JSON.parse(raw) as Partial<InteractiveTablePersistedState>;
-    return {
-      sorting: Array.isArray(parsed.sorting) ? parsed.sorting : [],
-      columnFilters: Array.isArray(parsed.columnFilters) ? parsed.columnFilters : [],
-      globalFilter: typeof parsed.globalFilter === 'string' ? parsed.globalFilter : '',
-      columnSizing:
-        parsed.columnSizing && typeof parsed.columnSizing === 'object'
-          ? parsed.columnSizing
-          : {},
-      pagination: {
-        pageIndex:
-          typeof parsed.pagination?.pageIndex === 'number' && parsed.pagination.pageIndex >= 0
-            ? parsed.pagination.pageIndex
-            : 0,
-        pageSize:
-          typeof parsed.pagination?.pageSize === 'number' && parsed.pagination.pageSize > 0
-            ? parsed.pagination.pageSize
-            : initialPageSize,
-      },
-    };
-  } catch {
-    return buildDefaultState(initialPageSize);
-  }
-};
-
 export function useInteractiveTableState({
   tableId,
   initialPageSize = 25,
 }: UseInteractiveTableStateOptions): InteractiveTableStateControls {
   const [state, setState] = useState<InteractiveTablePersistedState>(() =>
-    loadPersistedState(tableId, initialPageSize)
+    loadInteractiveTableState(tableId, initialPageSize)
   );
 
   useEffect(() => {
@@ -143,7 +95,7 @@ export function useInteractiveTableState({
       return;
     }
 
-    window.localStorage.setItem(storageKeyFor(tableId), JSON.stringify(state));
+    window.localStorage.setItem(`interactive-table:${tableId}`, JSON.stringify(state));
   }, [state, tableId]);
 
   const onSortingChange: OnChangeFn<SortingState> = (updater) => {
@@ -186,6 +138,13 @@ export function useInteractiveTableState({
     }));
   };
 
+  const onColumnVisibilityChange: OnChangeFn<VisibilityState> = (updater) => {
+    setState((current) => ({
+      ...current,
+      columnVisibility: functionalUpdate(updater, current.columnVisibility),
+    }));
+  };
+
   const onPaginationChange: OnChangeFn<PaginationState> = (updater) => {
     setState((current) => ({
       ...current,
@@ -193,8 +152,15 @@ export function useInteractiveTableState({
     }));
   };
 
+  const resetColumnVisibility = () => {
+    setState((current) => ({
+      ...current,
+      columnVisibility: {},
+    }));
+  };
+
   const resetState = () => {
-    setState(buildDefaultState(initialPageSize));
+    setState(buildDefaultInteractiveTableState(initialPageSize));
   };
 
   return {
@@ -203,7 +169,9 @@ export function useInteractiveTableState({
     onColumnFiltersChange,
     onGlobalFilterChange,
     onColumnSizingChange,
+    onColumnVisibilityChange,
     onPaginationChange,
+    resetColumnVisibility,
     resetState,
   };
 }
@@ -295,12 +263,30 @@ export function InteractiveTable<TData extends RowData>({
   maxHeight = 680,
 }: InteractiveTableProps<TData>) {
   const { state } = stateControls;
+  const enforcedColumnVisibility: VisibilityState = { ...state.columnVisibility };
+  columns.forEach((column) => {
+    const accessorKey =
+      'accessorKey' in column && typeof column.accessorKey === 'string'
+        ? column.accessorKey
+        : undefined;
+    const columnId =
+      typeof column.id === 'string'
+        ? column.id
+        : accessorKey;
+
+    if (column.enableHiding === false && columnId) {
+      enforcedColumnVisibility[columnId] = true;
+    }
+  });
   // TanStack Table owns imperative sizing and sorting handlers, so this hook must stay local here.
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns,
-    state,
+    state: {
+      ...state,
+      columnVisibility: enforcedColumnVisibility,
+    },
     getRowId,
     columnResizeMode: 'onChange',
     manualFiltering,
@@ -315,9 +301,26 @@ export function InteractiveTable<TData extends RowData>({
     onSortingChange: stateControls.onSortingChange,
     onColumnFiltersChange: stateControls.onColumnFiltersChange,
     onColumnSizingChange: stateControls.onColumnSizingChange,
+    onColumnVisibilityChange: stateControls.onColumnVisibilityChange,
     onPaginationChange: stateControls.onPaginationChange,
     globalFilterFn: 'includesString',
   });
+
+  useEffect(() => {
+    const hiddenFixedColumns = table
+      .getAllLeafColumns()
+      .filter((column) => !column.getCanHide() && state.columnVisibility[column.id] === false);
+
+    if (hiddenFixedColumns.length === 0) {
+      return;
+    }
+
+    const nextVisibility: VisibilityState = { ...state.columnVisibility };
+    hiddenFixedColumns.forEach((column) => {
+      nextVisibility[column.id] = true;
+    });
+    stateControls.onColumnVisibilityChange(nextVisibility);
+  }, [state.columnVisibility, stateControls, table]);
 
   const tableRows = table.getRowModel().rows;
   const resolvedTotalRows = totalRows ?? (manualPagination ? data.length : table.getPrePaginationRowModel().rows.length);
@@ -369,6 +372,25 @@ export function InteractiveTable<TData extends RowData>({
     return pills;
   }, [state.columnFilters, state.globalFilter, table]);
 
+  const columnMenuItems = useMemo<ColumnVisibilityMenuItem[]>(
+    () =>
+      table.getAllLeafColumns().map((column) => {
+        const rawHeader = column.columnDef.header;
+        return {
+          id: column.id,
+          label:
+            typeof rawHeader === 'string'
+              ? rawHeader
+              : typeof column.columnDef.meta?.filterPlaceholder === 'string'
+                ? column.columnDef.meta.filterPlaceholder
+                : column.id,
+          visible: column.getIsVisible(),
+          canHide: column.getCanHide(),
+        };
+      }),
+    [table]
+  );
+
   return (
     <SurfacePanel
       title={title}
@@ -419,6 +441,11 @@ export function InteractiveTable<TData extends RowData>({
             <StatusPill label={`${derivedFilterPills.length} filters`} tone="info" />
             <StatusPill label={`${resolvedTotalRows} rows`} />
             <StatusPill label={`${pageCount} pages`} />
+            <ColumnVisibilityMenu
+              columns={columnMenuItems}
+              onToggle={(columnId) => table.getColumn(columnId)?.toggleVisibility()}
+              onRestoreDefaults={stateControls.resetColumnVisibility}
+            />
             <Button variant="outlined" onClick={stateControls.resetState}>
               Reset table
             </Button>

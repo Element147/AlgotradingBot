@@ -183,6 +183,8 @@ class BacktestManagementControllerIntegrationTest {
         result.setExperimentName("BTC Mean Reversion Retest");
         result.setExperimentKey("btc-mean-reversion-retest");
         result.setTimestamp(LocalDateTime.parse("2026-03-01T10:00:00"));
+        result.setWinningTrades(31);
+        result.setLosingTrades(29);
         BacktestEquityPoint equityPoint = new BacktestEquityPoint();
         equityPoint.setPointTimestamp(LocalDateTime.parse("2025-01-01T12:00:00"));
         equityPoint.setEquity(new BigDecimal("1000"));
@@ -224,6 +226,8 @@ class BacktestManagementControllerIntegrationTest {
         comparison.setFeesBps(12);
         comparison.setSlippageBps(5);
         comparison.setTimestamp(LocalDateTime.parse("2026-02-28T10:00:00"));
+        comparison.setWinningTrades(20);
+        comparison.setLosingTrades(28);
         comparisonBacktestId = backtestResultRepository.save(comparison).getId();
 
         BacktestResult failed = new BacktestResult(
@@ -250,6 +254,8 @@ class BacktestManagementControllerIntegrationTest {
         failed.setSlippageBps(7);
         failed.setStatusMessage("Run failed while simulating portfolio rotation.");
         failed.setTimestamp(LocalDateTime.parse("2026-03-02T10:00:00"));
+        failed.setWinningTrades(8);
+        failed.setLosingTrades(13);
         failedBacktestId = backtestResultRepository.save(failed).getId();
     }
 
@@ -267,6 +273,9 @@ class BacktestManagementControllerIntegrationTest {
             .andExpect(jsonPath("$.items[0].experimentName").value("Universe rotation sweep"))
             .andExpect(jsonPath("$.items[0].feesBps").value(18))
             .andExpect(jsonPath("$.items[0].slippageBps").value(7))
+            .andExpect(jsonPath("$.items[0].netProfit").value(-100))
+            .andExpect(jsonPath("$.items[0].winningTrades").value(8))
+            .andExpect(jsonPath("$.items[0].losingTrades").value(13))
             .andExpect(jsonPath("$.items[0].executionStage").value("FAILED"))
             .andExpect(jsonPath("$.items[0].progressPercent").value(100))
             .andExpect(jsonPath("$.items[0].statusMessage").value("Run failed while simulating portfolio rotation."));
@@ -303,6 +312,27 @@ class BacktestManagementControllerIntegrationTest {
     }
 
     @Test
+    void history_supportsSortingByStoredBacktestMetrics() throws Exception {
+        mockMvc.perform(get("/api/backtests")
+                .param("sortBy", "netProfit")
+                .param("sortDirection", "asc")
+                .header("Authorization", "Bearer " + authToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.items[0].id").value(failedBacktestId))
+            .andExpect(jsonPath("$.items[1].id").value(comparisonBacktestId))
+            .andExpect(jsonPath("$.items[2].id").value(backtestId));
+
+        mockMvc.perform(get("/api/backtests")
+                .param("sortBy", "winningTrades")
+                .param("sortDirection", "desc")
+                .header("Authorization", "Bearer " + authToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.items[0].id").value(backtestId))
+            .andExpect(jsonPath("$.items[1].id").value(comparisonBacktestId))
+            .andExpect(jsonPath("$.items[2].id").value(failedBacktestId));
+    }
+
+    @Test
     void history_sanitizesInvalidPagingAndSortDefaults() throws Exception {
         mockMvc.perform(get("/api/backtests")
                 .param("page", "0")
@@ -331,6 +361,9 @@ class BacktestManagementControllerIntegrationTest {
             .andExpect(jsonPath("$.datasetChecksumSha256").value("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
             .andExpect(jsonPath("$.datasetSchemaVersion").value("ohlcv-v1"))
             .andExpect(jsonPath("$.datasetArchived").value(false))
+            .andExpect(jsonPath("$.netProfit").value(100))
+            .andExpect(jsonPath("$.winningTrades").value(31))
+            .andExpect(jsonPath("$.losingTrades").value(29))
             .andExpect(jsonPath("$.executionStage").value("COMPLETED"))
             .andExpect(jsonPath("$.progressPercent").value(100))
             .andExpect(jsonPath("$.availableTelemetrySymbols", hasItem("BTC/USDT")))
@@ -350,6 +383,9 @@ class BacktestManagementControllerIntegrationTest {
             .andExpect(jsonPath("$.experimentKey").value("btc-mean-reversion-retest"))
             .andExpect(jsonPath("$.executionStage").value("COMPLETED"))
             .andExpect(jsonPath("$.progressPercent").value(100))
+            .andExpect(jsonPath("$.netProfit").value(100))
+            .andExpect(jsonPath("$.winningTrades").value(31))
+            .andExpect(jsonPath("$.losingTrades").value(29))
             .andExpect(jsonPath("$.datasetChecksumSha256").value("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
             .andExpect(jsonPath("$.equityCurve").doesNotExist())
             .andExpect(jsonPath("$.tradeSeries").doesNotExist())

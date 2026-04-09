@@ -66,6 +66,7 @@ public class BacktestSimulationEngine {
         int entryTimelineIndex = -1;
         LocalDateTime entryTimestamp = null;
         int winningTrades = 0;
+        int losingTrades = 0;
         BacktestStrategyDecision pendingDecision = null;
 
         List<BigDecimal> tradeReturns = new ArrayList<>();
@@ -161,6 +162,8 @@ public class BacktestSimulationEngine {
                     ));
                     if (exit.tradeReturn().compareTo(BigDecimal.ZERO) > 0) {
                         winningTrades++;
+                    } else if (exit.tradeReturn().compareTo(BigDecimal.ZERO) < 0) {
+                        losingTrades++;
                     }
                     quantity = BigDecimal.ZERO;
                     entryValue = BigDecimal.ZERO;
@@ -198,6 +201,8 @@ public class BacktestSimulationEngine {
                     ));
                     if (exit.tradeReturn().compareTo(BigDecimal.ZERO) > 0) {
                         winningTrades++;
+                    } else if (exit.tradeReturn().compareTo(BigDecimal.ZERO) < 0) {
+                        losingTrades++;
                     }
 
                     EntrySnapshot entry = enterPosition(
@@ -299,6 +304,8 @@ public class BacktestSimulationEngine {
             ));
             if (exit.tradeReturn().compareTo(BigDecimal.ZERO) > 0) {
                 winningTrades++;
+            } else if (exit.tradeReturn().compareTo(BigDecimal.ZERO) < 0) {
+                losingTrades++;
             }
             equitySamples.add(new BacktestEquityPointSample(timeline.get(timeline.size() - 1), cash, BigDecimal.ZERO));
         }
@@ -308,7 +315,8 @@ public class BacktestSimulationEngine {
             cash.max(BigDecimal.ONE),
             tradeReturns,
             equitySeries.stream().map(BacktestEquityPointSample::equity).toList(),
-            winningTrades
+            winningTrades,
+            losingTrades
         );
         return new BacktestSimulationResult(
             metrics.finalBalance(),
@@ -317,6 +325,8 @@ public class BacktestSimulationEngine {
             metrics.winRatePercent(),
             metrics.maxDrawdownPercent(),
             metrics.totalTrades(),
+            metrics.winningTrades(),
+            metrics.losingTrades(),
             equitySeries,
             tradeSamples
         );

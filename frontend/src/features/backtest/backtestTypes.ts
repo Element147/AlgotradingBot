@@ -47,6 +47,9 @@ export type BacktestHistorySortField =
   | 'validationStatus'
   | 'feesBps'
   | 'slippageBps'
+  | 'netProfit'
+  | 'winningTrades'
+  | 'losingTrades'
   | 'timestamp';
 
 export const formatBacktestMarketLabel = (symbol: string): string =>
@@ -105,6 +108,9 @@ export interface BacktestHistoryItem {
   timestamp: string;
   initialBalance: number;
   finalBalance: number;
+  netProfit: number;
+  winningTrades: number;
+  losingTrades: number;
   executionStage: BacktestExecutionStage;
   progressPercent: number;
   processedCandles: number;

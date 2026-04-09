@@ -10,6 +10,11 @@ import type {
   TradeSortField,
 } from './BacktestTradeReviewPanel';
 
+import { ColumnVisibilityMenu } from '@/components/ui/ColumnVisibilityMenu';
+import {
+  loadVirtualizedTablePreferences,
+  persistInteractiveTablePreferences,
+} from '@/components/ui/tablePreferences';
 import { NumericText, StatusPill } from '@/components/ui/Workbench';
 import { formatCurrency, formatDateTime, formatNumber, formatPercentage } from '@/utils/formatters';
 
@@ -27,49 +32,22 @@ const columns: Array<{
   label: string;
   width: number;
   align: 'left' | 'right';
+  canHide: boolean;
 }> = [
-  { key: 'symbol', label: 'Symbol', width: 140, align: 'left' },
-  { key: 'side', label: 'Side', width: 120, align: 'left' },
-  { key: 'entryTime', label: 'Entry', width: 188, align: 'left' },
-  { key: 'exitTime', label: 'Exit', width: 188, align: 'left' },
-  { key: 'quantity', label: 'Quantity', width: 120, align: 'right' },
-  { key: 'entryPrice', label: 'Entry price', width: 132, align: 'right' },
-  { key: 'exitPrice', label: 'Exit price', width: 132, align: 'right' },
-  { key: 'pnlValue', label: 'PnL', width: 132, align: 'right' },
-  { key: 'returnPct', label: 'Return', width: 120, align: 'right' },
+  { key: 'symbol', label: 'Symbol', width: 140, align: 'left', canHide: false },
+  { key: 'side', label: 'Side', width: 120, align: 'left', canHide: true },
+  { key: 'entryTime', label: 'Entry', width: 188, align: 'left', canHide: true },
+  { key: 'exitTime', label: 'Exit', width: 188, align: 'left', canHide: true },
+  { key: 'quantity', label: 'Quantity', width: 120, align: 'right', canHide: true },
+  { key: 'entryPrice', label: 'Entry price', width: 132, align: 'right', canHide: true },
+  { key: 'exitPrice', label: 'Exit price', width: 132, align: 'right', canHide: true },
+  { key: 'pnlValue', label: 'PnL', width: 132, align: 'right', canHide: true },
+  { key: 'returnPct', label: 'Return', width: 120, align: 'right', canHide: true },
 ];
 
 const minColumnWidth = 78;
-const widthsStorageKey = 'interactive-table:backtest-trade-review-widths';
-
-const defaultWidths = columns.reduce<Record<string, number>>((accumulator, column) => {
-  accumulator[column.key] = column.width;
-  return accumulator;
-}, {});
-
-const loadColumnWidths = () => {
-  if (typeof window === 'undefined') {
-    return defaultWidths;
-  }
-
-  try {
-    const raw = window.localStorage.getItem(widthsStorageKey);
-    if (!raw) {
-      return defaultWidths;
-    }
-
-    const parsed = JSON.parse(raw) as Record<string, number>;
-    return columns.reduce<Record<string, number>>((accumulator, column) => {
-      accumulator[column.key] =
-        typeof parsed[column.key] === 'number' && parsed[column.key] >= minColumnWidth
-          ? parsed[column.key]
-          : column.width;
-      return accumulator;
-    }, {});
-  } catch {
-    return defaultWidths;
-  }
-};
+const tableId = 'backtest-trade-review';
+const legacyWidthsStorageKey = 'interactive-table:backtest-trade-review-widths';
 
 export function BacktestVirtualizedTradeTable({
   rows,
@@ -85,26 +63,68 @@ export function BacktestVirtualizedTradeTable({
     startX: number;
     startWidth: number;
   } | null>(null);
-  const [columnWidths, setColumnWidths] = useState<Record<string, number>>(loadColumnWidths);
+  const initialPreferencesRef = useRef(
+    loadVirtualizedTablePreferences({
+      tableId,
+      columns,
+      minColumnWidth,
+      legacyWidthsStorageKey,
+    })
+  );
+  const [columnWidths, setColumnWidths] = useState<Record<TradeSortField, number>>(
+    initialPreferencesRef.current.columnWidths
+  );
+  const [columnVisibility, setColumnVisibility] = useState<Record<TradeSortField, boolean>>(
+    initialPreferencesRef.current.columnVisibility
+  );
+  const visibleColumns = useMemo(
+    () =>
+      columns.filter(
+        (column) => !column.canHide || columnVisibility[column.key] !== false
+      ),
+    [columnVisibility]
+  );
   const columnTemplate = useMemo(
-    () => columns.map((column) => `${columnWidths[column.key] ?? column.width}px`).join(' '),
-    [columnWidths]
+    () => visibleColumns.map((column) => `${columnWidths[column.key] ?? column.width}px`).join(' '),
+    [columnWidths, visibleColumns]
   );
   const minTableWidth = useMemo(
-    () => columns.reduce((total, column) => total + (columnWidths[column.key] ?? column.width), 0),
-    [columnWidths]
+    () =>
+      visibleColumns.reduce(
+        (total, column) => total + (columnWidths[column.key] ?? column.width),
+        0
+      ),
+    [columnWidths, visibleColumns]
   );
   const isJsdomEnvironment =
     typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent);
   const shouldVirtualize =
     !isJsdomEnvironment && typeof ResizeObserver !== 'undefined' && rows.length > 80;
+
   useEffect(() => {
-    if (typeof window === 'undefined') {
+    const hiddenFixedColumns = columns.filter(
+      (column) => !column.canHide && columnVisibility[column.key] === false
+    );
+
+    if (hiddenFixedColumns.length === 0) {
       return;
     }
 
-    window.localStorage.setItem(widthsStorageKey, JSON.stringify(columnWidths));
-  }, [columnWidths]);
+    setColumnVisibility((current) => {
+      const nextVisibility = { ...current };
+      hiddenFixedColumns.forEach((column) => {
+        nextVisibility[column.key] = true;
+      });
+      return nextVisibility;
+    });
+  }, [columnVisibility]);
+
+  useEffect(() => {
+    persistInteractiveTablePreferences(tableId, {
+      columnSizing: columnWidths,
+      columnVisibility,
+    });
+  }, [columnVisibility, columnWidths]);
 
   useEffect(() => {
     const onPointerMove = (event: PointerEvent) => {
@@ -225,47 +245,80 @@ export function BacktestVirtualizedTradeTable({
         }}
         style={style}
       >
-        <Box role="cell">
-          <Typography variant="body2">{row.symbol}</Typography>
-        </Box>
-        <Box role="cell">
-          <StatusPill
-            label={row.side}
-            tone={row.side === 'LONG' ? 'success' : 'error'}
-            variant="filled"
-          />
-        </Box>
-        <Box role="cell">
-          <Typography variant="body2">{formatDateTime(row.entryTime)}</Typography>
-        </Box>
-        <Box role="cell">
-          <Typography variant="body2">{formatDateTime(row.exitTime)}</Typography>
-        </Box>
-        <Box role="cell" sx={{ textAlign: 'right' }}>
-          <NumericText variant="body2">{formatNumber(row.quantity, 6)}</NumericText>
-        </Box>
-        <Box role="cell" sx={{ textAlign: 'right' }}>
-          <NumericText variant="body2">{formatCurrency(row.entryPrice, 4)}</NumericText>
-        </Box>
-        <Box role="cell" sx={{ textAlign: 'right' }}>
-          <NumericText variant="body2">{formatCurrency(row.exitPrice, 4)}</NumericText>
-        </Box>
-        <Box role="cell" sx={{ textAlign: 'right' }}>
-          <NumericText variant="body2" tone={row.pnlValue >= 0 ? 'success' : 'error'}>
-            {formatCurrency(row.pnlValue, 2)}
-          </NumericText>
-        </Box>
-        <Box role="cell" sx={{ textAlign: 'right' }}>
-          <NumericText variant="body2" tone={row.returnPct >= 0 ? 'success' : 'error'}>
-            {formatPercentage(row.returnPct, 2)}
-          </NumericText>
-        </Box>
+        {visibleColumns.map((column) => (
+          <Box
+            key={`${row.id}-${column.key}`}
+            role="cell"
+            sx={{ textAlign: column.align === 'right' ? 'right' : 'left' }}
+          >
+            {column.key === 'symbol' ? <Typography variant="body2">{row.symbol}</Typography> : null}
+            {column.key === 'side' ? (
+              <StatusPill
+                label={row.side}
+                tone={row.side === 'LONG' ? 'success' : 'error'}
+                variant="filled"
+              />
+            ) : null}
+            {column.key === 'entryTime' ? (
+              <Typography variant="body2">{formatDateTime(row.entryTime)}</Typography>
+            ) : null}
+            {column.key === 'exitTime' ? (
+              <Typography variant="body2">{formatDateTime(row.exitTime)}</Typography>
+            ) : null}
+            {column.key === 'quantity' ? (
+              <NumericText variant="body2">{formatNumber(row.quantity, 6)}</NumericText>
+            ) : null}
+            {column.key === 'entryPrice' ? (
+              <NumericText variant="body2">{formatCurrency(row.entryPrice, 4)}</NumericText>
+            ) : null}
+            {column.key === 'exitPrice' ? (
+              <NumericText variant="body2">{formatCurrency(row.exitPrice, 4)}</NumericText>
+            ) : null}
+            {column.key === 'pnlValue' ? (
+              <NumericText variant="body2" tone={row.pnlValue >= 0 ? 'success' : 'error'}>
+                {formatCurrency(row.pnlValue, 2)}
+              </NumericText>
+            ) : null}
+            {column.key === 'returnPct' ? (
+              <NumericText variant="body2" tone={row.returnPct >= 0 ? 'success' : 'error'}>
+                {formatPercentage(row.returnPct, 2)}
+              </NumericText>
+            ) : null}
+          </Box>
+        ))}
       </Box>
     );
   };
 
   return (
     <Box sx={{ overflowX: 'auto' }}>
+      <Stack direction="row" justifyContent="flex-end" sx={{ mb: 1 }}>
+        <ColumnVisibilityMenu
+          columns={columns.map((column) => ({
+            id: column.key,
+            label: column.label,
+            visible: !column.canHide || columnVisibility[column.key] !== false,
+            canHide: column.canHide,
+          }))}
+          onToggle={(columnId) =>
+            setColumnVisibility((current) => ({
+              ...current,
+              [columnId]: current[columnId as TradeSortField] === false,
+            }))
+          }
+          onRestoreDefaults={() =>
+            setColumnVisibility(
+              columns.reduce(
+                (accumulator, column) => {
+                  accumulator[column.key] = true;
+                  return accumulator;
+                },
+                {} as Record<TradeSortField, boolean>
+              )
+            )
+          }
+        />
+      </Stack>
       <Box
         role="table"
         aria-label="Trade review table"
@@ -292,7 +345,7 @@ export function BacktestVirtualizedTradeTable({
               backgroundColor: 'background.default',
             }}
           >
-            {columns.map((column) => (
+            {visibleColumns.map((column) => (
               <Stack
                 key={column.key}
                 direction="row"

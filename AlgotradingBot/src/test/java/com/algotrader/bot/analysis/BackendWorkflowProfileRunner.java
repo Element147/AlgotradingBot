@@ -344,6 +344,8 @@ public final class BackendWorkflowProfileRunner {
                 new BigDecimal("51.00"),
                 new BigDecimal("8.50"),
                 12,
+                6,
+                5,
                 List.of(),
                 List.of()
             )

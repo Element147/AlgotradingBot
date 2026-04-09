@@ -60,11 +60,11 @@ Pages should plug into this shell rather than recreate competing route chrome.
 
 Use the shared table shell for data-heavy route surfaces before introducing one-off table logic.
 
-- `useInteractiveTableState()` owns persisted sorting, inline column filters, quick search, column sizing, and page size per table surface.
-- `InteractiveTable` is the default shell for compact MUI-backed tables. It provides sticky headers, drag-resize handles, inline filter row, quick search, reset, and compact density defaults.
+- `useInteractiveTableState()` owns persisted sorting, inline column filters, quick search, column sizing, column visibility, and page size per table surface.
+- `InteractiveTable` is the default shell for compact MUI-backed tables. It provides sticky headers, drag-resize handles, inline filter row, quick search, reset, compact density defaults, and a shared `Columns` control with localStorage-backed visibility preferences.
 - Backtest History is server-driven. The frontend should query `/api/backtests` with `page`, `pageSize`, `sortBy`, `sortDirection`, `search`, table filters, and range filters, and expect a paged envelope `{ items, total, page, pageSize }`.
 - Dataset inventory, backtest comparison, and paper orders are currently client-side tables that still share the same shell and persistence model.
-- Virtualized trade-review surfaces can keep TanStack Virtual, but their surrounding toolbar, density, status pills, and filter language should stay aligned with the shared table shell instead of diverging visually.
+- Virtualized trade-review surfaces can keep TanStack Virtual, but their surrounding toolbar, density, status pills, filter language, and persisted column-layout preferences should stay aligned with the shared table shell instead of diverging visually.
 
 ## UI Rules
 

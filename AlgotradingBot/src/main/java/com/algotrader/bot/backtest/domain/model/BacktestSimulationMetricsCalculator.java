@@ -17,7 +17,8 @@ public class BacktestSimulationMetricsCalculator {
         BigDecimal finalBalance,
         List<BigDecimal> tradeReturns,
         List<BigDecimal> equityCurve,
-        int winningTrades
+        int winningTrades,
+        int losingTrades
     ) {
         int totalTrades = tradeReturns.size();
         BigDecimal winRatePercent = totalTrades == 0
@@ -37,6 +38,8 @@ public class BacktestSimulationMetricsCalculator {
             winRatePercent,
             maxDrawdownPercent,
             totalTrades,
+            winningTrades,
+            losingTrades,
             List.of(),
             List.of()
         );

@@ -71,6 +71,7 @@ export function BacktestDatasetInventoryPanel({
       {
         accessorKey: 'name',
         header: 'Name',
+        enableHiding: false,
         size: 220,
         minSize: 180,
         meta: {
@@ -207,6 +208,7 @@ export function BacktestDatasetInventoryPanel({
         header: 'Actions',
         enableSorting: false,
         enableColumnFilter: false,
+        enableHiding: false,
         size: 214,
         minSize: 204,
         meta: {
@@ -306,7 +308,7 @@ export function BacktestDatasetInventoryPanel({
 
       <InteractiveTable
         title="Dataset inventory"
-        description="The catalog now uses the same compact table behavior as run history: sticky headers, quick search, inline filters, and persistent column widths."
+        description="The catalog now uses the same compact table behavior as run history: sticky headers, quick search, inline filters, and persistent column layout preferences."
         data={datasets}
         columns={columns}
         stateControls={tableStateControls}

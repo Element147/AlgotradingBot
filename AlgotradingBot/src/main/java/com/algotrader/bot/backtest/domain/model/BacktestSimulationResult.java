@@ -10,6 +10,8 @@ public record BacktestSimulationResult(
     BigDecimal winRatePercent,
     BigDecimal maxDrawdownPercent,
     int totalTrades,
+    int winningTrades,
+    int losingTrades,
     List<BacktestEquityPointSample> equitySeries,
     List<BacktestTradeSample> tradeSeries
 ) {

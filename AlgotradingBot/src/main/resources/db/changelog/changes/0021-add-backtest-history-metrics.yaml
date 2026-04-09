@@ -1,0 +1,61 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0021-add-backtest-history-metrics
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        and:
+          - tableExists:
+              tableName: backtest_results
+          - not:
+              columnExists:
+                tableName: backtest_results
+                columnName: net_profit
+      changes:
+        - addColumn:
+            tableName: backtest_results
+            columns:
+              - column:
+                  name: net_profit
+                  type: DECIMAL(20,8)
+                  defaultValueNumeric: 0
+              - column:
+                  name: winning_trades
+                  type: INT
+                  defaultValueNumeric: 0
+              - column:
+                  name: losing_trades
+                  type: INT
+                  defaultValueNumeric: 0
+        - sql:
+            splitStatements: false
+            sql: |
+              UPDATE backtest_results br
+                 SET net_profit = COALESCE(br.final_balance, 0) - COALESCE(br.initial_balance, 0),
+                     winning_trades = COALESCE((
+                         SELECT COUNT(*)
+                           FROM backtest_trade_series bts
+                          WHERE bts.backtest_result_id = br.id
+                            AND bts.return_pct > 0
+                     ), 0),
+                     losing_trades = COALESCE((
+                         SELECT COUNT(*)
+                           FROM backtest_trade_series bts
+                          WHERE bts.backtest_result_id = br.id
+                            AND bts.return_pct < 0
+                     ), 0)
+               WHERE net_profit IS NULL
+                  OR winning_trades IS NULL
+                  OR losing_trades IS NULL;
+        - addNotNullConstraint:
+            tableName: backtest_results
+            columnName: net_profit
+            columnDataType: DECIMAL(20,8)
+        - addNotNullConstraint:
+            tableName: backtest_results
+            columnName: winning_trades
+            columnDataType: INT
+        - addNotNullConstraint:
+            tableName: backtest_results
+            columnName: losing_trades
+            columnDataType: INT

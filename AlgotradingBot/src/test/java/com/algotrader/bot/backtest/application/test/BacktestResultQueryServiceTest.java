@@ -1,5 +1,8 @@
 package com.algotrader.bot.backtest.application.test;
 
+import com.algotrader.bot.backtest.api.query.BacktestHistoryQuery;
+import com.algotrader.bot.backtest.api.response.BacktestHistoryItemResponse;
+import com.algotrader.bot.backtest.api.response.BacktestHistoryPageResponse;
 import com.algotrader.bot.backtest.api.response.BacktestDetailsResponse;
 import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestResult;
 import com.algotrader.bot.backtest.infrastructure.persistence.entity.BacktestTradeSeriesItem;
@@ -10,7 +13,9 @@ import com.algotrader.bot.shared.infrastructure.observability.service.BackendOpe
 import org.junit.jupiter.api.Test;
 import com.algotrader.bot.backtest.application.service.BacktestResultQueryService;
 import com.algotrader.bot.backtest.application.service.BacktestTelemetryService;
-import com.algotrader.bot.strategy.infrastructure.persistence.entity.Trade;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -50,11 +55,14 @@ class BacktestResultQueryServiceTest {
         result.setValidationStatus(BacktestResult.ValidationStatus.PASSED);
         result.setInitialBalance(new BigDecimal("1000"));
         result.setFinalBalance(new BigDecimal("1080"));
+        result.setNetProfit(new BigDecimal("80"));
         result.setSharpeRatio(new BigDecimal("1.2"));
         result.setProfitFactor(new BigDecimal("1.4"));
         result.setWinRate(new BigDecimal("50"));
         result.setMaxDrawdown(new BigDecimal("8"));
         result.setTotalTrades(2);
+        result.setWinningTrades(1);
+        result.setLosingTrades(1);
         result.setFeesBps(10);
         result.setSlippageBps(3);
         result.setStartDate(LocalDateTime.parse("2025-01-01T00:00:00"));
@@ -86,6 +94,87 @@ class BacktestResultQueryServiceTest {
         assertEquals("50.00%", details.strategyMetrics().get(0).displayValue());
         assertEquals("average_hold_hours", details.strategyMetrics().get(1).key());
         assertEquals("4.50h", details.strategyMetrics().get(1).displayValue());
+    }
+
+    @Test
+    void getHistory_preservesStoredWinLossCountsWhenFlatTradesExist() {
+        BacktestResultRepository resultRepository = mock(BacktestResultRepository.class);
+        BacktestDatasetRepository datasetRepository = mock(BacktestDatasetRepository.class);
+        BacktestTelemetryService telemetryService = mock(BacktestTelemetryService.class);
+        BackendOperationMetrics backendOperationMetrics = mock(BackendOperationMetrics.class);
+        BacktestResultQueryService service = new BacktestResultQueryService(
+            resultRepository,
+            datasetRepository,
+            telemetryService,
+            backendOperationMetrics
+        );
+
+        BacktestResult result = new BacktestResult();
+        result.setId(7L);
+        result.setStrategyId("SMA_CROSSOVER");
+        result.setDatasetName("BTC test");
+        result.setExperimentName("Stored counts");
+        result.setSymbol("BTC/USDT");
+        result.setTimeframe("1h");
+        result.setExecutionStatus(BacktestResult.ExecutionStatus.COMPLETED);
+        result.setValidationStatus(BacktestResult.ValidationStatus.PASSED);
+        result.setTimestamp(LocalDateTime.parse("2025-02-02T00:00:00"));
+        result.setInitialBalance(new BigDecimal("1000"));
+        result.setFinalBalance(new BigDecimal("1015"));
+        result.setNetProfit(new BigDecimal("15"));
+        result.setWinningTrades(1);
+        result.setLosingTrades(1);
+        result.setTotalTrades(3);
+        result.setFeesBps(10);
+        result.setSlippageBps(3);
+        result.setExecutionStage(BacktestResult.ExecutionStage.COMPLETED);
+        result.setProgressPercent(100);
+        result.setProcessedCandles(100);
+        result.setTotalCandles(100);
+        result.addTradeSeriesItem(trade(
+            LocalDateTime.parse("2025-01-10T09:00:00"),
+            LocalDateTime.parse("2025-01-10T15:00:00"),
+            new BigDecimal("2.50")
+        ));
+        result.addTradeSeriesItem(trade(
+            LocalDateTime.parse("2025-01-11T09:00:00"),
+            LocalDateTime.parse("2025-01-11T12:00:00"),
+            BigDecimal.ZERO
+        ));
+        result.addTradeSeriesItem(trade(
+            LocalDateTime.parse("2025-01-12T09:00:00"),
+            LocalDateTime.parse("2025-01-12T12:00:00"),
+            new BigDecimal("-1.00")
+        ));
+
+        when(resultRepository.findAll(
+            org.mockito.ArgumentMatchers.<Specification<BacktestResult>>any(),
+            org.mockito.ArgumentMatchers.any(Pageable.class)
+        ))
+            .thenReturn(new PageImpl<>(List.of(result)));
+
+        BacktestHistoryPageResponse page = service.getHistory(new BacktestHistoryQuery(
+            1,
+            25,
+            "winningTrades",
+            "desc",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        ));
+
+        BacktestHistoryItemResponse historyItem = page.items().getFirst();
+        assertEquals(new BigDecimal("15"), historyItem.netProfit());
+        assertEquals(1, historyItem.winningTrades());
+        assertEquals(1, historyItem.losingTrades());
     }
 
     private BacktestTradeSeriesItem trade(LocalDateTime entryTime,

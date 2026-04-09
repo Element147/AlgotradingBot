@@ -79,6 +79,10 @@ public class BacktestResult {
     private BigDecimal finalBalance;
 
     @NotNull
+    @Column(nullable = false, precision = 20, scale = 8)
+    private BigDecimal netProfit;
+
+    @NotNull
     @Column(nullable = false, precision = 10, scale = 4)
     private BigDecimal sharpeRatio;
 
@@ -97,6 +101,14 @@ public class BacktestResult {
     @NotNull
     @Column(nullable = false)
     private Integer totalTrades;
+
+    @NotNull
+    @Column(nullable = false)
+    private Integer winningTrades;
+
+    @NotNull
+    @Column(nullable = false)
+    private Integer losingTrades;
 
     @NotNull
     @Enumerated(EnumType.STRING)
@@ -226,6 +238,17 @@ public class BacktestResult {
         if (totalCandles == null) {
             totalCandles = 0;
         }
+        if (netProfit == null) {
+            netProfit = initialBalance != null && finalBalance != null
+                ? finalBalance.subtract(initialBalance)
+                : BigDecimal.ZERO;
+        }
+        if (winningTrades == null) {
+            winningTrades = 0;
+        }
+        if (losingTrades == null) {
+            losingTrades = 0;
+        }
     }
 
     @PreUpdate
@@ -248,11 +271,14 @@ public class BacktestResult {
         this.endDate = endDate;
         this.initialBalance = initialBalance;
         this.finalBalance = finalBalance;
+        this.netProfit = finalBalance.subtract(initialBalance);
         this.sharpeRatio = sharpeRatio;
         this.profitFactor = profitFactor;
         this.winRate = winRate;
         this.maxDrawdown = maxDrawdown;
         this.totalTrades = totalTrades;
+        this.winningTrades = 0;
+        this.losingTrades = 0;
         this.validationStatus = validationStatus;
         this.executionStatus = ExecutionStatus.COMPLETED;
         this.executionStage = ExecutionStage.COMPLETED;
@@ -366,6 +392,14 @@ public class BacktestResult {
         this.finalBalance = finalBalance;
     }
 
+    public BigDecimal getNetProfit() {
+        return netProfit;
+    }
+
+    public void setNetProfit(BigDecimal netProfit) {
+        this.netProfit = netProfit;
+    }
+
     public BigDecimal getSharpeRatio() {
         return sharpeRatio;
     }
@@ -404,6 +438,22 @@ public class BacktestResult {
 
     public void setTotalTrades(Integer totalTrades) {
         this.totalTrades = totalTrades;
+    }
+
+    public Integer getWinningTrades() {
+        return winningTrades;
+    }
+
+    public void setWinningTrades(Integer winningTrades) {
+        this.winningTrades = winningTrades;
+    }
+
+    public Integer getLosingTrades() {
+        return losingTrades;
+    }
+
+    public void setLosingTrades(Integer losingTrades) {
+        this.losingTrades = losingTrades;
     }
 
     public ValidationStatus getValidationStatus() {
@@ -581,11 +631,14 @@ public class BacktestResult {
                 ", endDate=" + endDate +
                 ", initialBalance=" + initialBalance +
                 ", finalBalance=" + finalBalance +
+                ", netProfit=" + netProfit +
                 ", sharpeRatio=" + sharpeRatio +
                 ", profitFactor=" + profitFactor +
                 ", winRate=" + winRate +
                 ", maxDrawdown=" + maxDrawdown +
                 ", totalTrades=" + totalTrades +
+                ", winningTrades=" + winningTrades +
+                ", losingTrades=" + losingTrades +
                 ", validationStatus=" + validationStatus +
                 ", executionStatus=" + executionStatus +
                 ", executionStage=" + executionStage +

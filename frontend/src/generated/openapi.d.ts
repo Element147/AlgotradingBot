@@ -1745,6 +1745,11 @@ export interface components {
             timestamp?: string;
             initialBalance?: number;
             finalBalance?: number;
+            netProfit?: number;
+            /** Format: int32 */
+            winningTrades?: number;
+            /** Format: int32 */
+            losingTrades?: number;
             executionStage?: string;
             /** Format: int32 */
             progressPercent?: number;
@@ -1792,12 +1797,17 @@ export interface components {
             validationStatus?: string;
             initialBalance?: number;
             finalBalance?: number;
+            netProfit?: number;
             sharpeRatio?: number;
             profitFactor?: number;
             winRate?: number;
             maxDrawdown?: number;
             /** Format: int32 */
             totalTrades?: number;
+            /** Format: int32 */
+            winningTrades?: number;
+            /** Format: int32 */
+            losingTrades?: number;
             /** Format: int32 */
             feesBps?: number;
             /** Format: int32 */
@@ -1934,12 +1944,17 @@ export interface components {
             validationStatus?: string;
             initialBalance?: number;
             finalBalance?: number;
+            netProfit?: number;
             sharpeRatio?: number;
             profitFactor?: number;
             winRate?: number;
             maxDrawdown?: number;
             /** Format: int32 */
             totalTrades?: number;
+            /** Format: int32 */
+            winningTrades?: number;
+            /** Format: int32 */
+            losingTrades?: number;
             /** Format: int32 */
             feesBps?: number;
             /** Format: int32 */

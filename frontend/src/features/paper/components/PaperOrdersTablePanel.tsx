@@ -51,6 +51,7 @@ export function PaperOrdersTablePanel({
       {
         accessorKey: 'id',
         header: 'ID',
+        enableHiding: false,
         size: 82,
         minSize: 82,
         meta: {
@@ -200,6 +201,7 @@ export function PaperOrdersTablePanel({
         header: 'Actions',
         enableSorting: false,
         enableColumnFilter: false,
+        enableHiding: false,
         size: 176,
         minSize: 164,
         meta: {

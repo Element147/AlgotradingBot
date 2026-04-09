@@ -177,6 +177,7 @@ export function BacktestComparisonPanel({ comparison }: BacktestComparisonPanelP
       {
         accessorKey: 'id',
         header: 'Run',
+        enableHiding: false,
         size: 88,
         minSize: 88,
         meta: {
@@ -463,7 +464,7 @@ export function BacktestComparisonPanel({ comparison }: BacktestComparisonPanelP
 
       <InteractiveTable
         title="Backtest comparison"
-        description="Comparison now uses the same compact grid shell as history, while preserving the baseline row at the top for easier reasoning about deltas."
+        description="Comparison now uses the same compact grid shell as history, including persisted layout preferences, while preserving the baseline row at the top for easier reasoning about deltas."
         data={filteredItems}
         columns={columns}
         stateControls={tableStateControls}
