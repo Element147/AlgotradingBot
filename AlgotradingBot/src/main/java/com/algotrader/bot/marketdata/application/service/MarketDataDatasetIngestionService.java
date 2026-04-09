@@ -85,7 +85,7 @@ public class MarketDataDatasetIngestionService {
             ));
 
         for (Map.Entry<String, List<OHLCVData>> entry : candlesBySymbol.entrySet()) {
-            List<OHLCVData> symbolCandles = entry.getValue();
+            List<OHLCVData> symbolCandles = canonicalizeSymbolCandles(job, entry.getKey(), entry.getValue());
             if (symbolCandles.isEmpty()) {
                 continue;
             }
@@ -317,6 +317,35 @@ public class MarketDataDatasetIngestionService {
             && existing.getLowPrice().compareTo(candle.getLow()) == 0
             && existing.getClosePrice().compareTo(candle.getClose()) == 0
             && existing.getVolume().compareTo(candle.getVolume()) == 0;
+    }
+
+    private List<OHLCVData> canonicalizeSymbolCandles(MarketDataImportJob job,
+                                                      String symbol,
+                                                      List<OHLCVData> fetchedCandles) {
+        Map<LocalDateTime, OHLCVData> canonicalCandles = new LinkedHashMap<>();
+        for (OHLCVData candle : fetchedCandles) {
+            OHLCVData existing = canonicalCandles.putIfAbsent(candle.getTimestamp(), candle);
+            if (existing == null) {
+                continue;
+            }
+            if (!matches(existing, candle)) {
+                throw new IllegalStateException(
+                    "Provider import job " + job.getId()
+                        + " returned conflicting duplicate candles for symbol " + symbol
+                        + ", timeframe " + job.getTimeframe()
+                        + ", bucket " + candle.getTimestamp()
+                );
+            }
+        }
+        return new ArrayList<>(canonicalCandles.values());
+    }
+
+    private boolean matches(OHLCVData left, OHLCVData right) {
+        return left.getOpen().compareTo(right.getOpen()) == 0
+            && left.getHigh().compareTo(right.getHigh()) == 0
+            && left.getLow().compareTo(right.getLow()) == 0
+            && left.getClose().compareTo(right.getClose()) == 0
+            && left.getVolume().compareTo(right.getVolume()) == 0;
     }
 
     private String buildOriginalFilename(MarketDataImportJob job, MarketDataProvider provider) {

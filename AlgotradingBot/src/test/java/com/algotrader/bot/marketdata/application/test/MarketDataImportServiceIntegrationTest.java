@@ -75,6 +75,34 @@ class MarketDataImportServiceIntegrationTest {
     }
 
     @Test
+    void processJob_deduplicatesIdenticalProviderBarsWithinSingleChunk() {
+        stubMarketDataProvider.mode = StubMode.DUPLICATE_IDENTICAL_BARS;
+
+        MarketDataImportJobResponse created = marketDataImportService.createJob(new MarketDataImportJobRequest(
+            "stub",
+            MarketDataAssetType.CRYPTO,
+            List.of("BTC/USDT"),
+            "1h",
+            LocalDate.parse("2025-01-01"),
+            LocalDate.parse("2025-01-02"),
+            "Duplicate BTC 1h",
+            false,
+            false
+        ));
+
+        marketDataImportService.processJob(created.id());
+
+        MarketDataImportJobResponse completed = findJob(created.id());
+        assertThat(completed.status()).isEqualTo("COMPLETED");
+        assertThat(completed.datasetReady()).isTrue();
+        assertThat(completed.datasetId()).isNotNull();
+        assertThat(completed.importedRowCount()).isEqualTo(2);
+
+        var dataset = backtestDatasetRepository.findById(completed.datasetId()).orElseThrow();
+        assertThat(dataset.getRowCount()).isEqualTo(2);
+    }
+
+    @Test
     void createJob_andProcessJob_importsDatasetIntoBacktestCatalog() {
         MarketDataImportJobResponse created = marketDataImportService.createJob(new MarketDataImportJobRequest(
             "stub",
@@ -254,6 +282,7 @@ class MarketDataImportServiceIntegrationTest {
 
     enum StubMode {
         SUCCESS,
+        DUPLICATE_IDENTICAL_BARS,
         RETRYABLE
     }
 
@@ -291,6 +320,38 @@ class MarketDataImportServiceIntegrationTest {
                 throw new MarketDataRetryableException(
                     "Provider asked the downloader to wait.",
                     LocalDateTime.now().plusMinutes(5)
+                );
+            }
+
+            if (mode == StubMode.DUPLICATE_IDENTICAL_BARS) {
+                return List.of(
+                    new OHLCVData(
+                        request.start(),
+                        "BTC/USDT",
+                        new BigDecimal("100"),
+                        new BigDecimal("105"),
+                        new BigDecimal("99"),
+                        new BigDecimal("104"),
+                        new BigDecimal("1000")
+                    ),
+                    new OHLCVData(
+                        request.start(),
+                        "BTC/USDT",
+                        new BigDecimal("100"),
+                        new BigDecimal("105"),
+                        new BigDecimal("99"),
+                        new BigDecimal("104"),
+                        new BigDecimal("1000")
+                    ),
+                    new OHLCVData(
+                        request.start().plusHours(1),
+                        "BTC/USDT",
+                        new BigDecimal("104"),
+                        new BigDecimal("106"),
+                        new BigDecimal("103"),
+                        new BigDecimal("105"),
+                        new BigDecimal("1100")
+                    )
                 );
             }
 

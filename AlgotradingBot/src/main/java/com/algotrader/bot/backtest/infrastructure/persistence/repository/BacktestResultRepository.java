@@ -59,12 +59,15 @@ public interface BacktestResultRepository extends JpaRepository<BacktestResult, 
     List<BacktestResult> findByStrategyIdAndSymbol(String strategyId, String symbol);
     List<BacktestResult> findByStrategyIdAndSymbolOrderByTimestampDesc(String strategyId, String symbol, Pageable pageable);
 
-    @Query("""
-        select r.datasetId as datasetId, count(r) as usageCount, max(r.timestamp) as lastUsedAt
-        from BacktestResult r
-        where r.datasetId is not null
-        group by r.datasetId
-        """)
+    @Query(value = """
+        select
+            dataset_id as datasetId,
+            count(*) as usageCount,
+            max("timestamp") as lastUsedAt
+        from backtest_results
+        where dataset_id is not null
+        group by dataset_id
+        """, nativeQuery = true)
     List<BacktestDatasetUsageSummary> summarizeDatasetUsage();
 
     @Query(value = """

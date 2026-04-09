@@ -20,6 +20,7 @@ import com.algotrader.bot.marketdata.infrastructure.persistence.repository.Marke
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.TimeZone;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -148,6 +149,86 @@ class MarketDataRepositoryIntegrationTest {
             entityManager.persist(duplicate);
             entityManager.flush();
         });
+    }
+
+    @Test
+    void candleRepositoryPreservesDistinctUtcBucketsAcrossDstGap() {
+        TimeZone originalTimeZone = TimeZone.getDefault();
+        TimeZone.setDefault(TimeZone.getTimeZone("Europe/Prague"));
+        try {
+            BacktestDataset dataset = backtestDatasetRepository.saveAndFlush(dataset("DST dataset"));
+            MarketDataSeries series = marketDataSeriesRepository.saveAndFlush(series("stub", "BINANCE", "BTCUSDT", "BTC/USDT", "CRYPTO_SPOT", "BTC", "USDT"));
+            MarketDataCandleSegment segment = marketDataCandleSegmentRepository.saveAndFlush(
+                segment(
+                    dataset,
+                    series,
+                    "1h",
+                    LocalDateTime.parse("2024-03-31T00:00:00"),
+                    LocalDateTime.parse("2024-03-31T04:00:00"),
+                    2,
+                    "f"
+                )
+            );
+
+            marketDataCandleRepository.saveAndFlush(candle(series, segment, LocalDateTime.parse("2024-03-31T02:00:00"), "100"));
+            marketDataCandleRepository.saveAndFlush(candle(series, segment, LocalDateTime.parse("2024-03-31T03:00:00"), "101"));
+            entityManager.clear();
+
+            List<MarketDataCandle> candles = marketDataCandleRepository.findDatasetSeriesCandlesInRange(
+                dataset.getId(),
+                series.getId(),
+                "1h",
+                LocalDateTime.parse("2024-03-31T02:00:00"),
+                LocalDateTime.parse("2024-03-31T03:00:00")
+            );
+
+            assertThat(candles).extracting(candle -> candle.getId().getBucketStart()).containsExactly(
+                LocalDateTime.parse("2024-03-31T02:00:00"),
+                LocalDateTime.parse("2024-03-31T03:00:00")
+            );
+        } finally {
+            TimeZone.setDefault(originalTimeZone);
+        }
+    }
+
+    @Test
+    void candleRepositoryPreservesDistinctUtcBucketsAcrossDstFallbackHour() {
+        TimeZone originalTimeZone = TimeZone.getDefault();
+        TimeZone.setDefault(TimeZone.getTimeZone("Europe/Prague"));
+        try {
+            BacktestDataset dataset = backtestDatasetRepository.saveAndFlush(dataset("DST fallback dataset"));
+            MarketDataSeries series = marketDataSeriesRepository.saveAndFlush(series("stub", "BINANCE", "BTCUSDT", "BTC/USDT", "CRYPTO_SPOT", "BTC", "USDT"));
+            MarketDataCandleSegment segment = marketDataCandleSegmentRepository.saveAndFlush(
+                segment(
+                    dataset,
+                    series,
+                    "1h",
+                    LocalDateTime.parse("2024-10-27T00:00:00"),
+                    LocalDateTime.parse("2024-10-27T03:00:00"),
+                    2,
+                    "g"
+                )
+            );
+
+            marketDataCandleRepository.saveAndFlush(candle(series, segment, LocalDateTime.parse("2024-10-27T00:00:00"), "100"));
+            marketDataCandleRepository.saveAndFlush(candle(series, segment, LocalDateTime.parse("2024-10-27T01:00:00"), "101"));
+            entityManager.clear();
+
+            List<MarketDataCandle> candles = marketDataCandleRepository.findDatasetSeriesCandlesInRange(
+                dataset.getId(),
+                series.getId(),
+                "1h",
+                LocalDateTime.parse("2024-10-27T00:00:00"),
+                LocalDateTime.parse("2024-10-27T01:00:00")
+            );
+
+            assertThat(candles).extracting(candle -> candle.getId().getBucketStart()).containsExactly(
+                LocalDateTime.parse("2024-10-27T00:00:00"),
+                LocalDateTime.parse("2024-10-27T01:00:00")
+            );
+        } finally {
+            TimeZone.setDefault(originalTimeZone);
+        }
     }
 
     private BacktestDataset dataset(String name) {
