@@ -55,8 +55,10 @@ The repository is a usable local-first MVP for strategy research, market-data pr
 
 ## Latest Verified Baseline
 
-Verified on April 8, 2026:
+Verified on April 9, 2026:
 
+- `.\setup-codex.ps1`: passed
+- `.\test-codex.ps1`: passed
 - `.\gradlew.bat javaMigrationAudit --no-daemon`: passed
 - `.\gradlew.bat test`: passed
 - `.\gradlew.bat build`: passed
@@ -68,6 +70,7 @@ Verified on April 8, 2026:
 - `npm run build`: passed
 - `.\security-scan.ps1 -FailOnFindings`: passed
 - `.\run.ps1` and `.\run-all.ps1` smoke paths completed successfully
+- Docker MCP server availability and config-path checks for `context7`, `database-server`, `hoverfly-mcp-server`, `openapi-schema`, `playwright`, and `semgrep`: passed
 
 ## Current Research Posture
 

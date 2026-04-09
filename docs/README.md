@@ -12,6 +12,7 @@ Use these docs first:
 
 ## Developer Guides
 
+- [`guides/CODEX_WORKSTATION.md`](guides/CODEX_WORKSTATION.md): repo-specific Codex setup, skills, agents, and MCP workflow
 - [`guides/LOCAL_DEVELOPMENT.md`](guides/LOCAL_DEVELOPMENT.md): local setup, Docker, MCP, commands
 - [`guides/BACKEND.md`](guides/BACKEND.md): backend boundaries and service ownership
 - [`guides/FRONTEND.md`](guides/FRONTEND.md): SPA structure and UI/data rules

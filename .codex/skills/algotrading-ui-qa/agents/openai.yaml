@@ -1,0 +1,4 @@
+interface:
+  display_name: "AlgoTrading UI QA"
+  short_description: "Playwright-first QA for this repo's SPA"
+  default_prompt: "Use $algotrading-ui-qa to verify a frontend workflow in this repo with Playwright snapshots, console and network checks, and route-specific QA steps."

@@ -39,6 +39,17 @@ Local URLs:
 
 For detailed local setup, Docker, MCP, and command guidance, use [`docs/guides/LOCAL_DEVELOPMENT.md`](docs/guides/LOCAL_DEVELOPMENT.md).
 
+## Codex Workstation
+
+Use these repo entrypoints to align the local Codex client with this workspace:
+
+```powershell
+.\setup-codex.ps1
+.\test-codex.ps1
+```
+
+The full runbook lives in [`docs/guides/CODEX_WORKSTATION.md`](docs/guides/CODEX_WORKSTATION.md).
+
 ## Safety
 
 - Default mode is `test`.
@@ -60,6 +71,7 @@ Start here for the current product and system shape:
 
 Developer guides:
 
+- [`docs/guides/CODEX_WORKSTATION.md`](docs/guides/CODEX_WORKSTATION.md)
 - [`docs/guides/LOCAL_DEVELOPMENT.md`](docs/guides/LOCAL_DEVELOPMENT.md)
 - [`docs/guides/BACKEND.md`](docs/guides/BACKEND.md)
 - [`docs/guides/FRONTEND.md`](docs/guides/FRONTEND.md)
@@ -72,3 +84,4 @@ Deeper references:
 - [`docs/research/`](docs/research): strategy audit methodology, datasets, audit summaries, and strategy specs
 - [`docs/adr/`](docs/adr): durable architecture decisions
 - [`.codex/agents/README.md`](.codex/agents/README.md): project-local Codex agents
+- [`.codex/skills/`](.codex/skills): repo-owned Codex skills synced into the local home by `.\setup-codex.ps1`

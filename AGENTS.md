@@ -34,6 +34,7 @@ Always read this slim core first:
 Then open only the guide that matches the task:
 
 - docs hub first when routing is unclear: `docs/README.md`
+- Codex workstation, repo skills, or local Codex setup: `docs/guides/CODEX_WORKSTATION.md`
 - Frontend feature or UI work: `docs/guides/FRONTEND.md`
 - Backend/controller/service/repository work: `docs/guides/BACKEND.md`
 - Local runtime, Docker, PowerShell, or MCP work: `docs/guides/LOCAL_DEVELOPMENT.md`
@@ -78,6 +79,9 @@ If a task touches a planned feature, cite the relevant planning document and kee
   - `playwright` for UI verification
   - `semgrep` for optional security scans on auth/secrets/request-boundary changes
   - `hoverfly-mcp-server` for optional provider/exchange API mocking
+- Use `.\setup-codex.ps1` once on a workstation to align `HOME`, `CODEX_HOME`, `js_repl`, and repo-owned skills.
+- Use `.\test-codex.ps1` after Codex workstation changes to verify the persisted env, skills, and MCP config.
+- Repo-owned Codex skills live in `.codex/skills/` and are part of the standard tooling for this repository.
 - Docker MCP path and host conventions are documented in `docs/guides/LOCAL_DEVELOPMENT.md`.
 
 ## Project Codex Agents
@@ -165,6 +169,7 @@ Slim core docs:
 Optional durable docs:
 
 - `docs/ROADMAP.md`
+- `docs/guides/CODEX_WORKSTATION.md`
 - `docs/guides/FRONTEND.md`
 - `docs/guides/BACKEND.md`
 - `docs/guides/LOCAL_DEVELOPMENT.md`

@@ -2,6 +2,8 @@
 
 Use this guide for local setup, runtime scripts, Docker, Compose, Gradle wrapper usage, and MCP tooling.
 
+For repo-specific Codex bootstrap, repo-owned skills, project-local agents, and MCP routing, use [`CODEX_WORKSTATION.md`](CODEX_WORKSTATION.md).
+
 ## Recommended Flow
 
 From the repo root:
@@ -13,6 +15,17 @@ From the repo root:
 ```
 
 Use `.\run-all.ps1` and `.\stop-all.ps1` when you want the Docker-backed full stack instead of a locally started backend.
+
+## Codex Bootstrap
+
+From the repo root:
+
+```powershell
+.\setup-codex.ps1
+.\test-codex.ps1
+```
+
+`.\setup-codex.ps1` aligns `HOME`, `CODEX_HOME`, `js_repl`, repo-owned skills, and the lean curated skills used by this repo. Restart the Codex desktop app after setup so the client reloads the persisted environment and skills.
 
 ## Runtime Modes
 
@@ -151,7 +164,7 @@ Frontend automation-friendly selectors now exist on the main provider-import and
 
 ## Playwright Fix
 
-On Windows, `playwright` can fail if `HOME` or `CODEX_HOME` is unset and the runtime falls back to `C:\Windows\System32`. Configure a user-writable home once:
+On Windows, `playwright` can fail if `HOME` or `CODEX_HOME` is unset and the runtime falls back to `C:\Windows\System32`. Prefer `.\setup-codex.ps1`, which applies the persisted home variables and enables `js_repl`. If you cannot use the script, configure a user-writable home manually:
 
 ```powershell
 [Environment]::SetEnvironmentVariable('HOME', $env:USERPROFILE, 'User')

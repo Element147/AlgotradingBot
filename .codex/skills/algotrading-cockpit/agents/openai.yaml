@@ -1,0 +1,4 @@
+interface:
+  display_name: "AlgoTrading Cockpit"
+  short_description: "Repo workflow, guardrails, and MCP routing"
+  default_prompt: "Use $algotrading-cockpit to ground work in this repo's docs, guardrails, MCP choices, and verification order before changing code."
