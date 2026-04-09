@@ -114,7 +114,6 @@ export const websocketMiddleware: Middleware = (storeApi) => {
     isTabActive = !document.hidden;
     
     if (isTabActive) {
-      console.warn('[WebSocket Middleware] Tab became active, resuming event processing');
       // Process any pending throttled events when tab becomes active
       throttleStates.forEach((state) => {
         if (state.pendingEvent) {
@@ -122,8 +121,6 @@ export const websocketMiddleware: Middleware = (storeApi) => {
           state.pendingEvent = null;
         }
       });
-    } else {
-      console.warn('[WebSocket Middleware] Tab became inactive, pausing event processing');
     }
   };
 
@@ -149,7 +146,6 @@ export const websocketMiddleware: Middleware = (storeApi) => {
     // Handle different event types
     switch (event.type) {
       case 'balance.updated':
-        console.warn('[WebSocket Middleware] Balance updated, invalidating cache');
         // Invalidate balance cache to trigger refetch
         dispatch(
           accountApi.util.invalidateTags(['Balance'])
@@ -157,7 +153,6 @@ export const websocketMiddleware: Middleware = (storeApi) => {
         break;
 
       case 'trade.executed':
-        console.warn('[WebSocket Middleware] Trade executed, invalidating caches');
         // Invalidate both balance and performance caches
         dispatch(
           accountApi.util.invalidateTags(['Balance', 'Performance'])
@@ -168,7 +163,6 @@ export const websocketMiddleware: Middleware = (storeApi) => {
         break;
 
       case 'position.updated':
-        console.warn('[WebSocket Middleware] Position updated, invalidating balance cache');
         // Invalidate balance cache (positions affect available balance)
         dispatch(
           accountApi.util.invalidateTags(['Balance'])
@@ -176,14 +170,12 @@ export const websocketMiddleware: Middleware = (storeApi) => {
         break;
 
       case 'strategy.status':
-        console.warn('[WebSocket Middleware] Strategy status updated, invalidating strategies cache');
         dispatch(
           strategiesApi.util.invalidateTags(['Strategies'])
         );
         break;
 
       case 'risk.alert':
-        console.warn('[WebSocket Middleware] Risk alert received:', event.data);
         dispatch(
           riskApi.util.invalidateTags(['Risk'])
         );
@@ -195,12 +187,6 @@ export const websocketMiddleware: Middleware = (storeApi) => {
 
       case 'backtest.progress': {
         const progress = event.data as BacktestProgressEventData;
-        console.warn(
-          '[WebSocket Middleware] Backtest progress received:',
-          progress.backtestId,
-          progress.executionStatus,
-          progress.progressPercent
-        );
 
         dispatch(backtestApi.util.invalidateTags(['Backtests']));
         dispatch(
@@ -236,12 +222,6 @@ export const websocketMiddleware: Middleware = (storeApi) => {
 
       case 'marketData.import.progress': {
         const progress = event.data as MarketDataImportProgressEventData;
-        console.warn(
-          '[WebSocket Middleware] Market-data import progress received:',
-          progress.id,
-          progress.status,
-          progress.currentSymbol
-        );
 
         dispatch(
           marketDataApi.util.updateQueryData('getMarketDataJobs', undefined, (draft) => {
@@ -356,8 +336,6 @@ export const websocketMiddleware: Middleware = (storeApi) => {
   const handleWebSocketEvent = (event: WebSocketEvent) => {
     // Pause event processing when tab is inactive
     if (!isTabActive) {
-      console.warn('[WebSocket Middleware] Tab inactive, deferring event:', event.type);
-      
       // Store the event to process when tab becomes active
       const state = throttleStates.get(event.type);
       if (state) {
@@ -391,8 +369,6 @@ export const websocketMiddleware: Middleware = (storeApi) => {
   eventTypes.forEach((eventType) => {
     wsManager.subscribe(eventType, handleWebSocketEvent);
   });
-
-  console.warn('[WebSocket Middleware] Initialized and subscribed to events');
 
   // Return the middleware function
   return (next) => (action) => 

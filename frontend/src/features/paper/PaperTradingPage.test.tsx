@@ -418,4 +418,25 @@ describe('PaperTradingPage', { timeout: 15000 }, () => {
       });
     });
   });
+
+  it('blocks underfunded paper orders before they hit the API', async () => {
+    renderPage();
+
+    fireEvent.change(screen.getByLabelText('Quantity'), {
+      target: { value: '1' },
+    });
+    fireEvent.change(screen.getByLabelText('Price'), {
+      target: { value: '60000' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /submit paper order/i }));
+
+    await waitFor(() => {
+      expect(placeOrderMock).not.toHaveBeenCalled();
+      expect(
+        screen.getByText(
+          'Estimated order notional $60,000.00 exceeds paper cash balance $10,000.00. Reduce size or price before submitting.'
+        )
+      ).toBeInTheDocument();
+    });
+  });
 });

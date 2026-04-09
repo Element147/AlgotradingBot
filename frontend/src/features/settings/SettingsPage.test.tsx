@@ -29,6 +29,12 @@ const mockUpdateSavedConnection = vi.fn();
 const mockActivateSavedConnection = vi.fn();
 const mockDeleteSavedConnection = vi.fn();
 const mockRefetchSavedConnections = vi.fn();
+const mockUseGetSystemInfoQuery = vi.fn<(...args: unknown[]) => unknown>();
+const mockUseGetExchangeBalanceQuery = vi.fn<(...args: unknown[]) => unknown>();
+const mockUseGetExchangeOrdersQuery = vi.fn<(...args: unknown[]) => unknown>();
+const mockUseGetExchangeConnectionStatusQuery = vi.fn<(...args: unknown[]) => unknown>();
+const mockUseGetSavedExchangeConnectionsQuery = vi.fn<(...args: unknown[]) => unknown>();
+const mockUseGetAuditEventsQuery = vi.fn<(...args: unknown[]) => unknown>();
 
 const mockState = {
   settings: {
@@ -55,70 +61,18 @@ const mockState = {
 };
 
 vi.mock('./exchangeApi', () => ({
-  useGetSystemInfoQuery: () => ({ data: undefined, isError: true }),
-  useGetExchangeBalanceQuery: () => ({
-    data: undefined,
-    isError: true,
-    error: { status: 409, data: { message: 'Live account reads are unavailable on this backend.' } },
-    refetch: vi.fn(),
-  }),
-  useGetExchangeOrdersQuery: () => ({ data: [], isError: false, error: undefined }),
-  useGetExchangeConnectionStatusQuery: () => ({ data: undefined, isError: true, error: undefined }),
-  useGetSavedExchangeConnectionsQuery: () => ({
-    data: {
-      activeConnectionId: 'binance-paper',
-      connections: [
-        {
-          id: 'binance-paper',
-          name: 'Binance Paper',
-          exchange: 'binance',
-          apiKey: '',
-          apiSecret: '',
-          testnet: true,
-          active: true,
-        },
-      ],
-    },
-    isError: false,
-    error: undefined,
-    refetch: mockRefetchSavedConnections,
-  }),
+  useGetSystemInfoQuery: (...args: unknown[]) => mockUseGetSystemInfoQuery(...args),
+  useGetExchangeBalanceQuery: (...args: unknown[]) => mockUseGetExchangeBalanceQuery(...args),
+  useGetExchangeOrdersQuery: (...args: unknown[]) => mockUseGetExchangeOrdersQuery(...args),
+  useGetExchangeConnectionStatusQuery: (...args: unknown[]) =>
+    mockUseGetExchangeConnectionStatusQuery(...args),
+  useGetSavedExchangeConnectionsQuery: (...args: unknown[]) =>
+    mockUseGetSavedExchangeConnectionsQuery(...args),
   useCreateSavedExchangeConnectionMutation: () => [mockCreateSavedConnection, { isLoading: false }],
   useUpdateSavedExchangeConnectionMutation: () => [mockUpdateSavedConnection, { isLoading: false }],
   useActivateSavedExchangeConnectionMutation: () => [mockActivateSavedConnection, { isLoading: false }],
   useDeleteSavedExchangeConnectionMutation: () => [mockDeleteSavedConnection, { isLoading: false }],
-  useGetAuditEventsQuery: () => ({
-    data: {
-      summary: {
-        visibleEventCount: 1,
-        totalMatchingEvents: 1,
-        successCount: 1,
-        failedCount: 0,
-        uniqueActors: 1,
-        uniqueActions: 1,
-        testEventCount: 0,
-        paperEventCount: 1,
-        liveEventCount: 0,
-        latestEventAt: '2026-03-12T10:00:00',
-      },
-      events: [
-        {
-          id: 1,
-          actor: 'admin',
-          action: 'BACKTEST_RUN_STARTED',
-          environment: 'paper',
-          targetType: 'BACKTEST',
-          targetId: '42',
-          outcome: 'SUCCESS',
-          details: 'strategy=BOLLINGER_BANDS, datasetId=7',
-          createdAt: '2026-03-12T10:00:00',
-        },
-      ],
-    },
-    isLoading: false,
-    isError: false,
-    refetch: vi.fn(),
-  }),
+  useGetAuditEventsQuery: (...args: unknown[]) => mockUseGetAuditEventsQuery(...args),
   useTestExchangeConnectionMutation: () => [vi.fn(), { isLoading: false }],
   useTriggerBackupMutation: () => [vi.fn(), { isLoading: false }],
 }));
@@ -162,6 +116,95 @@ describe('SettingsPage', { timeout: 15000 }, () => {
     mockActivateSavedConnection.mockReset();
     mockDeleteSavedConnection.mockReset();
     mockRefetchSavedConnections.mockReset();
+    mockUseGetSystemInfoQuery.mockReset();
+    mockUseGetExchangeBalanceQuery.mockReset();
+    mockUseGetExchangeOrdersQuery.mockReset();
+    mockUseGetExchangeConnectionStatusQuery.mockReset();
+    mockUseGetSavedExchangeConnectionsQuery.mockReset();
+    mockUseGetAuditEventsQuery.mockReset();
+
+    mockUseGetSystemInfoQuery.mockImplementation((_: unknown, options?: { skip?: boolean }) => ({
+      data: options?.skip ? undefined : { applicationVersion: 'local-dev', lastDeploymentDate: 'n/a', databaseStatus: 'UP' },
+      isError: false,
+    }));
+    mockUseGetExchangeBalanceQuery.mockImplementation((_: unknown, options?: { skip?: boolean }) => ({
+      data: undefined,
+      isError: options?.skip ? false : true,
+      error: options?.skip
+        ? undefined
+        : { status: 409, data: { message: 'Live account reads are unavailable on this backend.' } },
+      refetch: vi.fn(),
+    }));
+    mockUseGetExchangeOrdersQuery.mockImplementation((_: unknown, options?: { skip?: boolean }) => ({
+      data: [],
+      isError: false,
+      error: undefined,
+      ...(options?.skip ? {} : {}),
+    }));
+    mockUseGetExchangeConnectionStatusQuery.mockImplementation((_: unknown, options?: { skip?: boolean }) => ({
+      data: options?.skip
+        ? undefined
+        : {
+            connected: true,
+            exchange: 'binance',
+            lastSync: '2026-03-12T10:00:00',
+            rateLimitUsage: 'used-weight-1m=5',
+            error: undefined,
+          },
+      isError: false,
+      error: undefined,
+    }));
+    mockUseGetSavedExchangeConnectionsQuery.mockReturnValue({
+      data: {
+        activeConnectionId: 'binance-paper',
+        connections: [
+          {
+            id: 'binance-paper',
+            name: 'Binance Paper',
+            exchange: 'binance',
+            apiKey: '',
+            apiSecret: '',
+            testnet: true,
+            active: true,
+          },
+        ],
+      },
+      isError: false,
+      error: undefined,
+      refetch: mockRefetchSavedConnections,
+    });
+    mockUseGetAuditEventsQuery.mockReturnValue({
+      data: {
+        summary: {
+          visibleEventCount: 1,
+          totalMatchingEvents: 1,
+          successCount: 1,
+          failedCount: 0,
+          uniqueActors: 1,
+          uniqueActions: 1,
+          testEventCount: 0,
+          paperEventCount: 1,
+          liveEventCount: 0,
+          latestEventAt: '2026-03-12T10:00:00',
+        },
+        events: [
+          {
+            id: 1,
+            actor: 'admin',
+            action: 'BACKTEST_RUN_STARTED',
+            environment: 'paper',
+            targetType: 'BACKTEST',
+            targetId: '42',
+            outcome: 'SUCCESS',
+            details: 'strategy=BOLLINGER_BANDS, datasetId=7',
+            createdAt: '2026-03-12T10:00:00',
+          },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
   });
 
   it('renders tab navigation and api section', () => {
@@ -233,7 +276,44 @@ describe('SettingsPage', { timeout: 15000 }, () => {
     });
   });
 
-  it('shows backend capability message for exchange balance errors', () => {
+  it('keeps exchange and database queries gated to the active settings section', () => {
+    render(<SettingsPage />);
+
+    expect(mockUseGetSystemInfoQuery).toHaveBeenLastCalledWith(
+      undefined,
+      expect.objectContaining({ skip: true })
+    );
+    expect(mockUseGetExchangeBalanceQuery).toHaveBeenLastCalledWith(
+      undefined,
+      expect.objectContaining({ skip: true })
+    );
+    expect(mockUseGetExchangeConnectionStatusQuery).toHaveBeenLastCalledWith(
+      undefined,
+      expect.objectContaining({ skip: true })
+    );
+
+    fireEvent.click(screen.getByRole('tab', { name: /Database/i }));
+    expect(mockUseGetSystemInfoQuery).toHaveBeenLastCalledWith(
+      undefined,
+      expect.objectContaining({ skip: false })
+    );
+
+    fireEvent.click(
+      screen
+        .getAllByRole('tab')
+        .find((tab) => tab.textContent?.startsWith('Exchange')) as HTMLElement
+    );
+    expect(mockUseGetExchangeConnectionStatusQuery).toHaveBeenLastCalledWith(
+      undefined,
+      expect.objectContaining({ skip: false })
+    );
+    expect(mockUseGetExchangeBalanceQuery).toHaveBeenLastCalledWith(
+      undefined,
+      expect.objectContaining({ skip: true })
+    );
+  });
+
+  it('blocks live balance reads while the active profile remains testnet', () => {
     render(<SettingsPage />);
 
     fireEvent.click(
@@ -242,7 +322,11 @@ describe('SettingsPage', { timeout: 15000 }, () => {
         .find((tab) => tab.textContent?.startsWith('Exchange')) as HTMLElement
     );
 
-    expect(screen.getByText('Live account reads are unavailable on this backend.')).toBeInTheDocument();
+    expect(
+      screen.getAllByText(
+        'The active profile is still testnet / paper-safe. Activate a non-testnet live profile before requesting live exchange balances and open orders.'
+      ).length
+    ).toBeGreaterThan(0);
   });
 
   it('enters explicit new-connection mode from the api config tab', () => {

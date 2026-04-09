@@ -498,7 +498,7 @@ export default function ForwardTestingPage() {
 
             <SurfacePanel
               title="Operator notes"
-              description="Notes are stored on this workstation only until a durable backend note flow is introduced."
+              description="Each save appends a dated local note on this workstation until a durable backend note flow is introduced."
             >
               <Stack spacing={1.5}>
                 <TextField
@@ -511,10 +511,10 @@ export default function ForwardTestingPage() {
                 />
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems="center">
                   <Button variant="contained" onClick={submitNote} disabled={!selectedStrategy}>
-                    Save local note
+                    Add local note
                   </Button>
                   <Typography variant="body2" color="text.secondary">
-                    Notes stay local to this browser profile and remain outside live execution paths.
+                    Each save adds a new local note entry. Notes stay in this browser profile and remain outside live execution paths.
                   </Typography>
                 </Stack>
               </Stack>

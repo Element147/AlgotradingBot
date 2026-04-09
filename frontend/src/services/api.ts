@@ -139,6 +139,40 @@ export const withExecutionContext = (
   };
 };
 
+const EXPECTED_LIVE_CAPABILITY_CONFLICT_ENDPOINTS = new Set([
+  '/api/account/balance',
+  '/api/account/performance',
+  '/api/positions/open',
+  '/api/trades/recent',
+]);
+
+const normalizeRequestUrl = (request: string | FetchArgs): string => {
+  const url = typeof request === 'string' ? request : request.url;
+  return url.replace(/^https?:\/\/[^/]+/i, '').split('?')[0];
+};
+
+export const isExpectedLiveReadCapabilityConflict = (
+  status: FetchBaseQueryError['status'],
+  request: string | FetchArgs
+): boolean => {
+  if (status !== 409 || typeof request === 'string') {
+    return false;
+  }
+
+  const endpoint = normalizeRequestUrl(request);
+  if (!EXPECTED_LIVE_CAPABILITY_CONFLICT_ENDPOINTS.has(endpoint)) {
+    return false;
+  }
+
+  const requestedExecutionContext = getHeaderValue(request.headers, 'X-Execution-Context');
+  const requestedEnvironment = getHeaderValue(request.headers, 'X-Environment');
+  const environment = requestedExecutionContext
+    ? resolveExecutionEnvironment(requestedExecutionContext as ExecutionContext)
+    : requestedEnvironment;
+
+  return environment === 'live';
+};
+
 /**
  * Base query with automatic retry logic
  * 
@@ -272,7 +306,11 @@ export const baseQueryWithErrorHandling: BaseQueryFn<
   }
   
   // Log errors in development
-  if (result.error && import.meta.env.DEV) {
+  if (
+    result.error &&
+    import.meta.env.DEV &&
+    !isExpectedLiveReadCapabilityConflict(result.error.status, args)
+  ) {
     console.error('API Error:', {
       status: result.error.status,
       endpoint: typeof args === 'string' ? args : args.url,

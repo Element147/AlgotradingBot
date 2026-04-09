@@ -13,65 +13,17 @@ import MarketDataPage from './MarketDataPage';
 const createJobMock = vi.fn();
 const retryJobMock = vi.fn();
 const cancelJobMock = vi.fn();
+const mockUseGetMarketDataProvidersQuery = vi.fn<(...args: unknown[]) => unknown>();
+const mockUseGetMarketDataJobsQuery = vi.fn<(...args: unknown[]) => unknown>();
 
 vi.mock('@/components/layout/AppLayout', () => ({
   AppLayout: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }));
 
 vi.mock('./marketDataApi', () => ({
-  useGetMarketDataProvidersQuery: () => ({
-    data: [
-      {
-        id: 'binance',
-        label: 'Binance',
-        description: 'Public spot klines',
-        supportedAssetTypes: ['CRYPTO'],
-        supportedTimeframes: ['1m', '1h', '4h', '1d'],
-        apiKeyRequired: false,
-        apiKeyEnvironmentVariable: null,
-        apiKeyConfigured: true,
-        apiKeyConfiguredSource: 'NOT_REQUIRED',
-        supportsAdjusted: false,
-        supportsRegularSessionOnly: false,
-        symbolExamples: ['BTC/USDT', 'ETH/USDT'],
-        docsUrl: 'https://example.com/docs',
-        signupUrl: 'https://example.com/signup',
-        accountNotes: 'No API key required.',
-      },
-    ],
-  }),
-  useGetMarketDataJobsQuery: () => ({
-    data: [
-      {
-        id: 12,
-        providerId: 'binance',
-        providerLabel: 'Binance',
-        assetType: 'CRYPTO',
-        datasetName: 'BTC majors 1h',
-        symbolsCsv: 'BTC/USDT,ETH/USDT',
-        timeframe: '1h',
-        startDate: '2024-03-12',
-        endDate: '2026-03-12',
-        adjusted: false,
-        regularSessionOnly: false,
-        status: 'WAITING_RETRY',
-        statusMessage: 'Provider asked the downloader to wait.',
-        nextRetryAt: '2026-03-12T10:00:00',
-        currentSymbolIndex: 0,
-        totalSymbols: 2,
-        currentSymbol: 'BTC/USDT',
-        importedRowCount: 500,
-        datasetId: null,
-        datasetReady: false,
-        currentChunkStart: '2025-01-01T00:00:00',
-        attemptCount: 3,
-        createdAt: '2026-03-12T09:00:00',
-        updatedAt: '2026-03-12T09:05:00',
-        startedAt: '2026-03-12T09:00:30',
-        completedAt: null,
-      },
-    ],
-  }),
+  useGetMarketDataProvidersQuery: (...args: unknown[]) =>
+    mockUseGetMarketDataProvidersQuery(...args),
+  useGetMarketDataJobsQuery: (...args: unknown[]) => mockUseGetMarketDataJobsQuery(...args),
   useCreateMarketDataJobMutation: () => [
     createJobMock,
     { isLoading: false },
@@ -131,6 +83,8 @@ describe('MarketDataPage', { timeout: 15000 }, () => {
     createJobMock.mockReset();
     retryJobMock.mockReset();
     cancelJobMock.mockReset();
+    mockUseGetMarketDataProvidersQuery.mockReset();
+    mockUseGetMarketDataJobsQuery.mockReset();
     createJobMock.mockReturnValue({
       unwrap: () =>
         Promise.resolve({
@@ -140,6 +94,59 @@ describe('MarketDataPage', { timeout: 15000 }, () => {
     });
     retryJobMock.mockReturnValue({ unwrap: () => Promise.resolve({}) });
     cancelJobMock.mockReturnValue({ unwrap: () => Promise.resolve({}) });
+    mockUseGetMarketDataProvidersQuery.mockReturnValue({
+      data: [
+        {
+          id: 'binance',
+          label: 'Binance',
+          description: 'Public spot klines',
+          supportedAssetTypes: ['CRYPTO'],
+          supportedTimeframes: ['1m', '1h', '4h', '1d'],
+          apiKeyRequired: false,
+          apiKeyEnvironmentVariable: null,
+          apiKeyConfigured: true,
+          apiKeyConfiguredSource: 'NOT_REQUIRED',
+          supportsAdjusted: false,
+          supportsRegularSessionOnly: false,
+          symbolExamples: ['BTC/USDT', 'ETH/USDT'],
+          docsUrl: 'https://example.com/docs',
+          signupUrl: 'https://example.com/signup',
+          accountNotes: 'No API key required.',
+        },
+      ],
+    });
+    mockUseGetMarketDataJobsQuery.mockReturnValue({
+      data: [
+        {
+          id: 12,
+          providerId: 'binance',
+          providerLabel: 'Binance',
+          assetType: 'CRYPTO',
+          datasetName: 'BTC majors 1h',
+          symbolsCsv: 'BTC/USDT,ETH/USDT',
+          timeframe: '1h',
+          startDate: '2024-03-12',
+          endDate: '2026-03-12',
+          adjusted: false,
+          regularSessionOnly: false,
+          status: 'WAITING_RETRY',
+          statusMessage: 'Provider asked the downloader to wait.',
+          nextRetryAt: '2026-03-12T10:00:00',
+          currentSymbolIndex: 0,
+          totalSymbols: 2,
+          currentSymbol: 'BTC/USDT',
+          importedRowCount: 500,
+          datasetId: null,
+          datasetReady: false,
+          currentChunkStart: '2025-01-01T00:00:00',
+          attemptCount: 3,
+          createdAt: '2026-03-12T09:00:00',
+          updatedAt: '2026-03-12T09:05:00',
+          startedAt: '2026-03-12T09:00:30',
+          completedAt: null,
+        },
+      ],
+    });
   });
 
   it('renders provider setup and waiting job information', () => {
@@ -174,5 +181,25 @@ describe('MarketDataPage', { timeout: 15000 }, () => {
         regularSessionOnly: false,
       });
     });
+  });
+
+  it('keeps asset and timeframe selects safe while provider metadata is still loading', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockUseGetMarketDataProvidersQuery.mockReturnValue({ data: undefined });
+    mockUseGetMarketDataJobsQuery.mockReturnValue({ data: [] });
+
+    renderPage();
+
+    expect(screen.getByText('Loading provider metadata')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /create download job/i })).toBeDisabled();
+
+    const combinedMessages = [...warnSpy.mock.calls, ...errorSpy.mock.calls]
+      .flat()
+      .join(' ');
+    expect(combinedMessages).not.toContain('out-of-range value');
+
+    warnSpy.mockRestore();
+    errorSpy.mockRestore();
   });
 });

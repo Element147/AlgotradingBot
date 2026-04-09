@@ -7,8 +7,9 @@ import {
   resolveExecutionEnvironment,
   type ExecutionContext,
 } from '../features/execution/executionContext';
-import { resolveApiBaseUrl } from './runtimeUrls';
 import { getOrCreateCsrfToken } from '../utils/security';
+
+import { resolveApiBaseUrl } from './runtimeUrls';
 
 /**
  * Axios client instance with authentication and environment injection
@@ -72,7 +73,7 @@ axiosClient.interceptors.request.use(
     const state = store.getState();
     
     // Add authentication token if available
-    const {token} = state.auth;
+    const { token } = state.auth;
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -119,17 +120,7 @@ axiosClient.interceptors.request.use(
  * - Other errors - logs and rejects
  */
 axiosClient.interceptors.response.use(
-  (response: AxiosResponse) => {
-    // Log response in development
-    if (import.meta.env.DEV) {
-      console.warn('API Response:', {
-        method: response.config.method,
-        url: response.config.url,
-        status: response.status,
-      });
-    }
-    return response;
-  },
+  (response: AxiosResponse) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
     

@@ -66,6 +66,7 @@ import { getStrategyProfile } from '@/features/strategies/strategyProfiles';
 import type { StrategyConfigOutput } from '@/features/strategies/strategyValidation';
 import { useGetTradeHistoryQuery } from '@/features/trades/tradesApi';
 import { getApiErrorMessage } from '@/services/api';
+import { formatCurrency } from '@/utils/formatters';
 import { sanitizeText } from '@/utils/security';
 
 type PaperOrderFormState = {
@@ -462,6 +463,21 @@ export default function PaperTradingPage() {
     if (!Number.isFinite(price) || price <= 0) {
       setFeedback({ severity: 'error', message: 'Price must be greater than zero.' });
       return;
+    }
+
+    if (state && (form.side === 'BUY' || form.side === 'COVER')) {
+      const estimatedNotional = quantity * price;
+      if (estimatedNotional > state.cashBalance) {
+        setFeedback({
+          severity: 'error',
+          message: `Estimated order notional ${formatCurrency(
+            estimatedNotional
+          )} exceeds paper cash balance ${formatCurrency(
+            state.cashBalance
+          )}. Reduce size or price before submitting.`,
+        });
+        return;
+      }
     }
 
     try {

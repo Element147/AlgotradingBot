@@ -198,15 +198,37 @@ export default function SettingsPage() {
   const [connectionDraft, setConnectionDraft] = useState<ExchangeConnectionProfile>(() =>
     createEmptyConnectionDraft()
   );
+  const activeTab: SettingsTab =
+    !isAdmin && (tab === 'api' || tab === 'database' || tab === 'audit') ? 'display' : tab;
 
-  const { data: systemInfo, isError: isSystemInfoError } = useGetSystemInfoQuery();
+  const {
+    data: savedConnectionsData,
+    isError: isSavedConnectionsError,
+    error: savedConnectionsError,
+    refetch: refetchSavedConnections,
+  } = useGetSavedExchangeConnectionsQuery();
+  const exchangeConnections = savedConnectionsData?.connections ?? EMPTY_EXCHANGE_CONNECTIONS;
+  const activeExchangeConnectionId = savedConnectionsData?.activeConnectionId ?? null;
+  const activeExchangeConnection =
+    exchangeConnections.find((connection) => connection.id === activeExchangeConnectionId) ?? null;
+  const canRequestLiveExchangeReads = Boolean(
+    activeExchangeConnection && !activeExchangeConnection.testnet
+  );
+
+  const { data: systemInfo, isError: isSystemInfoError } = useGetSystemInfoQuery(undefined, {
+    skip: activeTab !== 'database',
+  });
   const {
     data: exchangeBalance,
     refetch: refetchBalance,
     isError: isExchangeBalanceError,
     error: exchangeBalanceError,
   } = useGetExchangeBalanceQuery(undefined, {
-    pollingInterval: environmentMode === 'live' ? 60000 : 0,
+    skip: activeTab !== 'exchange' || !canRequestLiveExchangeReads,
+    pollingInterval:
+      activeTab === 'exchange' && canRequestLiveExchangeReads && environmentMode === 'live'
+        ? 60000
+        : 0,
     skipPollingIfUnfocused: true,
   });
   const {
@@ -214,20 +236,20 @@ export default function SettingsPage() {
     isError: isExchangeOrdersError,
     error: exchangeOrdersError,
   } = useGetExchangeOrdersQuery(undefined, {
-    pollingInterval: environmentMode === 'live' ? 60000 : 0,
+    skip: activeTab !== 'exchange' || !canRequestLiveExchangeReads,
+    pollingInterval:
+      activeTab === 'exchange' && canRequestLiveExchangeReads && environmentMode === 'live'
+        ? 60000
+        : 0,
     skipPollingIfUnfocused: true,
   });
   const {
     data: connectionStatus,
     isError: isConnectionError,
     error: connectionStatusError,
-  } = useGetExchangeConnectionStatusQuery();
-  const {
-    data: savedConnectionsData,
-    isError: isSavedConnectionsError,
-    error: savedConnectionsError,
-    refetch: refetchSavedConnections,
-  } = useGetSavedExchangeConnectionsQuery();
+  } = useGetExchangeConnectionStatusQuery(undefined, {
+    skip: activeTab !== 'exchange' || !activeExchangeConnection,
+  });
   const [createSavedConnection, { isLoading: isCreatingConnection }] =
     useCreateSavedExchangeConnectionMutation();
   const [updateSavedConnection, { isLoading: isUpdatingConnection }] =
@@ -238,11 +260,6 @@ export default function SettingsPage() {
     useDeleteSavedExchangeConnectionMutation();
   const [testConnection, { isLoading: isTestingConnection }] = useTestExchangeConnectionMutation();
   const [triggerBackup, { isLoading: isBackingUp }] = useTriggerBackupMutation();
-
-  const exchangeConnections = savedConnectionsData?.connections ?? EMPTY_EXCHANGE_CONNECTIONS;
-  const activeExchangeConnectionId = savedConnectionsData?.activeConnectionId ?? null;
-  const activeExchangeConnection =
-    exchangeConnections.find((connection) => connection.id === activeExchangeConnectionId) ?? null;
 
   const timezoneOptions = useMemo(() => {
     const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -476,8 +493,6 @@ export default function SettingsPage() {
     }
   };
 
-  const activeTab: SettingsTab =
-    !isAdmin && (tab === 'api' || tab === 'database' || tab === 'audit') ? 'display' : tab;
   const visibleTabs = ([
     isAdmin ? 'api' : null,
     'notifications',
@@ -939,6 +954,7 @@ export default function SettingsPage() {
               {activeTab === 'exchange' ? (
                 <ExchangeStatusPanel
                   activeExchangeConnection={activeExchangeConnection}
+                  canRequestLiveAccountReads={canRequestLiveExchangeReads}
                   exchangeBalance={exchangeBalance}
                   isExchangeBalanceError={isExchangeBalanceError}
                   exchangeBalanceError={exchangeBalanceError}

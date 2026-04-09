@@ -85,8 +85,14 @@ export default function LiveTradingPage() {
   const routeExecutionContext = executionContextMeta.live;
   const [selectedStrategyId, setSelectedStrategyId] = useState<number | null>(null);
   const { data: savedConnections } = useGetSavedExchangeConnectionsQuery();
+  const activeConnection =
+    savedConnections?.connections.find(
+      (connection) => connection.id === savedConnections.activeConnectionId
+    ) ?? null;
+  const hasActiveLiveConnection = Boolean(activeConnection && !activeConnection.testnet);
   const { data: connectionStatus, isError: isConnectionStatusError } =
     useGetExchangeConnectionStatusQuery(undefined, {
+      skip: !activeConnection,
       pollingInterval: 15000,
       skipPollingIfUnfocused: true,
     });
@@ -135,6 +141,7 @@ export default function LiveTradingPage() {
   } = useGetBalanceQuery(
     { executionContext: 'live' },
     {
+      skip: !hasActiveLiveConnection,
       pollingInterval: 30000,
       skipPollingIfUnfocused: true,
     }
@@ -146,6 +153,7 @@ export default function LiveTradingPage() {
   } = useGetPerformanceQuery(
     { timeframe: 'month', executionContext: 'live' },
     {
+      skip: !hasActiveLiveConnection,
       pollingInterval: 30000,
       skipPollingIfUnfocused: true,
     }
@@ -157,6 +165,7 @@ export default function LiveTradingPage() {
   } = useGetOpenPositionsQuery(
     { executionContext: 'live' },
     {
+      skip: !hasActiveLiveConnection,
       pollingInterval: 30000,
       skipPollingIfUnfocused: true,
     }
@@ -168,6 +177,7 @@ export default function LiveTradingPage() {
   } = useGetRecentTradesQuery(
     { limit: 8, executionContext: 'live' },
     {
+      skip: !hasActiveLiveConnection,
       pollingInterval: 30000,
       skipPollingIfUnfocused: true,
     }
@@ -183,20 +193,24 @@ export default function LiveTradingPage() {
     [strategyTradeHistory?.items]
   );
 
-  const liveReadCapabilityReason =
-    (isBalanceError && getApiErrorMessage(balanceError, '')) ||
-    (isPerformanceError && getApiErrorMessage(performanceError, '')) ||
-    (isPositionsError && getApiErrorMessage(positionsError, '')) ||
-    (isRecentTradesError && getApiErrorMessage(recentTradesError, '')) ||
-    'The backend has not reported approved live account-read capability yet.';
+  const liveReadCapabilityReason = !activeConnection
+    ? 'Create and activate a saved live exchange profile before live account reads can be requested.'
+    : activeConnection.testnet
+      ? 'The active connection is still a testnet / paper-safe profile. Switch to a live profile before requesting live account reads.'
+      : (isBalanceError && getApiErrorMessage(balanceError, '')) ||
+        (isPerformanceError && getApiErrorMessage(performanceError, '')) ||
+        (isPositionsError && getApiErrorMessage(positionsError, '')) ||
+        (isRecentTradesError && getApiErrorMessage(recentTradesError, '')) ||
+        'The backend has not reported approved live account-read capability yet.';
 
   const supportsLiveAccountReads =
-    !isBalanceError && !isPerformanceError && !isPositionsError && !isRecentTradesError;
+    hasActiveLiveConnection &&
+    !isBalanceError &&
+    !isPerformanceError &&
+    !isPositionsError &&
+    !isRecentTradesError;
   const supportsApprovedLiveExecution = false;
-  const activeConnection =
-    savedConnections?.connections.find(
-      (connection) => connection.id === savedConnections.activeConnectionId
-    ) ?? null;
+  const liveReadAlertSeverity = hasActiveLiveConnection ? 'warning' : 'info';
 
   const statusItems = useMemo<ExecutionStatusItem[]>(
     () => [
@@ -332,7 +346,7 @@ export default function LiveTradingPage() {
               <strong>Current posture:</strong> monitor-only live review.
             </Typography>
             <Typography variant="body2">
-              <strong>Backend reason:</strong> {liveReadCapabilityReason}
+              <strong>Current gate:</strong> {liveReadCapabilityReason}
             </Typography>
           </Stack>
         ),
@@ -437,7 +451,7 @@ export default function LiveTradingPage() {
         </Alert>
 
         {!supportsLiveAccountReads ? (
-          <Alert severity="warning">
+          <Alert severity={liveReadAlertSeverity}>
             {liveReadCapabilityReason}
           </Alert>
         ) : null}

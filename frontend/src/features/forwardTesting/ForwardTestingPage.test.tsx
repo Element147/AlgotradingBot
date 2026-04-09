@@ -358,7 +358,7 @@ describe('ForwardTestingPage', { timeout: 15000 }, () => {
     fireEvent.change(screen.getByLabelText('Operator follow-up note'), {
       target: { value: 'Watch the next pullback for weaker reclaim volume.' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Save local note' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add local note' }));
 
     expect(screen.getByText('Operator note saved locally for this workstation.')).toBeInTheDocument();
     expect(screen.getByText('Watch the next pullback for weaker reclaim volume.')).toBeInTheDocument();

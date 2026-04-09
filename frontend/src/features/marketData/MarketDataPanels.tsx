@@ -244,14 +244,15 @@ export function MarketDataJobFormPanel({
             <Grid size={{ xs: 12, md: 6 }}>
               <FormControl fullWidth>
                 <InputLabel id="market-data-asset-type-label">Asset Type</InputLabel>
-                <Select
-                  labelId="market-data-asset-type-label"
-                  value={effectiveAssetType}
-                  label="Asset Type"
-                  onChange={(event) => onAssetTypeChange(event.target.value)}
-                  inputProps={{
-                    'aria-label': 'Market data asset type',
-                    'data-testid': 'market-data-asset-type-select',
+              <Select
+                labelId="market-data-asset-type-label"
+                value={selectedProvider ? effectiveAssetType : ''}
+                label="Asset Type"
+                disabled={!selectedProvider}
+                onChange={(event) => onAssetTypeChange(event.target.value)}
+                inputProps={{
+                  'aria-label': 'Market data asset type',
+                  'data-testid': 'market-data-asset-type-select',
                   }}
                 >
                   {(selectedProvider?.supportedAssetTypes ?? []).map((assetType) => (
@@ -265,14 +266,15 @@ export function MarketDataJobFormPanel({
             <Grid size={{ xs: 12, md: 6 }}>
               <FormControl fullWidth>
                 <InputLabel id="market-data-timeframe-label">Timeframe</InputLabel>
-                <Select
-                  labelId="market-data-timeframe-label"
-                  value={effectiveTimeframe}
-                  label="Timeframe"
-                  onChange={(event) => onTimeframeChange(event.target.value)}
-                  inputProps={{
-                    'aria-label': 'Market data timeframe',
-                    'data-testid': 'market-data-timeframe-select',
+              <Select
+                labelId="market-data-timeframe-label"
+                value={selectedProvider ? effectiveTimeframe : ''}
+                label="Timeframe"
+                disabled={!selectedProvider}
+                onChange={(event) => onTimeframeChange(event.target.value)}
+                inputProps={{
+                  'aria-label': 'Market data timeframe',
+                  'data-testid': 'market-data-timeframe-select',
                   }}
                 >
                   {(selectedProvider?.supportedTimeframes ?? []).map((timeframe) => (

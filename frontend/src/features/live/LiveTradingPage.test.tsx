@@ -12,84 +12,29 @@ import environmentReducer from '@/features/environment/environmentSlice';
 import settingsReducer from '@/features/settings/settingsSlice';
 import websocketReducer from '@/features/websocket/websocketSlice';
 
+const mockUseGetBalanceQuery = vi.fn<(...args: unknown[]) => unknown>();
+const mockUseGetPerformanceQuery = vi.fn<(...args: unknown[]) => unknown>();
+const mockUseGetOpenPositionsQuery = vi.fn<(...args: unknown[]) => unknown>();
+const mockUseGetRecentTradesQuery = vi.fn<(...args: unknown[]) => unknown>();
+const mockUseGetSavedExchangeConnectionsQuery = vi.fn<(...args: unknown[]) => unknown>();
+const mockUseGetExchangeConnectionStatusQuery = vi.fn<(...args: unknown[]) => unknown>();
+
 vi.mock('@/components/layout/AppLayout', () => ({
   AppLayout: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }));
 
 vi.mock('@/features/account/accountApi', () => ({
-  useGetBalanceQuery: () => ({
-    data: undefined,
-    isError: true,
-    error: {
-      status: 409,
-      data: {
-        message:
-          'Live account reads are unavailable on this backend. Exchange connectivity is verified, but /api/account/* is not wired to live exchange balances, positions, or trade history.',
-      },
-    },
-  }),
-  useGetPerformanceQuery: () => ({
-    data: undefined,
-    isError: true,
-    error: {
-      status: 409,
-      data: {
-        message:
-          'Live account reads are unavailable on this backend. Exchange connectivity is verified, but /api/account/* is not wired to live exchange balances, positions, or trade history.',
-      },
-    },
-  }),
-  useGetOpenPositionsQuery: () => ({
-    data: [],
-    isError: true,
-    error: {
-      status: 409,
-      data: {
-        message:
-          'Live account reads are unavailable on this backend. Exchange connectivity is verified, but /api/account/* is not wired to live exchange balances, positions, or trade history.',
-      },
-    },
-  }),
-  useGetRecentTradesQuery: () => ({
-    data: [],
-    isError: true,
-    error: {
-      status: 409,
-      data: {
-        message:
-          'Live account reads are unavailable on this backend. Exchange connectivity is verified, but /api/account/* is not wired to live exchange balances, positions, or trade history.',
-      },
-    },
-  }),
+  useGetBalanceQuery: (...args: unknown[]) => mockUseGetBalanceQuery(...args),
+  useGetPerformanceQuery: (...args: unknown[]) => mockUseGetPerformanceQuery(...args),
+  useGetOpenPositionsQuery: (...args: unknown[]) => mockUseGetOpenPositionsQuery(...args),
+  useGetRecentTradesQuery: (...args: unknown[]) => mockUseGetRecentTradesQuery(...args),
 }));
 
 vi.mock('@/features/settings/exchangeApi', () => ({
-  useGetSavedExchangeConnectionsQuery: () => ({
-    data: {
-      activeConnectionId: 'binance-live',
-      connections: [
-        {
-          id: 'binance-live',
-          name: 'Binance Live',
-          exchange: 'binance',
-          apiKey: '',
-          apiSecret: '',
-          testnet: false,
-          active: true,
-        },
-      ],
-    },
-  }),
-  useGetExchangeConnectionStatusQuery: () => ({
-    data: {
-      connected: true,
-      exchange: 'binance',
-      lastSync: '2026-03-26T09:00:00Z',
-      rateLimitUsage: 'used-weight-1m=12',
-      error: null,
-    },
-    isError: false,
-  }),
+  useGetSavedExchangeConnectionsQuery: (...args: unknown[]) =>
+    mockUseGetSavedExchangeConnectionsQuery(...args),
+  useGetExchangeConnectionStatusQuery: (...args: unknown[]) =>
+    mockUseGetExchangeConnectionStatusQuery(...args),
   useGetAuditEventsQuery: () => ({
     data: {
       summary: {
@@ -257,6 +202,73 @@ const createStore = () =>
 describe('LiveTradingPage', () => {
   beforeEach(() => {
     localStorage.clear();
+    const liveCapabilityConflict = {
+      status: 409,
+      data: {
+        message:
+          'Live account reads are unavailable on this backend. Exchange connectivity is verified, but /api/account/* is not wired to live exchange balances, positions, or trade history.',
+      },
+    };
+
+    const skippedAccountResult = { data: undefined, isError: false, error: undefined };
+
+    mockUseGetSavedExchangeConnectionsQuery.mockReset();
+    mockUseGetExchangeConnectionStatusQuery.mockReset();
+    mockUseGetBalanceQuery.mockReset();
+    mockUseGetPerformanceQuery.mockReset();
+    mockUseGetOpenPositionsQuery.mockReset();
+    mockUseGetRecentTradesQuery.mockReset();
+
+    mockUseGetSavedExchangeConnectionsQuery.mockReturnValue({
+      data: {
+        activeConnectionId: 'binance-live',
+        connections: [
+          {
+            id: 'binance-live',
+            name: 'Binance Live',
+            exchange: 'binance',
+            apiKey: '',
+            apiSecret: '',
+            testnet: false,
+            active: true,
+          },
+        ],
+      },
+    });
+    mockUseGetExchangeConnectionStatusQuery.mockImplementation(
+      (_: unknown, options?: { skip?: boolean }) => ({
+        data: options?.skip
+          ? undefined
+          : {
+              connected: true,
+              exchange: 'binance',
+              lastSync: '2026-03-26T09:00:00Z',
+              rateLimitUsage: 'used-weight-1m=12',
+              error: null,
+            },
+        isError: false,
+      })
+    );
+    mockUseGetBalanceQuery.mockImplementation((_: unknown, options?: { skip?: boolean }) =>
+      options?.skip
+        ? skippedAccountResult
+        : { data: undefined, isError: true, error: liveCapabilityConflict }
+    );
+    mockUseGetPerformanceQuery.mockImplementation((_: unknown, options?: { skip?: boolean }) =>
+      options?.skip
+        ? skippedAccountResult
+        : { data: undefined, isError: true, error: liveCapabilityConflict }
+    );
+    mockUseGetOpenPositionsQuery.mockImplementation((_: unknown, options?: { skip?: boolean }) =>
+      options?.skip
+        ? { data: [], isError: false, error: undefined }
+        : { data: [], isError: true, error: liveCapabilityConflict }
+    );
+    mockUseGetRecentTradesQuery.mockImplementation((_: unknown, options?: { skip?: boolean }) =>
+      options?.skip
+        ? { data: [], isError: false, error: undefined }
+        : { data: [], isError: true, error: liveCapabilityConflict }
+    );
   });
 
   it('renders monitor-only live workspace state with capability warning and strategy evidence', () => {
@@ -278,5 +290,36 @@ describe('LiveTradingPage', () => {
     expect(screen.getAllByText(/Live account reads are unavailable on this backend\./i).length).toBeGreaterThan(0);
     expect(screen.getByTestId('live-signal-chart')).toHaveTextContent('BTC Live Monitor live signal chart');
     expect(screen.getByText('LIVE_MONITOR_REVIEWED success')).toBeInTheDocument();
+  });
+
+  it('blocks live account reads until a non-testnet live profile is active', () => {
+    mockUseGetSavedExchangeConnectionsQuery.mockReturnValue({
+      data: {
+        activeConnectionId: null,
+        connections: [],
+      },
+    });
+
+    render(
+      <Provider store={createStore()}>
+        <MemoryRouter>
+          <LiveTradingPage />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    expect(
+      screen.getAllByText(
+        'Create and activate a saved live exchange profile before live account reads can be requested.'
+      ).length
+    ).toBeGreaterThan(0);
+    expect(mockUseGetBalanceQuery).toHaveBeenLastCalledWith(
+      { executionContext: 'live' },
+      expect.objectContaining({ skip: true })
+    );
+    expect(mockUseGetExchangeConnectionStatusQuery).toHaveBeenLastCalledWith(
+      undefined,
+      expect.objectContaining({ skip: true })
+    );
   });
 });

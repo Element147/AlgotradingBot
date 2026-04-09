@@ -374,6 +374,7 @@ export function DatabaseSettingsPanel({
 
 interface ExchangeStatusPanelProps {
   activeExchangeConnection: ExchangeConnectionProfile | null;
+  canRequestLiveAccountReads: boolean;
   exchangeBalance: ExchangeBalanceResponse | undefined;
   isExchangeBalanceError: boolean;
   exchangeBalanceError: unknown;
@@ -391,6 +392,7 @@ interface ExchangeStatusPanelProps {
 
 export function ExchangeStatusPanel({
   activeExchangeConnection,
+  canRequestLiveAccountReads,
   exchangeBalance,
   isExchangeBalanceError,
   exchangeBalanceError,
@@ -405,6 +407,12 @@ export function ExchangeStatusPanel({
   exchangeOrdersError,
   getExchangeLabel,
 }: ExchangeStatusPanelProps) {
+  const liveReadBlockedMessage = !activeExchangeConnection
+    ? 'Save and activate a live exchange profile before requesting live account data.'
+    : activeExchangeConnection.testnet
+      ? 'The active profile is still testnet / paper-safe. Activate a non-testnet live profile before requesting live exchange balances and open orders.'
+      : null;
+
   return (
     <Grid container spacing={2}>
       <Grid size={{ xs: 12, lg: 6 }}>
@@ -417,11 +425,14 @@ export function ExchangeStatusPanel({
                 size="small"
                 startIcon={<RefreshIcon />}
                 onClick={onRefreshBalance}
+                disabled={!canRequestLiveAccountReads}
               >
                 Refresh
               </Button>
             </Stack>
-            {isExchangeBalanceError ? (
+            {!canRequestLiveAccountReads ? (
+              <Alert severity="info">{liveReadBlockedMessage}</Alert>
+            ) : isExchangeBalanceError ? (
               <Alert severity="warning">
                 {getApiErrorMessage(
                   exchangeBalanceError,
@@ -473,6 +484,12 @@ export function ExchangeStatusPanel({
                 <Typography variant="body2">
                   Exchange: {getExchangeLabel(activeExchangeConnection.exchange)}
                 </Typography>
+                {!canRequestLiveAccountReads ? (
+                  <Alert severity="info">
+                    Connection diagnostics remain available, but live reads stay blocked until a
+                    non-testnet live profile is active.
+                  </Alert>
+                ) : null}
               </Stack>
             ) : (
               <Alert severity="info" sx={{ mb: 2 }}>
@@ -513,7 +530,9 @@ export function ExchangeStatusPanel({
               Open Orders
             </Typography>
             <Stack spacing={0.5}>
-              {isExchangeOrdersError ? (
+              {!canRequestLiveAccountReads ? (
+                <Alert severity="info">{liveReadBlockedMessage}</Alert>
+              ) : isExchangeOrdersError ? (
                 <Alert severity="warning">
                   {getApiErrorMessage(
                     exchangeOrdersError,
