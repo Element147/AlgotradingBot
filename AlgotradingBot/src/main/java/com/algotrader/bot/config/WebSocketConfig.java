@@ -25,7 +25,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
 
     public WebSocketConfig(WebSocketHandler webSocketHandler,
                            WebSocketAuthHandshakeInterceptor webSocketAuthHandshakeInterceptor,
-                           @Value("${algotrading.websocket.allowed-origin-patterns:http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173}") String allowedOriginPatterns) {
+                           @Value("${algotrading.websocket.allowed-origin-patterns:http://localhost:5173,http://127.0.0.1:5173,http://host.docker.internal:5173,http://localhost:4173,http://127.0.0.1:4173,http://host.docker.internal:4173}") String allowedOriginPatterns) {
         this.webSocketHandler = webSocketHandler;
         this.webSocketAuthHandshakeInterceptor = webSocketAuthHandshakeInterceptor;
         String[] parsedOriginPatterns = Arrays.stream(allowedOriginPatterns.split(","))
@@ -36,8 +36,10 @@ public class WebSocketConfig implements WebSocketConfigurer {
                 ? new String[]{
                     "http://localhost:5173",
                     "http://127.0.0.1:5173",
+                    "http://host.docker.internal:5173",
                     "http://localhost:4173",
-                    "http://127.0.0.1:4173"
+                    "http://127.0.0.1:4173",
+                    "http://host.docker.internal:4173"
                 }
                 : parsedOriginPatterns;
     }

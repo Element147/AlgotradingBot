@@ -38,7 +38,7 @@ From the repo root:
 - runs the backend locally
 - runs the frontend locally
 - auto-matches backend relaxed auth to frontend `VITE_DEV_AUTH_BYPASS` for local-only debugging
-- waits for both services to be ready
+- waits for both services to be ready, with an IPv4 loopback fallback when Windows resolves `localhost` through an unreachable IPv6 path
 - rolls back partial startup if a later stage fails
 
 ### Full-Stack Mode
@@ -49,7 +49,7 @@ From the repo root:
 - starts the backend and PostgreSQL in Docker
 - runs the frontend locally
 - auto-matches backend relaxed auth to frontend `VITE_DEV_AUTH_BYPASS` for local-only debugging
-- waits for both services to be ready
+- waits for both services to be ready, with the same IPv4 loopback fallback for `localhost` probes
 - rolls back partial startup if startup fails
 
 Important rule: never start a frontend or backend dev server until existing instances have been checked and stopped first.
@@ -164,15 +164,24 @@ Frontend automation-friendly selectors now exist on the main provider-import and
 
 ## Playwright Fix
 
-On Windows, `playwright` can fail if `HOME` or `CODEX_HOME` is unset and the runtime falls back to `C:\Windows\System32`. Prefer `.\setup-codex.ps1`, which applies the persisted home variables and enables `js_repl`. If you cannot use the script, configure a user-writable home manually:
+On Windows, `playwright` can fail if `HOME` or `CODEX_HOME` is unset and the runtime falls back to `C:\Windows\System32`. The local MCP server can also inherit `C:\Windows\System32` as its cwd from the desktop client, which makes upstream `@playwright/mcp` try to write `.playwright-mcp` under the Windows directory. Prefer `.\setup-codex.ps1`, which corrects the persisted home variables, enables `js_repl`, and rewrites the local `playwright` MCP entry to launch through a wrapper that pins `HOME`, `CODEX_HOME`, and `PLAYWRIGHT_MCP_OUTPUT_DIR` before `@playwright/mcp@latest` starts. If you cannot use the script, configure a user-writable home manually:
 
 ```powershell
 [Environment]::SetEnvironmentVariable('HOME', $env:USERPROFILE, 'User')
 [Environment]::SetEnvironmentVariable('CODEX_HOME', (Join-Path $env:USERPROFILE '.codex'), 'User')
+[Environment]::SetEnvironmentVariable('PLAYWRIGHT_MCP_OUTPUT_DIR', (Join-Path $env:USERPROFILE '.codex\playwright-mcp'), 'User')
 New-Item -ItemType Directory -Force -Path (Join-Path $env:USERPROFILE '.codex') | Out-Null
+New-Item -ItemType Directory -Force -Path (Join-Path $env:USERPROFILE '.codex\playwright-mcp') | Out-Null
 ```
 
 Then restart the Codex desktop app before retrying browser automation.
+
+Browser URL rule:
+
+- local or desktop Playwright connector: use `http://localhost:5173`
+- Docker or container-hosted browser: use `http://host.docker.internal:5173`
+
+The same host alias rule applies to backend URLs on `8080`. Container browsers cannot reach the host workstation through their own `localhost`.
 
 Minimal Playwright smoke expectation after restart:
 

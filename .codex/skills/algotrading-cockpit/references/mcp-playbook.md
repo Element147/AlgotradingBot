@@ -24,3 +24,4 @@ Playwright rule for this repo:
 3. resnapshot after UI changes
 4. inspect console and network when the UI path is flaky
 5. fall back to the installed `screenshot` skill only when browser-native capture is insufficient
+6. use `http://localhost:5173` only for the local or desktop Playwright connector; use `http://host.docker.internal:5173` when the browser is running in Docker or another container

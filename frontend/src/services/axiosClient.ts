@@ -7,6 +7,7 @@ import {
   resolveExecutionEnvironment,
   type ExecutionContext,
 } from '../features/execution/executionContext';
+import { resolveApiBaseUrl } from './runtimeUrls';
 import { getOrCreateCsrfToken } from '../utils/security';
 
 /**
@@ -20,13 +21,7 @@ import { getOrCreateCsrfToken } from '../utils/security';
  * For standard CRUD operations, prefer RTK Query APIs (authApi, tradesApi, etc.)
  */
 
-const API_BASE_URL = (() => {
-  const configured = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-  if (import.meta.env.PROD && configured.startsWith('http://')) {
-    return configured.replace('http://', 'https://');
-  }
-  return configured;
-})();
+const API_BASE_URL = resolveApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
 
 // Create Axios instance with base configuration
 const axiosClient: AxiosInstance = axios.create({

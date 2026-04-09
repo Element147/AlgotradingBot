@@ -3,6 +3,8 @@
  * Handles WebSocket connection lifecycle, reconnection logic, and event routing
  */
 
+import { resolveWebSocketBaseUrl } from './runtimeUrls';
+
 export type WebSocketEventType =
   | 'balance.updated'
   | 'trade.executed'
@@ -163,11 +165,8 @@ const getDefaultPageUrl = (): string => {
   return 'http://localhost:5173/';
 };
 
-const buildLocalDevWebSocketUrl = (): string => {
-  const url = new URL('http://localhost:8080/ws');
-  url.protocol = 'ws:';
-  return url.toString();
-};
+const buildLocalDevWebSocketUrl = (pageUrl?: string): string =>
+  resolveWebSocketBaseUrl('', { pageUrl, production: false });
 
 export const buildEnvironmentChannels = (environment: 'test' | 'live'): string[] => [
   `${environment}.balance`,
@@ -193,7 +192,7 @@ export const resolveWebSocketUrl = (
 
   if (!configuredUrl || configuredUrl.trim() === '') {
     if (!production) {
-      return buildLocalDevWebSocketUrl();
+      return buildLocalDevWebSocketUrl(pageUrl.toString());
     }
 
     const sameOriginUrl = new URL('/ws', pageUrl);
@@ -201,7 +200,12 @@ export const resolveWebSocketUrl = (
     return sameOriginUrl.toString();
   }
 
-  const resolvedUrl = new URL(configuredUrl, pageUrl);
+  const resolvedUrl = new URL(
+    resolveWebSocketBaseUrl(configuredUrl, {
+      pageUrl: pageUrl.toString(),
+      production,
+    })
+  );
 
   if (production) {
     if (resolvedUrl.protocol === 'wss:') {

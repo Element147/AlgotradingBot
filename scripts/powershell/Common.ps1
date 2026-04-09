@@ -478,16 +478,35 @@ function Wait-HttpOk {
         [int]$DelaySeconds = 2
     )
 
-    for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
-        try {
-            $response = Invoke-WebRequest -Uri $Uri -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop
-            if ($response.StatusCode -eq 200) {
-                return $true
+    $probeUris = New-Object System.Collections.Generic.List[string]
+    $null = $probeUris.Add($Uri)
+
+    try {
+        $parsedUri = [System.Uri]$Uri
+        if ($parsedUri.Host -eq "localhost") {
+            $uriBuilder = [System.UriBuilder]::new($parsedUri)
+            $uriBuilder.Host = "127.0.0.1"
+            $ipv4LoopbackUri = $uriBuilder.Uri.AbsoluteUri
+            if (-not $probeUris.Contains($ipv4LoopbackUri)) {
+                $probeUris.Insert(0, $ipv4LoopbackUri)
             }
-        } catch {}
+        }
+    } catch {}
+
+    for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
+        foreach ($probeUri in $probeUris) {
+            try {
+                $response = Invoke-WebRequest -Uri $probeUri -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop
+                if ($response.StatusCode -eq 200) {
+                    return $true
+                }
+            } catch {}
+        }
 
         Write-Host "  Attempt $attempt/$MaxAttempts..." -ForegroundColor Gray
-        Start-Sleep -Seconds $DelaySeconds
+        if ($attempt -lt $MaxAttempts) {
+            Start-Sleep -Seconds $DelaySeconds
+        }
     }
 
     return $false

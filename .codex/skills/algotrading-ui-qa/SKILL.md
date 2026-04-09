@@ -10,10 +10,11 @@ Use this skill for frontend verification in this repository.
 ## Default loop
 
 1. Prefer MCP Playwright first.
-2. Navigate to the route under test and capture a fresh browser snapshot before any interaction.
-3. Interact only with current snapshot refs; resnapshot after each meaningful UI change.
-4. Check browser console and network when the UI does not match the visible state.
-5. Capture a browser screenshot or fall back to the installed `screenshot` skill only when browser-native capture is not enough.
+2. Choose the URL that matches the browser location: use `localhost` for the local or desktop connector, and `host.docker.internal` for a container-hosted browser.
+3. Navigate to the route under test and capture a fresh browser snapshot before any interaction.
+4. Interact only with current snapshot refs; resnapshot after each meaningful UI change.
+5. Check browser console and network when the UI does not match the visible state.
+6. Capture a browser screenshot or fall back to the installed `screenshot` skill only when browser-native capture is not enough.
 
 ## Route focus
 

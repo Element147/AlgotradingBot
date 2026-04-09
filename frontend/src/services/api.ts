@@ -11,6 +11,7 @@ import {
   resolveExecutionEnvironment,
   type ExecutionContext,
 } from '@/features/execution/executionContext';
+import { resolveApiBaseUrl } from '@/services/runtimeUrls';
 import { getOrCreateCsrfToken } from '@/utils/security';
 
 // Mutex to prevent multiple simultaneous refresh attempts
@@ -26,13 +27,7 @@ const mutex = new Mutex();
  * - Error handling
  */
 const baseQuery = fetchBaseQuery({
-  baseUrl: (() => {
-    const configured = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-    if (import.meta.env.PROD && configured.startsWith('http://')) {
-      return configured.replace('http://', 'https://');
-    }
-    return configured;
-  })(),
+  baseUrl: resolveApiBaseUrl(import.meta.env.VITE_API_BASE_URL),
   prepareHeaders: (headers, context) => {
     const { getState, arg } = context;
     const state = getState() as RootState;

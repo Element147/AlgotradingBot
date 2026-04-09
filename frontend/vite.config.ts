@@ -63,6 +63,18 @@ export default defineConfig({
       '@/types': path.resolve(__dirname, './src/types'),
     },
   },
+  server: {
+    host: '0.0.0.0',
+    port: 5173,
+    strictPort: true,
+    allowedHosts: ['localhost', '127.0.0.1', 'host.docker.internal'],
+  },
+  preview: {
+    host: '0.0.0.0',
+    port: 4173,
+    strictPort: true,
+    allowedHosts: ['localhost', '127.0.0.1', 'host.docker.internal'],
+  },
   build: {
     sourcemap: true,
     target: 'es2022',

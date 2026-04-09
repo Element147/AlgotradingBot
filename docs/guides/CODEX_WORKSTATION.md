@@ -32,9 +32,10 @@ Run this once from the repo root:
 
 What it does:
 
-- sets user-level `HOME` and `CODEX_HOME` when missing
+- sets user-level `HOME` and `CODEX_HOME` to the repo baseline, correcting stale or wrong values instead of leaving them pointed at old locations
 - ensures `C:\Users\Klaub\.codex` exists
 - merges `js_repl = true` into `C:\Users\Klaub\.codex\config.toml` without replacing the existing model, MCP, or sandbox configuration
+- installs a local Playwright launcher under `$CODEX_HOME\scripts\` and points the `playwright` MCP entry at it so browser automation does not depend on the desktop app inheriting the right `HOME` or current working directory
 - syncs repo-owned skills from `.codex/skills/` into `$CODEX_HOME/skills/`
 - installs the lean local-only curated skills used by this repo:
   - `playwright`
@@ -58,7 +59,9 @@ Run this from the repo root after bootstrap:
 The check requires:
 
 - user-level `HOME` and `CODEX_HOME` to match the repo baseline
-- `C:\Users\Klaub\.codex\config.toml` to still contain the existing Docker/Playwright MCP config and now include `features.js_repl = true`
+- both user-level paths to exist and not point into `C:\Windows\...`, because the local Playwright connector needs a user-writable home
+- `C:\Users\Klaub\.codex\config.toml` to still contain the existing Docker MCP config, point `playwright` at the repo-managed launcher, and include `features.js_repl = true`
+- `C:\Users\Klaub\.codex\scripts\start-playwright-mcp.ps1` to exist and pin `HOME`, `CODEX_HOME`, and `PLAYWRIGHT_MCP_OUTPUT_DIR` before starting `@playwright/mcp@latest`
 - Docker MCP availability for:
   - `context7`
   - `database-server`
@@ -72,7 +75,16 @@ The check requires:
   - `/C/Git/algotradingbot/.runtime/hoverfly`
 - repo-owned skills to exist under `$CODEX_HOME/skills`
 
-If `HOME` or `CODEX_HOME` are correct at the user level but stale in the current process, the script warns instead of failing. Restart the Codex desktop app to refresh the process environment.
+If `HOME` or `CODEX_HOME` are correct at the user level but stale in the current process, the script warns instead of failing. The launcher removes that problem for the local Playwright MCP itself, and it also forces a user-writable MCP output directory because the Codex desktop client can still hand the local connector `C:\Windows\System32` as its cwd. You should still restart the Codex desktop app after setup so the rest of the client picks up the same environment and config.
+
+## Browser Addressing Rule
+
+Use the browser URL that matches where Playwright is running:
+
+- local or desktop Playwright connector: `http://localhost:5173`
+- Docker or other container-hosted browser: `http://host.docker.internal:5173`
+
+Apply the same rule to backend URLs such as `8080`. A container browser cannot reach host-only `localhost` bindings.
 
 ## Repo-Owned Skills
 

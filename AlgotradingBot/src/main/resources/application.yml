@@ -93,11 +93,11 @@ algotrading:
   runtime:
     virtual-thread-scheduler-parallelism: ${ALGOTRADING_VIRTUAL_THREAD_SCHEDULER_PARALLELISM:}
   security:
-    allowed-origin-patterns: ${ALGOTRADING_ALLOWED_ORIGIN_PATTERNS:http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173}
+    allowed-origin-patterns: ${ALGOTRADING_ALLOWED_ORIGIN_PATTERNS:http://localhost:5173,http://127.0.0.1:5173,http://host.docker.internal:5173,http://localhost:4173,http://127.0.0.1:4173,http://host.docker.internal:4173}
     relaxed-auth: ${ALGOTRADING_RELAXED_AUTH:false}
     connection-encryption-key: ${EXCHANGE_CONNECTION_ENCRYPTION_KEY:${JWT_SECRET:}}
   websocket:
-    allowed-origin-patterns: ${ALGOTRADING_WEBSOCKET_ALLOWED_ORIGIN_PATTERNS:http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173}
+    allowed-origin-patterns: ${ALGOTRADING_WEBSOCKET_ALLOWED_ORIGIN_PATTERNS:http://localhost:5173,http://127.0.0.1:5173,http://host.docker.internal:5173,http://localhost:4173,http://127.0.0.1:4173,http://host.docker.internal:4173}
   risk:
     max-risk-per-trade: 0.02
     max-drawdown-limit: 0.25

@@ -56,8 +56,9 @@ function Ensure-UserEnvironmentVariable {
     }
 
     if ($existingUserValue -ne $Value) {
-        Write-Warn "User environment variable $Name already points to $existingUserValue. Leaving it unchanged."
-        Set-EnvironmentForSession -Name $Name -Value $existingUserValue
+        [Environment]::SetEnvironmentVariable($Name, $Value, "User")
+        Write-Warn "User environment variable $Name pointed to $existingUserValue. Updated it to $Value."
+        Set-EnvironmentForSession -Name $Name -Value $Value
         return
     }
 
@@ -86,6 +87,35 @@ function Write-Utf8File {
 
     $encoding = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllLines($Path, $Lines, $encoding)
+}
+
+function Write-Utf8TextFile {
+    param(
+        [string]$Path,
+        [string]$Content
+    )
+
+    $encoding = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($Path, $Content, $encoding)
+}
+
+function Test-LineArrayEqual {
+    param(
+        [string[]]$Left,
+        [string[]]$Right
+    )
+
+    if ($Left.Count -ne $Right.Count) {
+        return $false
+    }
+
+    for ($i = 0; $i -lt $Left.Count; $i++) {
+        if ($Left[$i] -ne $Right[$i]) {
+            return $false
+        }
+    }
+
+    return $true
 }
 
 function Ensure-TomlBooleanSetting {
@@ -167,6 +197,81 @@ function Ensure-TomlBooleanSetting {
     }
 }
 
+function Ensure-TomlSectionBlock {
+    param(
+        [string]$Path,
+        [string]$Section,
+        [string[]]$SectionLines
+    )
+
+    $desiredBlock = New-Object System.Collections.Generic.List[string]
+    $null = $desiredBlock.Add("[$Section]")
+    foreach ($line in $SectionLines) {
+        $null = $desiredBlock.Add($line)
+    }
+
+    $lines = New-Object System.Collections.Generic.List[string]
+    if (Test-Path -LiteralPath $Path) {
+        foreach ($line in Get-Content -LiteralPath $Path) {
+            $null = $lines.Add($line)
+        }
+    }
+
+    $sectionPattern = "^\[$([regex]::Escape($Section))\]\s*$"
+    $nextSectionPattern = "^\[.+\]\s*$"
+
+    $sectionIndex = -1
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        if ($lines[$i] -match $sectionPattern) {
+            $sectionIndex = $i
+            break
+        }
+    }
+
+    $changed = $false
+    if ($sectionIndex -ge 0) {
+        $nextSectionIndex = $lines.Count
+        for ($i = $sectionIndex + 1; $i -lt $lines.Count; $i++) {
+            if ($lines[$i] -match $nextSectionPattern) {
+                $nextSectionIndex = $i
+                break
+            }
+        }
+
+        $existingBlock = $lines.GetRange($sectionIndex, $nextSectionIndex - $sectionIndex)
+        if (-not (Test-LineArrayEqual -Left $existingBlock -Right $desiredBlock)) {
+            for ($i = $nextSectionIndex - 1; $i -ge $sectionIndex; $i--) {
+                $lines.RemoveAt($i)
+            }
+            for ($i = 0; $i -lt $desiredBlock.Count; $i++) {
+                $lines.Insert($sectionIndex + $i, $desiredBlock[$i])
+            }
+            $changed = $true
+        }
+    } else {
+        if ($lines.Count -gt 0 -and $lines[$lines.Count - 1].Trim().Length -gt 0) {
+            $null = $lines.Add("")
+        }
+        foreach ($line in $desiredBlock) {
+            $null = $lines.Add($line)
+        }
+        $changed = $true
+    }
+
+    if ($changed) {
+        $backupPath = Backup-File -Path $Path
+        Ensure-Directory -Path (Split-Path -Parent $Path)
+        Write-Utf8File -Path $Path -Lines $lines
+        if ($backupPath) {
+            Write-Ok "Updated [$Section] in $Path and saved a backup to $backupPath"
+        } else {
+            Write-Ok "Created [$Section] in $Path"
+        }
+    } else {
+        Write-Ok "$Path already contains the expected [$Section] block"
+    }
+}
+
 function Copy-DirectoryFresh {
     param(
         [string]$Source,
@@ -178,6 +283,64 @@ function Copy-DirectoryFresh {
     }
 
     Copy-Item -LiteralPath $Source -Destination $Destination -Recurse -Force
+}
+
+function Ensure-PlaywrightLauncherScript {
+    param(
+        [string]$Path,
+        [string]$DesiredHome,
+        [string]$DesiredCodexHome,
+        [string]$DesiredPlaywrightOutputDir
+    )
+
+    $lines = @(
+        "[CmdletBinding()]",
+        "param()",
+        "",
+        "Set-StrictMode -Version Latest",
+        '$ErrorActionPreference = "Stop"',
+        "",
+        ('$desiredHome = ''{0}''' -f $DesiredHome.Replace("'", "''")),
+        ('$desiredCodexHome = ''{0}''' -f $DesiredCodexHome.Replace("'", "''")),
+        ('$desiredPlaywrightOutputDir = ''{0}''' -f $DesiredPlaywrightOutputDir.Replace("'", "''")),
+        '$homeDrive = [System.IO.Path]::GetPathRoot($desiredHome).TrimEnd(''\'')',
+        '$homePath = $desiredHome.Substring($homeDrive.Length)',
+        "",
+        'if (-not (Test-Path -LiteralPath $desiredCodexHome)) {',
+        '    New-Item -ItemType Directory -Path $desiredCodexHome -Force | Out-Null',
+        '}',
+        'if (-not (Test-Path -LiteralPath $desiredPlaywrightOutputDir)) {',
+        '    New-Item -ItemType Directory -Path $desiredPlaywrightOutputDir -Force | Out-Null',
+        '}',
+        "",
+        '$env:HOME = $desiredHome',
+        '$env:USERPROFILE = $desiredHome',
+        '$env:HOMEDRIVE = $homeDrive',
+        '$env:HOMEPATH = $homePath',
+        '$env:CODEX_HOME = $desiredCodexHome',
+        '$env:PLAYWRIGHT_MCP_OUTPUT_DIR = $desiredPlaywrightOutputDir',
+        'Set-Location -LiteralPath $desiredCodexHome',
+        "",
+        "& npx @playwright/mcp@latest",
+        'exit $LASTEXITCODE'
+    )
+    $desiredContent = [string]::Join([Environment]::NewLine, $lines) + [Environment]::NewLine
+
+    $writeFile = $true
+    if (Test-Path -LiteralPath $Path) {
+        $existingContent = Get-Content -LiteralPath $Path -Raw
+        if ($existingContent -eq $desiredContent) {
+            $writeFile = $false
+        }
+    }
+
+    if ($writeFile) {
+        Ensure-Directory -Path (Split-Path -Parent $Path)
+        Write-Utf8TextFile -Path $Path -Content $desiredContent
+        Write-Ok "Ensured the local Playwright MCP launcher at $Path"
+    } else {
+        Write-Ok "The local Playwright MCP launcher already matches the expected content"
+    }
 }
 
 function Sync-RepoOwnedSkills {
@@ -265,6 +428,17 @@ Ensure-Directory -Path $DesiredCodexHome
 Write-Step "Ensuring js_repl is enabled in the local Codex config"
 $configPath = Join-Path $DesiredCodexHome "config.toml"
 Ensure-TomlBooleanSetting -Path $configPath -Section "features" -Key "js_repl" -Value $true
+
+Write-Step "Pinning the local Playwright MCP launcher to a user-writable home"
+$playwrightLauncherPath = Join-Path $DesiredCodexHome "scripts\start-playwright-mcp.ps1"
+$playwrightOutputDir = Join-Path $DesiredCodexHome "playwright-mcp"
+Ensure-Directory -Path $playwrightOutputDir
+Ensure-PlaywrightLauncherScript -Path $playwrightLauncherPath -DesiredHome $DesiredHome -DesiredCodexHome $DesiredCodexHome -DesiredPlaywrightOutputDir $playwrightOutputDir
+$escapedLauncherPath = $playwrightLauncherPath.Replace("'", "''")
+Ensure-TomlSectionBlock -Path $configPath -Section "mcp_servers.playwright" -SectionLines @(
+    "command = 'powershell.exe'",
+    "args = ['-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', '$escapedLauncherPath']"
+)
 
 Write-Step "Syncing repo-owned skills into the local Codex home"
 if (-not (Test-Path -LiteralPath $RepoSkillsRoot)) {
