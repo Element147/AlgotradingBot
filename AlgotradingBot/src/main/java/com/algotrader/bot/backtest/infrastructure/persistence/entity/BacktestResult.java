@@ -13,16 +13,17 @@ import java.util.List;
 
 /**
  * JPA entity representing backtest results for strategy validation.
- * Stores performance metrics and validation status for backtested trading strategies.
+ * Stores performance metrics and validation status for backtested trading
+ * strategies.
  */
 @Entity
 @Table(name = "backtest_results", indexes = {
-    @Index(name = "idx_backtest_strategy", columnList = "strategy_id"),
-    @Index(name = "idx_backtest_symbol", columnList = "symbol"),
-    @Index(name = "idx_backtest_timestamp", columnList = "timestamp"),
-    @Index(name = "idx_backtest_experiment_key_timestamp", columnList = "experiment_key,timestamp"),
-    @Index(name = "idx_backtest_dataset_timestamp", columnList = "dataset_id,timestamp"),
-    @Index(name = "idx_backtest_execution_status_timestamp", columnList = "execution_status,timestamp")
+        @Index(name = "idx_backtest_strategy", columnList = "strategy_id"),
+        @Index(name = "idx_backtest_symbol", columnList = "symbol"),
+        @Index(name = "idx_backtest_timestamp", columnList = "timestamp"),
+        @Index(name = "idx_backtest_experiment_key_timestamp", columnList = "experiment_key,timestamp"),
+        @Index(name = "idx_backtest_dataset_timestamp", columnList = "dataset_id,timestamp"),
+        @Index(name = "idx_backtest_execution_status_timestamp", columnList = "execution_status,timestamp")
 })
 public class BacktestResult {
 
@@ -42,8 +43,8 @@ public class BacktestResult {
     @Column(length = 100)
     private String datasetName;
 
-    @Size(max = 120)
-    @Column(length = 120)
+    @Size(max = 200)
+    @Column(length = 200)
     private String experimentName;
 
     @Size(max = 120)
@@ -240,8 +241,8 @@ public class BacktestResult {
         }
         if (netProfit == null) {
             netProfit = initialBalance != null && finalBalance != null
-                ? finalBalance.subtract(initialBalance)
-                : BigDecimal.ZERO;
+                    ? finalBalance.subtract(initialBalance)
+                    : BigDecimal.ZERO;
         }
         if (winningTrades == null) {
             winningTrades = 0;
@@ -261,9 +262,9 @@ public class BacktestResult {
     }
 
     public BacktestResult(String strategyId, String symbol, LocalDateTime startDate,
-                          LocalDateTime endDate, BigDecimal initialBalance, BigDecimal finalBalance,
-                          BigDecimal sharpeRatio, BigDecimal profitFactor, BigDecimal winRate,
-                          BigDecimal maxDrawdown, Integer totalTrades, ValidationStatus validationStatus) {
+            LocalDateTime endDate, BigDecimal initialBalance, BigDecimal finalBalance,
+            BigDecimal sharpeRatio, BigDecimal profitFactor, BigDecimal winRate,
+            BigDecimal maxDrawdown, Integer totalTrades, ValidationStatus validationStatus) {
         this.strategyId = strategyId;
         this.symbol = symbol;
         this.timeframe = "1h";

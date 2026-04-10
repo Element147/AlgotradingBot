@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0022-change-experiment-name-length
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        and:
+          - tableExists:
+              tableName: backtest_results
+          - columnExists:
+              tableName: backtest_results
+              columnName: experiment_name
+      changes:
+        - modifyDataType:
+            tableName: backtest_results
+            columnName: experiment_name
+            newDataType: VARCHAR(200)

@@ -27,3 +27,5 @@ databaseChangeLog:
       file: db/changelog/changes/0020-fix-market-data-candle-identity.yaml
   - include:
       file: db/changelog/changes/0021-add-backtest-history-metrics.yaml
+  - include:
+      file: db/changelog/changes/0022-change-experiment-name-length.yaml
